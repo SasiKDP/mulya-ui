@@ -184,7 +184,7 @@ const Submissions = () => {
       />
 
       {/* Dialog for the candidate interview */}
-      {/* <Dialog
+      <Dialog
         open={openInterviewDialog}
         onClose={handleCloseInterviewDialog}
         maxWidth="md"
@@ -230,8 +230,8 @@ const Submissions = () => {
             handleCloseInterviewDialog={handleCloseInterviewDialog}
           />
         </DialogContent>
-      </Dialog> */}
-      <CustomDialog
+      </Dialog>
+      {/* <CustomDialog
         open={openInterviewDialog}
         onClose={handleCloseInterviewDialog}
         title="Schedule Interview"
@@ -249,7 +249,7 @@ const Submissions = () => {
           />
         }
         maxWidth="md"
-      />
+      /> */}
     </>
   );
 };

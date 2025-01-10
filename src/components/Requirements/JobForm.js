@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   postJobRequirement,
@@ -18,12 +18,9 @@ import {
   useTheme,
   CircularProgress,
 } from "@mui/material";
-import axios from "axios";
-import BASE_URL from "../../redux/apiConfig";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-
+import useEmployees from "../customHooks/useEmployees";
 
 
 const JobForm = () => {
@@ -32,25 +29,20 @@ const JobForm = () => {
   const { formData, status, error, jobPostingSuccessResponse } = useSelector(
     (state) => state.jobForm
   );
-  const [employeesList, setEmployeesList] = useState([]);
-  const [fetchStatus, setFetchStatus] = useState("idle");
-  const [fetchError, setFetchError] = useState(null);
-  const [filterEmployees, setFilterEmployees] = useState([]);
+  
+  // Using the custom hook for employee data
+  const { 
+    employees: filterEmployees, 
+    status: fetchStatus, 
+    error: fetchError 
+  } = useEmployees('EMPLOYEE');
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     dispatch(updateField({ name, value }));
   };
 
-  const filteredEmployees = useMemo(() => {
-    return employeesList.filter((employee) => employee.roles === "EMPLOYEE");
-  }, [employeesList]);
-
-  useEffect(() => {
-    setFilterEmployees(filteredEmployees);
-  }, [filteredEmployees]);
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (status === "succeeded" && jobPostingSuccessResponse) {
       toast.success(`Job Created Successfully! Job Title: ${jobPostingSuccessResponse.jobTitle} Job ID: ${jobPostingSuccessResponse.jobId}`)
     }
@@ -73,29 +65,8 @@ const JobForm = () => {
 
   const handleClear = () => {
     dispatch(resetForm());
-    toast.info("Form cleared successfully" );
+    toast.info("Form cleared successfully");
   };
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      setFetchStatus("loading");
-      try {
-        const response = await axios.get(`${BASE_URL}/users/employee`);
-        setEmployeesList(response.data);
-        setFetchStatus("succeeded");
-      } catch (error) {
-        setFetchStatus("failed");
-        setFetchError(error.message);
-        toast.error(
-          `Failed to fetch employees: ${error.message}`
-        );
-      }
-    };
-
-    if (fetchStatus === "idle") {
-      fetchEmployees();
-    }
-  }, [fetchStatus]);
 
   const commonBorderStyles = {
     "& .MuiOutlinedInput-root": {
@@ -146,7 +117,6 @@ const JobForm = () => {
       <Grid container spacing={3}>
         {/* Text fields */}
         {[
-          //{ name: "jobId", label: "Job ID", type: "text" },
           { name: "jobTitle", label: "Job Title", type: "text" },
           { name: "clientName", label: "Client Name", type: "text" },
           { name: "location", label: "Location", type: "text" },
@@ -161,7 +131,6 @@ const JobForm = () => {
             type: "number",
           },
           { name: "qualification", label: "Qualification", type: "text" },
-          
         ].map((field) => (
           <Grid item xs={12} sm={6} md={3} key={field.name}>
             <TextField
@@ -233,44 +202,40 @@ const JobForm = () => {
             <InputLabel sx={{ color: "black" }}>Select Recruiter</InputLabel>
             <Select
               name="recruiterIds"
-              value={
-                Array.isArray(formData.recruiterIds)
-                  ? formData.recruiterIds
-                  : []
-              }
+              value={Array.isArray(formData.recruiterIds) ? formData.recruiterIds : []}
               onChange={handleChange}
               label="Recruiter IDs"
               variant="filled"
               sx={{
                 ...commonBorderStyles,
                 "&:hover": { borderColor: theme.palette.primary.main },
-                "& .MuiSelect-icon": { color: theme.palette.primary.main }, // Customize the dropdown arrow color
+                "& .MuiSelect-icon": { color: theme.palette.primary.main },
               }}
               MenuProps={{
                 PaperProps: {
                   sx: {
-                    maxHeight: 200, // Fix dropdown height
-                    overflowY: "auto", // Enable vertical scrolling
-                    backgroundColor: "#f7f7f7", // Background for dropdown
-                    borderRadius: 1, // Rounded corners for the dropdown
-                    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)", // Add shadow
+                    maxHeight: 200,
+                    overflowY: "auto",
+                    backgroundColor: "#f7f7f7",
+                    borderRadius: 1,
+                    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
                     "& .MuiMenuItem-root": {
-                      padding: "10px 16px", // Adjust padding for each option
-                      fontSize: "0.9rem", 
+                      padding: "10px 16px",
+                      fontSize: "0.9rem",
                       borderRadius: "10px",
                       "&:hover": {
-                        backgroundColor: theme.palette.action.hover, // Highlight on hover
+                        backgroundColor: theme.palette.action.hover,
                       },
                       "&.Mui-selected": {
-                        backgroundColor: theme.palette.primary.light, // Highlight for selected option
-                        color: theme.palette.primary.contrastText, // Text color for selected option
+                        backgroundColor: theme.palette.primary.light,
+                        color: theme.palette.primary.contrastText,
                         "&:hover": {
-                          backgroundColor: theme.palette.primary.main, // Darker shade when hovering over selected
+                          backgroundColor: theme.palette.primary.main,
                         },
                       },
                     },
                   },
-                },  
+                },
               }}
             >
               {fetchStatus === "loading" ? (
@@ -292,7 +257,7 @@ const JobForm = () => {
         </Grid>
 
         {/* Job Description Field */}
-        <Grid item xs={12}  md={6}>
+        <Grid item xs={12} md={6}>
           <TextField
             fullWidth
             variant="filled"

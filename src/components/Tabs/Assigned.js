@@ -51,11 +51,13 @@ const Assigned = () => {
         console.error("Failed to fetch employees:", error.message);
       }
     };
-
+  
+    // Only fetch employees on initial load
     if (fetchStatus === "idle") {
       fetchEmployees();
     }
-  }, [fetchStatus]);
+  }, []);
+  
 
   // Function to find the employee email based on userId
   const getEmployeeEmail = (userId, employeesList) => {
@@ -219,7 +221,7 @@ const Assigned = () => {
       />
 
       {/* Dialog for Submit Candidate */}
-      {/* <Dialog
+      <Dialog
         open={openSubmitDialog}
         onClose={handleCloseSubmitDialog}
         maxWidth="md"
@@ -259,9 +261,9 @@ const Assigned = () => {
             userEmail={employeeEmail} // Dynamically fetched email
           />
         </DialogContent>
-      </Dialog> */}
+      </Dialog>
       {/* Submit Candidate Dialog */}
-      <CustomDialog
+      {/* <CustomDialog
         open={openSubmitDialog}
         onClose={handleCloseSubmitDialog}
         title="Candidate Submission Form"
@@ -272,10 +274,10 @@ const Assigned = () => {
             userEmail={employeeEmail}
           />
         }
-      />
+      /> */}
 
       {/* Dialog for Job Description */}
-      {/* <Dialog
+      <Dialog
         open={openDescriptionDialog}
         onClose={handleCloseDescriptionDialog}
         maxWidth="sm"
@@ -298,15 +300,15 @@ const Assigned = () => {
             Close
           </Button>
         </DialogActions>
-      </Dialog> */}
+      </Dialog>
 
       {/* Job Description Dialog */}
-      <CustomDialog
+      {/* <CustomDialog
         open={openDescriptionDialog}
         onClose={handleCloseDescriptionDialog}
         title="Job Description"
         content={<Typography>{selectedJobDescription}</Typography>}
-      />
+      /> */}
     </>
   );
 };

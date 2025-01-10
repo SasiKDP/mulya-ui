@@ -9,10 +9,11 @@ import {
   MenuItem,
 } from "@mui/material";
 import axios from "axios";
-import BASE_URL from "../redux/apiConfig"; // Import your base URL for API requests
+import BASE_URL from "../redux/apiConfig";
 import dayjs from "dayjs";
-import { toast } from "react-toastify"; // Import toast for notifications
+import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
+import useEmployees from './customHooks/useEmployees'; // Adjust the import path as needed
 
 const LeaveApplication = () => {
   const [formData, setFormData] = useState({
@@ -22,51 +23,26 @@ const LeaveApplication = () => {
     leaveType: "",
     userId: "",
     managerEmail: "",
-    description: "", // New field added here
+    description: "",
   });
+
   const { user } = useSelector((state) => state.auth);
-
-  console.log('userId from the leave application ',user)
-
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const [employeesList, setEmployeesList] = useState([]);
-  const [fetchStatus, setFetchStatus] = useState("idle");
-  const [fetchError, setFetchError] = useState("");
+  // Using the custom hook with SUPERADMIN filter
+  const { 
+    employees: managersList, 
+    status: fetchStatus, 
+    error: fetchError 
+  } = useEmployees('SUPERADMIN');
 
   useEffect(() => {
-    // Update userId if user changes
     setFormData((prevData) => ({
       ...prevData,
-      userId: user||'',
+      userId: user || '',
     }));
   }, [user]);
-
- 
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      setFetchStatus("loading");
-      try {
-        const response = await axios.get(`${BASE_URL}/users/employee`);
-        setEmployeesList(response.data);
-        console.log('manager data log ---------',response.data);
-        
-        setFetchStatus("succeeded");
-      } catch (error) {
-        setFetchStatus("failed");
-        setFetchError(error.message);
-        toast.error("Error fetching employee data.");
-      }
-    };
-
-    fetchEmployees();
-  }, []);
-
-  const filteredEmployees = employeesList.filter(
-    (employee) => employee.roles === "SUPERADMIN"
-  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -95,7 +71,7 @@ const LeaveApplication = () => {
       !formData.endDate ||
       !formData.leaveType ||
       !formData.managerEmail ||
-      !formData.description // Ensure this field is validated
+      !formData.description
     ) {
       setFormError("Please fill out all required fields.");
       return;
@@ -113,9 +89,8 @@ const LeaveApplication = () => {
         leaveApplicationData
       );
       if (response.status === 201) {
-        const successData = response.data; // Assuming the API returns a success message in the response data
+        const successData = response.data;
 
-        // Update success message with API response
         setSuccessMessage(
           `Leave application submitted successfully from ${dayjs(formData.startDate).format(
             "DD MMM YYYY"
@@ -126,11 +101,11 @@ const LeaveApplication = () => {
           endDate: "",
           days: "",
           leaveType: "",
-          userId:"",
+          userId: "",
           managerEmail: "",
-          description: "", // Reset the description field
+          description: "",
         });
-        toast.success(successData.message );
+        toast.success(successData.message);
       } 
     } catch (error) {
       setFormError(error.message || "An error occurred.");
@@ -173,9 +148,10 @@ const LeaveApplication = () => {
             required
             select
           >
-            {filteredEmployees.length > 0 ? (
-              filteredEmployees.map((manager) => (
-                
+            {fetchStatus === "loading" ? (
+              <MenuItem disabled>Loading managers...</MenuItem>
+            ) : managersList.length > 0 ? (
+              managersList.map((manager) => (
                 <MenuItem key={manager.employeeId} value={manager.email}>
                   {manager.employeeName}
                 </MenuItem>
@@ -262,7 +238,15 @@ const LeaveApplication = () => {
         <Button
           variant="outlined"
           color="primary"
-          onClick={() => setFormData({})}
+          onClick={() => setFormData({
+            startDate: "",
+            endDate: "",
+            days: "",
+            leaveType: "",
+            userId: user || "",
+            managerEmail: "",
+            description: "",
+          })}
         >
           Clear
         </Button>
