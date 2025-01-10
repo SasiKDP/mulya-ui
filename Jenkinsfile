@@ -10,7 +10,7 @@ agent any
    stages {
     stage('Cloning Git') {
       steps {
-        git([url: 'https://github.com/sandycis1988/Dataquad-Outsourcing-UI.git', branch: 'master', credentialsId: 'sandy-github'])
+        git([url: 'https://github.com/NaveenKumar-dataquad/Dataquad-Outsourcing-UI.git', branch: 'master', credentialsId: 'Naveen-DataQuad'])
  
       }
     }
