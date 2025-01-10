@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginAsync } from "../../redux/features/authSlice";
-import OpenInNewTwoToneIcon from '@mui/icons-material/OpenInNewTwoTone';
+//import OpenInNewTwoToneIcon from '@mui/icons-material/OpenInNewTwoTone';
 import {
   Container,
   Box,
@@ -108,6 +108,7 @@ const SignIn = () => {
             {/* Email Field */}
             <InputField
               margin="normal"
+              placeholder="@dataqinc.com"
               required
               fullWidth
               id="email"

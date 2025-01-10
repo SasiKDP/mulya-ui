@@ -702,7 +702,7 @@ const SignUpForm = () => {
         {/* Toggle Login/Register */}
         <Box sx={{ position: "absolute", top: "8px", right: "8px" }}>
           <Button
-            variant="contained"
+            variant="outlined"
             color="primary"
             onClick={() => setIsSignIn(!isSignIn)}
             sx={{
