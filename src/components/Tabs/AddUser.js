@@ -50,98 +50,97 @@ const RegistrationForm = () => {
   const [touchedFields, setTouchedFields] = useState({});
   const [formError, setFormError] = useState({});
 
-  // Validation regex
-  const personalEmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@dataqinc\.com$/;
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-
   // Validation functions
   const validateUserId = (userId) => {
-    const userIdRegex = /^DQIND\d{2,4}$/;
-    return userIdRegex.test(userId) ? "" : "User ID must start with 'DQIND' followed by 2 to 4 digits";
+    if (!userId) return "User ID is required";
+    return "";
   };
-
-  const validateUserName = (userName) =>
-    userName.length <= 20 ? "" : "User Name must not exceed 20 characters";
-
-  const validateEmail = (email) =>
-    emailRegex.test(email) ? "" : "Please enter a valid email (example@dataqinc.com)";
-
+  const validateUserName = (userName) => {
+    if (!userName) return "User Name is required";
+    return "";
+  };
+  const validateEmail = (email) => {
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    if (!email) return "Email is required";
+    if (!emailRegex.test(email)) return "Invalid email format";
+    return "";
+  };
+  const validatePersonalEmail = (personalemail) => {
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    if (!personalemail) return "Personal Email is required";
+    if (!emailRegex.test(personalemail)) return "Invalid email format";
+    return "";
+  };
   const validatePhoneNumber = (phoneNumber) => {
-    const cleanedPhoneNumber = phoneNumber.replace(/\D/g, "");
-    return cleanedPhoneNumber.length === 10 ? "" : "Phone number must be exactly 10 digits.";
+    if (!phoneNumber) return "Phone Number is required";
+    if (!/^\d{10}$/.test(phoneNumber)) return "Phone Number must be 10 digits";
+    return "";
   };
-
-  const validatePersonalEmail = (personalemail) =>
-    personalEmailRegex.test(personalemail) ? "" : "Please enter a valid personal email like example@gmail.com";
-
-  const validateGender = (gender) => (gender ? "" : "Please select a gender");
-
+  const validateGender = (gender) => {
+    if (!gender) return "Gender is required";
+    return "";
+  };
   const validateDOB = (dob) => {
-    if (!dob) return "Date of birth is required";
-    let today = new Date();
-    let birthDate = new Date(dob);
-    if (birthDate > today) return "Date of birth cannot be in the future";
+    if (!dob) return "Date of Birth is required";
     return "";
   };
-
   const validateJoiningDate = (joiningDate, dob) => {
-    if (!joiningDate) return "Joining date is required";
-    const birthDate = new Date(dob);
-    const joinDate = new Date(joiningDate);
-    const currentDate = new Date();
-
-    if (joinDate <= birthDate) {
-      return "Joining date must be after date of birth";
-    }
-
-    const oneMonthBefore = new Date();
-    oneMonthBefore.setMonth(currentDate.getMonth() - 1);
-    const oneMonthAfter = new Date();
-    oneMonthAfter.setMonth(currentDate.getMonth() + 1);
-
-    if (joinDate < oneMonthBefore || joinDate > oneMonthAfter) {
-      return "Joining date must be within one month before or after today's date";
-    }
+    if (!joiningDate) return "Joining Date is required";
+    if (joiningDate < dob) return "Joining Date cannot be before Date of Birth";
     return "";
   };
-
-  const validatePassword = (password) =>
-    passwordRegex.test(password) ? "" : "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character";
-
-  const validateConfirmPassword = (confirmPassword) =>
-    confirmPassword === formData.password ? "" : "Passwords do not match";
-
-  const validateField = (name, value) => {
-    switch (name) {
-      case "userId": return validateUserId(value);
-      case "userName": return validateUserName(value);
-      case "email": return validateEmail(value);
-      case "personalemail": return validatePersonalEmail(value);
-      case "phoneNumber": return validatePhoneNumber(value);
-      case "gender": return validateGender(value);
-      case "dob": return validateDOB(value);
-      case "joiningDate": return validateJoiningDate(value, formData.dob);
-      case "password": return validatePassword(value);
-      case "confirmPassword": return validateConfirmPassword(value);
-      default: return "";
-    }
+  const validatePassword = (password) => {
+    if (!password) return "Password is required";
+    return "";
   };
-
-  useEffect(() => {
-    if (status === "failed" && error) {
-      const apiErrors = {};
-      if (error.message === "userId already exists") {
-        apiErrors.userId = "User ID already exists";
-      }
-      setFormError(apiErrors);
-    }
-  }, [status, error]);
+  const validateConfirmPassword = (confirmPassword) => {
+    if (confirmPassword !== formData.password)
+      return "Passwords do not match";
+    return "";
+  };
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
     setTouchedFields((prev) => ({ ...prev, [name]: true }));
-    setFormError((prev) => ({ ...prev, [name]: validateField(name, value) }));
+  
+    // Call the corresponding validation function directly
+    let errorMessage = "";
+    switch (name) {
+      case "userId":
+        errorMessage = validateUserId(value);
+        break;
+      case "userName":
+        errorMessage = validateUserName(value);
+        break;
+      case "email":
+        errorMessage = validateEmail(value);
+        break;
+      case "personalemail":
+        errorMessage = validatePersonalEmail(value);
+        break;
+      case "phoneNumber":
+        errorMessage = validatePhoneNumber(value);
+        break;
+      case "gender":
+        errorMessage = validateGender(value);
+        break;
+      case "dob":
+        errorMessage = validateDOB(value);
+        break;
+      case "joiningDate":
+        errorMessage = validateJoiningDate(value, formData.dob);
+        break;
+      case "password":
+        errorMessage = validatePassword(value);
+        break;
+      case "confirmPassword":
+        errorMessage = validateConfirmPassword(value);
+        break;
+      default:
+        break;
+    }
+  
+    setFormError((prev) => ({ ...prev, [name]: errorMessage }));
   };
 
   const handleChange = (e) => {
@@ -205,12 +204,13 @@ const RegistrationForm = () => {
     <Box
       sx={{
         width: "90%",
-        maxWidth: { xs: 320, sm: 400, md: 500 },
-        p: { xs: 2, sm: 3 },
+        maxWidth: { xs: 320, sm: 600, md: 900 , lg:1100 },
+        p: 3,
         boxShadow: 3,
         borderRadius: 2,
         backgroundColor: "white",
         height: "auto",
+        margin: "auto", // Center the form horizontally
       }}
     >
       {showAlert && response && (
@@ -234,21 +234,21 @@ const RegistrationForm = () => {
         variant="h4"
         component="h1"
         gutterBottom
-        align="left"
+        align="start" // Center the title
         sx={{
           color: theme.palette.text.primary,
-          fontSize: { xs: "1rem", sm: "1.5rem", md: "2rem" },
+          fontSize: { xs: "1.25rem", sm: "1.5rem", md: "2rem" },
           backgroundColor: "rgba(232, 245, 233)",
-          padding: "0.5rem",
+          padding: "0.6rem",
           borderRadius: 2,
         }}
       >
-        Registration
+        Add New Employee
       </Typography>
 
       <form onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+        <Grid container spacing={4}> {/* Increased spacing for better form layout */}
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Employee ID"
               name="userId"
@@ -256,12 +256,13 @@ const RegistrationForm = () => {
               onChange={handleChange}
               onBlur={handleBlur}
               fullWidth
+              variant="filled"
               error={!!formError.userId}
               helperText={formError.userId}
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Employee Name"
               name="userName"
@@ -269,16 +270,18 @@ const RegistrationForm = () => {
               onChange={handleChange}
               onBlur={handleBlur}
               fullWidth
+              variant="filled"
               error={!!formError.userName}
               helperText={formError.userName}
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Company Email"
               name="email"
               type="email"
+              variant="filled"
               value={formData.email}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -288,11 +291,12 @@ const RegistrationForm = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Personal Email"
               name="personalemail"
               type="email"
+              variant="filled"
               value={formData.personalemail}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -302,11 +306,12 @@ const RegistrationForm = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Phone Number"
               name="phoneNumber"
               type="number"
+              variant="filled"
               value={formData.phoneNumber}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -316,46 +321,12 @@ const RegistrationForm = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
-            <TextField
-              label="Designation"
-              name="designation"
-              value={formData.designation}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              fullWidth
-              error={!!formError.designation}
-              helperText={formError.designation}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={3}>
-            <FormControl fullWidth>
-              <InputLabel>Gender</InputLabel>
-              <Select
-                value={formData.gender}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                label="Gender"
-                name="gender"
-                error={!!formError.gender}
-              >
-                <MenuItem value="Male">Male</MenuItem>
-                <MenuItem value="Female">Female</MenuItem>
-              </Select>
-              {formError.gender && (
-                <Typography variant="caption" color="error">
-                  {formError.gender}
-                </Typography>
-              )}
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Date of Birth"
               name="dob"
               type="date"
+              variant="filled"
               value={formData.dob}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -366,11 +337,31 @@ const RegistrationForm = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl fullWidth error={!!formError.gender}>
+              <InputLabel>Gender</InputLabel>
+              <Select
+                label="Gender"
+                name="gender"
+                variant="filled"
+                value={formData.gender}
+                onChange={handleChange}
+                onBlur={handleBlur}
+              >
+                <MenuItem value="Male">Male</MenuItem>
+                <MenuItem value="Female">Female</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </Select>
+              {formError.gender && <Typography color="error">{formError.gender}</Typography>}
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Joining Date"
               name="joiningDate"
               type="date"
+              variant="filled"
               value={formData.joiningDate}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -378,23 +369,14 @@ const RegistrationForm = () => {
               error={!!formError.joiningDate}
               helperText={formError.joiningDate}
               InputLabelProps={{ shrink: true }}
-              InputProps={{
-                inputProps: {
-                  min: new Date(new Date().setMonth(new Date().getMonth() - 1))
-                    .toISOString()
-                    .split("T")[0],
-                  max: new Date(new Date().setMonth(new Date().getMonth() + 1))
-                    .toISOString()
-                    .split("T")[0],
-                },
-              }}
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Password"
               name="password"
+              variant="filled"
               type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleChange}
@@ -405,7 +387,7 @@ const RegistrationForm = () => {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={handleClickShowPassword}>
+                    <IconButton onClick={handleClickShowPassword} edge="end">
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -414,7 +396,7 @@ const RegistrationForm = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4} lg={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               label="Confirm Password"
               name="confirmPassword"
@@ -422,13 +404,14 @@ const RegistrationForm = () => {
               value={formData.confirmPassword}
               onChange={handleChange}
               onBlur={handleBlur}
+              variant="filled"
               fullWidth
               error={!!formError.confirmPassword}
               helperText={formError.confirmPassword}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={handleClickShowConfirmPassword}>
+                    <IconButton onClick={handleClickShowConfirmPassword} edge="end">
                       {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -438,29 +421,25 @@ const RegistrationForm = () => {
           </Grid>
         </Grid>
 
-        <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
-          
+        <Box sx={{ textAlign: "end", mt: 3 }}>
           <Button
-            type="button"
+            variant="contained"
+            type="submit"
+            sx={{ width: "200px", marginRight: "20px" }}
+            disabled={!isFormValid}
+          >
+            Submit
+          </Button>
+          <Button
             variant="outlined"
+            type="button"
             onClick={handleClear}
-            color="primary"
-            sx={{width:'15%'}}
+            sx={{ width: "200px" }}
           >
             Clear
           </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={!isFormValid}
-            sx={{width:'15%'}}
-          >
-            Register
-          </Button>
         </Box>
       </form>
-      <ToastContainer />
     </Box>
   );
 };

@@ -11,7 +11,7 @@ import CloseIcon from "@mui/icons-material/Close";
 
 const CustomDialog = ({ open, onClose, title, content }) => (
   <Dialog open={open} onClose={onClose}>
-    <DialogTitle sx={{ paddingRight: "16px", position: "relative" }}>
+    <DialogTitle sx={{ paddingRight: "16px",paddingTop:'5px', position: "relative" }}>
       <Typography
         variant="h5"
         align="start"
