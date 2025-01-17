@@ -30,9 +30,13 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 import AddIcon from "@mui/icons-material/Add";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import GroupIcon from '@mui/icons-material/Group';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
 // Assets
 import logo from "../assets/logo-01.png";
+import AdminDashboard from "../components/AdminDashboard";
+import AttendanceTracker from "../components/AttendanceTracker";
 
 // Tabs configuration based on roles
 const TABS_BY_ROLE = {
@@ -56,6 +60,12 @@ const TABS_BY_ROLE = {
       component: <Interview />,
       icon: <GroupIcon />,
     },
+    {
+      label: "Timesheet",
+      value: "TIMESHEET",
+      component: <AttendanceTracker />,
+      icon: <AccessTimeIcon />,
+    },
   ],
   ADMIN: [
     {
@@ -64,6 +74,7 @@ const TABS_BY_ROLE = {
       component: <Planned />,
       icon: <HomeIcon />,
     },
+
     {
       label: "Bench",
       value: "BENCH",
@@ -76,8 +87,20 @@ const TABS_BY_ROLE = {
       component: <AddUser />,
       icon: <AddIcon />,
     },
+    {
+      label: "Timesheet",
+      value: "TIMESHEET",
+      component: <AttendanceTracker />,
+      icon: <AccessTimeIcon />,
+    },
   ],
   SUPERADMIN: [
+    {
+      label: "Dashboard",
+      value: "DASHBOARD",
+      component: <AdminDashboard />,
+      icon: <DashboardIcon />,
+    },
     {
       label: "Requirements",
       value: "REQUIREMENTS",
@@ -107,6 +130,12 @@ const TABS_BY_ROLE = {
       value: "ADDUSER",
       component: <AddUser />,
       icon: <AddIcon />,
+    },
+    {
+      label: "Timesheet",
+      value: "TIMESHEET",
+      component: <AttendanceTracker />,
+      icon: <AccessTimeIcon />,
     },
    
   ],

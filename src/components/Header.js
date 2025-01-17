@@ -19,6 +19,8 @@ import { useNavigate } from "react-router-dom";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LeaveApplication from "./LeaveApplication"; // Assuming LeaveApplication component exists
 import CustomDialog from "./MuiComponents/CustomDialog";
+import Profile from "./Profile";
+// import AttendanceTracker from "./AttendanceTracker";
 
 const Header = ({ userId, logInTimeStamp, orglogo }) => {
   const dispatch = useDispatch();
@@ -229,9 +231,9 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
                 }}
               >
                 <MenuItem onClick={handleOpenProfileDialog}>Profile</MenuItem>
-                <MenuItem onClick={handleOpenTimesheetDialog}>
+                {/* <MenuItem onClick={handleOpenTimesheetDialog}>
                   Timesheet
-                </MenuItem>
+                </MenuItem> */}
                 <MenuItem onClick={handleOpenLeaveDialog}>Apply Leave</MenuItem>
                 <MenuItem onClick={onLogout}>Logout</MenuItem>
               </Menu>
@@ -244,20 +246,23 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
       <CustomDialog
         open={openProfileDialog}
         onClose={handleCloseProfileDialog}
-        title="Profile"
+        content={<Profile />}
+        title="User Profile"
       />
 
       {/* Dialog for Timesheet */}
-      <CustomDialog
+      {/* <CustomDialog
         open={openTimesheetDialog}
         onClose={handleCloseTimesheetDialog}
-      />
+        content={<AttendanceTracker />}
+      /> */}
 
       {/* Dialog for Leave Application */}
       <CustomDialog
         open={openLeaveDialog}
         onClose={handleCloseLeaveDialog}
         content={<LeaveApplication />}
+        title="Apply Leave"
       />
     </>
   );

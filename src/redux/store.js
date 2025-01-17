@@ -9,6 +9,7 @@ import candidateSubmissionReducer from './features/candidateSubmissionSlice';
 import interviewFormReducer from '../redux/features/interviewSheduleSlice'
 import employeesReducer from "../redux/features/employeesSlice";
 import dialogReducer from './features/dialogSlice'
+import attendanceReducer from './features/attendanceSlice';
 
 
 export const store = configureStore({
@@ -20,7 +21,8 @@ export const store = configureStore({
     employees: employeesReducer,
     jobForm: jobFormReducer,
     candidateSubmission: candidateSubmissionReducer,
-    interviewForm: interviewFormReducer
+    interviewForm: interviewFormReducer,
+    attendance: attendanceReducer,
 
   },
 });

@@ -115,9 +115,7 @@ const LeaveApplication = () => {
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
-      <Typography variant="h5" color="primary" gutterBottom>
-        Apply Leave
-      </Typography>
+      
       {formError && <Alert severity="error">{formError}</Alert>}
       {successMessage && <Alert severity="success">{successMessage}</Alert>}
       {fetchStatus === "failed" && fetchError && (
