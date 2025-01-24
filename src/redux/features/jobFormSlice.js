@@ -2,12 +2,14 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import BASE_URL from "../apiConfig";
 
+const url = 'http://35.188.150.92';
+
 // Async thunk for posting job requirements
 export const postJobRequirement = createAsyncThunk(
   "jobForm/postJobRequirement",
   async (formData, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${BASE_URL}/requirements/assignJob`, formData, {
+      const response = await axios.post(`${url}/requirements/assignJob`, formData, {
         headers: {
           "Content-Type": "application/json; charset=UTF-8",
         },

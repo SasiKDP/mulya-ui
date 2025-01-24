@@ -37,7 +37,7 @@ const Requirements = () => {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          `${BASE_URL}/requirements/getAssignments` // Replace userId as necessary
+          `http://35.188.150.92/requirements/getAssignments` // Replace userId as necessary
         );
         setRequirementsList(response.data);
       } catch (err) {
@@ -79,7 +79,7 @@ const Requirements = () => {
           fontWeight: "bold",
           color: "#3f51b5",
           marginBottom: 2,
-          textAlign: "center",
+          textAlign: "start",
         }}
       >
         Requirements List

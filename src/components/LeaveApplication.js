@@ -88,7 +88,7 @@ const LeaveApplication = () => {
         `${BASE_URL}/users/save`,
         leaveApplicationData
       );
-      if (response.status === 201) {
+      if (response.status === 200) {
         const successData = response.data;
 
         setSuccessMessage(
@@ -151,7 +151,7 @@ const LeaveApplication = () => {
             ) : managersList.length > 0 ? (
               managersList.map((manager) => (
                 <MenuItem key={manager.employeeId} value={manager.email}>
-                  {manager.employeeName}
+                  {manager.email}
                 </MenuItem>
               ))
             ) : (
