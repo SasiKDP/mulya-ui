@@ -9,6 +9,10 @@ import {
   Paper,
   TablePagination,
 } from "@mui/material";
+import FirstPageRoundedIcon from "@mui/icons-material/FirstPageRounded";
+import LastPageRoundedIcon from "@mui/icons-material/LastPageRounded";
+import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 
 const DataTable = ({ data, columns, pageLimit = 5 }) => {
   const [page, setPage] = useState(0);
@@ -66,6 +70,22 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
         onPageChange={handleChangePage}
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[5, 10, 25, { label: "All", value: -1 }]}
+        slotProps={{
+          select: {
+            "aria-label": "Rows per page",
+          },
+          actions: {
+            showFirstButton: true,
+            showLastButton: true,
+            slots: {
+              firstPageIcon: FirstPageRoundedIcon,
+              lastPageIcon: LastPageRoundedIcon,
+              nextPageIcon: ChevronRightRoundedIcon,
+              backPageIcon: ChevronLeftRoundedIcon,
+            },
+          },
+        }}
       />
     </TableContainer>
   );

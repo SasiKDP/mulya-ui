@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ReusableTable from "../ReusableTable";
 import { Link } from "react-router-dom";
-import { useSelector } from 'react-redux';
+import { useSelector } from "react-redux";
 import {
   CircularProgress,
   Box,
@@ -13,11 +13,12 @@ import {
   Typography,
   Button,
   DialogActions,
+  Grid,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import CandidateSubmissionForm from "../CandidateSubmissionFrom";
 import BASE_URL from "../../redux/apiConfig";
-import UploadIcon from '@mui/icons-material/Upload';
+import UploadIcon from "@mui/icons-material/Upload";
 import CustomDialog from "../MuiComponents/CustomDialog";
 
 const Assigned = () => {
@@ -34,7 +35,7 @@ const Assigned = () => {
   const [fetchStatus, setFetchStatus] = useState("idle");
   const [fetchError, setFetchError] = useState(null);
 
-  const { user } = useSelector((state) => state.auth);  // Use selector to get user from Redux state
+  const { user } = useSelector((state) => state.auth); // Use selector to get user from Redux state
   const userId = user;
 
   // Fetch employees on component mount
@@ -51,13 +52,12 @@ const Assigned = () => {
         console.error("Failed to fetch employees:", error.message);
       }
     };
-  
+
     // Only fetch employees on initial load
     if (fetchStatus === "idle") {
       fetchEmployees();
     }
   }, []);
-  
 
   // Function to find the employee email based on userId
   const getEmployeeEmail = (userId, employeesList) => {
@@ -74,9 +74,11 @@ const Assigned = () => {
     const fetchUserSpecificData = async () => {
       try {
         const response = await axios.get(
-          `${BASE_URL}/requirements/recruiter/${userId}`
+          `http://35.188.150.92/requirements/recruiter/${userId}`
         );
         const userData = response.data || [];
+        console.log(userData);
+
         setTotalCount(response.data.totalCount || userData.length || 0);
 
         // Manually add the "submit" column to each row
@@ -209,16 +211,45 @@ const Assigned = () => {
 
   return (
     <>
-      <ReusableTable
-        data={data}
-        headers={headers}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        totalCount={totalCount}
-        onPageChange={handlePageChange}
-        onRowsPerPageChange={handleRowsPerPageChange}
-        onCellRender={onCellRender}
-      />
+      <Grid item xs={10} md={8}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "start",
+            //width: { xs: "100%", sm: "90%", md: "165vh" }, // Responsive width
+            width: "calc(165vh - 5vh)", // Dynamically calculated maxWidth
+            mb: 2,
+            px: { xs: 1, sm: 2 },
+          }}
+        >
+          <Typography
+            variant="h5"
+            align="start"
+            color="primary"
+            gutterBottom
+            sx={{
+              backgroundColor: "rgba(232, 245, 233)",
+              padding: 1,
+              borderRadius: 1,
+              width: "165vh", // Ensures the Typography matches the container width
+              textAlign: "start", // Optional: Center-align the text
+            }}
+          >
+            Assigned Requirements
+          </Typography>
+          <ReusableTable
+            data={data}
+            headers={headers}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            totalCount={totalCount}
+            onPageChange={handlePageChange}
+            onRowsPerPageChange={handleRowsPerPageChange}
+            onCellRender={onCellRender}
+          />
+        </Box>
+      </Grid>
 
       {/* Dialog for Submit Candidate */}
       <Dialog

@@ -1,12 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
+import { LoginOutlined, LogoutOutlined } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  fetchAttendanceRecords,
-  postAttendanceRecord,
-  updateAttendanceRecord,
-  setCheckIn,
-  setCheckOut
-} from '../redux/features/attendanceSlice';
 import {
   Box,
   Paper,
@@ -17,146 +11,48 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  TextField,
   Button,
-  IconButton,
   Typography,
-  Select,
-  MenuItem,
-  Grid,
-  ToggleButton,
-  ToggleButtonGroup,
+  Alert,
   CircularProgress,
-} from "@mui/material";
+  Grid,
+  Container
+} from '@mui/material';
 import {
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  CalendarToday,
-  CalendarViewDay,
-  CalendarViewWeek,
-  CalendarMonth,
-  LoginOutlined,
-  LogoutOutlined,
-} from "@mui/icons-material";
+  fetchAttendanceRecords,
+  postAttendanceRecord,
+  updateAttendanceRecord,
+  setCheckIn,
+  setCheckOut,
+  clearError
+} from '../redux/features/attendanceSlice';
 
 const AttendanceTracker = () => {
   const dispatch = useDispatch();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  
   const {
     records,
-    totalRecords,
     loading,
     error,
     currentSession: { isCheckedIn, checkInTime, checkOutTime }
   } = useSelector((state) => state.attendance);
 
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [view, setView] = useState("month");
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Update current time every second
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Fetch attendance records
-  useEffect(() => {
-    dispatch(fetchAttendanceRecords({ page, rowsPerPage, searchQuery }));
-  }, [dispatch, page, rowsPerPage, searchQuery]);
-
-  const handleCheckIn = async () => {
-    const now = new Date();
-    const checkInData = {
-      
-      date: now.toLocaleDateString("en-GB"),
-      status: "Present",
-      clockIn: now.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      }),
-      clockOut: "-",
-      late: calculateLateTime(now),
-      earlyLeaving: "-",
-      overtime: "-",
-    };
-
-    try {
-      await dispatch(postAttendanceRecord(checkInData)).unwrap();
-      dispatch(setCheckIn(now.toISOString()));
-    } catch (err) {
-      console.error('Failed to check in:', err);
-    }
-  };
-
-  const handleCheckOut = async () => {
-    const now = new Date();
-    const checkOutData = {
-      clockOut: now.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "numeric",
-        hour12: true,
-      }),
-      earlyLeaving: calculateEarlyLeaving(now),
-      overtime: calculateOvertime(new Date(checkInTime), now),
-    };
-
-    try {
-      await dispatch(updateAttendanceRecord({
-        id: records[0].id,
-        ...records[0],
-        ...checkOutData
-      })).unwrap();
-      dispatch(setCheckOut(now.toISOString()));
-    } catch (err) {
-      console.error('Failed to check out:', err);
-    }
-  };
-
-  const calculateLateTime = (checkInTime) => {
-    const startTime = new Date(checkInTime);
-    startTime.setHours(9, 0, 0);
-    const diff = checkInTime - startTime;
-    return diff > 0 ? formatTimeDifference(diff) : "00:00:00";
-  };
-
-  const calculateEarlyLeaving = (checkOutTime) => {
-    const endTime = new Date(checkOutTime);
-    endTime.setHours(18, 0, 0);
-    const diff = checkOutTime - endTime;
-    return formatTimeDifference(diff);
-  };
-
-  const calculateOvertime = (start, end) => {
-    const endTime = new Date(start);
-    endTime.setHours(18, 0, 0);
-    const diff = end - endTime;
-    return diff > 0 ? formatTimeDifference(diff) : "00:00:00";
-  };
-
-  const formatTimeDifference = (diff) => {
-    const hours = Math.floor(diff / 3600000);
-    const minutes = Math.floor((diff % 3600000) / 60000);
-    const seconds = Math.floor((diff % 60000) / 1000);
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-      2,
-      "0"
-    )}:${String(seconds).padStart(2, "0")}`;
-  };
-
-  const getDaysInMonth = (date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
+  const tableHeaders = [
+    { id: 'id', label: 'ID', align: 'left' },
+    { id: 'employeeId', label: 'Employee ID', align: 'left' },
+    { id: 'date', label: 'Date', align: 'left' },
+    { id: 'status', label: 'Status', align: 'left' },
+    { id: 'clockIn', label: 'Clock In', align: 'left' },
+    { id: 'clockOut', label: 'Clock Out', align: 'left' },
+    { id: 'late', label: 'Late', align: 'left', color: 'error.main' },
+    { id: 'earlyLeaving', label: 'Early Leaving', align: 'left', color: 'warning.main' },
+    { id: 'overtime', label: 'Overtime', align: 'left', color: 'success.main' }
+  ];
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -167,296 +63,285 @@ const AttendanceTracker = () => {
     setPage(0);
   };
 
-  const handleViewChange = (event, newView) => {
-    if (newView !== null) {
-      setView(newView);
+  const getStartOfWeek = (date) => {
+    const startOfWeek = new Date(date);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day;
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+    return startOfWeek;
+  };
+
+  const getWeekDates = (date) => {
+    const startOfWeek = getStartOfWeek(date);
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + index);
+      return day;
+    });
+  };
+
+  const weekDates = getWeekDates(currentDate);
+
+  useEffect(() => {
+    dispatch(fetchAttendanceRecords());
+
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [dispatch]);
+
+  const handleCheckIn = async () => {
+    try {
+      await dispatch(postAttendanceRecord()).unwrap();
+      dispatch(setCheckIn(new Date().toISOString()));
+      dispatch(fetchAttendanceRecords());
+    } catch (err) {
+      console.error('Failed to check in:', err);
     }
   };
 
-  const handleDateNavigation = (direction) => {
-    const newDate = new Date(currentDate);
-    if (direction === "prev") {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else if (direction === "next") {
-      newDate.setMonth(newDate.getMonth() + 1);
+  const handleCheckOut = async () => {
+    try {
+      await dispatch(updateAttendanceRecord()).unwrap();
+      dispatch(setCheckOut(new Date().toISOString()));
+      dispatch(fetchAttendanceRecords());
+    } catch (err) {
+      console.error('Failed to check out:', err);
     }
-    setCurrentDate(newDate);
   };
+
+  const currentRecords = records.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <Box sx={{ 
-      maxWidth: "90%", 
-      margin: "auto", 
-      p: 3, 
-      minHeight: "80vh", 
-      overflowY: "auto",
-      overflowx: "auto",
-        
-      maxHeight: "calc(100vh - 100px)"  // Adjust this value as needed
-    }}>
-      
+    <Box 
+      sx={{ 
+        height: 'calc(100vh - 17vh)',
+        overflow: 'auto',
+        px: 2,
+        py: 1
+      }}
+    >
+      <Container 
+        maxWidth="xl" 
+        sx={{ 
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2
+        }}
+      >
+        {error && (
+          <Alert 
+            severity="error" 
+            onClose={() => dispatch(clearError())} 
+            sx={{ width: '100%' }}
+          >
+            {error}
+          </Alert>
+        )}
 
-      <Typography
-              component="h1"
-              variant="h5"
-              align="left" // Align text to start (left-aligned)
-              sx={{
-                mb: 2,
-      
-                backgroundColor: "rgba(232, 245, 233)", // Add background color
-                padding: "0.5rem",
-                borderRadius: 2,
-                
-              }}
-            >
-              Timesheet
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 3, 
+            width: '100%',
+            flex: 'none'
+          }}
+        >
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            flexWrap: { xs: 'wrap', md: 'nowrap' },
+            gap: 2
+          }}>
+            <Typography variant="h5" color="text.primary" fontWeight="bold">
+              {currentTime.toLocaleTimeString()}
+            </Typography>
+            <Typography variant="h6" color="text.primary" fontWeight="bold">
+              Office Hours: 9:00 AM - 6:00 PM
             </Typography>
 
-      {/* Check In/Out Section */}
-      <Paper elevation={3} sx={{ mb: 4, p: 4, borderRadius: 2, boxShadow: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
-          <Typography variant="h5" color="text.primary" fontWeight="bold">
-            {currentTime.toLocaleTimeString()}
-          </Typography>
-
-          <Typography variant="body1" color="text.primary">
-            {`My Office Timings : 9 AM - 6 PM`}
-          </Typography>
-
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<LoginOutlined />}
-              onClick={handleCheckIn}
-              disabled={isCheckedIn}
-              sx={{
-                borderRadius: 2,
-                paddingX: 3,
-                fontWeight: "bold",
-                textTransform: "none",
-              }}
-            >
-              Check In
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<LogoutOutlined />}
-              onClick={handleCheckOut}
-              disabled={!isCheckedIn}
-              sx={{
-                borderRadius: 2,
-                paddingX: 3,
-                fontWeight: "bold",
-                textTransform: "none",
-              }}
-            >
-              Check Out
-            </Button>
-          </Box>
-        </Box>
-
-        {checkInTime && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Checked in at: {new Date(checkInTime).toLocaleTimeString()}
-          </Typography>
-        )}
-        {checkOutTime && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Last check out: {new Date(checkOutTime).toLocaleTimeString()}
-          </Typography>
-        )}
-      </Paper>
-
-      {/* Calendar Section */}
-      <Paper elevation={2} sx={{ mb: 4, p: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            mb: 3,
-          }}
-        >
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <IconButton
-              size="small"
-              onClick={() => handleDateNavigation("prev")}
-            >
-              <ChevronLeft />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => handleDateNavigation("next")}
-            >
-              <ChevronRight />
-            </IconButton>
-            <Button
-              variant="outlined"
-              startIcon={<CalendarToday />}
-              onClick={() => setCurrentDate(new Date())}
-            >
-              Today
-            </Button>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2,
+              width: { xs: '100%', md: 'auto' }
+            }}>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<LoginOutlined />}
+                onClick={handleCheckIn}
+                disabled={isCheckedIn || loading}
+                fullWidth={true}
+                sx={{ minWidth: { xs: '45%', md: 150 } }}
+              >
+                Check In
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<LogoutOutlined />}
+                onClick={handleCheckOut}
+                disabled={!isCheckedIn || loading}
+                fullWidth={true}
+                sx={{ minWidth: { xs: '45%', md: 150 } }}
+              >
+                Check Out
+              </Button>
+            </Box>
           </Box>
 
-          <Typography variant="h6">
-            {currentDate.toLocaleString("default", {
-              month: "long",
-              year: "numeric",
-            })}
-          </Typography>
+          {checkInTime && (
+            <Typography variant="body2" color="text.secondary">
+              Checked in at: {new Date(checkInTime).toLocaleTimeString()}
+            </Typography>
+          )}
+          {checkOutTime && (
+            <Typography variant="body2" color="text.secondary">
+              Checked out at: {new Date(checkOutTime).toLocaleTimeString()}
+            </Typography>
+          )}
+        </Paper>
 
-          <ToggleButtonGroup
-            value={view}
-            exclusive
-            onChange={handleViewChange}
-            aria-label="view selector"
-          >
-            <ToggleButton value="month" aria-label="month view">
-              <CalendarMonth />
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
-
-        <Grid container spacing={1}>
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-            <Grid item xs={12 / 7} key={day}>
-              <Typography align="center" sx={{ fontWeight: 500, py: 1 }}>
-                {day}
-              </Typography>
-            </Grid>
-          ))}
-
-          {Array(getFirstDayOfMonth(currentDate))
-            .fill(null)
-            .map((_, index) => (
-              <Grid item xs={12 / 7} key={`empty-${index}`}>
-                <Paper
-                  elevation={0}
-                  sx={{ height: 45, width: 45, bgcolor: "grey.50" }}
-                />
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 2, 
+            width: '100%',
+            flex: 'none',
+            overflow: 'auto'
+          }}
+        >
+          <Grid container spacing={2} justifyContent="center">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, index) => (
+              <Grid item xs={12/7} key={day} >
+                <Typography align="center" sx={{ fontWeight: 500, py: 1 }}>
+                  {day}
+                </Typography>
               </Grid>
             ))}
 
-          {Array(getDaysInMonth(currentDate))
-            .fill(null)
-            .map((_, index) => {
-              const day = index + 1;
-              const isToday =
-                new Date().getDate() === day &&
-                new Date().getMonth() === currentDate.getMonth() &&
-                new Date().getFullYear() === currentDate.getFullYear();
-
+            {weekDates.map((date, index) => {
+              const isToday = new Date().toLocaleDateString() === date.toLocaleDateString();
               return (
-                <Grid item xs={12 / 7} key={day}>
+                <Grid item xs={12/7} key={index} >
                   <Paper
                     elevation={0}
                     sx={{
                       height: 60,
-                      width: 60,
-                      bgcolor: isToday ? "primary.light" : "grey.50",
+                      width: '80%',
+                      bgcolor: isToday ? 'primary.light' : 'grey.50',
                       p: 1,
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center'
                     }}
                   >
-                    <Typography>{day}</Typography>
+                    <Typography align="center">{date.getDate()}</Typography>
                   </Paper>
                 </Grid>
               );
             })}
-        </Grid>
-      </Paper>
+          </Grid>
+        </Paper>
 
-      {/* Attendance Table Section */}
-      <Paper elevation={2} sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-          <Select
-            value={rowsPerPage}
-            onChange={handleChangeRowsPerPage}
-            size="small"
-          >
-            <MenuItem value={5}>5 entries</MenuItem>
-            <MenuItem value={10}>10 entries</MenuItem>
-            <MenuItem value={15}>15 entries</MenuItem>
-            <MenuItem value={25}>25 entries</MenuItem>
-            <MenuItem value={50}>50 entries</MenuItem>
-          </Select>
-
-          <TextField
-            size="small"
-            placeholder="Search by date ..."
-            InputProps={{
-              startAdornment: (
-                <Search sx={{ color: "text.secondary", mr: 1 }} />
-              ),
-            }}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </Box>
-
-        <TableContainer sx={{ maxHeight: 400, overflowY: 'auto' }}>
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            width: '100%',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '400px'
+          }}
+        >
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
               <CircularProgress />
             </Box>
-          ) : error ? (
-            <Typography color="error" sx={{ p: 3 }}>
-              Error loading attendance records: {error}
-            </Typography>
           ) : (
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>DATE</TableCell>
-                  <TableCell>STATUS</TableCell>
-                  <TableCell>CLOCK IN</TableCell>
-                  <TableCell>CLOCK OUT</TableCell>
-                  <TableCell>LATE</TableCell>
-                  <TableCell>EARLY LEAVING</TableCell>
-                  <TableCell>OVERTIME</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {records.map((row, index) => (
-                  <TableRow key={row.id || index} hover>
-                    <TableCell>{row.date}</TableCell>
-                    <TableCell>{row.status}</TableCell>
-                    <TableCell>{row.clockIn}</TableCell>
-                    <TableCell>{row.clockOut}</TableCell>
-                    <TableCell sx={{ color: "error.main" }}>
-                      {row.late}
-                    </TableCell>
-                    <TableCell sx={{ color: "warning.main" }}>
-                      {row.earlyLeaving}
-                    </TableCell>
-                    <TableCell sx={{ color: "success.main" }}>
-                      {row.overtime}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <TableContainer 
+                sx={{ 
+                  flex: 1,
+                  overflow: 'auto',
+                  '&::-webkit-scrollbar': {
+                    width: '8px',
+                    height: '8px',
+                  },
+                  '&::-webkit-scrollbar-track': {
+                    backgroundColor: 'rgba(0,0,0,0.1)',
+                    borderRadius: '4px',
+                  },
+                  '&::-webkit-scrollbar-thumb': {
+                    backgroundColor: 'rgba(0,0,0,0.2)',
+                    borderRadius: '4px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0,0,0,0.3)',
+                    },
+                  },
+                }}
+              >
+                <Table stickyHeader sx={{ minWidth: 1200 }}>
+                  <TableHead>
+                    <TableRow>
+                      {tableHeaders.map((header) => (
+                        <TableCell
+                          key={header.id}
+                          align={header.align}
+                          sx={{ 
+                            fontWeight: 'bold',
+                            backgroundColor: 'background.paper',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {header.label}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {currentRecords.map((record) => (
+                      <TableRow key={record.id} hover>
+                        {tableHeaders.map((header) => (
+                          <TableCell
+                            key={`${record.id}-${header.id}`}
+                            align={header.align}
+                            sx={{ 
+                              color: header.color,
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {record[header.id]}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TablePagination
+                component="div"
+                count={records.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25, 50]}
+                sx={{ 
+                  borderTop: 1, 
+                  borderColor: 'divider',
+                  flex: 'none'
+                }}
+              />
+            </>
           )}
-        </TableContainer>
-
-        <TablePagination
-          component="div"
-          count={totalRecords}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-      </Paper>
+        </Paper>
+      </Container>
     </Box>
   );
 };

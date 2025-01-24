@@ -1,79 +1,85 @@
-import React, { useState } from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Tabs,
-  Tab,
-  Avatar,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination
-} from "@mui/material";
-import { FileText, Users, Calendar, Clock } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Box, Card, CardContent, Typography, Tabs, Tab, Avatar, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, useTheme, alpha, Chip, CircularProgress } from "@mui/material";
+import { FileText, Users, Calendar, Clock, Building } from "lucide-react";
 
 const AdminDashboard = () => {
   const [tabIndex, setTabIndex] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const theme = useTheme();
 
-  // Your existing data arrays remain the same
-  const requirements = [
-    { id: 1, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 2, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 3, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 4, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 5, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 6, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 7, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 8, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 9, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 10, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 12, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 13, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    { id: 14, position: "Senior React Developer", department: "Engineering", status: "Open", applicants: 12 },
-    
-    // ... rest of your requirements data
-  ];
-  
-  const candidates = [
-    { id: 1, name: "John Doe", position: "Senior React Developer", status: "Shortlisted" },
-    // ... rest of your candidates data
-  ];
-  
-  const interviews = [
-    { id: 1, candidate: "John Doe", position: "Senior React Developer", date: "2025-01-18", time: "10:00 AM", level: "External" },
-    // ... rest of your interviews data
-  ];
-  
-  const leaves = [
-    { id: 1, employee: "Mike Johnson", type: "Sick Leave", from: "2025-01-20", to: "2025-01-21", status: "Pending" },
-    // ... rest of your leaves data
-  ];
-  
-  const attendance = [
-    { id: 1, employee: "Mike Johnson", status: "Present", checkIn: "9:00 AM", checkOut: "6:00 PM" },
-    // ... rest of your attendance data
-  ];
-  
-  const employees = [
-    { id: 1, employeeID: "E001", empName: "Mike Johnson", designation: "Software Engineer", email: "mike.johnson@example.com", phone: "123-456-7890" },
-    // ... rest of your employees data
-  ];
+  // State for different data types
+  const [requirements, setRequirements] = useState([]);
+  const [candidates, setCandidates] = useState([]);
+  const [interviews, setInterviews] = useState([]);
+  const [leaves, setLeaves] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const summaryData = [
-    { icon: <FileText />, label: "Open Requirements", count: requirements.length, color: "#1976D2" },
-    { icon: <Users />, label: "Active Candidates", count: candidates.length, color: "#2E7D32" },
-    { icon: <Calendar />, label: "Today's Interviews", count: interviews.length, color: "#7B1FA2" },
-    { icon: <Clock />, label: "Pending Leaves", count: leaves.filter((leave) => leave.status === "Pending").length, color: "#ED6C02" },
-    { icon: <Users />, label: "Total Employees", count: employees.length, color: "#D91656" },
-  ];
+  // Base API URL
+  const BASE_URL = 'http://192.168.0.246:8085';
+
+  // Function to handle API calls
+  const fetchData = async (endpoint) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${BASE_URL}${endpoint}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      setError(err.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data based on active tab
+  useEffect(() => {
+    const endpoints = {
+      0: '/requirements/all',
+      1: '/candidate/submissions/allsubmittedcandidates',
+      2: '/interviews/all',
+      3: '/leaves/all',
+      4: '/attendance/all',
+      5: '/employees/all'
+    };
+
+    const updateState = (data) => {
+      switch (tabIndex) {
+        case 0:
+          setRequirements(data);
+          break;
+        case 1:
+          setCandidates(data);
+          break;
+        case 2:
+          setInterviews(data);
+          break;
+        case 3:
+          setLeaves(data);
+          break;
+        case 4:
+          setAttendance(data);
+          break;
+        case 5:
+          setEmployees(data);
+          break;
+        default:
+          break;
+      }
+    };
+
+    if (endpoints[tabIndex]) {
+      fetchData(endpoints[tabIndex]).then(updateState);
+    }
+  }, [tabIndex]);
 
   const tabData = [
     {
@@ -83,17 +89,38 @@ const AdminDashboard = () => {
         { id: 'position', label: 'Position' },
         { id: 'department', label: 'Department' },
         { id: 'status', label: 'Status' },
-        { id: 'applicants', label: 'Applicants' },
+        { id: 'applicants', label: 'Applicants' }
       ]
     },
     {
       label: "Candidates",
       data: candidates,
       columns: [
-        { id: 'name', label: 'Name' },
-        { id: 'position', label: 'Position' },
-        { id: 'status', label: 'Status' },
-      ]
+    { "id": "name", "label": "Name" },
+    { "id": "position", "label": "Position" },
+    { "id": "status", "label": "Status" },
+    { "id": "candidateId", "label": "Candidate ID" },
+    { "id": "jobId", "label": "Job ID" },
+    { "id": "userId", "label": "User  ID" },
+    { "id": "fullName", "label": "Full Name" },
+    { "id": "emailId", "label": "Email ID" },
+    { "id": "contactNumber", "label": "Contact Number" },
+    { "id": "currentOrganization", "label": "Current Organization" },
+    { "id": "qualification", "label": "Qualification" },
+    { "id": "totalExperience", "label": "Total Experience (Years)" },
+    { "id": "relevantExperience", "label": "Relevant Experience (Years)" },
+    { "id": "currentCTC", "label": "Current CTC" },
+    { "id": "expectedCTC", "label": "Expected CTC" },
+    { "id": "noticePeriod", "label": "Notice Period" },
+    { "id": "currentLocation", "label": "Current Location" },
+    { "id": "preferredLocation", "label": "Preferred Location" },
+    { "id": "skills", "label": "Skills" },
+    { "id": "communicationSkills", "label": "Communication Skills" },
+    { "id": "requiredTechnologiesRating", "label": "Required Technologies Rating" },
+    { "id": "overallFeedback", "label": "Overall Feedback" },
+    { "id": "userEmail", "label": "User  Email" },
+    { "id": "interviewStatus", "label": "Interview Status" }
+]
     },
     {
       label: "Interviews",
@@ -103,7 +130,7 @@ const AdminDashboard = () => {
         { id: 'position', label: 'Position' },
         { id: 'date', label: 'Date' },
         { id: 'time', label: 'Time' },
-        { id: 'level', label: 'Level' },
+        { id: 'level', label: 'Level' }
       ]
     },
     {
@@ -114,7 +141,7 @@ const AdminDashboard = () => {
         { id: 'type', label: 'Type' },
         { id: 'from', label: 'From' },
         { id: 'to', label: 'To' },
-        { id: 'status', label: 'Status' },
+        { id: 'status', label: 'Status' }
       ]
     },
     {
@@ -124,7 +151,7 @@ const AdminDashboard = () => {
         { id: 'employee', label: 'Employee' },
         { id: 'status', label: 'Status' },
         { id: 'checkIn', label: 'Check In' },
-        { id: 'checkOut', label: 'Check Out' },
+        { id: 'checkOut', label: 'Check Out' }
       ]
     },
     {
@@ -135,9 +162,72 @@ const AdminDashboard = () => {
         { id: 'empName', label: 'Name' },
         { id: 'designation', label: 'Designation' },
         { id: 'email', label: 'Email' },
+        { id: 'phone', label: 'Phone' }
       ]
     }
   ];
+
+  const summaryData = [
+    {
+      label: "Requirements",
+      count: requirements.length,
+      icon: <FileText size={24} />,
+      color: "#1976d2",
+      bgColor: "#e3f2fd"
+    },
+    {
+      label: "Employees",
+      count: employees.length,
+      icon: <Users size={24} />,
+      color: "#388e3c",
+      bgColor: "#e8f5e9"
+    },
+    {
+      label: "Leaves",
+      count: leaves.length,
+      icon: <Calendar size={24} />,
+      color: "#d32f2f",
+      bgColor: "#ffebee"
+    },
+    {
+      label: "Attendance",
+      count: attendance.length,
+      icon: <Clock size={24} />,
+      color: "#fbc02d",
+      bgColor: "#fff9c4"
+    },
+    {
+      label: "Departments",
+      count: 5,
+      icon: <Building size={24} />,
+      color: "#7b1fa2",
+      bgColor: "#f3e5f5"
+    },
+    {
+      label: "Submissions",
+      count: candidates.length,
+      icon: <Building size={24} />,
+      color: "rgba(72, 30, 20, 0.9)",
+      bgColor: "rgba(255, 190, 152, 0.6)"
+    }
+  ];
+
+  const getStatusChipColor = (status) => {
+    const statusColors = {
+      Open: "success",
+      Closed: "error",
+      Pending: "warning",
+      Approved: "success",
+      Present: "success",
+      Late: "warning",
+      Absent: "error",
+      Shortlisted: "info",
+      Selected: "success",
+      Interview: "warning",
+      "In Process": "primary"
+    };
+    return statusColors[status] || "default";
+  };
 
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
@@ -153,58 +243,31 @@ const AdminDashboard = () => {
     setPage(0);
   };
 
+  const renderCellContent = (column, value) => {
+    if (column.id === "status") {
+      return <Chip label={value} color={getStatusChipColor(value)} size="small" />;
+    }
+    return value;
+  };
+
   return (
-    <Box 
-      sx={{ 
-        height: 'calc(100vh - 100px)', 
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden'
-      }}
-    >
-      {/* Dashboard Header */}
-      <Typography
-        component="h1"
-        variant="h5"
-        sx={{
-          p: 1,
-          backgroundColor: "rgba(232, 245, 233, 0.5)",
-          borderRadius: 2,
-        }}
-      >
+    <Box sx={{ height: "calc(100vh - 18vh)", display: "flex", flexDirection: "column", gap: 3, p: 2, bgcolor: "#fff" }}>
+      <Typography variant="h4" sx={{ fontWeight: "bold", color: theme.palette.primary.main, mb: 0.5 }}>
         Dashboard Overview
       </Typography>
 
-      {/* Summary Cards */}
-      <Box 
-        sx={{ 
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
-            lg: "repeat(5, 1fr)"
-          },
-          gap: 2,
-          px: 2,
-          py: 1, // Reduced vertical padding
-        }}
-      >
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(5, 1fr)" }, gap: 3 }}>
         {summaryData.map((data, index) => (
-          <Card key={index}>
-            <CardContent sx={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: 2,
-              py: 1, // Reduced vertical padding
-              '&:last-child': { pb: 1 } // Override MUI's default padding
-            }}>
-              <Avatar sx={{ bgcolor: data.color }}>{data.icon}</Avatar>
+          <Card key={index} elevation={0} sx={{ bgcolor: data.bgColor, transition: "transform 0.2s", "&:hover": { transform: "translateY(-4px)" } }}>
+            <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, py: 1 }}>
+              <Avatar sx={{ bgcolor: data.color, width: 38, height: 38 }}>
+                {data.icon}
+              </Avatar>
               <Box>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
                   {data.label}
                 </Typography>
-                <Typography variant="h6" fontWeight="bold">
+                <Typography variant="h4" sx={{ fontWeight: "bold", color: data.color }}>
                   {data.count}
                 </Typography>
               </Box>
@@ -213,68 +276,44 @@ const AdminDashboard = () => {
         ))}
       </Box>
 
-      {/* Tabs and Table Container */}
-      <Box sx={{ 
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        p: 2
-      }}>
-        <Paper sx={{ width: '100%' }}>
-          <Tabs
-            value={tabIndex}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              backgroundColor: "rgba(232, 245, 233, 0.5)",
-              "& .MuiTab-root": {
-                minHeight: "48px",
-                textTransform: "none",
-                fontWeight: "medium",
-                mx: 0.5,
-                my: 1,
-                px: 2,
-                borderRadius: 1,
-                "&:hover": {
-                  backgroundColor: "rgba(232, 245, 233, 0.8)",
-                },
-                "&.Mui-selected": {
-                  backgroundColor: "#4B70F5",
-                  color: "white",
-                },
-              },
-            }}
-          >
-            {tabData.map((tab, index) => (
-              <Tab key={index} label={tab.label} />
-            ))}
-          </Tabs>
-        </Paper>
-
-        {/* Table Content */}
-        <Paper 
-          sx={{ 
-            flex: 1,
-            mt: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
+      <Paper elevation={0} sx={{ flex: 1, overflow: "hidden", bgcolor: "white", borderRadius: 2 }}>
+        <Tabs
+          value={tabIndex}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            px: 2,
+            borderBottom: 1,
+            borderColor: "divider",
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: "0.95rem",
+              minHeight: 48
+            }
           }}
         >
-          <TableContainer sx={{ flex: 1, overflow: 'auto' }}>
+          {tabData.map((tab, index) => (
+            <Tab key={index} label={tab.label} />
+          ))}
+        </Tabs>
+
+        <TableContainer sx={{ height: "calc(100% - 104px)" }}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+              <CircularProgress />
+            </Box>
+          ) : error ? (
+            <Box sx={{ p: 2, textAlign: 'center', color: 'error.main' }}>
+              Error: {error}
+            </Box>
+          ) : (
             <Table stickyHeader>
               <TableHead>
                 <TableRow>
                   {tabData[tabIndex].columns.map((column) => (
-                    <TableCell
-                      key={column.id}
-                      sx={{
-                        backgroundColor: "rgba(232, 245, 233, 0.8)",
-                        fontWeight: "bold"
-                      }}
-                    >
+                    <TableCell key={column.id} sx={{ bgcolor: theme.palette.grey[50], fontWeight: 600, color: theme.palette.text.primary }}>
                       {column.label}
                     </TableCell>
                   ))}
@@ -284,28 +323,30 @@ const AdminDashboard = () => {
                 {tabData[tabIndex].data
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row) => (
-                    <TableRow hover key={row.id}>
+                    <TableRow hover key={row.id} sx={{ "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.04) } }}>
                       {tabData[tabIndex].columns.map((column) => (
-                        <TableCell key={column.id}>
-                          {row[column.id]}
+                        <TableCell key={column.id} sx={{ color: theme.palette.text.secondary }}>
+                          {renderCellContent(column, row[column.id])}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))}
               </TableBody>
             </Table>
-          </TableContainer>
-          <TablePagination
-            component="div"
-            count={tabData[tabIndex].data.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25]}
-          />
-        </Paper>
-      </Box>
+          )}
+        </TableContainer>
+
+        <TablePagination
+          component="div"
+          count={tabData[tabIndex].data.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25]}
+          sx={{ borderTop: 1, borderColor: "divider", px: 2 }}
+        />
+      </Paper>
     </Box>
   );
 };

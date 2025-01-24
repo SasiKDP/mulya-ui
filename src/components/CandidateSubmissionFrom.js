@@ -116,6 +116,16 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
   const validateField = (name, value) => {
     let error = "";
     switch (name) {
+      case "candidateEmailId":
+        if (value && !/^[a-z0-9._%+-]+@gmail\.com$/.test(value.toLowerCase())) {
+          error = "Please enter a valid Gmail address in lowercase.";
+        }
+        break;
+      case "currentOrganization":
+        if (value && value.length > 15) {
+          error = "Organization name cannot be more than 15 characters.";
+        }
+        break;
       case "contactNumber":
         if (value && !/^\d{10}$/.test(value))
           error = "Contact number must be exactly 10 digits.";
@@ -127,14 +137,36 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
           error = "Please enter a valid CTC value.";
         break;
       case "totalExperience":
+        if (value && value < 0) {
+          error = "Total experience cannot be negative.";
+        } else if (value && value > 50) {
+          error = "Total experience cannot be more than 50 years.";
+        }
+        break;
       case "relevantExperience":
-        if (value && (value < 0 || value > 50))
-          error = "Experience must be between 0 and 50 years.";
+        if (value && value < 0) {
+          error = "Relevant experience cannot be negative.";
+        } else if (value && value > 50) {
+          error = "Relevant experience cannot be more than 50 years.";
+        }
         break;
       case "communicationSkills":
       case "requiredTechnologiesRating":
         if (value && (value < 1 || value > 5))
           error = "Rating must be between 1 and 5.";
+        break;
+      case "preferredLocation":
+      case "currentLocation":
+        if (value && value.length > 18) {
+          error = "Location cannot be more than 18 characters.";
+        } else if (value && !/^[A-Za-z\s]+$/.test(value)) {
+          error = "Location can only contain letters and spaces.";
+        }
+        break;
+      case "overallFeedback":
+        if (value && value.length > 100) {
+          error = "Feedback cannot be more than 100 characters.";
+        }
         break;
       default:
         break;
@@ -142,11 +174,9 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
     return error;
   };
 
- 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     // Check for validation errors
     if (Object.values(formError).some((error) => error !== "")) {
       setAlert({
@@ -156,7 +186,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
       });
       return;
     }
-  
+
     // Prepare form data with properly formatted CTC values
     const submissionData = {
       ...formData,
@@ -167,12 +197,12 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
         ? `${formData.expectedCTC.replace(/\s*LPA\s*/g, "")} LPA`
         : "",
     };
-  
+
     // Submit the form data, passing userId, jobId, and userEmail directly
     try {
       await dispatch(
         submitFormData({
-          formData: submissionData,  // Ensure no extra userId, jobId, or userEmail in formData
+          formData: submissionData, // Ensure no extra userId, jobId, or userEmail in formData
           userId,
           jobId,
           userEmail,
@@ -186,8 +216,6 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
       });
     }
   };
-  
-  
 
   useEffect(() => {
     // Only dispatch if these values aren't already in form data
@@ -432,8 +460,17 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth error={!!formError.resumeFile}>
-              <InputLabel shrink htmlFor="resume-file">
-                Resume
+              <InputLabel
+                shrink
+                htmlFor="resume-file"
+                sx={{
+                  color: "primary.main", // You can change this color
+                  fontWeight: "bold", // Bold font
+                  fontSize: "1.1rem", // Adjust font size
+                  letterSpacing: "0.5px", // Add letter spacing
+                }}
+              >
+                Upload Resume
               </InputLabel>
               <Input
                 id="resume-file"

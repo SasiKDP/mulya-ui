@@ -103,24 +103,31 @@ const SignUpForm = () => {
 
   const validateDOB = (dob) => {
     if (!dob) return "Date of birth is required"; // Check if DOB is empty
-
+  
     let today = new Date();
     let birthDate = new Date(dob);
-
+  
+    // Check if birthDate is in the future
     if (birthDate > today) return "Date of birth cannot be in the future";
-
+  
+    // Calculate age
     let age = today.getFullYear() - birthDate.getFullYear();
     let monthDifference = today.getMonth() - birthDate.getMonth();
-
+  
+    // Adjust age if birth month/day is later in the year
     if (
       monthDifference < 0 ||
       (monthDifference === 0 && today.getDate() < birthDate.getDate())
     ) {
       age--;
     }
-
-    return "";
+  
+    // Check if age exceeds 20 years
+    if (age < 20) return "Age must be at least 20 years";
+  
+    return ""; // Return an empty string if DOB is valid
   };
+  
 
   const validateJoiningDate = (joiningDate, dob) => {
     if (!joiningDate) return "Joining date is required";

@@ -44,7 +44,7 @@ const Interview = () => {
         setError(false);
 
         const response = await axios.get(
-          `${BASE_URL}/candidate/interviews/${userId}`
+          `http://35.188.150.92/candidate/interviews/${userId}`
         );
         const interviewData = response.data || [];
 
@@ -181,49 +181,55 @@ const Interview = () => {
     }
   };
 
-  const FilterButtonGroup = () => (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "flex-start",
-        width: "100%",
-        mb: 1,
-        ml: 1,
-      }}
-    >
-      <ButtonGroup
-        variant="filled"
+  const FilterButtonGroup = () => {
+    return (
+      <Box 
         sx={{
-          "& .MuiButton-root": {
-            minWidth: { xs: "90px", sm: "120px" },
-            height: "40px",
-            textTransform: "none",
-            fontSize: { xs: "0.875rem", sm: "1rem" },
-            backgroundColor: "#EEF7FF", // Default background color
-            color: "#000", // Default text color
-            "&.active": {
-              backgroundColor: "#5AB2FF", // Active background color
-              color: "#fff", // Text color for active button
-              boxShadow: "0 0 0 1px rgba(0,0,0,0.15)",
-            },
-          },
+          display: "flex",
+          justifyContent: "start",
+          width: "100%",
+          mb: 2,
+          px: { xs: 1, sm: 2 },
         }}
       >
-        {Object.entries(INTERVIEW_LEVELS).map(([key, value]) => (
-          <Button
-            key={key}
-            className={filterLevel === value ? "active" : ""}
-            onClick={() => handleFilterChange(value)}
-            sx={{
-              bgcolor: filterLevel === value ? "primary.dark" : "primary.main",
-            }}
-          >
-            {key === "ALL" ? "All" : value}
-          </Button>
-        ))}
-      </ButtonGroup>
-    </Box>
-  );
+        <ButtonGroup
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            "& .MuiButton-root": {
+              minWidth: { xs: "80px", sm: "110px" },
+              height: "44px",
+              textTransform: "none",
+              fontSize: { xs: "0.8rem", sm: "0.95rem" },
+              fontWeight: 600,
+              borderColor: "#2196F3", // Blue border
+              color: "#2196F3", // Blue text
+              transition: "all 0.3s ease",
+              "&:hover": {
+                backgroundColor: "rgba(33, 150, 243, 0.08)", // Soft blue hover
+              },
+              "&.active": {
+                backgroundColor: "#2196F3", // Blue background
+                color: "#fff", // White text
+                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+              },
+            },
+          }}
+        >
+          {Object.entries(INTERVIEW_LEVELS).map(([key, value]) => (
+            <Button
+              key={key}
+              className={filterLevel === value ? "active" : ""}
+              onClick={() => handleFilterChange(value)}
+            >
+              {key === "ALL" ? "All" : value}
+            </Button>
+          ))}
+        </ButtonGroup>
+      </Box>
+    );
+  };
 
   // Ensure filteredData is not empty and pagination doesn't throw NaN4
   const totalFilteredDataCount = filteredData.length;

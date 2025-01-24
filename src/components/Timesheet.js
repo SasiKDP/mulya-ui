@@ -15,104 +15,79 @@ import {
 import axios from "axios";
 
 const Timesheet = () => {
-  const [entries, setEntries] = useState([]); // Stores timesheet entries
+  const { user } = useSelector((state) => state.auth);
+  const [entries, setEntries] = useState([]);
   const [form, setForm] = useState({
     date: "",
     day: "",
     hoursWorked: "",
-  }); // Form data
-  const [error, setError] = useState(""); // Error message state
-  const [loading, setLoading] = useState(false); // Loading state for API call
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isCheckedInToday, setIsCheckedInToday] = useState(false);
+  const [isCheckedOutToday, setIsCheckedOutToday] = useState(false);
 
-  // Get the day name for a given date
-  const getDayName = (dateString) => {
-    const daysOfWeek = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    const date = new Date(dateString);
-    return daysOfWeek[date.getDay()];
-  };
+  // Check if already checked in/out today on component mount
+  useEffect(() => {
+    const checkTodayStatus = async () => {
+      try {
+        const today = new Date().toLocaleDateString("en-GB");
+        const response = await axios.get(
+          `http://35.188.150.92/api/timesheets/today/${user}`
+        );
 
-  // Handle input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+        if (response.data) {
+          setIsCheckedInToday(response.data.checkIn !== null);
+          setIsCheckedOutToday(response.data.checkOut !== null);
+        }
+      } catch (err) {
+        console.error("Error checking today's status:", err);
+      }
+    };
 
-    if (name === "date") {
-      // Automatically calculate the day when the date is selected
-      const dayName = getDayName(value);
-      setForm((prev) => ({ ...prev, date: value, day: dayName }));
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
+    if (user) {
+      checkTodayStatus();
     }
+  }, [user]);
 
-    // Clear error if user edits inputs
-    setError("");
-  };
-
-  // Add a single day's entry to the timesheet and send to the API
-  const handleAddEntry = async () => {
-    if (!form.date || !form.day || !form.hoursWorked) {
-      setError("Please fill all fields.");
-      return;
-    }
-
-    if (form.hoursWorked <= 0) {
-      setError("Please enter valid hours worked.");
-      return;
-    }
-
-    // Check if the date already exists
-    const isDuplicateDate = entries.some((entry) => entry.date === form.date);
-    if (isDuplicateDate) {
-      setError("This date has already been added. Please select another date.");
-      return;
-    }
-
-    // Add the single entry to the state
-    const newEntry = { ...form, hoursWorked: Number(form.hoursWorked) };
-    setEntries([...entries, newEntry]);
-
-    // Send the single entry to the backend API via PUT request
+  const handleCheckIn = async () => {
     try {
-      setLoading(true); // Set loading state
-      const userId = "DQIND78"; // Replace with dynamic userId if needed
-      const response = await axios.put(
-        `http://192.168.0.194:8082/api/timesheets/entries?id=${userId}`,
-        [{ date: form.date, day: form.day, hoursWorked: form.hoursWorked }] // Send as array
+      setLoading(true);
+      const now = new Date();
+      const checkInData = {
+        employeeId: user,
+        date: now.toLocaleDateString("en-GB"),
+        status: "Present",
+      };
+
+      const response = await axios.post(
+        `http://35.188.150.92/api/timesheets/login`,
+        checkInData
       );
 
-      // Handle successful response and update entries state with new data
-      const { entries: updatedEntries, totalHoursWorked } = response.data;
-      setEntries(updatedEntries); // Update entries state with the API response
-      setForm({ date: "", day: "", hoursWorked: "" }); // Reset the form
-      setError(""); // Clear error
-      console.log("Timesheet entry updated:", response.data);
+      setIsCheckedInToday(true);
+      setLoading(false);
     } catch (err) {
-      console.error("Error updating timesheet:", err);
-      setError("Failed to update timesheet. Please try again.");
-    } finally {
-      setLoading(false); // Reset loading state
+      console.error("Check-in error:", err);
+      setError("Failed to check in. Please try again.");
+      setLoading(false);
     }
   };
 
-  // Get today's date in YYYY-MM-DD format
-  const getTodayDate = () => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0"); // Add leading 0
-    const dd = String(today.getDate()).padStart(2, "0"); // Add leading 0
-    return `${yyyy}-${mm}-${dd}`;
-  };
+  const handleCheckOut = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.put(
+        `http://35.188.150.92/api/timesheets/logout/${user}`
+      );
 
-  // Calculate total hours worked
-  const calculateTotalHours = () => {
-    return entries.reduce((total, entry) => total + entry.hoursWorked, 0);
+      setIsCheckedOutToday(true);
+      setLoading(false);
+    } catch (err) {
+      console.error("Check-out error:", err);
+      setError("Failed to check out. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -122,47 +97,22 @@ const Timesheet = () => {
       </Typography>
 
       {/* Form Section */}
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          alignItems: "center",
-          mb: 2,
-        }}
-      >
-        <TextField
-          label="Date"
-          name="date"
-          type="date"
-          value={form.date}
-          onChange={handleInputChange}
-          InputLabelProps={{ shrink: true }}
-          inputProps={{
-            min: getTodayDate(), // Restrict to today or future dates
-          }}
-        />
-        <TextField
-          label="Day"
-          name="day"
-          value={form.day}
-          InputProps={{
-            readOnly: true,
-          }}
-        />
-        <TextField
-          label="Hours Worked"
-          name="hoursWorked"
-          type="number"
-          value={form.hoursWorked}
-          onChange={handleInputChange}
-        />
+      <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
         <Button
           variant="contained"
           color="primary"
-          onClick={handleAddEntry}
-          disabled={loading} // Disable button while loading
+          onClick={handleCheckIn}
+          disabled={loading || isCheckedInToday || isCheckedOutToday}
         >
-          {loading ? "Saving..." : "Add Entry"}
+          Check In
+        </Button>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleCheckOut}
+          disabled={loading || !isCheckedInToday || isCheckedOutToday}
+        >
+          Check Out
         </Button>
       </Box>
 

@@ -42,6 +42,7 @@ import AttendanceTracker from "../components/AttendanceTracker";
 const TABS_BY_ROLE = {
   EMPLOYEE: [
     
+    
     {
       label: "Assigned",
       value: "ASSIGNED",
@@ -66,8 +67,15 @@ const TABS_BY_ROLE = {
       component: <AttendanceTracker />,
       icon: <AccessTimeIcon />,
     },
+    
   ],
   ADMIN: [
+    {
+      label: "Timesheet",
+      value: "TIMESHEET",
+      component: <AttendanceTracker />,
+      icon: <AccessTimeIcon />,
+    },
     {
       label: "Planned",
       value: "PLANNED",
@@ -87,12 +95,7 @@ const TABS_BY_ROLE = {
       component: <AddUser />,
       icon: <AddIcon />,
     },
-    {
-      label: "Timesheet",
-      value: "TIMESHEET",
-      component: <AttendanceTracker />,
-      icon: <AccessTimeIcon />,
-    },
+    
   ],
   SUPERADMIN: [
     {
