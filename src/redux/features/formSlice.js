@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../apiConfig";
+// import BASE_URL from "../apiConfig";
 
+const BASE_URL = 'http://192.168.0.194:8083'
 // Async action for form submission
 export const submitFormData = createAsyncThunk(
   "form/submit",

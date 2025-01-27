@@ -60,8 +60,8 @@ const SignUpForm = () => {
 
   // Validation regex
   // const userIdRegex = /^DQIND\d{2,4}$/;
-  const personalEmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@dataqinc\.com$/;
+  const personalEmailRegex = /^[a-z0-9._%+-]+@gmail\.com$/;
+  const emailRegex = /^[a-z0-9._%+-]+@dataqinc\.com$/;
   const phoneRegex = /^[0-9]{10}$/;
   const passwordRegex =
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -77,20 +77,49 @@ const SignUpForm = () => {
   const validateUserName = (userName) =>
     userName.length <= 20 ? "" : "User Name must not exceed 20 characters";
 
-  const validateEmail = (email) =>
-    emailRegex.test(email)
+  const validateEmail = (email) => {
+    // Check if email contains capital letters
+    if (/[A-Z]/.test(email)) {
+      return "please enter a valid email without capital letters";
+    }
+
+    // Validate the email format
+    return emailRegex.test(email)
       ? ""
-      : "Please enter a valid email (example@dataqinc.com)";
+      : "please enter a valid email (example@dataqinc.com)";
+  };
 
   const validatePhoneNumber = (phoneNumber) => {
     // Remove all non-digit characters
     const cleanedPhoneNumber = phoneNumber.replace(/\D/g, "");
 
     // Check if the cleaned phone number has exactly 10 digits
+    if (!cleanedPhoneNumber) {
+      return "Phone number is required.";
+    }
     if (cleanedPhoneNumber.length !== 10) {
       return "Phone number must be exactly 10 digits.";
     }
+    if (!/^\d+$/.test(cleanedPhoneNumber)) {
+      return "Phone number must only contain numbers.";
+    }
 
+    return "";
+  };
+
+  const validateDesignation = (designation) => {
+    // Regex for only letters and spaces
+    const designationRegex = /^[A-Za-z\s]+$/;
+
+    // If the designation is empty or doesn't match the regex, return the error message
+    if (!designation) {
+      return "Designation is required";
+    }
+    if (!designationRegex.test(designation)) {
+      return "Designation should only contain letters and spaces";
+    }
+
+    // If all validations pass, return an empty string (valid)
     return "";
   };
 
@@ -103,17 +132,17 @@ const SignUpForm = () => {
 
   const validateDOB = (dob) => {
     if (!dob) return "Date of birth is required"; // Check if DOB is empty
-  
+
     let today = new Date();
     let birthDate = new Date(dob);
-  
+
     // Check if birthDate is in the future
     if (birthDate > today) return "Date of birth cannot be in the future";
-  
+
     // Calculate age
     let age = today.getFullYear() - birthDate.getFullYear();
     let monthDifference = today.getMonth() - birthDate.getMonth();
-  
+
     // Adjust age if birth month/day is later in the year
     if (
       monthDifference < 0 ||
@@ -121,13 +150,12 @@ const SignUpForm = () => {
     ) {
       age--;
     }
-  
+
     // Check if age exceeds 20 years
     if (age < 20) return "Age must be at least 20 years";
-  
+
     return ""; // Return an empty string if DOB is valid
   };
-  
 
   const validateJoiningDate = (joiningDate, dob) => {
     if (!joiningDate) return "Joining date is required";
@@ -177,6 +205,8 @@ const SignUpForm = () => {
         return validatePhoneNumber(value);
       case "gender":
         return validateGender(value);
+      case "designation":
+        return validateDesignation(value);
       case "dob":
         return validateDOB(value);
       case "joinigDate":
@@ -255,7 +285,6 @@ const SignUpForm = () => {
 
     if (status === "succeeded" && response) {
       const { userId, email } = response.data;
-      
 
       toast.success(
         <Box>
@@ -267,14 +296,19 @@ const SignUpForm = () => {
           position: "top-right",
           autoClose: 5000,
           hideProgressBar: true,
-          
         }
       );
       dispatch(clearFormData());
     }
 
     if (status === "failed" && error.general) {
-      toast.error(`Error: ${error.general}`); // Error toast
+      // Extract errormessage if available
+      const errorMessage =
+        typeof error.general === "object"
+          ? error.general.errormessage || "An unknown error occurred."
+          : error.general;
+
+      toast.error(errorMessage); // Show the error message in the toast
     }
   }, [status, response, error, dispatch]);
 
@@ -293,6 +327,7 @@ const SignUpForm = () => {
       joiningDate: validateJoiningDate(formData.joiningDate, formData.dob),
       password: validatePassword(formData.password),
       confirmPassword: validateConfirmPassword(formData.confirmPassword),
+      designation: validateDesignation(formData.designation),
     };
 
     if (Object.values(errors).some((error) => error !== "")) {
@@ -313,8 +348,9 @@ const SignUpForm = () => {
   // timer for the registration success message
   useEffect(() => {
     if (status === "succeeded" || (status === "failed" && response)) {
-      setShowAlert(true);
+      setShowAlert(true); // Show the alert
 
+      // Reset form data
       setFormData({
         userId: "",
         userName: "",
@@ -330,15 +366,13 @@ const SignUpForm = () => {
         roles: ["EMPLOYEE"],
       });
 
-      const timer = setTimeout(() => {
-        setShowAlert(false);
-        dispatch(clearFormData());
-        setIsSignIn(true);
-      }, 3000);
-
-      return () => clearTimeout(timer);
+      // Clear form data and navigate after showing the alert
+      setShowAlert(false);
+      dispatch(clearFormData());
+      setIsSignIn(true);
+      navigate("/");
     }
-  }, [status, response, navigate]);
+  }, [status, response, dispatch, navigate]); // Ensure all dependencies are included
 
   const isFormValid = Object.values(formError).every((error) => error === "");
 
@@ -425,10 +459,10 @@ const SignUpForm = () => {
                   ) : (
                     <>
                       Registration Failed:{" "}
-                      {response?.error?.errormessage ||
-                        "An unknown error occurred."}
+                      {error.general || "An unknown error occurred."}
                       <br />
-                      <strong>Error Code:</strong> {response?.error?.errorcode}
+                      <strong>Error Code:</strong>{" "}
+                      {error.general ? "300" : "No error code available"}
                     </>
                   )}
                 </Alert>
@@ -489,7 +523,7 @@ const SignUpForm = () => {
                       label="Official Email Id"
                       name="email"
                       type="email"
-                       placeholder="@dataqinc.com"
+                      placeholder="@dataqinc.com"
                       value={formData.email}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -533,7 +567,7 @@ const SignUpForm = () => {
                   {/* Designation Field */}
                   <Grid item xs={12} sm={6}>
                     <TextField
-                       placeholder="e.g.  Marketing Manager"
+                      placeholder="e.g.  Marketing Manager"
                       label="Employee Designation"
                       name="designation"
                       type="text"
@@ -554,7 +588,7 @@ const SignUpForm = () => {
                         value={formData.gender}
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        placeholder=''
+                        placeholder=""
                         label="Gender"
                         name="gender"
                         error={!!formError.gender}
@@ -656,7 +690,6 @@ const SignUpForm = () => {
                     <TextField
                       label="Confirm Password"
                       name="confirmPassword"
-                     
                       type={showConfirmPassword ? "text" : "password"}
                       value={formData.confirmPassword}
                       onChange={handleChange}

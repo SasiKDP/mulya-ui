@@ -36,7 +36,7 @@ const Submissions = () => {
     const fetchSubmissionData = async () => {
       try {
         const response = await axios.get(
-          `http://35.188.150.92/candidate/submissions/${userId}`,
+          `${BASE_URL}/candidate/submissions/${userId}`, 
           {
             headers: {
               "Content-Type": "application/json",

@@ -28,7 +28,8 @@ function App() {
         rtl={false} 
         pauseOnFocusLoss 
         draggable 
-        pauseOnHover 
+        pauseOnHover
+        style={{ marginTop: '5%' }} 
       />
 
       <Routes>
