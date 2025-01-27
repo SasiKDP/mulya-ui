@@ -89,7 +89,7 @@ const Submissions = () => {
   const downloadResume = async (candidateId) => {
     try {
       const response = await axios.get(
-        `http://192.168.0.246:8085/candidate/download-resume/${candidateId}`,
+        `${BASE_URL}/candidate/download-resume/${candidateId}`,
         {
           responseType: "blob", // Important for file download
           headers: {

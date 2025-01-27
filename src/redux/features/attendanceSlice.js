@@ -130,14 +130,15 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import BASE_URL from '../apiConfig';
 
-const API_BASE_URL = 'http://35.188.150.92/api';
+
 
 export const fetchAttendanceRecords = createAsyncThunk(
   'attendance/fetchRecords',
   async (_, { getState }) => {
     const { auth: { user } } = getState();
-    const response = await axios.get(`${API_BASE_URL}/timesheets/${user}`, {
+    const response = await axios.get(`${BASE_URL}/timesheets/${user}`, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -157,7 +158,7 @@ export const postAttendanceRecord = createAsyncThunk(
       status: 'Present'
     };
 
-    const response = await axios.post(`${API_BASE_URL}/timesheets/login`, checkInData, {
+    const response = await axios.post(`${BASE_URL}/timesheets/login`, checkInData, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -170,7 +171,7 @@ export const updateAttendanceRecord = createAsyncThunk(
   'attendance/updateRecord',
   async (_, { getState }) => {
     const { auth: { user } } = getState();
-    const response = await axios.put(`${API_BASE_URL}/timesheets/logout/${user}`, {}, {
+    const response = await axios.put(`${BASE_URL}/timesheets/logout/${user}`, {}, {
       headers: {
         'Content-Type': 'application/json'
       }
