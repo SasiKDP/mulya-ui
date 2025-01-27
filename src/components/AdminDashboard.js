@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Card, CardContent, Typography, Tabs, Tab, Avatar, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, useTheme, alpha, Chip, CircularProgress } from "@mui/material";
 import { FileText, Users, Calendar, Clock, Building } from "lucide-react";
+import BASE_URL from "../redux/apiConfig";
 
 const AdminDashboard = () => {
   const [tabIndex, setTabIndex] = useState(0);
@@ -19,7 +20,7 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
 
   // Base API URL
-  const BASE_URL = 'http://192.168.0.246:8085';
+  //const BASE_URL = 'http://192.168.0.246:8085';
 
   // Function to handle API calls
   const fetchData = async (endpoint) => {

@@ -36,7 +36,7 @@ const Submissions = () => {
     const fetchSubmissionData = async () => {
       try {
         const response = await axios.get(
-          `http://35.188.150.92/candidate/submissions/${userId}`,
+          `${BASE_URL}/candidate/submissions/${userId}`, 
           {
             headers: {
               "Content-Type": "application/json",
@@ -89,7 +89,7 @@ const Submissions = () => {
   const downloadResume = async (candidateId) => {
     try {
       const response = await axios.get(
-        `http://192.168.0.246:8085/candidate/download-resume/${candidateId}`,
+        `${BASE_URL}/candidate/download-resume/${candidateId}`,
         {
           responseType: "blob", // Important for file download
           headers: {

@@ -37,6 +37,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import logo from "../assets/logo-01.png";
 import AdminDashboard from "../components/AdminDashboard";
 import AttendanceTracker from "../components/AttendanceTracker";
+import EmployeeTimesheet from "../components/EmployeeTimesheet";
 
 // Tabs configuration based on roles
 const TABS_BY_ROLE = {
@@ -137,7 +138,7 @@ const TABS_BY_ROLE = {
     {
       label: "Timesheet",
       value: "TIMESHEET",
-      component: <AttendanceTracker />,
+      component: <EmployeeTimesheet />,
       icon: <AccessTimeIcon />,
     },
    
@@ -158,7 +159,7 @@ const DashboardPage = () => {
   const [selectedTab, setSelectedTab] = useState(null);
 
   const userId = user || null; 
-  const defaultRole = "EMPLOYEE"; // Default role if none exists
+  const defaultRole = "SUPERADMIN"; // Default role if none exists
   const userRole = roles?.[0] || defaultRole; // Use the first role or fallback to default
   // const activeTabs = TABS_BY_ROLE[userRole] || []; // Tabs for the current role
 
