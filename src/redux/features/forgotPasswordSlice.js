@@ -2,13 +2,13 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import BASE_URL from "../apiConfig";
 
+// const BASE_URL = 'http://192.168.0.194'
 
-
-// Define API endpoints
+// Define API endpoints with base URL
 const API_ENDPOINTS = {
-  SEND_OTP: `/users/send-otp`,
-  VERIFY_OTP: `/users/verify-otp`,
-  RESET_PASSWORD: `/users/update-password`,
+  SEND_OTP: `${BASE_URL}/users/send-otp`,
+  VERIFY_OTP: `${BASE_URL}/users/verify-otp`,
+  RESET_PASSWORD: `${BASE_URL}/users/update-password`,
 };
 
 // Helper function to handle API errors
@@ -190,7 +190,7 @@ const forgotPasswordSlice = createSlice({
         state.isSubmitting = false;
         state.step = 2;
         state.success = action.payload.message;
-        state.otpExpiration = Date.now() + 5 *60 * 1000; // 5 minutes from now
+        state.otpExpiration = Date.now() + 5 * 60 * 1000; // 5 minutes from now
         state.remainingAttempts = 3;
       })
       .addCase(sendOtpAsync.rejected, (state, action) => {

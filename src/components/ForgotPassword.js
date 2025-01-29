@@ -1,359 +1,4 @@
-// import React, { useState } from "react";
-// import {
-//   TextField,
-//   Button,
-//   Alert,
-//   CircularProgress,
-//   Grid,
-//   Typography, // Added Typography component for displaying title
-// } from "@mui/material";
-// import { useSelector, useDispatch } from "react-redux";
-// import {
-//   sendOtpAsync,
-//   resetPasswordAsync,
-//   setEmail,
-//   setOtp,
-//   setStep,
-//   clearError,
-//   verifyOtpAsync,
-// } from "../redux/features/forgotPasswordSlice";
-// import { useNavigate } from "react-router-dom";
-
-// const ForgotPassword = ({ goBack }) => {
-//   const { email, enteredOtp, step, loading, error } = useSelector(
-//     (state) => state.forgotPassword
-//   );
-
-//   const dispatch = useDispatch();
-//   const navigate = useNavigate();
-
-//   const [updatePassword, setNewPassword] = useState("");
-//   const [confirmPassword, setConfirmPassword] = useState("");
-//   const [validationError, setValidationError] = useState("");
-
-//   // Function to get the title based on the current step
-//   const getTitle = () => {
-//     switch (step) {
-//       case 1:
-//         return ""; // Step 1 title
-//       case 2:
-//         return "Verify OTP"; // Step 2 title
-//       case 3:
-//         return "Update Password"; // Step 3 title
-//       default:
-//         return "Forgot Password";
-//     }
-//   };
-
-//   // Submit Email (Step 1)
-//   const handleEmailSubmit = () => {
-//     if (!email) {
-//       setValidationError("Please enter your official email ");
-//       return;
-//     }
-//     setValidationError("");
-//     dispatch(sendOtpAsync(email));
-//   };
-
-//   // Verify OTP (Step 2)
-//   // const handleOtpVerify = () => {
-//   //   if (!enteredOtp) {
-//   //     setValidationError("Please enter OTP");
-//   //     return;
-//   //   }
-//   //   setValidationError("");
-//   //   dispatch(setStep(3)); // Move to password reset step
-//   // };
-
-//   const handleOtpVerify = () => {
-//     if (!enteredOtp) {
-//       setValidationError("Please enter OTP");
-//       return;
-//     }
-//     setValidationError("");
-
-//     // Dispatch the async action to verify OTP
-//     dispatch(verifyOtpAsync({ email, otp: enteredOtp }))
-//       .unwrap() // Unwraps the action to access the result directly
-//       .then(() => {
-//         // OTP is verified successfully, move to step 3 (Password reset)
-//         dispatch(setStep(3));
-//       })
-//       .catch((error) => {
-//         // Handle error, show error message
-//         setValidationError(error || "Something went wrong");
-//       });
-//   };
-
-//   // Submit New Password (Step 3)
-//   const handleNewPasswordSubmit = () => {
-//     if (!updatePassword || !confirmPassword) {
-//       setValidationError("Please fill in both password fields");
-//       return;
-//     }
-//     if (updatePassword !== confirmPassword) {
-//       setValidationError("Passwords do not match");
-//       return;
-//     }
-//     setValidationError("");
-
-//     // Check if the email is correctly set before making the API call
-//     if (!email) {
-//       setValidationError("Email is missing");
-//       return;
-//     }
-
-//     // Dispatch the reset password action
-//     dispatch(resetPasswordAsync({ email, updatePassword, confirmPassword }))
-//       .then((result) => {
-//         if (!result.error) {
-//           // Clear OTP and reset to Step 1 after successful password reset
-//           dispatch(setOtp(""));
-//           dispatch(setStep(1));
-//           // navigate("/");
-//           goBack();
-//         }
-//       })
-//       .catch((err) => {
-//         console.log("Error resetting password:", err);
-//       });
-//   };
-
-//   // Clear validation error after successful actions
-//   const handleClearError = () => {
-//     setValidationError("");
-//     dispatch(clearError());
-//   };
-
-//   return (
-//     <>
-//       {/* Display Error Messages */}
-//       {validationError && (
-//         <Alert severity="error" sx={{ mb: 2 }}>
-//           {validationError}
-//         </Alert>
-//       )}
-//       {error && (
-//         <Alert severity="error" sx={{ mb: 2 }}>
-//           {error}
-//         </Alert>
-//       )}
-//       {loading && (
-//         <CircularProgress sx={{ display: "block", margin: "10px auto" }} />
-//       )}
-
-//       {/* Step Title */}
-//       <Typography variant="h4" sx={{ textAlign: "center", marginBottom: 3 }}>
-//         {getTitle()}
-//       </Typography>
-
-//       {/* Step 1: Email */}
-//       {step === 1 && (
-//         <>
-//           <TextField
-//             label="Email"
-//             type="email"
-//             fullWidth
-//             margin="normal"
-//             value={email}
-//             onChange={(e) => dispatch(setEmail(e.target.value))}
-//             sx={{ mb: 3 }}
-//             onFocus={handleClearError}
-//           />
-//           <Grid
-//             container
-//             spacing={2}
-//             justifyContent="flex-end"
-//             alignItems="center"
-//           >
-//             <Grid item xs={12} sm={5} md={4}>
-//               <Button
-//                 variant="outlined"
-//                 fullWidth
-//                 onClick={goBack}
-//                 sx={{
-//                   fontSize: "16px",
-//                   height: "45px",
-//                   textTransform: "none",
-//                   borderColor: "#5272F2",
-//                   color: "#5272F2",
-//                   "&:hover": {
-//                     borderColor: "#4a6cdb",
-//                     backgroundColor: "#f2f2f2",
-//                   },
-//                 }}
-//               >
-//                 Back
-//               </Button>
-//             </Grid>
-//             <Grid item xs={12} sm={5} md={4}>
-//               <Button
-//                 variant="contained"
-//                 fullWidth
-//                 onClick={handleEmailSubmit}
-//                 disabled={loading}
-//                 sx={{
-//                   backgroundColor: "#5272F2",
-//                   "&:hover": { backgroundColor: "#4a6cdb" },
-//                   fontSize: "16px",
-//                   height: "45px",
-//                   textTransform: "none",
-//                 }}
-//               >
-//                 {loading ? (
-//                   <CircularProgress size={24} sx={{ color: "#fff" }} />
-//                 ) : (
-//                   "Send OTP"
-//                 )}
-//               </Button>
-//             </Grid>
-//           </Grid>
-//         </>
-//       )}
-
-//       {/* Step 2: OTP */}
-//       {step === 2 && (
-//         <>
-//           <TextField
-//             label="Enter OTP"
-//             type="text"
-//             fullWidth
-//             margin="normal"
-//             value={enteredOtp}
-//             onChange={(e) => dispatch(setOtp(e.target.value))}
-//             sx={{ mb: 3 }}
-//             onFocus={handleClearError}
-//           />
-//           <Grid
-//             container
-//             spacing={2}
-//             justifyContent="flex-end"
-//             alignItems="center"
-//           >
-//             <Grid item xs={12} sm={5} md={4}>
-//               <Button
-//                 variant="outlined"
-//                 fullWidth
-//                 onClick={goBack}
-//                 sx={{
-//                   fontSize: "16px",
-//                   height: "45px",
-//                   textTransform: "none",
-//                   borderColor: "#5272F2",
-//                   color: "#5272F2",
-//                   "&:hover": {
-//                     borderColor: "#4a6cdb",
-//                     backgroundColor: "#f2f2f2",
-//                   },
-//                 }}
-//               >
-//                 Back
-//               </Button>
-//             </Grid>
-//             <Grid item xs={12} sm={5} md={4}>
-//               <Button
-//                 variant="contained"
-//                 fullWidth
-//                 onClick={handleOtpVerify}
-//                 disabled={loading}
-//                 sx={{
-//                   backgroundColor: "#5272F2",
-//                   "&:hover": { backgroundColor: "#4a6cdb" },
-//                   fontSize: "16px",
-//                   height: "45px",
-//                   textTransform: "none",
-//                 }}
-//               >
-//                 {loading ? (
-//                   <CircularProgress size={24} sx={{ color: "#fff" }} />
-//                 ) : (
-//                   "Verify OTP"
-//                 )}
-//               </Button>
-//             </Grid>
-//           </Grid>
-//         </>
-//       )}
-
-//       {/* Step 3: New Password */}
-//       {step === 3 && (
-//         <>
-//           <TextField
-//             label="New Password"
-//             type="password"
-//             fullWidth
-//             margin="normal"
-//             value={updatePassword}
-//             onChange={(e) => setNewPassword(e.target.value)}
-//             sx={{ mb: 3 }}
-//           />
-//           <TextField
-//             label="Confirm Password"
-//             type="password"
-//             fullWidth
-//             margin="normal"
-//             value={confirmPassword}
-//             onChange={(e) => setConfirmPassword(e.target.value)}
-//             sx={{ mb: 3 }}
-//           />
-//           <Grid
-//             container
-//             spacing={2}
-//             justifyContent="flex-end"
-//             alignItems="center"
-//           >
-//             <Grid item xs={12} sm={5} md={4}>
-//               <Button
-//                 variant="outlined"
-//                 fullWidth
-//                 onClick={goBack}
-//                 sx={{
-//                   fontSize: "16px",
-//                   height: "45px",
-//                   textTransform: "none",
-//                   borderColor: "#5272F2",
-//                   color: "#5272F2",
-//                   "&:hover": {
-//                     borderColor: "#4a6cdb",
-//                     backgroundColor: "#f2f2f2",
-//                   },
-//                 }}
-//               >
-//                 Back
-//               </Button>
-//             </Grid>
-//             <Grid item xs={12} sm={5} md={4}>
-//               <Button
-//                 variant="contained"
-//                 fullWidth
-//                 onClick={handleNewPasswordSubmit}
-//                 disabled={loading}
-//                 sx={{
-//                   backgroundColor: "#5272F2",
-//                   "&:hover": { backgroundColor: "#4a6cdb" },
-//                   fontSize: "16px",
-//                   height: "45px",
-//                   textTransform: "none",
-//                 }}
-//               >
-//                 {loading ? (
-//                   <CircularProgress size={24} sx={{ color: "#fff" }} />
-//                 ) : (
-//                   "Reset Password"
-//                 )}
-//               </Button>
-//             </Grid>
-//           </Grid>
-//         </>
-//       )}
-//     </>
-//   );
-// };
-
-// export default ForgotPassword;
-
 import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
   Container,
   Paper,
@@ -367,47 +12,42 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import {
-  sendOtpAsync,
-  verifyOtpAsync,
-  resetPasswordAsync,
-  setEmail,
-  setOtp,
-  clearError,
-  clearSuccess,
-  resetState,
-} from "../redux/features/forgotPasswordSlice";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import BASE_URL from "../redux/apiConfig";
+
+const API_ENDPOINTS = {
+  SEND_OTP: `${BASE_URL}/users/send-otp`,
+  VERIFY_OTP: `${BASE_URL}/users/verify-otp`,
+  RESET_PASSWORD: `${BASE_URL}/users/update-password`,
+};
 
 const ForgotPassword = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { email, enteredOtp, loading, step, error, success, isSubmitting } =
-    useSelector((state) => state.forgotPassword);
 
+  // State management
+  const [email, setEmail] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // Step: 1: Email, 2: OTP, 3: Reset Password
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
-    // Cleanup on component unmount
-    return () => {
-      dispatch(resetState());
-    };
-  }, [dispatch]);
-
-  useEffect(() => {
-    // Clear messages after 5 seconds
+    // Clear success/error after 5 seconds
     if (success || error) {
       const timer = setTimeout(() => {
-        dispatch(clearError());
-        dispatch(clearSuccess());
+        setError(null);
+        setSuccess(null);
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [success, error, dispatch]);
+  }, [success, error]);
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -416,21 +56,16 @@ const ForgotPassword = () => {
 
   const validatePassword = (password) => {
     const errors = {};
-    if (password.length < 8) {
+    if (password.length < 8)
       errors.password = "Password must be at least 8 characters long";
-    }
-    if (!/\d/.test(password)) {
+    if (!/\d/.test(password))
       errors.password = "Password must contain at least one number";
-    }
-    if (!/[A-Z]/.test(password)) {
+    if (!/[A-Z]/.test(password))
       errors.password = "Password must contain at least one uppercase letter";
-    }
-    if (!/[a-z]/.test(password)) {
+    if (!/[a-z]/.test(password))
       errors.password = "Password must contain at least one lowercase letter";
-    }
-    if (!/[!@#$%^&*]/.test(password)) {
+    if (!/[!@#$%^&*]/.test(password))
       errors.password = "Password must contain at least one special character";
-    }
     return errors;
   };
 
@@ -441,9 +76,22 @@ const ForgotPassword = () => {
       return;
     }
     setValidationErrors({});
-    await dispatch(sendOtpAsync(email));
+    try {
+      setLoading(true);
+      const response = await axios.post(API_ENDPOINTS.SEND_OTP, { email });
+      if (response.data.status === "error") {
+        setError(response.data.message);
+      } else {
+        setSuccess("OTP has been sent to your email");
+        setStep(2);
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
-
+  
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (!enteredOtp || enteredOtp.length !== 6) {
@@ -451,37 +99,78 @@ const ForgotPassword = () => {
       return;
     }
     setValidationErrors({});
-    await dispatch(verifyOtpAsync({ email, otp: enteredOtp }));
+    try {
+      setLoading(true);
+      const response = await axios.post(API_ENDPOINTS.VERIFY_OTP, {
+        email,
+        otp: enteredOtp,
+      });
+      if (response.data.success) {
+        setSuccess("OTP verified successfully");
+        setStep(3); // Proceed to Reset Password step
+      } else {
+        setError(response.data.message || "Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
-
+  
   const handleResetPassword = async (e) => {
     e.preventDefault();
+  
     const errors = validatePassword(password);
-
+  
+    // Check if passwords match
     if (password !== confirmPassword) {
       errors.confirmPassword = "Passwords do not match";
     }
-
+  
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
     }
-
+  
     setValidationErrors({});
-    await dispatch(
-      resetPasswordAsync({
+    try {
+      setLoading(true);
+      const response = await axios.post(API_ENDPOINTS.RESET_PASSWORD, {
         email,
         updatePassword: password,
         confirmPassword,
-      })
-    );
+      });
+  
+      // Handle success or error response
+      if (response.data.success) {
+        setSuccess(response.data.message); // Show success message
+        setStep(1); // Reset to email step
+        clearFormFields(); // Clear all form fields
+      } else {
+        setError(response.data.message || "An error occurred while resetting password.");
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
-
+  
+  // Function to clear form fields
+  const clearFormFields = () => {
+    setEmail("");
+    setEnteredOtp("");
+    setPassword("");
+    setConfirmPassword("");
+  };
+  
   const handleBack = () => {
     if (step === 1) {
-      navigate("/"); // Navigate to the root URL when step is 1
+      //navigate("/"); // Navigate to the root URL when step is 1
+      window.location.reload();
     } else if (step > 1) {
-      dispatch({ type: "forgotPassword/setStep", payload: step - 1 });
+      setStep(step - 1);
     }
   };
 
@@ -499,26 +188,26 @@ const ForgotPassword = () => {
               label="Email Address"
               type="email"
               value={email}
-              onChange={(e) => dispatch(setEmail(e.target.value))}
+              onChange={(e) => setEmail(e.target.value)}
               error={!!validationErrors.email}
               helperText={validationErrors.email}
-              disabled={isSubmitting}
+              disabled={loading}
             />
             <Box sx={{ display: "flex", gap: 2 }}>
               <Button
                 type="submit"
                 variant="contained"
                 sx={{ flex: 1 }}
-                disabled={isSubmitting}
+                disabled={loading}
               >
-                {isSubmitting ? <CircularProgress size={24} /> : "Send OTP"}
+                {loading ? <CircularProgress size={24} /> : "Send OTP"}
               </Button>
 
               <Button
                 variant="outlined"
                 sx={{ flex: 1 }}
                 onClick={handleBack}
-                disabled={isSubmitting || step === 1}
+                //disabled={loading || step === 1}
               >
                 Back
               </Button>
@@ -538,10 +227,10 @@ const ForgotPassword = () => {
               label="OTP"
               type="text"
               value={enteredOtp}
-              onChange={(e) => dispatch(setOtp(e.target.value))}
+              onChange={(e) => setEnteredOtp(e.target.value)}
               error={!!validationErrors.otp}
               helperText={validationErrors.otp}
-              disabled={isSubmitting}
+              disabled={loading}
             />
             <Box
               sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}
@@ -550,16 +239,16 @@ const ForgotPassword = () => {
                 type="submit"
                 variant="contained"
                 sx={{ flex: 1 }}
-                disabled={isSubmitting}
+                disabled={loading}
               >
-                {isSubmitting ? <CircularProgress size={24} /> : "Verify OTP"}
+                {loading ? <CircularProgress size={24} /> : "Verify OTP"}
               </Button>
 
               <Button
                 variant="outlined"
                 sx={{ flex: 1 }}
                 onClick={handleBack}
-                disabled={isSubmitting}
+                disabled={loading}
               >
                 Back
               </Button>
@@ -582,7 +271,7 @@ const ForgotPassword = () => {
               onChange={(e) => setPassword(e.target.value)}
               error={!!validationErrors.password}
               helperText={validationErrors.password}
-              disabled={isSubmitting}
+              disabled={loading}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -605,7 +294,7 @@ const ForgotPassword = () => {
               onChange={(e) => setConfirmPassword(e.target.value)}
               error={!!validationErrors.confirmPassword}
               helperText={validationErrors.confirmPassword}
-              disabled={isSubmitting}
+              disabled={loading}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -629,16 +318,16 @@ const ForgotPassword = () => {
                 type="submit"
                 variant="contained"
                 sx={{ flex: 1, mt: 3, mb: 2 }}
-                disabled={isSubmitting}
+                disabled={loading}
               >
-                {isSubmitting ? <CircularProgress size={24} /> : "Reset"}
+                {loading ? <CircularProgress size={24} /> : "Reset"}
               </Button>
 
               <Button
                 variant="outlined"
-                sx={{ width: "48%", height:'5%' }}
+                sx={{ width: "48%", height: "5%" }}
                 onClick={handleBack}
-                disabled={isSubmitting}
+                disabled={loading}
               >
                 Back
               </Button>
@@ -659,13 +348,11 @@ const ForgotPassword = () => {
             {error}
           </Alert>
         )}
-
         {success && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {success}
           </Alert>
         )}
-
         {renderStep()}
       </Paper>
     </Container>
