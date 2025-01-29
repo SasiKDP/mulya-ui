@@ -156,17 +156,17 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
               >
                 Logged in at:{" "}
                 {logInTimeStamp
-                  ? new Date(logInTimeStamp).toLocaleString([], {
+                  ? new Date(logInTimeStamp).toLocaleString("en-IN", {
                       hour: "2-digit",
                       minute: "2-digit",
                       hour12: true,
-                      timeZone: "Asia/Kolkata", // Convert to Kolkata timezone
+                      timeZone: "Asia/Kolkata",
                     }) +
                     " - " +
                     new Date(logInTimeStamp).toLocaleDateString("en-GB", {
-                      timeZone: "Asia/Kolkata", // Ensure the date is also in Kolkata timezone
+                      timeZone: "Asia/Kolkata",
                     })
-                  : "13:30 PM - 10-12-2024"}
+                  : "01:30 PM - 10-12-2024"}
               </Typography>
             </Box>
             <Box

@@ -13,20 +13,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
+  Paper,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useSelector, useDispatch } from "react-redux";
 import { submitFormData, clearFormData } from "../../redux/features/formSlice";
-import { toast } from "react-toastify";
-import Paper from "@mui/material/Paper";
-
-
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AddUser = () => {
   const dispatch = useDispatch();
-  
   const theme = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -102,10 +99,7 @@ const AddUser = () => {
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
       await dispatch(submitFormData(values)).unwrap();
-      if (!error) {
-        toast.success("User registered successfully!");
-        resetForm(); 
-      }
+      resetForm()
     } catch (err) {
       toast.error(err.message || "Failed to register user");
     } finally {
@@ -118,14 +112,12 @@ const AddUser = () => {
       toast.info("Processing...");
     }
 
-    if (status === "failed" && error.general) {
-      // Extract errormessage if available
+    if (status === "failed" && error?.general) {
       const errorMessage =
         typeof error.general === "object"
           ? error.general.errormessage || "An unknown error occurred."
           : error.general;
-
-      toast.error(errorMessage); // Show the error message in the toast
+      toast.error(errorMessage);
     }
 
     if (status === "succeeded" && response) {
@@ -143,320 +135,302 @@ const AddUser = () => {
         }
       );
       dispatch(clearFormData());
+      
     }
-  }, [status, error, dispatch]);
+  }, [status, error, response, dispatch]);
 
   return (
-    <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
-      <Typography
-        variant="h5"
-        align="start"
-        color="primary"
-        gutterBottom
-        sx={{
-          backgroundColor: "rgba(232, 245, 233)",
-          padding: 1,
-          borderRadius: 1,
+    <>
+      <ToastContainer />
+      <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
+        <Typography
+          variant="h5"
+          align="start"
+          color="primary"
+          gutterBottom
+          sx={{
+            backgroundColor: "rgba(232, 245, 233)",
+            padding: 1,
+            borderRadius: 1,
+            textAlign: "start",
+          }}
+        >
+          ADD USER
+        </Typography>
 
-          textAlign: "start", // Optional: Center-align the text
-        }}
-      >
-        ADD USER
-      </Typography>
-
-      <Formik
-        initialValues={{
-          userId: "",
-          userName: "",
-          email: "",
-          personalemail: "",
-          phoneNumber: "",
-          designation: "",
-          gender: "",
-          roles: ["EMPLOYEE"],
-          dob: "",
-          joiningDate: "",
-          password: "",
-          confirmPassword: "",
-        }}
-        validationSchema={SignUpSchema}
-        onSubmit={handleSubmit}
-      >
-        {({
-          errors,
-          touched,
-          isSubmitting,
-          isValid,
-          values,
-          setFieldValue,
-        }) => (
-          <Form>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="userId"
-                  label="Employee ID"
-                  fullWidth
-                  error={touched.userId && Boolean(errors.userId)}
-                  helperText={touched.userId && errors.userId}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="userName"
-                  label="Employee Name"
-                  fullWidth
-                  error={touched.userName && Boolean(errors.userName)}
-                  helperText={touched.userName && errors.userName}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="email"
-                  label="Official Email"
-                  fullWidth
-                  error={touched.email && Boolean(errors.email)}
-                  helperText={touched.email && errors.email}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="personalemail"
-                  label="Personal Email"
-                  fullWidth
-                  error={touched.personalemail && Boolean(errors.personalemail)}
-                  helperText={touched.personalemail && errors.personalemail}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="phoneNumber"
-                  label="Phone Number"
-                  fullWidth
-                  error={touched.phoneNumber && Boolean(errors.phoneNumber)}
-                  helperText={touched.phoneNumber && errors.phoneNumber}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="designation"
-                  label="Employee Designation"
-                  fullWidth
-                  error={touched.designation && Boolean(errors.designation)}
-                  helperText={touched.designation && errors.designation}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <FormControl
-                  fullWidth
-                  error={touched.gender && Boolean(errors.gender)}
-                  variant="outlined" // Ensures outlined input style
-                >
-                  <InputLabel id="gender-label">Gender</InputLabel>
+        <Formik
+          initialValues={{
+            userId: "",
+            userName: "",
+            email: "",
+            personalemail: "",
+            phoneNumber: "",
+            designation: "",
+            gender: "",
+            roles: ["EMPLOYEE"],
+            dob: "",
+            joiningDate: "",
+            password: "",
+            confirmPassword: "",
+          }}
+          validationSchema={SignUpSchema}
+          onSubmit={handleSubmit}
+        >
+          {({
+            errors,
+            touched,
+            isSubmitting,
+            isValid,
+            values,
+            setFieldValue,
+          }) => (
+            <Form>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Field
-                    as={Select}
-                    name="gender"
-                    labelId="gender-label"
-                    value={values.gender || ""}
-                    onChange={(event) =>
-                      setFieldValue("gender", event.target.value)
-                    }
-                    label="Gender" // Explicit label
+                    as={TextField}
+                    name="userId"
+                    label="Employee ID"
                     fullWidth
+                    error={touched.userId && Boolean(errors.userId)}
+                    helperText={touched.userId && errors.userId}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="userName"
+                    label="Employee Name"
+                    fullWidth
+                    error={touched.userName && Boolean(errors.userName)}
+                    helperText={touched.userName && errors.userName}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="email"
+                    label="Official Email"
+                    fullWidth
+                    error={touched.email && Boolean(errors.email)}
+                    helperText={touched.email && errors.email}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="personalemail"
+                    label="Personal Email"
+                    fullWidth
+                    error={touched.personalemail && Boolean(errors.personalemail)}
+                    helperText={touched.personalemail && errors.personalemail}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="phoneNumber"
+                    label="Phone Number"
+                    fullWidth
+                    error={touched.phoneNumber && Boolean(errors.phoneNumber)}
+                    helperText={touched.phoneNumber && errors.phoneNumber}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="designation"
+                    label="Employee Designation"
+                    fullWidth
+                    error={touched.designation && Boolean(errors.designation)}
+                    helperText={touched.designation && errors.designation}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <FormControl
+                    fullWidth
+                    error={touched.gender && Boolean(errors.gender)}
+                    variant="outlined"
                   >
-                    <MenuItem value="Male">Male</MenuItem>
-                    <MenuItem value="Female">Female</MenuItem>
-                  </Field>
-                  {touched.gender && errors.gender && (
-                    <Typography variant="caption" color="error">
-                      {errors.gender}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
+                    <InputLabel id="gender-label">Gender</InputLabel>
+                    <Field
+                      as={Select}
+                      name="gender"
+                      labelId="gender-label"
+                      value={values.gender || ""}
+                      onChange={(event) =>
+                        setFieldValue("gender", event.target.value)
+                      }
+                      label="Gender"
+                      fullWidth
+                    >
+                      <MenuItem value="Male">Male</MenuItem>
+                      <MenuItem value="Female">Female</MenuItem>
+                    </Field>
+                    {touched.gender && errors.gender && (
+                      <Typography variant="caption" color="error">
+                        {errors.gender}
+                      </Typography>
+                    )}
+                  </FormControl>
+                </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
-                <FormControl
-                  fullWidth
-                  error={touched.roles && Boolean(errors.roles)}
-                  variant="outlined"
-                  sx={{
-                    "& .MuiMenuItem-root": {
-                      color: "#333333",
-                      fontSize: "0.85rem",
-                      bgcolor: "#fff",
-                      "&:hover": {
-                        backgroundColor: "#4B70F5", // Hover background color
-                        color: "#F7F9F2", // Light gray text on hover
-                        borderRadius: "8px", // Rounded corners on hover
-                      },
-                    },
-                  }}
-                >
-                  <InputLabel id="roles-label">Roles</InputLabel>
-                  <Field
-                    as={Select}
-                    name="roles"
-                    value={values.roles} // Use the array value here
-                    onChange={
-                      (event) => setFieldValue("roles", [event.target.value]) // Ensure it's an array
-                    }
-                    labelId="roles-label"
-                    renderValue={(selected) => selected} // To display selected value
-                    label="Roles" // Add label here
+                <Grid item xs={12} sm={6} md={4}>
+                  <FormControl
                     fullWidth
-                    MenuProps={{
-                      PaperProps: {
-                        style: {
-                          maxHeight: 200, // Max height for the dropdown
-                          overflow: "auto", // Enable scrolling if there are too many items
-                          padding: "0", // Optional: remove extra padding inside the dropdown
-                        },
+                    error={touched.roles && Boolean(errors.roles)}
+                    variant="outlined"
+                  >
+                    <InputLabel id="roles-label">Roles</InputLabel>
+                    <Field
+                      as={Select}
+                      name="roles"
+                      value={values.roles}
+                      onChange={(event) =>
+                        setFieldValue("roles", [event.target.value])
+                      }
+                      labelId="roles-label"
+                      renderValue={(selected) => selected}
+                      label="Roles"
+                      fullWidth
+                    >
+                      {availableRoles.map((role) => (
+                        <MenuItem key={role} value={role}>
+                          {role}
+                        </MenuItem>
+                      ))}
+                    </Field>
+                    {touched.roles && errors.roles && (
+                      <Typography variant="caption" color="error">
+                        {errors.roles}
+                      </Typography>
+                    )}
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="dob"
+                    label="Date of Birth"
+                    type="date"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    error={touched.dob && Boolean(errors.dob)}
+                    helperText={touched.dob && errors.dob}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="joiningDate"
+                    label="Joining Date"
+                    type="date"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    InputProps={{
+                      inputProps: {
+                        min: new Date(
+                          new Date().setMonth(new Date().getMonth() - 2)
+                        )
+                          .toISOString()
+                          .split("T")[0],
+                        max: new Date(
+                          new Date().setMonth(new Date().getMonth() + 2)
+                        )
+                          .toISOString()
+                          .split("T")[0],
                       },
                     }}
-                  >
-                    {availableRoles.map((role) => (
-                      <MenuItem key={role} value={role}>
-                        {role}
-                      </MenuItem>
-                    ))}
-                  </Field>
-                  {touched.roles && errors.roles && (
-                    <Typography variant="caption" color="error">
-                      {errors.roles}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
+                    error={touched.joiningDate && Boolean(errors.joiningDate)}
+                    helperText={touched.joiningDate && errors.joiningDate}
+                  />
+                </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="dob"
-                  label="Date of Birth"
-                  type="date"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  error={touched.dob && Boolean(errors.dob)}
-                  helperText={touched.dob && errors.dob}
-                />
-              </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="password"
+                    label="Password"
+                    type={showPassword ? "text" : "password"}
+                    fullWidth
+                    error={touched.password && Boolean(errors.password)}
+                    helperText={touched.password && errors.password}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="joiningDate"
-                  label="Joining Date"
-                  type="date"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  InputProps={{
-                    inputProps: {
-                      min: new Date(
-                        new Date().setMonth(new Date().getMonth() - 2)
-                      )
-                        .toISOString()
-                        .split("T")[0], // 2 months ago
-                      max: new Date(
-                        new Date().setMonth(new Date().getMonth() + 2)
-                      )
-                        .toISOString()
-                        .split("T")[0], // 2 months from now
-                    },
-                  }}
-                  error={touched.joiningDate && Boolean(errors.joiningDate)}
-                  helperText={touched.joiningDate && errors.joiningDate}
-                />
-              </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    as={TextField}
+                    name="confirmPassword"
+                    label="Confirm Password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    fullWidth
+                    error={
+                      touched.confirmPassword && Boolean(errors.confirmPassword)
+                    }
+                    helperText={touched.confirmPassword && errors.confirmPassword}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            edge="end"
+                          >
+                            {showConfirmPassword ? (
+                              <VisibilityOff />
+                            ) : (
+                              <Visibility />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="password"
-                  label="Password"
-                  type={showPassword ? "text" : "password"}
-                  fullWidth
-                  error={touched.password && Boolean(errors.password)}
-                  helperText={touched.password && errors.password}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                <Grid item xs={12}>
+                  <Box display="flex" justifyContent="flex-end" gap={2}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      disabled={isSubmitting || !isValid}
+                    >
+                      {isSubmitting ? "Registering..." : "Register"}
+                    </Button>
+                    <Button type="reset" variant="outlined">
+                      Clear
+                    </Button>
+                  </Box>
+                </Grid>
               </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  as={TextField}
-                  name="confirmPassword"
-                  label="Confirm Password"
-                  type={showConfirmPassword ? "text" : "password"}
-                  fullWidth
-                  error={
-                    touched.confirmPassword && Boolean(errors.confirmPassword)
-                  }
-                  helperText={touched.confirmPassword && errors.confirmPassword}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() =>
-                            setShowConfirmPassword(!showConfirmPassword)
-                          }
-                          edge="end"
-                        >
-                          {showConfirmPassword ? (
-                            <VisibilityOff />
-                          ) : (
-                            <Visibility />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Box display="flex" justifyContent="flex-end" gap={2}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    disabled={isSubmitting || !isValid}
-                  >
-                    {isSubmitting ? "Registering..." : "Register"}
-                  </Button>
-                  <Button type="reset" variant="outlined">
-                    Clear
-                  </Button>
-                </Box>
-              </Grid>
-            </Grid>
-          </Form>
-        )}
-      </Formik>
-    </Paper>
+            </Form>
+          )}
+        </Formik>
+      </Paper>
+    </>
   );
 };
 

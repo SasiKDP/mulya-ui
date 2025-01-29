@@ -22,6 +22,7 @@ import Header from "../components/Header";
 import JobForm from "../components/Requirements/JobForm";
 import Interview from "../components/Tabs/Interview";
 
+
 // Icons
 import HomeIcon from "@mui/icons-material/Home";
 import PeopleIcon from "@mui/icons-material/People";
@@ -32,12 +33,14 @@ import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import GroupIcon from '@mui/icons-material/Group';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
 // Assets
 import logo from "../assets/logo-01.png";
 import AdminDashboard from "../components/AdminDashboard";
 import AttendanceTracker from "../components/AttendanceTracker";
 import EmployeeTimesheet from "../components/EmployeeTimesheet";
+import UsersList from "../components/Tabs/UsersList";
 
 // Tabs configuration based on roles
 const TABS_BY_ROLE = {
@@ -140,6 +143,12 @@ const TABS_BY_ROLE = {
       value: "TIMESHEET",
       component: <EmployeeTimesheet />,
       icon: <AccessTimeIcon />,
+    },
+    {
+      label: "Users",
+      value: "USERS",
+      component: <UsersList />,
+      icon: <PeopleAltIcon />,
     },
    
   ],

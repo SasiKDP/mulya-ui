@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import ReusableTable from "../ReusableTable";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -16,29 +15,57 @@ import {
   Grid,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import UploadIcon from "@mui/icons-material/Upload";
 import CandidateSubmissionForm from "../CandidateSubmissionFrom";
 import BASE_URL from "../../redux/apiConfig";
-import UploadIcon from "@mui/icons-material/Upload";
-import CustomDialog from "../MuiComponents/CustomDialog";
+import DataTable from "../MuiComponents/DataTable";
 
 const Assigned = () => {
   const [data, setData] = useState([]);
-  const [headers, setHeaders] = useState([]);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [columns, setColumns] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [openSubmitDialog, setOpenSubmitDialog] = useState(false); // State for Submit dialog visibility
-  const [selectedJobForSubmit, setSelectedJobForSubmit] = useState(null); // Store the selected job for submit
-  const [openDescriptionDialog, setOpenDescriptionDialog] = useState(false); // Job Description dialog
-  const [selectedJobDescription, setSelectedJobDescription] = useState(""); // Store selected job description
-  const [employeesList, setEmployeesList] = useState([]); // Local state for employee data
+  const [openSubmitDialog, setOpenSubmitDialog] = useState(false);
+  const [selectedJobForSubmit, setSelectedJobForSubmit] = useState(null);
+  const [openDescriptionDialog, setOpenDescriptionDialog] = useState(false);
+  const [selectedJobDescription, setSelectedJobDescription] = useState("");
+  const [employeesList, setEmployeesList] = useState([]);
   const [fetchStatus, setFetchStatus] = useState("idle");
   const [fetchError, setFetchError] = useState(null);
 
-  const { user } = useSelector((state) => state.auth); // Use selector to get user from Redux state
+  const { user } = useSelector((state) => state.auth);
   const userId = user;
 
-  // Fetch employees on component mount
+  // Function to generate column headers from data
+  const generateColumns = (data) => {
+    if (data.length === 0) return [];
+
+    // Get the first data item to extract keys
+    const sampleData = data[0];
+
+    // Custom header labels mapping
+    const headerLabels = {
+      jobId: "Job ID",
+      jobTitle: "Job Title",
+      jobDescription: "Job Description",
+      requirementAddedTimeStamp: "Added Time",
+      submitCandidate: "Submit Candidate",
+      companyName: "Company Name",
+      location: "Location",
+      experience: "Experience",
+      primarySkills: "Primary Skills",
+      secondarySkills: "Secondary Skills",
+      // Add more mappings as needed
+    };
+
+    // Create columns array from object keys
+    return Object.keys(sampleData).map((key) => ({
+      key: key,
+      label:
+        headerLabels[key] ||
+        key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"), // Default to formatted key if no mapping exists
+    }));
+  };
+
   useEffect(() => {
     const fetchEmployees = async () => {
       setFetchStatus("loading");
@@ -53,19 +80,16 @@ const Assigned = () => {
       }
     };
 
-    // Only fetch employees on initial load
     if (fetchStatus === "idle") {
       fetchEmployees();
     }
   }, []);
 
-  // Function to find the employee email based on userId
   const getEmployeeEmail = (userId, employeesList) => {
     const employee = employeesList.find((emp) => emp.employeeId === userId);
     return employee ? employee.email : null;
   };
 
-  // Dynamically get employee email
   const employeeEmail = getEmployeeEmail(userId, employeesList);
 
   useEffect(() => {
@@ -74,23 +98,63 @@ const Assigned = () => {
     const fetchUserSpecificData = async () => {
       try {
         const response = await axios.get(
-          `http://35.188.150.92/requirements/recruiter/${userId}`
+          `${BASE_URL}/requirements/recruiter/${userId}`
         );
         const userData = response.data || [];
-        console.log(userData);
-
         setTotalCount(response.data.totalCount || userData.length || 0);
 
-        // Manually add the "submit" column to each row
-        const updatedData = userData.map((item) => ({
-          ...item,
-          submitCandidate: "submit candidate", // Adding the "Submit" column manually
-        }));
-        setData(updatedData);
+        const processedData = userData.map((item) => {
+          const processedItem = {
+            ...item,
+            jobDescription: (
+              <Box>
+                {item.jobDescription.slice(0, 10)}...{" "}
+                <Button
+                  onClick={() =>
+                    handleOpenDescriptionDialog(item.jobDescription)
+                  }
+                  size="small"
+                  variant="text"
+                  sx={{
+                    color: "#3f51b5",
+                    textTransform: "capitalize",
+                    padding: 0,
+                    minWidth: "auto",
+                  }}
+                >
+                  View More
+                </Button>
+              </Box>
+            ),
+            requirementAddedTimeStamp: new Date(
+              item.requirementAddedTimeStamp
+            ).toLocaleString(),
+            submitCandidate: (
+              <Link
+                to="#"
+                onClick={() => handleOpenSubmitDialog(item.jobId)}
+                style={{
+                  color: "blue",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                Submit Candidate
+                <UploadIcon fontSize="small" />
+              </Link>
+            ),
+          };
+          return processedItem;
+        });
 
-        if (updatedData.length > 0) {
-          const dynamicHeaders = Object.keys(updatedData[0]);
-          setHeaders(dynamicHeaders);
+        setData(processedData);
+
+        // Generate columns after data is processed
+        if (processedData.length > 0) {
+          const generatedColumns = generateColumns(processedData);
+          setColumns(generatedColumns);
         }
       } catch (err) {
         console.error("Failed to fetch user-specific data", err);
@@ -98,10 +162,10 @@ const Assigned = () => {
     };
 
     fetchUserSpecificData();
-  }, [userId, page, rowsPerPage]);
+  }, [userId]);
 
   const handleOpenSubmitDialog = (job) => {
-    setSelectedJobForSubmit(job); // Store the job for the submit dialog
+    setSelectedJobForSubmit(job);
     setOpenSubmitDialog(true);
   };
 
@@ -111,7 +175,7 @@ const Assigned = () => {
   };
 
   const handleOpenDescriptionDialog = (description) => {
-    setSelectedJobDescription(description); // Store the full job description
+    setSelectedJobDescription(description);
     setOpenDescriptionDialog(true);
   };
 
@@ -120,81 +184,7 @@ const Assigned = () => {
     setSelectedJobDescription("");
   };
 
-  const handlePageChange = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const onCellRender = (row, header) => {
-    if (header === "submitCandidate") {
-      return (
-        <Link
-          to="#"
-          onClick={() => handleOpenSubmitDialog(row["jobId"])} // Open Submit Dialog
-          style={{
-            color: "blue",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px", // Adjust spacing between text and icon
-          }}
-        >
-          {row[header]}
-          <UploadIcon fontSize="small" />
-        </Link>
-      );
-    }
-
-    if (header === "jobDescription") {
-      const description = row[header];
-      return description.length > 10 ? (
-        <>
-          {description.slice(0, 10)}...{" "}
-          <Button
-            onClick={() => handleOpenDescriptionDialog(description)}
-            size="small"
-            variant="text"
-            sx={{
-              color: "#3f51b5",
-              textTransform: "capitalize",
-              padding: 0,
-              minWidth: "auto",
-            }}
-          >
-            View More
-          </Button>
-        </>
-      ) : (
-        description
-      );
-    }
-
-    if (header === "requirementAddedTimeStamp") {
-      return new Date(row[header]).toLocaleString();
-    }
-
-    return row[header];
-  };
-
-  if (!userId) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-  if (fetchStatus === "loading") {
+  if (!userId || fetchStatus === "loading") {
     return (
       <Box
         sx={{
@@ -217,10 +207,13 @@ const Assigned = () => {
             display: "flex",
             flexDirection: "column",
             alignItems: "start",
-            //width: { xs: "100%", sm: "90%", md: "165vh" }, // Responsive width
-            width: "calc(165vh - 5vh)", // Dynamically calculated maxWidth
+            width: "calc(165vh - 5vh)",
             mb: 2,
             px: { xs: 1, sm: 2 },
+            maxHeight: "calc(100vh - 150px)", // Adjust based on your layout needs
+            overflowY: "auto",
+            overflowX: "auto",
+
           }}
         >
           <Typography
@@ -232,26 +225,25 @@ const Assigned = () => {
               backgroundColor: "rgba(232, 245, 233)",
               padding: 1,
               borderRadius: 1,
-              width: "165vh", // Ensures the Typography matches the container width
-              textAlign: "start", // Optional: Center-align the text
+              width: "165vh",
+              textAlign: "start",
             }}
           >
             Assigned Requirements
           </Typography>
-          <ReusableTable
+          <DataTable
             data={data}
-            headers={headers}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            totalCount={totalCount}
-            onPageChange={handlePageChange}
-            onRowsPerPageChange={handleRowsPerPageChange}
-            onCellRender={onCellRender}
+            columns={columns}
+            pageLimit={5}
+            sx={{
+              maxHeight: "400px", // or any height that fits your design
+              overflowY: "auto",
+              overflowX: "auto",
+            }}
           />
         </Box>
       </Grid>
 
-      {/* Dialog for Submit Candidate */}
       <Dialog
         open={openSubmitDialog}
         onClose={handleCloseSubmitDialog}
@@ -289,25 +281,11 @@ const Assigned = () => {
           <CandidateSubmissionForm
             jobId={selectedJobForSubmit}
             userId={user}
-            userEmail={employeeEmail} // Dynamically fetched email
+            userEmail={employeeEmail}
           />
         </DialogContent>
       </Dialog>
-      {/* Submit Candidate Dialog */}
-      {/* <CustomDialog
-        open={openSubmitDialog}
-        onClose={handleCloseSubmitDialog}
-        title="Candidate Submission Form"
-        content={
-          <CandidateSubmissionForm
-            jobId={selectedJobForSubmit}
-            userId={user}
-            userEmail={employeeEmail}
-          />
-        }
-      /> */}
 
-      {/* Dialog for Job Description */}
       <Dialog
         open={openDescriptionDialog}
         onClose={handleCloseDescriptionDialog}
@@ -332,14 +310,6 @@ const Assigned = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Job Description Dialog */}
-      {/* <CustomDialog
-        open={openDescriptionDialog}
-        onClose={handleCloseDescriptionDialog}
-        title="Job Description"
-        content={<Typography>{selectedJobDescription}</Typography>}
-      /> */}
     </>
   );
 };

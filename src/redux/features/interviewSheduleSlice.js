@@ -10,7 +10,7 @@ export const submitInterviewForm = createAsyncThunk(
     
     try {
       const response = await axios.post(
-        `http://35.188.150.92/candidate/interview-schedule/${formData.userId}`,
+        `${BASE_URL}/candidate/interview-schedule/${formData.userId}`,
         formData,
         {
           headers: {

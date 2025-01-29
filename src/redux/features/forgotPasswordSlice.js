@@ -6,9 +6,9 @@ import BASE_URL from "../apiConfig";
 
 // Define API endpoints
 const API_ENDPOINTS = {
-  SEND_OTP: `${BASE_URL}/users/send-otp`,
-  VERIFY_OTP: `${BASE_URL}/users/verify-otp`,
-  RESET_PASSWORD: `${BASE_URL}/users/update-password`,
+  SEND_OTP: `/users/send-otp`,
+  VERIFY_OTP: `/users/verify-otp`,
+  RESET_PASSWORD: `/users/update-password`,
 };
 
 // Helper function to handle API errors

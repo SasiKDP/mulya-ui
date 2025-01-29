@@ -78,7 +78,7 @@ export const submitFormData = createAsyncThunk(
       
 
       // Make API call
-      const response = await axios.post(`http://35.188.150.92/candidate/candidatesubmissions`,
+      const response = await axios.post(`${BASE_URL}/candidate/candidatesubmissions`,
         form,
         {
           headers: {

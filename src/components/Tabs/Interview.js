@@ -11,7 +11,7 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import ReusableTable from "../ReusableTable";
+import DataTable from "../MuiComponents/DataTable";
 import BASE_URL from "../../redux/apiConfig";
 
 const INTERVIEW_LEVELS = {
@@ -25,15 +25,41 @@ const Interview = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [data, setData] = useState([]);
+  const [columns, setColumns] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [filterLevel, setFilterLevel] = useState(INTERVIEW_LEVELS.ALL);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const { user } = useSelector((state) => state.auth);
   const userId = user;
+
+  // Function to generate column headers from data
+  const generateColumns = (data) => {
+    if (data.length === 0) return [];
+
+    const sampleData = data[0];
+    const headerLabels = {
+      candidateName: "Candidate Name",
+      candidateEmailId: "Candidate Email",
+      candidateContactNo: "Contact Number",
+      interviewLevel: "Interview Level",
+      interviewDateTime: "Interview Time",
+      duration: "Duration",
+      zoomLink: "Meeting Link",
+      interviewScheduledTimestamp: "Scheduled On",
+      userEmail: "Recruiter Email",
+      clientEmail: "Client Email",
+      // Add more mappings as needed
+    };
+
+    return Object.keys(sampleData).map((key) => ({
+      key: key,
+      label:
+        headerLabels[key] ||
+        key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
+    }));
+  };
 
   useEffect(() => {
     const fetchInterviewDetails = async () => {
@@ -44,12 +70,99 @@ const Interview = () => {
         setError(false);
 
         const response = await axios.get(
-          `http://35.188.150.92/candidate/interviews/${userId}`
+          `${BASE_URL}/candidate/interviews/${userId}`
         );
         const interviewData = response.data || [];
 
-        setData(interviewData);
-        applyFilter(interviewData, INTERVIEW_LEVELS.ALL);
+        // Process the data to include formatted values
+        const processedData = interviewData.map((interview) => ({
+          ...interview,
+          interviewDateTime: formatDateTime(interview.interviewDateTime),
+          interviewScheduledTimestamp: formatDateTime(
+            interview.interviewScheduledTimestamp
+          ),
+          duration: interview.duration ? `${interview.duration} minutes` : "",
+          zoomLink: interview.zoomLink ? (
+            <Button
+              variant="contained"
+              size="small"
+              href={interview.zoomLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                textTransform: "none",
+                minWidth: "100px",
+                fontSize: "0.875rem",
+              }}
+            >
+              Join Meeting
+            </Button>
+          ) : (
+            ""
+          ),
+          candidateContactNo: interview.candidateContactNo ? (
+            <a
+              href={`tel:${interview.candidateContactNo}`}
+              style={{
+                textDecoration: "none",
+                color: theme.palette.primary.main,
+              }}
+            >
+              {interview.candidateContactNo}
+            </a>
+          ) : (
+            ""
+          ),
+          candidateEmailId: interview.candidateEmailId ? (
+            <a
+              href={`mailto:${interview.candidateEmailId}`}
+              style={{
+                textDecoration: "none",
+                color: theme.palette.primary.main,
+              }}
+            >
+              {interview.candidateEmailId}
+            </a>
+          ) : (
+            ""
+          ),
+          userEmail: interview.userEmail ? (
+            <a
+              href={`mailto:${interview.userEmail}`}
+              style={{
+                textDecoration: "none",
+                color: theme.palette.primary.main,
+              }}
+            >
+              {interview.userEmail}
+            </a>
+          ) : (
+            ""
+          ),
+          clientEmail: interview.clientEmail ? (
+            <a
+              href={`mailto:${interview.clientEmail}`}
+              style={{
+                textDecoration: "none",
+                color: theme.palette.primary.main,
+              }}
+            >
+              {interview.clientEmail}
+            </a>
+          ) : (
+            ""
+          ),
+        }));
+
+        setData(processedData);
+
+        // Generate columns after data is processed
+        if (processedData.length > 0) {
+          const generatedColumns = generateColumns(processedData);
+          setColumns(generatedColumns);
+        }
+
+        applyFilter(processedData, INTERVIEW_LEVELS.ALL);
       } catch (err) {
         console.error("Failed to fetch interview details:", err);
         setError(true);
@@ -59,11 +172,10 @@ const Interview = () => {
     };
 
     fetchInterviewDetails();
-  }, [userId]);
+  }, [userId, theme.palette.primary.main]);
 
   const filterDataWithValidSchedule = (interviews) => {
     return interviews.filter((interview) => {
-      // Ensure the interview has a valid scheduled time, duration, and zoom link
       return (
         interview.interviewDateTime && interview.duration && interview.zoomLink
       );
@@ -86,21 +198,6 @@ const Interview = () => {
     }
 
     setFilteredData(filtered);
-    setPage(0); // Reset to first page when filter changes
-  };
-
-  const handleFilterChange = (level) => {
-    setFilterLevel(level);
-    applyFilter(data, level);
-  };
-
-  const handlePageChange = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset to first page when rows per page change
   };
 
   const formatDateTime = (dateTime) => {
@@ -112,7 +209,7 @@ const Interview = () => {
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-        hour12: true, // Use 12-hour format
+        hour12: true,
         timeZone: "Asia/Kolkata",
       });
     } catch (error) {
@@ -120,70 +217,14 @@ const Interview = () => {
     }
   };
 
-  const onCellRender = (row, header) => {
-    switch (header) {
-      case "interviewDateTime":
-      case "interviewScheduledTimestamp":
-        return formatDateTime(row[header]);
-      case "duration":
-        return row[header] ? `${row[header]} minutes` : ""; 
-      case "zoomLink":
-        return row[header] ? (
-          <Button
-            variant="contained"
-            size="small"
-            href={row[header]}
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{
-              textTransform: "none",
-              minWidth: "100px",
-              fontSize: "0.875rem",
-            }}
-          >
-            Join Meeting
-          </Button>
-        ) : (
-          ""
-        ); // Return an empty string instead of 'N/A'
-      case "candidateContactNo":
-        return row[header] ? (
-          <a
-            href={`tel:${row[header]}`}
-            style={{
-              textDecoration: "none",
-              color: theme.palette.primary.main,
-            }}
-          >
-            {row[header]}
-          </a>
-        ) : (
-          ""
-        ); // Return an empty string instead of 'N/A'
-      case "candidateEmailId":
-      case "userEmail":
-      case "clientEmail":
-        return row[header] ? (
-          <a
-            href={`mailto:${row[header]}`}
-            style={{
-              textDecoration: "none",
-              color: theme.palette.primary.main,
-            }}
-          >
-            {row[header]}
-          </a>
-        ) : (
-          ""
-        ); // Return an empty string instead of 'N/A'
-      default:
-        return row[header] || ""; // Return an empty string instead of 'N/A'
-    }
+  const handleFilterChange = (level) => {
+    setFilterLevel(level);
+    applyFilter(data, level);
   };
 
   const FilterButtonGroup = () => {
     return (
-      <Box 
+      <Box
         sx={{
           display: "flex",
           justifyContent: "start",
@@ -196,23 +237,26 @@ const Interview = () => {
           variant="outlined"
           sx={{
             borderRadius: "12px",
-            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
             "& .MuiButton-root": {
               minWidth: { xs: "80px", sm: "110px" },
               height: "44px",
               textTransform: "none",
               fontSize: { xs: "0.8rem", sm: "0.95rem" },
               fontWeight: 600,
-              borderColor: "#2196F3", // Blue border
-              color: "#2196F3", // Blue text
+              borderColor: "#004d40", // Dark teal border color
+              color: "#004d40", // Matching text color
+              backgroundColor: "transparent", // Transparent background
               transition: "all 0.3s ease",
               "&:hover": {
-                backgroundColor: "rgba(33, 150, 243, 0.08)", // Soft blue hover
+                backgroundColor: "rgba(0, 77, 64, 0.1)", // Soft teal hover effect
+                borderColor: "#004d40", // Retain border color on hover
+                color: "#004d40", // Retain text color on hover
               },
               "&.active": {
-                backgroundColor: "#2196F3", // Blue background
-                color: "#fff", // White text
-                boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                backgroundColor: "#004d40", // Dark teal background for active button
+                color: "#fff", // White text for active button
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)", // Subtle shadow on active state
               },
             },
           }}
@@ -230,10 +274,6 @@ const Interview = () => {
       </Box>
     );
   };
-
-  // Ensure filteredData is not empty and pagination doesn't throw NaN4
-  const totalFilteredDataCount = filteredData.length;
-  const totalPages = Math.ceil(totalFilteredDataCount / rowsPerPage);
 
   if (loading) {
     return (
@@ -258,19 +298,6 @@ const Interview = () => {
     );
   }
 
-  const headers = data.length > 0 ? Object.keys(data[0]) : [];
-
-  const emptyRow = headers.reduce((acc, header) => {
-    acc[header] = "";
-    return acc;
-  }, {});
-
-  // Apply pagination to the filtered data
-  const paginatedData = filteredData.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
   return (
     <Container maxWidth="xl" maxHeight="100vh" sx={{ py: { xs: 2, sm: 3 } }}>
       <Box
@@ -283,17 +310,16 @@ const Interview = () => {
           height: "88vh",
         }}
       >
-        {/* Header Section */}
         <Box
           sx={{
             pl: 1,
             borderBottom: 1,
             borderColor: "divider",
-            flexShrink: 0, 
+            flexShrink: 0,
             backgroundColor: "rgba(232, 245, 233)",
             padding: 1,
             borderRadius: 1,
-            marginBottom:1,
+            marginBottom: 1,
           }}
         >
           <Typography
@@ -302,8 +328,8 @@ const Interview = () => {
             sx={{
               fontSize: { xs: "1.25rem", sm: "1.5rem" },
               fontWeight: 600,
-              color: "#333", // Slightly dark color for better contrast
-              mb: 2, // Add margin at the bottom for spacing
+              color: "#333",
+              mb: 2,
             }}
           >
             Interview Schedule{" "}
@@ -312,10 +338,10 @@ const Interview = () => {
                 variant="body2"
                 color="text.secondary"
                 sx={{
-                  display: "inline", // Inline so it stays on the same line as the title
+                  display: "inline",
                   fontSize: { xs: "0.875rem", sm: "1rem" },
-                  fontWeight: 500, // Slightly lighter font weight for the body text
-                  ml: 1, // Margin left to separate it from the title
+                  fontWeight: 500,
+                  ml: 1,
                 }}
               >
                 [scheduled interviews {filteredData.length}{" "}
@@ -325,16 +351,14 @@ const Interview = () => {
           </Typography>
         </Box>
 
-        {/* Filter Buttons */}
         <FilterButtonGroup />
 
-        {/* Table Section */}
         <Box
           sx={{
             p: { xs: 1, sm: 2 },
-            flexGrow: 1, // Allow table section to take available space
-            overflowY: "auto", // Enable vertical scrolling
-            maxHeight: "calc(100vh - 230px)", // Adjusted height for the table to fit within the view
+            flexGrow: 1,
+            overflowY: "auto",
+            maxHeight: "calc(100vh - 230px)",
           }}
         >
           {filteredData.length === 0 ? (
@@ -349,18 +373,7 @@ const Interview = () => {
               No interview data available.
             </Typography>
           ) : (
-            <ReusableTable
-              data={paginatedData}
-              headers={headers}
-              emptyRow={emptyRow}
-              onCellRender={onCellRender}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              handlePageChange={handlePageChange}
-              handleRowsPerPageChange={handleRowsPerPageChange}
-              totalCount={totalFilteredDataCount}
-              totalPages={totalPages}
-            />
+            <DataTable data={filteredData} columns={columns} pageLimit={5} />
           )}
         </Box>
       </Box>

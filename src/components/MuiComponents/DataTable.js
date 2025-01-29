@@ -31,7 +31,7 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
     <TableContainer component={Paper} style={{ border: "1px solid #ccc" }}>
       <Table>
         <TableHead>
-          <TableRow style={{ backgroundColor: "#3f51b5" }}>
+          <TableRow style={{ backgroundColor: "#00796b" }}>
             {columns.map((column) => (
               <TableCell
                 key={column.key}

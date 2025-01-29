@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
-import ReusableTable from "../ReusableTable";
 import axios from "axios";
-import BASE_URL from "../../redux/apiConfig";
-import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   CircularProgress,
   Box,
@@ -14,21 +12,68 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import InterviewForm from "../InterviewForm";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import CustomDialog from "../MuiComponents/CustomDialog";
+import InterviewForm from "../InterviewForm";
+import BASE_URL from "../../redux/apiConfig";
+import DataTable from "../MuiComponents/DataTable";
 
 const Submissions = () => {
   const [data, setData] = useState([]);
-  const [page, setPage] = useState(0);
-  const [headers, setHeaders] = useState([]);
+  const [columns, setColumns] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [openInterviewDialog, setOpenInterviewDialog] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
   const { user } = useSelector((state) => state.auth);
   const userId = user;
+
+  // Function to generate columns dynamically
+  const generateColumns = (data) => {
+    if (data.length === 0) return [];
+
+    const sampleData = data[0];
+    const headerLabels = {
+      candidateId: "Candidate ID",
+      fullName: "Full Name",
+      emailId: "Email",
+      contactNumber: "Contact Number",
+      currentOrganization: "Current Organization",
+      experience: "Experience",
+      jobId: "Job ID",
+      resumeFilePath: "Resume",
+      Interview: "Interview Status",
+      // Add more mappings as needed
+    };
+
+    return Object.keys(sampleData)
+      .filter(key => key !== "interviewStatus") // Exclude interviewStatus as per original logic
+      .map(key => ({
+        key: key,
+        label: headerLabels[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')
+      }));
+  };
+
+  const downloadResume = async (candidateId) => {
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/candidate/download-resume/${candidateId}`,
+        {
+          responseType: "blob",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const blob = new Blob([response.data], { type: response.data.type });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "resume.pdf";
+      link.click();
+    } catch (error) {
+      console.error("Error downloading resume:", error);
+    }
+  };
 
   useEffect(() => {
     if (!userId) return;
@@ -36,7 +81,7 @@ const Submissions = () => {
     const fetchSubmissionData = async () => {
       try {
         const response = await axios.get(
-          `${BASE_URL}/candidate/submissions/${userId}`, 
+          `${BASE_URL}/candidate/submissions/${userId}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -47,17 +92,47 @@ const Submissions = () => {
         const userData = response.data || [];
         setTotalCount(userData.length || 0);
 
-        const updatedData = userData.map((item) => ({
+        const processedData = userData.map((item) => ({
           ...item,
-          Interview: "schedule-Interview",
+          resumeFilePath: (
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                downloadResume(item.candidateId);
+              }}
+              style={{
+                color: "blue",
+                textDecoration: "underline",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              Download Resume
+              <OpenInNewIcon fontSize="small" />
+            </a>
+          ),
+          Interview: item.interviewStatus === "Scheduled" ? (
+            <span style={{ color: "gray", cursor: "not-allowed" }}>Scheduled</span>
+          ) : (
+            <Link
+              to="#"
+              onClick={() => handleOpenInterviewDialog(item)}
+              style={{ color: "blue", cursor: "pointer" }}
+            >
+              Schedule Interview
+            </Link>
+          ),
         }));
-        setData(updatedData);
 
-        if (updatedData.length > 0) {
-          const dynamicHeaders = Object.keys(updatedData[0]).filter(
-            (header) => header !== "interviewStatus" // Exclude the interviewStatus column
-          );
-          setHeaders(dynamicHeaders);
+        setData(processedData);
+        
+        // Generate columns after data is processed
+        if (processedData.length > 0) {
+          const generatedColumns = generateColumns(processedData);
+          setColumns(generatedColumns);
         }
       } catch (err) {
         console.error("Failed to fetch user-specific data", err);
@@ -67,15 +142,6 @@ const Submissions = () => {
     fetchSubmissionData();
   }, [userId]);
 
-  const handlePageChange = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset to the first page on rows per page change
-  };
-
   const handleOpenInterviewDialog = (candidate) => {
     setSelectedCandidate(candidate);
     setOpenInterviewDialog(true);
@@ -84,69 +150,6 @@ const Submissions = () => {
   const handleCloseInterviewDialog = () => {
     setOpenInterviewDialog(false);
     setSelectedCandidate(null);
-  };
-
-  const downloadResume = async (candidateId) => {
-    try {
-      const response = await axios.get(
-        `${BASE_URL}/candidate/download-resume/${candidateId}`,
-        {
-          responseType: "blob", // Important for file download
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const blob = new Blob([response.data], { type: response.data.type });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "resume.pdf"; // You can adjust this if you get the filename from the response
-      link.click();
-    } catch (error) {
-      console.error("Error downloading resume:", error);
-    }
-  };
-
-  const onCellRender = (row, header) => {
-    if (header === "resumeFilePath" && row[header]) {
-      return (
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            downloadResume(row.candidateId);
-          }}
-          style={{
-            color: "blue",
-            textDecoration: "underline",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px", // Adjust spacing between text and icon
-          }}
-        >
-          Download Resume
-          <OpenInNewIcon fontSize="small" />
-        </a>
-      );
-    }
-    if (header === "Interview") {
-      const isScheduled = row.interviewStatus === "Scheduled"; // Check if the interview is already scheduled
-      return isScheduled ? (
-        <span style={{ color: "gray", cursor: "not-allowed" }}>Scheduled</span>
-      ) : (
-        <Link
-          to="#"
-          onClick={() => handleOpenInterviewDialog(row)}
-          style={{ color: "blue", cursor: "pointer" }}
-        >
-          {row[header]}
-        </Link>
-      );
-    }
-
-    return row[header];
   };
 
   if (!userId) {
@@ -164,26 +167,16 @@ const Submissions = () => {
     );
   }
 
-  // Calculate paginated data
-  const paginatedData = data.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
-
   return (
     <>
-      <ReusableTable
-        data={paginatedData} // Use paginated data here
-        headers={headers}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        totalCount={totalCount}
-        onPageChange={handlePageChange}
-        onRowsPerPageChange={handleRowsPerPageChange}
-        onCellRender={onCellRender}
-      />
+      <Box sx={{ width: '100%', overflow: 'auto' ,overflowX:'auto',maxHeight:600 }}>
+        <DataTable 
+          data={data}
+          columns={columns}
+          pageLimit={5}
+        />
+      </Box>
 
-      {/* Dialog for the candidate interview */}
       <Dialog
         open={openInterviewDialog}
         onClose={handleCloseInterviewDialog}
@@ -231,25 +224,6 @@ const Submissions = () => {
           />
         </DialogContent>
       </Dialog>
-      {/* <CustomDialog
-        open={openInterviewDialog}
-        onClose={handleCloseInterviewDialog}
-        title="Schedule Interview"
-        content={
-          <InterviewForm
-            jobId={selectedCandidate?.jobId}
-            candidateId={selectedCandidate?.candidateId}
-            candidateFullName={selectedCandidate?.fullName}
-            candidateContactNo={selectedCandidate?.contactNumber}
-            clientName={selectedCandidate?.currentOrganization}
-            userId={selectedCandidate?.userId}
-            candidateEmailId={selectedCandidate?.candidateEmailId}
-            userEmail={selectedCandidate?.userEmail}
-            handleCloseInterviewDialog={handleCloseInterviewDialog}
-          />
-        }
-        maxWidth="md"
-      /> */}
     </>
   );
 };
