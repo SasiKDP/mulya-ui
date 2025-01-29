@@ -2,7 +2,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import formReducer from './features/formSlice'
 import authReducer from './features/authSlice'
-import forgotPasswordReducer from './features/forgotPasswordSlice'
+
 // import employeeReducer from './features/employeeSliceexample'
 import jobFormReducer from '../redux/features/jobFormSlice';
 import candidateSubmissionReducer from './features/candidateSubmissionSlice';
@@ -16,7 +16,7 @@ export const store = configureStore({
   reducer: {
     form:formReducer,
     auth: authReducer,
-    forgotPassword: forgotPasswordReducer,
+    
     dialog: dialogReducer,
     employees: employeesReducer,
     jobForm: jobFormReducer,
