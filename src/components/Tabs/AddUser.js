@@ -101,7 +101,7 @@ const AddUser = () => {
       await dispatch(submitFormData(values)).unwrap();
       resetForm()
     } catch (err) {
-      toast.error(err.message || "Failed to register user");
+      toast.error(err.message || "Failed to Registering user");
     } finally {
       setSubmitting(false);
     }

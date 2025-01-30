@@ -51,7 +51,7 @@ export const loginAsync = createAsyncThunk(
           return rejectWithValue("Invalid credentials or bad request.");
         } else {
           return rejectWithValue(
-            error.response.data?.message || "An unexpected error occurred."
+            error.response.data?.error.errorMessage || "An unexpected error occurred."
           );
         }
       } else if (error.request) {

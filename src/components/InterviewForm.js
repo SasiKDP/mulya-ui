@@ -21,7 +21,7 @@ import {
   FormLabel,
   Paper,
 } from "@mui/material";
-import { Check } from 'lucide-react';
+import { Check } from "lucide-react";
 import dayjs from "dayjs";
 
 const InterviewForm = ({
@@ -36,9 +36,13 @@ const InterviewForm = ({
   handleCloseInterviewDialog,
 }) => {
   const dispatch = useDispatch();
-  const { formData, isSubmitting, submissionSuccess, error, interviewResponse } = useSelector(
-    (state) => state.interviewForm
-  );
+  const {
+    formData,
+    isSubmitting,
+    submissionSuccess,
+    error,
+    interviewResponse,
+  } = useSelector((state) => state.interviewForm);
 
   const [dateError, setDateError] = useState("");
   const [formError, setFormError] = useState("");
@@ -47,11 +51,17 @@ const InterviewForm = ({
   useEffect(() => {
     dispatch(updateFormField({ name: "jobId", value: jobId }));
     dispatch(updateFormField({ name: "candidateId", value: candidateId }));
-    dispatch(updateFormField({ name: "candidateFullName", value: candidateFullName }));
-    dispatch(updateFormField({ name: "candidateContactNo", value: candidateContactNo }));
+    dispatch(
+      updateFormField({ name: "candidateFullName", value: candidateFullName })
+    );
+    dispatch(
+      updateFormField({ name: "candidateContactNo", value: candidateContactNo })
+    );
     dispatch(updateFormField({ name: "clientName", value: clientName }));
     dispatch(updateFormField({ name: "userId", value: userId }));
-    dispatch(updateFormField({ name: "candidateEmailId", value: candidateEmailId }));
+    dispatch(
+      updateFormField({ name: "candidateEmailId", value: candidateEmailId })
+    );
     dispatch(updateFormField({ name: "userEmail", value: userEmail }));
   }, [
     jobId,
@@ -88,10 +98,12 @@ const InterviewForm = ({
 
       dispatch(updateFormField({ name: "interviewDateTime", value: newValue }));
       const timestamp = newValue ? dayjs(newValue).valueOf() : null;
-      dispatch(updateFormField({ 
-        name: "interviewScheduledTimestamp", 
-        value: timestamp 
-      }));
+      dispatch(
+        updateFormField({
+          name: "interviewScheduledTimestamp",
+          value: timestamp,
+        })
+      );
     }
   };
 
@@ -101,7 +113,7 @@ const InterviewForm = ({
       duration: "Duration",
       zoomLink: "Zoom link",
       interviewLevel: "Interview level",
-      clientEmail: "Client email"
+      clientEmail: "Client email",
     };
 
     for (const [field, label] of Object.entries(requiredFields)) {
@@ -111,7 +123,10 @@ const InterviewForm = ({
       }
     }
 
-    if (formData.interviewLevel === "External" && !formData.externalInterviewDetails) {
+    if (
+      formData.interviewLevel === "External" &&
+      !formData.externalInterviewDetails
+    ) {
       setFormError("External interview details are required");
       return false;
     }
@@ -156,44 +171,18 @@ const InterviewForm = ({
     if (!submissionSuccess || !interviewResponse) return null;
 
     return (
-      <Paper elevation={0} sx={{ mb: 3, backgroundColor: '#f0fdf4', p: 2 }}>
-        <Alert 
+      <Paper elevation={0} sx={{ mb: 3, backgroundColor: "#f0fdf4", p: 2 }}>
+        <Alert
           icon={<Check className="h-5 w-5" />}
           severity="success"
           sx={{ mb: 2 }}
         >
           <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-            Interview scheduled successfully and email notifications sent.
+            Interview scheduled for <strong>Candidate ID:</strong>{" "}
+            {interviewResponse.candidateId}{" "}successfully and email notifications
+            sent.
           </Typography>
         </Alert>
-        
-        <Box sx={{ px: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            Notifications sent to:
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2">
-                <strong>Candidate ID:</strong> {interviewResponse.candidateId}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2">
-                <strong>User Email:</strong> {interviewResponse.userEmail}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2">
-                <strong>Candidate Email:</strong> {interviewResponse.emailId}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2">
-                <strong>Client Email:</strong> {interviewResponse.clientEmail}
-              </Typography>
-            </Grid>
-          </Grid>
-        </Box>
       </Paper>
     );
   };
@@ -213,7 +202,7 @@ const InterviewForm = ({
       }}
     >
       <SuccessMessage />
-      
+
       {(error || formError) && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error || formError}
@@ -319,7 +308,9 @@ const InterviewForm = ({
             name="interviewDateTime"
             type="datetime-local"
             value={formData.interviewDateTime || ""}
-            onChange={(e) => handleDateTimeChange("interviewDateTime", e.target.value)}
+            onChange={(e) =>
+              handleDateTimeChange("interviewDateTime", e.target.value)
+            }
             fullWidth
             required
             variant="filled"
@@ -338,7 +329,6 @@ const InterviewForm = ({
             fullWidth
             required
             variant="filled"
-            inputProps={{ min: 15, step: 15 }}
             helperText="Minimum 15 minutes"
           />
         </Grid>

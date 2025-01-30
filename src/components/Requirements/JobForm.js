@@ -313,6 +313,7 @@ import {
   updateField,
   resetForm,
 } from "../../redux/features/jobFormSlice";
+import { fetchEmployees } from "../../redux/features/employeesSlice";
 import {
   Box,
   Button,
@@ -328,20 +329,24 @@ import {
 } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import useEmployees from "../customHooks/useEmployees";
 
 const JobForm = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
+  
+  // Get job form state
   const { formData, status, error, jobPostingSuccessResponse } = useSelector(
     (state) => state.jobForm
   );
+  
+  // Get employees state and create a selector for filtering
+  const { employeesList, fetchStatus, fetchError } = useSelector((state) => state.employees);
+  const recruiters = employeesList.filter(emp => emp.roles === "EMPLOYEE" && emp.status === "ACTIVE");
 
-  const {
-    employees: filterEmployees,
-    status: fetchStatus,
-    error: fetchError,
-  } = useEmployees("EMPLOYEE");
+  // Fetch employees on component mount
+  React.useEffect(() => {
+    dispatch(fetchEmployees());
+  }, [dispatch]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -352,8 +357,8 @@ const JobForm = () => {
     const selectedNames = event.target.value;
     const selectedIds = selectedNames
       .map((name) => {
-        const employee = filterEmployees.find(
-          (emp) => emp.employeeName === name
+        const employee = recruiters.find(
+          (emp) => emp.userName === name
         );
         return employee ? employee.employeeId : null;
       })
@@ -485,10 +490,10 @@ const JobForm = () => {
               variant="outlined"
               multiple
               sx={{
-                height: "56px", // Fixed height for the input field
+                height: "56px",
                 overflow: "hidden",
                 "& .MuiSelect-select": {
-                  height: "100%", // Ensures the selected values fit inside
+                  height: "100%",
                   display: "flex",
                   alignItems: "center",
                 },
@@ -496,21 +501,21 @@ const JobForm = () => {
               MenuProps={{
                 PaperProps: {
                   sx: {
-                    maxHeight: 200, // Fixed dropdown height
-                    overflowY: "auto", // Enables scrolling
+                    maxHeight: 200,
+                    overflowY: "auto",
                   },
                 },
               }}
             >
               {fetchStatus === "loading" ? (
                 <MenuItem disabled>Loading recruiters...</MenuItem>
-              ) : filterEmployees.length > 0 ? (
-                filterEmployees.map((employee) => (
+              ) : recruiters.length > 0 ? (
+                recruiters.map((employee) => (
                   <MenuItem
                     key={employee.employeeId}
-                    value={employee.employeeName}
+                    value={employee.userName}
                   >
-                    {employee.employeeName}
+                    {employee.userName} - {employee.employeeId}
                   </MenuItem>
                 ))
               ) : (

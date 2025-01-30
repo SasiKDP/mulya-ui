@@ -11,7 +11,7 @@ const InputField = ({ label, name, value, onChange, type, fullWidth , ...rest })
       onChange={onChange}
       type={type}
       {...rest}
-      variant='filled'
+      
     />
   );
 };

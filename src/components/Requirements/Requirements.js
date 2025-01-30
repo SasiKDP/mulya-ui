@@ -22,6 +22,7 @@ import {
   CircularProgress,
   TextField,
   Stack,
+  Grid,
 } from "@mui/material";
 import axios from "axios";
 import { useSelector } from "react-redux";
@@ -85,7 +86,11 @@ const Requirements = () => {
   const handleCloseDialog = () => setOpenDialog(false);
 
   const handleEdit = (job) => {
-    setEditFormData(job);
+    setEditFormData({
+      ...job,
+      recruiterName: job.recruiterName.join(", "), // Join recruiter names into a comma-separated string
+      recruiterIds: job.recruiterIds.join(", "), // Join recruiter IDs into a comma-separated string
+    });
     setEditDialogOpen(true);
   };
 
@@ -105,15 +110,37 @@ const Requirements = () => {
   const handleSubmitEdit = async (e) => {
     e.preventDefault();
     try {
+      // Convert comma-separated recruiter names to an array
+      const recruiterNames = editFormData.recruiterName
+        ? editFormData.recruiterName.split(",").map((name) => name.trim())
+        : [];
+
+      // Convert comma-separated recruiter IDs to an array
+      const recruiterIds = editFormData.recruiterIds
+        ? editFormData.recruiterIds.split(",").map((id) => id.trim())
+        : [];
+
+      // Prepare the form data to send to the server
+      const updatedFormData = {
+        ...editFormData,
+        recruiterIds, // Add the recruiter IDs as an array
+        recruiterName: recruiterNames, // Add the recruiter names as an array
+      };
+
+      // Send the updated data to the backend
       await axios.put(
-        `${BASE_URL}/requirements/updateRequirement/${editFormData.jobId}`,
-        editFormData
+        `${BASE_URL}/requirements/updateRequirement/${updatedFormData.jobId}`,
+        updatedFormData
       );
+
+      // Show success snackbar
       setSnackbar({
         open: true,
         message: "Job requirement updated successfully",
         severity: "success",
       });
+
+      // Close the edit dialog and reload the data
       handleCloseEditDialog();
       fetchRequirements();
     } catch (err) {
@@ -321,33 +348,62 @@ const Requirements = () => {
         <Dialog
           open={editDialogOpen}
           onClose={handleCloseEditDialog}
-          maxWidth="md"
+          maxWidth="sm"
           fullWidth
         >
           <DialogTitle>Edit Job Requirement</DialogTitle>
           <DialogContent>
-            <Stack spacing={2} sx={{ mt: 2 }}>
+            <Grid container spacing={3}>
               {Object.keys(editFormData)
                 .filter(
                   (key) =>
-                    key !== "recruiterIds" &&
                     key !== "requirementAddedTimeStamp" &&
-                    key !== "recruiterName"
+                    key !== "status" && // Exclude non-editable fields
+                    key !== "recruiterIds" && // Exclude recruiterIds
+                    key !== "recruiterName" // Exclude recruiterName
                 )
                 .map((key) => (
-                  <TextField
-                    key={key}
-                    name={key}
-                    label={key
-                      .replace(/([A-Z])/g, " $1")
-                      .replace(/^./, (str) => str.toUpperCase())}
-                    value={editFormData[key] || ""}
-                    onChange={handleInputChange}
-                    fullWidth
-                    variant="outlined"
-                  />
+                  <Grid item xs={12} sm={6} key={key}>
+                    <TextField
+                      name={key}
+                      label={key
+                        .replace(/([A-Z])/g, " $1")
+                        .replace(/^./, (str) => str.toUpperCase())}
+                      value={editFormData[key] || ""}
+                      onChange={handleInputChange}
+                      fullWidth
+                      variant="outlined"
+                      disabled={key === "jobId"} 
+                    />
+                  </Grid>
                 ))}
-            </Stack>
+
+              {/* Recruiter Names */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  name="recruiterName"
+                  label="Recruiter Names"
+                  value={editFormData.recruiterName || ""}
+                  onChange={handleInputChange}
+                  fullWidth
+                  variant="outlined"
+                  helperText="Comma-separated names "
+                />
+              </Grid>
+
+              {/* Recruiter IDs */}
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  name="recruiterIds"
+                  label="Recruiter IDs"
+                  value={editFormData.recruiterIds || ""}
+                  onChange={handleInputChange}
+                  fullWidth
+                  variant="outlined"
+                  helperText="Comma-separated IDs (e.g., DQIND029, DQIND014)"
+                />
+              </Grid>
+            </Grid>
           </DialogContent>
           <DialogActions>
             <Button

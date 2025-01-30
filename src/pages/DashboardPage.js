@@ -23,6 +23,8 @@ import JobForm from "../components/Requirements/JobForm";
 import Interview from "../components/Tabs/Interview";
 
 
+
+
 // Icons
 import HomeIcon from "@mui/icons-material/Home";
 import PeopleIcon from "@mui/icons-material/People";
@@ -41,6 +43,9 @@ import AdminDashboard from "../components/AdminDashboard";
 import AttendanceTracker from "../components/AttendanceTracker";
 import EmployeeTimesheet from "../components/EmployeeTimesheet";
 import UsersList from "../components/Tabs/UsersList";
+import AllSubmissions from "../components/Tabs/AllSubmissions";
+import ViewListIcon from '@mui/icons-material/ViewList';
+import AllInterviews from "../components/Tabs/AllInterviews";
 
 // Tabs configuration based on roles
 const TABS_BY_ROLE = {
@@ -149,6 +154,18 @@ const TABS_BY_ROLE = {
       value: "USERS",
       component: <UsersList />,
       icon: <PeopleAltIcon />,
+    },
+    {
+      label: "Submissions",
+      value: "ALLSUBMISSIONS",
+      component: <AllSubmissions />,
+      icon: <ViewListIcon />,
+    },
+    {
+      label: "Interviews",
+      value: "ALLINTERVIEWS",
+      component: <AllInterviews />,
+      icon: <ViewListIcon />,
     },
    
   ],
