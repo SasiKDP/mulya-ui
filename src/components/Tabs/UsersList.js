@@ -30,12 +30,14 @@ import {
   TableRow,
   TablePagination,
   Autocomplete,
-  Chip,Select, MenuItem, InputLabel, FormControl
+  Chip,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { toast } from "react-toastify"; // Importing toast
-import "react-toastify/dist/ReactToastify.css";
 
 const UsersList = () => {
   const dispatch = useDispatch();
@@ -50,12 +52,25 @@ const UsersList = () => {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
-    severity: "success",
+    severity: "success", // Default to success
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
 
   const VALID_ROLES = ["SUPERADMIN", "EMPLOYEE", "ADMIN"];
+
+  // Regular expressions for validation
+  const personalEmailRegex = /^[a-z0-9._%+-]+@gmail\.com$/;
+  const emailRegex = /^[a-z0-9._%+-]+@dataqinc\.com$/;
+  const phoneRegex = /^[0-9]{10}$/;
+  const userIdRegex = /^DQIND\d{2,4}$/;
+
+  const [formErrors, setFormErrors] = useState({
+    personalEmail: "",
+    email: "",
+    phone: "",
+    userId: "",
+  });
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -63,11 +78,19 @@ const UsersList = () => {
 
   useEffect(() => {
     if (updateStatus === "succeeded") {
-      toast.success("Employee updated successfully!");
+      setSnackbar({
+        open: true,
+        message: "Employee updated successfully!",
+        severity: "success",
+      });
       handleCloseEditDialog();
       dispatch(fetchEmployees());
     } else if (updateStatus === "failed") {
-      toast.error(updateError || "Failed to update employee");
+      setSnackbar({
+        open: true,
+        message: updateError || "Failed to update employee",
+        severity: "error",
+      });
     }
   }, [updateStatus, updateError, dispatch]);
 
@@ -79,7 +102,11 @@ const UsersList = () => {
   const handleConfirmDelete = () => {
     if (employeeToDelete) {
       dispatch(deleteEmployee(employeeToDelete)).then(() => {
-        toast.success("Employee deleted successfully!");
+        setSnackbar({
+          open: true,
+          message: "Employee deleted successfully!",
+          severity: "success",
+        });
         dispatch(fetchEmployees());
       });
     }
@@ -102,9 +129,16 @@ const UsersList = () => {
 
   const handleOpenEditDialog = (employee) => {
     setSelectedEmployee(employee);
+    // Ensure roles is properly formatted as an array and contains the current values
+    const currentRoles = Array.isArray(employee.roles)
+      ? employee.roles
+      : typeof employee.roles === "string"
+      ? employee.roles.split(", ")
+      : [];
+
     setEditFormData({
       ...employee,
-      roles: Array.isArray(employee.roles) ? employee.roles : ["EMPLOYEE"],
+      roles: currentRoles,
     });
     setEditDialogOpen(true);
   };
@@ -118,6 +152,24 @@ const UsersList = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    // Basic validation on each input field
+    let errors = { ...formErrors };
+
+    if (name === "personalEmail" && !personalEmailRegex.test(value)) {
+      errors.personalEmail = "Invalid Gmail address.";
+    } else if (name === "email" && !emailRegex.test(value)) {
+      errors.email = "Invalid DataQ email address.";
+    } else if (name === "phone" && !phoneRegex.test(value)) {
+      errors.phone = "Phone number must be 10 digits.";
+    } else if (name === "userId" && !userIdRegex.test(value)) {
+      errors.userId = "User ID must match DQINDXX format.";
+    } else {
+      errors[name] = "";
+    }
+
+    setFormErrors(errors);
+
     setEditFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -129,7 +181,11 @@ const UsersList = () => {
 
     // Ensure roles is an array before sending it to the backend
     if (!editFormData.roles || editFormData.roles.length === 0) {
-      toast.error("Please select at least one role.");
+      setSnackbar({
+        open: true,
+        message: "Please select at least one role.",
+        severity: "error",
+      });
       return;
     }
 
@@ -139,10 +195,9 @@ const UsersList = () => {
         editFormData["personal email"] || editFormData.personalemail,
       roles: Array.isArray(editFormData.roles)
         ? editFormData.roles
-        : [editFormData.roles], // Ensure roles is always an array
+        : [editFormData.roles],
     };
 
-    // Dispatch the action to update the employee with the roles included
     dispatch(updateEmployee(normalizedData));
   };
 
@@ -274,6 +329,7 @@ const UsersList = () => {
           </Alert>
         </Snackbar>
 
+        {/* Edit Dialog */}
         <Dialog
           open={editDialogOpen}
           onClose={handleCloseEditDialog}
@@ -328,7 +384,25 @@ const UsersList = () => {
                         <MenuItem value="INACTIVE">INACTIVE</MenuItem>
                       </Select>
                     </FormControl>
-                  ) : (
+                  ) : key === "employeeId" ? (
+                    <TextField
+                      key={key}
+                      label="Employee ID"
+                      value={editFormData[key] || ""}
+                      disabled
+                      fullWidth
+                    />
+                  ) :
+                   key === "email" ? (
+                    <TextField
+                      key={key}
+                      label="Employee Email"
+                      value={editFormData[key] || ""}
+                      disabled
+                      fullWidth
+                    />
+                  ) :
+                  (
                     <TextField
                       key={key}
                       label={key.charAt(0).toUpperCase() + key.slice(1)}
@@ -336,6 +410,8 @@ const UsersList = () => {
                       value={editFormData[key] || ""}
                       onChange={handleInputChange}
                       fullWidth
+                      error={formErrors[key] ? true : false}
+                      helperText={formErrors[key]}
                     />
                   )
                 )}
@@ -359,6 +435,7 @@ const UsersList = () => {
           </DialogActions>
         </Dialog>
 
+        {/* Delete Dialog */}
         <Dialog
           open={deleteDialogOpen}
           onClose={handleCloseDeleteDialog}

@@ -104,6 +104,18 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
         updatedValue = `${updatedValue}`;
       }
     }
+    if (
+      name === "communicationSkills" ||
+      name === "requiredTechnologiesRating"
+    ) {
+      if (!/^[1-5]?$/.test(value)) {
+        setFormError((prev) => ({
+          ...prev,
+          [name]: "Please enter a number between 1 and 5.",
+        }));
+        return; // Prevent updating state with invalid value
+      }
+    }
 
     setFormError((prev) => ({
       ...prev,
@@ -122,7 +134,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
         }
         break;
       case "currentOrganization":
-        if (value && value.length > 15) {
+        if (value && value.length > 30) {
           error = "Organization name cannot be more than 15 characters.";
         }
         break;
@@ -437,6 +449,8 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
               {
                 type: "number",
                 InputProps: { inputProps: { min: 1, max: 5 } },
+                error: !!formError.communicationSkills,
+                helperText: formError.communicationSkills,
               }
             )}
           </Grid>
@@ -447,6 +461,8 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
               {
                 type: "number",
                 InputProps: { inputProps: { min: 1, max: 5 } },
+                error: !!formError.requiredTechnologiesRating,
+                helperText: formError.requiredTechnologiesRating,
               }
             )}
           </Grid>
@@ -464,10 +480,10 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
                 shrink
                 htmlFor="resume-file"
                 sx={{
-                  color: "primary.main", // You can change this color
-                  fontWeight: "bold", // Bold font
-                  fontSize: "1.1rem", // Adjust font size
-                  letterSpacing: "0.5px", // Add letter spacing
+                  color: "primary.main", 
+                  fontWeight: "bold", 
+                  fontSize: "1.1rem", 
+                  letterSpacing: "0.5px", 
                 }}
               >
                 Upload Resume
@@ -486,7 +502,20 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
         </Grid>
 
         {/* Submit Button */}
-        <Box mt={3} display="flex" justifyContent="flex-end">
+        <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => {
+              dispatch(resetForm());
+              setFormError({}); // Clear form errors
+            }}
+            sx={{ minWidth: 120 }}
+            disabled={loading}
+          >
+            Reset Form
+          </Button>
+
           <Button
             type="submit"
             variant="contained"

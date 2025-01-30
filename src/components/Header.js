@@ -17,7 +17,7 @@ import { logoutAsync } from "../redux/features/authSlice";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import LeaveApplication from "./LeaveApplication"; // Assuming LeaveApplication component exists
+import LeaveApplication from "../components/LeaveApplication"; // Assuming LeaveApplication component exists
 import CustomDialog from "./MuiComponents/CustomDialog";
 import Profile from "./Profile";
 // import AttendanceTracker from "./AttendanceTracker";
@@ -163,10 +163,13 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
                       timeZone: "Asia/Kolkata",
                     }) +
                     " - " +
-                    new Date(logInTimeStamp).toLocaleDateString("en-GB", {
+                    new Date(logInTimeStamp).toLocaleString("en-IN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
                       timeZone: "Asia/Kolkata",
                     })
-                  : "01:30 PM - 10-12-2024"}
+                  : "12:45 AM - 30/01/2025"}
               </Typography>
             </Box>
             <Box
@@ -246,13 +249,22 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
       </AppBar>
 
       {/* Dialog for Profile */}
-      <CustomDialog
+      <Dialog
         open={openProfileDialog}
         onClose={handleCloseProfileDialog}
-        content={<Profile />}
-        title="User Profile"
-      />
-
+        fullWidth
+        sx={{ maxWidth: 600, maxHeight: 600 }}
+      >
+        <DialogTitle>User Profile</DialogTitle>
+        <DialogContent>
+          <Profile />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseProfileDialog} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
       {/* Dialog for Timesheet */}
       {/* <CustomDialog
         open={openTimesheetDialog}
@@ -261,12 +273,22 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
       /> */}
 
       {/* Dialog for Leave Application */}
-      <CustomDialog
+      <Dialog
         open={openLeaveDialog}
         onClose={handleCloseLeaveDialog}
-        content={<LeaveApplication />}
-        title="Apply Leave"
-      />
+        fullWidth
+        sx={{ maxWidth: 600, maxHeight: 600 }}
+      >
+        <DialogTitle>Apply Leave</DialogTitle>
+        <DialogContent>
+          <LeaveApplication />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseLeaveDialog} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

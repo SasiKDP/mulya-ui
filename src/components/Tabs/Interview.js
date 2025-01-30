@@ -249,7 +249,7 @@ const Interview = () => {
               backgroundColor: "transparent", // Transparent background
               transition: "all 0.3s ease",
               "&:hover": {
-                backgroundColor: "rgba(0, 77, 64, 0.1)", // Soft teal hover effect
+                backgroundColor: "rgba(18, 107, 94, 0.1)", // Soft teal hover effect
                 borderColor: "#004d40", // Retain border color on hover
                 color: "#004d40", // Retain text color on hover
               },

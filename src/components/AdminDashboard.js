@@ -1,28 +1,42 @@
 import React, { useState, useEffect } from "react";
-import { Box, Card, CardContent, Typography, Tabs, Tab, Avatar, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination, useTheme, alpha, Chip, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Tabs,
+  Tab,
+  Avatar,
+  Paper,
+  CircularProgress,
+} from "@mui/material";
 import { FileText, Users, Calendar, Clock, Building } from "lucide-react";
 import BASE_URL from "../redux/apiConfig";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchEmployees } from "../redux/features/employeesSlice";
 
 const AdminDashboard = () => {
   const [tabIndex, setTabIndex] = useState(0);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const theme = useTheme();
-
-  // State for different data types
   const [requirements, setRequirements] = useState([]);
   const [candidates, setCandidates] = useState([]);
-  const [interviews, setInterviews] = useState([]);
-  const [leaves, setLeaves] = useState([]);
+  const [interviews, setInterviews] = useState([]); // Interviews state
   const [attendance, setAttendance] = useState([]);
-  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Base API URL
-  //const BASE_URL = 'http://192.168.0.246:8085';
+  const { employeesList, fetchStatus, fetchError } = useSelector(
+    (state) => state.employees
+  );
+  const dispatch = useDispatch();
 
-  // Function to handle API calls
+  // Fetch employees data when the component mounts
+  useEffect(() => {
+    if (tabIndex === 5) {
+      dispatch(fetchEmployees()); // Fetch employees when tabIndex is 5
+    }
+  }, [tabIndex, dispatch]);
+
+  // Function to handle API calls for other tabs
   const fetchData = async (endpoint) => {
     setLoading(true);
     setError(null);
@@ -44,12 +58,10 @@ const AdminDashboard = () => {
   // Fetch data based on active tab
   useEffect(() => {
     const endpoints = {
-      0: '/requirements/all',
-      1: '/candidate/submissions/allsubmittedcandidates',
-      2: '/interviews/all',
-      3: '/leaves/all',
-      4: '/attendance/all',
-      5: '/employees/all'
+      0: "/requirements/getAssignments",
+      1: "/candidate/submissions/allsubmittedcandidates",
+      2: "/candidate/allscheduledinterviews", // Interview data API endpoint
+      3: "/attendance/all",
     };
 
     const updateState = (data) => {
@@ -58,19 +70,13 @@ const AdminDashboard = () => {
           setRequirements(data);
           break;
         case 1:
-          setCandidates(data);
+          setCandidates(data); // Set candidates for "All Submissions"
           break;
         case 2:
-          setInterviews(data);
+          setInterviews(data); // Set interviews for "All Interviews"
           break;
         case 3:
-          setLeaves(data);
-          break;
-        case 4:
           setAttendance(data);
-          break;
-        case 5:
-          setEmployees(data);
           break;
         default:
           break;
@@ -82,193 +88,112 @@ const AdminDashboard = () => {
     }
   }, [tabIndex]);
 
-  const tabData = [
-    {
-      label: "Requirements",
-      data: requirements,
-      columns: [
-        { id: 'position', label: 'Position' },
-        { id: 'department', label: 'Department' },
-        { id: 'status', label: 'Status' },
-        { id: 'applicants', label: 'Applicants' }
-      ]
-    },
-    {
-      label: "Candidates",
-      data: candidates,
-      columns: [
-    { "id": "name", "label": "Name" },
-    { "id": "position", "label": "Position" },
-    { "id": "status", "label": "Status" },
-    { "id": "candidateId", "label": "Candidate ID" },
-    { "id": "jobId", "label": "Job ID" },
-    { "id": "userId", "label": "User  ID" },
-    { "id": "fullName", "label": "Full Name" },
-    { "id": "emailId", "label": "Email ID" },
-    { "id": "contactNumber", "label": "Contact Number" },
-    { "id": "currentOrganization", "label": "Current Organization" },
-    { "id": "qualification", "label": "Qualification" },
-    { "id": "totalExperience", "label": "Total Experience (Years)" },
-    { "id": "relevantExperience", "label": "Relevant Experience (Years)" },
-    { "id": "currentCTC", "label": "Current CTC" },
-    { "id": "expectedCTC", "label": "Expected CTC" },
-    { "id": "noticePeriod", "label": "Notice Period" },
-    { "id": "currentLocation", "label": "Current Location" },
-    { "id": "preferredLocation", "label": "Preferred Location" },
-    { "id": "skills", "label": "Skills" },
-    { "id": "communicationSkills", "label": "Communication Skills" },
-    { "id": "requiredTechnologiesRating", "label": "Required Technologies Rating" },
-    { "id": "overallFeedback", "label": "Overall Feedback" },
-    { "id": "userEmail", "label": "User  Email" },
-    { "id": "interviewStatus", "label": "Interview Status" }
-]
-    },
-    {
-      label: "Interviews",
-      data: interviews,
-      columns: [
-        { id: 'candidate', label: 'Candidate' },
-        { id: 'position', label: 'Position' },
-        { id: 'date', label: 'Date' },
-        { id: 'time', label: 'Time' },
-        { id: 'level', label: 'Level' }
-      ]
-    },
-    {
-      label: "Leaves",
-      data: leaves,
-      columns: [
-        { id: 'employee', label: 'Employee' },
-        { id: 'type', label: 'Type' },
-        { id: 'from', label: 'From' },
-        { id: 'to', label: 'To' },
-        { id: 'status', label: 'Status' }
-      ]
-    },
-    {
-      label: "Attendance",
-      data: attendance,
-      columns: [
-        { id: 'employee', label: 'Employee' },
-        { id: 'status', label: 'Status' },
-        { id: 'checkIn', label: 'Check In' },
-        { id: 'checkOut', label: 'Check Out' }
-      ]
-    },
-    {
-      label: "Employees",
-      data: employees,
-      columns: [
-        { id: 'employeeID', label: 'Employee ID' },
-        { id: 'empName', label: 'Name' },
-        { id: 'designation', label: 'Designation' },
-        { id: 'email', label: 'Email' },
-        { id: 'phone', label: 'Phone' }
-      ]
-    }
-  ];
-
   const summaryData = [
     {
       label: "Requirements",
       count: requirements.length,
       icon: <FileText size={24} />,
       color: "#1976d2",
-      bgColor: "#e3f2fd"
+      bgColor: "#e3f2fd",
     },
     {
       label: "Employees",
-      count: employees.length,
+      count: employeesList.length,
       icon: <Users size={24} />,
       color: "#388e3c",
-      bgColor: "#e8f5e9"
+      bgColor: "#e8f5e9",
     },
     {
-      label: "Leaves",
-      count: leaves.length,
-      icon: <Calendar size={24} />,
+      label: "Interviews", // Replacing the Leaves card with Interviews
+      count: interviews.length,
+      icon: <Calendar size={24} />, // Changing the icon to represent Interviews
       color: "#d32f2f",
-      bgColor: "#ffebee"
+      bgColor: "#ffebee",
     },
     {
       label: "Attendance",
       count: attendance.length,
       icon: <Clock size={24} />,
       color: "#fbc02d",
-      bgColor: "#fff9c4"
+      bgColor: "#fff9c4",
     },
     {
       label: "Departments",
       count: 5,
       icon: <Building size={24} />,
       color: "#7b1fa2",
-      bgColor: "#f3e5f5"
+      bgColor: "#f3e5f5",
     },
     {
       label: "Submissions",
       count: candidates.length,
       icon: <Building size={24} />,
       color: "rgba(72, 30, 20, 0.9)",
-      bgColor: "rgba(255, 190, 152, 0.6)"
-    }
+      bgColor: "rgba(255, 190, 152, 0.6)",
+    },
   ];
-
-  const getStatusChipColor = (status) => {
-    const statusColors = {
-      Open: "success",
-      Closed: "error",
-      Pending: "warning",
-      Approved: "success",
-      Present: "success",
-      Late: "warning",
-      Absent: "error",
-      Shortlisted: "info",
-      Selected: "success",
-      Interview: "warning",
-      "In Process": "primary"
-    };
-    return statusColors[status] || "default";
-  };
 
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
-    setPage(0);
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const renderCellContent = (column, value) => {
-    if (column.id === "status") {
-      return <Chip label={value} color={getStatusChipColor(value)} size="small" />;
-    }
-    return value;
   };
 
   return (
-    <Box sx={{ height: "calc(100vh - 18vh)", display: "flex", flexDirection: "column", gap: 3, p: 2, bgcolor: "#fff" }}>
-      <Typography variant="h4" sx={{ fontWeight: "bold", color: theme.palette.primary.main, mb: 0.5 }}>
+    <Box
+      sx={{
+        height: "calc(100vh - 18vh)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+        p: 2,
+        bgcolor: "#fff",
+      }}
+    >
+      <Typography
+        variant="h4"
+        sx={{ fontWeight: "bold", color: "#1976d2", mb: 0.5 }}
+      >
         Dashboard Overview
       </Typography>
 
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(5, 1fr)" }, gap: 3 }}>
+      {/* Grid for summary cards */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(5, 1fr)",
+          },
+          gap: 3,
+        }}
+      >
         {summaryData.map((data, index) => (
-          <Card key={index} elevation={0} sx={{ bgcolor: data.bgColor, transition: "transform 0.2s", "&:hover": { transform: "translateY(-4px)" } }}>
-            <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, py: 1 }}>
+          <Card
+            key={index}
+            elevation={0}
+            sx={{
+              bgcolor: data.bgColor,
+              transition: "transform 0.2s",
+              "&:hover": { transform: "translateY(-4px)" },
+            }}
+          >
+            <CardContent
+              sx={{ display: "flex", alignItems: "center", gap: 2, py: 1 }}
+            >
               <Avatar sx={{ bgcolor: data.color, width: 38, height: 38 }}>
                 {data.icon}
               </Avatar>
               <Box>
-                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "#616161", fontWeight: 500 }}
+                >
                   {data.label}
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: "bold", color: data.color }}>
+                <Typography
+                  variant="h4"
+                  sx={{ fontWeight: "bold", color: data.color }}
+                >
                   {data.count}
                 </Typography>
               </Box>
@@ -277,7 +202,11 @@ const AdminDashboard = () => {
         ))}
       </Box>
 
-      <Paper elevation={0} sx={{ flex: 1, overflow: "hidden", bgcolor: "white", borderRadius: 2 }}>
+      <Paper
+        elevation={0}
+        sx={{ flex: 1, overflow: "hidden", bgcolor: "white", borderRadius: 2 }}
+      >
+        {/* Tabs Section */}
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
@@ -291,62 +220,36 @@ const AdminDashboard = () => {
               textTransform: "none",
               fontWeight: 500,
               fontSize: "0.95rem",
-              minHeight: 48
-            }
+              minHeight: 48,
+            },
           }}
         >
-          {tabData.map((tab, index) => (
+          {summaryData.map((tab, index) => (
             <Tab key={index} label={tab.label} />
           ))}
         </Tabs>
 
-        <TableContainer sx={{ height: "calc(100% - 104px)" }}>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <CircularProgress />
-            </Box>
-          ) : error ? (
-            <Box sx={{ p: 2, textAlign: 'center', color: 'error.main' }}>
-              Error: {error}
-            </Box>
-          ) : (
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  {tabData[tabIndex].columns.map((column) => (
-                    <TableCell key={column.id} sx={{ bgcolor: theme.palette.grey[50], fontWeight: 600, color: theme.palette.text.primary }}>
-                      {column.label}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tabData[tabIndex].data
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => (
-                    <TableRow hover key={row.id} sx={{ "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.04) } }}>
-                      {tabData[tabIndex].columns.map((column) => (
-                        <TableCell key={column.id} sx={{ color: theme.palette.text.secondary }}>
-                          {renderCellContent(column, row[column.id])}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          )}
-        </TableContainer>
-
-        <TablePagination
-          component="div"
-          count={tabData[tabIndex].data.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25]}
-          sx={{ borderTop: 1, borderColor: "divider", px: 2 }}
-        />
+        {/* Loading or Error Handling */}
+        {loading ? (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Box sx={{ p: 2, textAlign: "center", color: "error.main" }}>
+            Error: {error}
+          </Box>
+        ) : (
+          <Box sx={{ p: 2, textAlign: "center" }}>
+            <Typography variant="h5">No Data Available</Typography>
+          </Box>
+        )}
       </Paper>
     </Box>
   );

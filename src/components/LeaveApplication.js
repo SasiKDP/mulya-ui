@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Grid,
@@ -7,128 +7,152 @@ import {
   Typography,
   Alert,
   MenuItem,
+  Snackbar,
 } from "@mui/material";
 import axios from "axios";
 import BASE_URL from "../redux/apiConfig";
 import dayjs from "dayjs";
-import { toast } from "react-toastify";
-import { useSelector } from "react-redux";
-import useEmployees from './customHooks/useEmployees'; // Adjust the import path as needed
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter"; // Import plugin for isSameOrAfter
+import { useSelector, useDispatch } from "react-redux";
+import { fetchEmployees } from "../redux/features/employeesSlice";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+
+// Extend dayjs to use the isSameOrAfter plugin
+dayjs.extend(isSameOrAfter);
 
 const LeaveApplication = () => {
-  const [formData, setFormData] = useState({
-    startDate: "",
-    endDate: "",
-    days: "",
-    leaveType: "",
-    userId: "",
-    managerEmail: "",
-    description: "",
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const { employeesList, fetchStatus, fetchError } = useSelector(
+    (state) => state.employees
+  );
+
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success"); // success, error, info, warning
+
+  // Filter managers (SUPERADMIN users)
+  const managersList = employeesList.filter(
+    (emp) => emp.roles === "SUPERADMIN" && emp.status === "ACTIVE"
+  );
+
+  // Fetch employees on component mount
+  useEffect(() => {
+    dispatch(fetchEmployees());
+  }, [dispatch]);
+
+  // Formik setup
+  const formik = useFormik({
+    initialValues: {
+      startDate: "",
+      endDate: "",
+      days: "",
+      leaveType: "",
+      userId: user || "",
+      managerEmail: "",
+      description: "",
+    },
+    validationSchema: Yup.object({
+      startDate: Yup.date()
+        .required("Start date is required")
+        .test(
+          "is-after-joining",
+          "Leave start date cannot be before your joining date",
+          function (value) {
+            const joiningDate = dayjs(user?.joiningDate); // Use dayjs to convert date
+            return dayjs(value).isSameOrAfter(joiningDate, "day"); // Check if start date is after or same as joining date
+          }
+        ),
+      endDate: Yup.date()
+        .required("End date is required")
+        .min(Yup.ref("startDate"), "End date must be after start date"),
+      leaveType: Yup.string().required("Leave type is required"),
+      managerEmail: Yup.string().required("Reporting manager is required"),
+      description: Yup.string().required("Leave description is required"),
+    }),
+    onSubmit: async (values, { setSubmitting, resetForm }) => {
+      try {
+        const response = await axios.post(`${BASE_URL}/users/save`, {
+          ...values,
+          noOfDays: values.days,
+        });
+        if (response.status === 200) {
+          const successData = response.data;
+
+          setSnackbarSeverity("success");
+          setSnackbarMessage(successData.message);
+          setOpenSnackbar(true);
+
+          resetForm();
+          setSnackbarMessage(
+            `Leave application submitted successfully from ${dayjs(
+              values.startDate
+            ).format("DD MMM YYYY")} to ${dayjs(values.endDate).format(
+              "DD MMM YYYY"
+            )} (${values.days} days).`
+          );
+        }
+      } catch (error) {
+        setSnackbarSeverity("error");
+        setSnackbarMessage(
+          error.message || "An error occurred while submitting your leave."
+        );
+        setOpenSnackbar(true);
+      } finally {
+        setSubmitting(false);
+      }
+    },
   });
 
-  const { user } = useSelector((state) => state.auth);
-  const [formError, setFormError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-
-  // Using the custom hook with SUPERADMIN filter
-  const { 
-    employees: managersList, 
-    status: fetchStatus, 
-    error: fetchError 
-  } = useEmployees('SUPERADMIN');
-
+  // Update days when startDate or endDate changes
   useEffect(() => {
-    setFormData((prevData) => ({
-      ...prevData,
-      userId: user || '',
-    }));
-  }, [user]);
+    if (formik.values.startDate && formik.values.endDate) {
+      const start = dayjs(formik.values.startDate);
+      const end = dayjs(formik.values.endDate);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => {
-      const updatedData = { ...prevData, [name]: value };
-
-      if (updatedData.startDate && updatedData.endDate) {
-        const start = dayjs(updatedData.startDate);
-        const end = dayjs(updatedData.endDate);
-
-        if (end.isBefore(start)) {
-          updatedData.days = "";
-        } else {
-          const daysDifference = end.diff(start, "day") + 1;
-          updatedData.days = daysDifference > 0 ? daysDifference : "";
-        }
+      if (end.isBefore(start)) {
+        formik.setFieldValue("days", "");
+      } else {
+        const daysDifference = end.diff(start, "day") + 1;
+        formik.setFieldValue("days", daysDifference > 0 ? daysDifference : "");
       }
-      return updatedData;
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (
-      !formData.startDate ||
-      !formData.endDate ||
-      !formData.leaveType ||
-      !formData.managerEmail ||
-      !formData.description
-    ) {
-      setFormError("Please fill out all required fields.");
-      return;
     }
-    setFormError("");
+  }, [formik.values.startDate, formik.values.endDate]);
 
-    const leaveApplicationData = {
-      ...formData,
-      noOfDays: formData.days,
-    };
-
-    try {
-      const response = await axios.post(
-        `${BASE_URL}/users/save`,
-        leaveApplicationData
-      );
-      if (response.status === 200) {
-        const successData = response.data;
-
-        setSuccessMessage(
-          `Leave application submitted successfully from ${dayjs(formData.startDate).format(
-            "DD MMM YYYY"
-          )} to ${dayjs(formData.endDate).format("DD MMM YYYY")} (${formData.days} days).`
-        );
-        setFormData({
-          startDate: "",
-          endDate: "",
-          days: "",
-          leaveType: "",
-          userId: "",
-          managerEmail: "",
-          description: "",
-        });
-        toast.success(successData.message);
-      } 
-    } catch (error) {
-      setFormError(error.message || "An error occurred.");
-      toast.error("An error occurred while submitting your leave.");
-    }
+  // Close snackbar
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit}>
-      
-      {formError && <Alert severity="error">{formError}</Alert>}
-      {successMessage && <Alert severity="success">{successMessage}</Alert>}
+    <Box component="form" onSubmit={formik.handleSubmit}>
       {fetchStatus === "failed" && fetchError && (
         <Alert severity="error">Error fetching employees: {fetchError}</Alert>
       )}
+
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
 
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
           <TextField
             label="Employee ID"
             name="userId"
-            value={formData.userId}
-            onChange={handleChange}
+            value={formik.values.userId}
+            onChange={formik.handleChange}
             fullWidth
             variant="filled"
             disabled
@@ -139,19 +163,25 @@ const LeaveApplication = () => {
           <TextField
             label="Reporting Manager"
             name="managerEmail"
-            value={formData.managerEmail}
-            onChange={handleChange}
+            value={formik.values.managerEmail}
+            onChange={formik.handleChange}
             fullWidth
             variant="filled"
             required
             select
+            error={
+              formik.touched.managerEmail && Boolean(formik.errors.managerEmail)
+            }
+            helperText={
+              formik.touched.managerEmail && formik.errors.managerEmail
+            }
           >
             {fetchStatus === "loading" ? (
               <MenuItem disabled>Loading managers...</MenuItem>
             ) : managersList.length > 0 ? (
               managersList.map((manager) => (
                 <MenuItem key={manager.employeeId} value={manager.email}>
-                  {manager.email}
+                  {manager.userName} - {manager.email}
                 </MenuItem>
               ))
             ) : (
@@ -165,12 +195,14 @@ const LeaveApplication = () => {
             label="Start Date"
             name="startDate"
             type="date"
-            value={formData.startDate}
-            onChange={handleChange}
+            value={formik.values.startDate}
+            onChange={formik.handleChange}
             fullWidth
             variant="filled"
             required
             InputLabelProps={{ shrink: true }}
+            error={formik.touched.startDate && Boolean(formik.errors.startDate)}
+            helperText={formik.touched.startDate && formik.errors.startDate}
           />
         </Grid>
 
@@ -179,12 +211,14 @@ const LeaveApplication = () => {
             label="End Date"
             name="endDate"
             type="date"
-            value={formData.endDate}
-            onChange={handleChange}
+            value={formik.values.endDate}
+            onChange={formik.handleChange}
             fullWidth
             variant="filled"
             required
             InputLabelProps={{ shrink: true }}
+            error={formik.touched.endDate && Boolean(formik.errors.endDate)}
+            helperText={formik.touched.endDate && formik.errors.endDate}
           />
         </Grid>
 
@@ -192,7 +226,7 @@ const LeaveApplication = () => {
           <TextField
             label="Number of Days"
             name="days"
-            value={formData.days}
+            value={formik.values.days}
             fullWidth
             variant="filled"
             disabled
@@ -203,12 +237,14 @@ const LeaveApplication = () => {
           <TextField
             label="Type of Leave"
             name="leaveType"
-            value={formData.leaveType}
-            onChange={handleChange}
+            value={formik.values.leaveType}
+            onChange={formik.handleChange}
             fullWidth
             variant="filled"
             required
             select
+            error={formik.touched.leaveType && Boolean(formik.errors.leaveType)}
+            helperText={formik.touched.leaveType && formik.errors.leaveType}
           >
             <MenuItem value="Sick Leave">Sick Leave</MenuItem>
             <MenuItem value="Paid Leave">Paid Leave</MenuItem>
@@ -221,13 +257,17 @@ const LeaveApplication = () => {
           <TextField
             label="Leave Description"
             name="description"
-            value={formData.description}
-            onChange={handleChange}
+            value={formik.values.description}
+            onChange={formik.handleChange}
             fullWidth
             variant="filled"
             required
             multiline
             rows={3}
+            error={
+              formik.touched.description && Boolean(formik.errors.description)
+            }
+            helperText={formik.touched.description && formik.errors.description}
           />
         </Grid>
       </Grid>
@@ -236,23 +276,22 @@ const LeaveApplication = () => {
         <Button
           variant="outlined"
           color="primary"
-          onClick={() => setFormData({
-            startDate: "",
-            endDate: "",
-            days: "",
-            leaveType: "",
-            userId: user || "",
-            managerEmail: "",
-            description: "",
-          })}
+          onClick={() => formik.resetForm()}
         >
           Clear
         </Button>
 
-        <Button type="submit" variant="contained" color="primary">
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={formik.isSubmitting}
+        >
           Apply Leave
         </Button>
       </Box>
+
+      {/* Snackbar for displaying success/error message */}
     </Box>
   );
 };
