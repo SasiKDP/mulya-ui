@@ -147,7 +147,7 @@ const AllSubmissions = () => {
               mb: 3,
             }}
           >
-            All Submissions
+             Submitted candidates
           </Typography>
 
           <TableContainer

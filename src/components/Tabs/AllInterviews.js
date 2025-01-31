@@ -112,7 +112,7 @@ const AllInterviews = () => {
               mb: 3,
             }}
           >
-            All Submissions
+            Scheduled Interviews
           </Typography>
 
           <TableContainer

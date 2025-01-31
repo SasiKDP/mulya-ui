@@ -1,4 +1,4 @@
-import React, { useState, useEffect ,useMemo} from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Drawer,
@@ -6,10 +6,13 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
+  useMediaQuery,
+  IconButton,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logoutAsync } from "../redux/features/authSlice";
+import MenuIcon from "@mui/icons-material/Menu";
 
 // Components
 import Requirements from "../components/Requirements/Requirements";
@@ -21,9 +24,12 @@ import AddUser from "../components/Tabs/AddUser";
 import Header from "../components/Header";
 import JobForm from "../components/Requirements/JobForm";
 import Interview from "../components/Tabs/Interview";
-
-
-
+import AdminDashboard from "../components/AdminDashboard";
+import AttendanceTracker from "../components/AttendanceTracker";
+import EmployeeTimesheet from "../components/EmployeeTimesheet";
+import UsersList from "../components/Tabs/UsersList";
+import AllSubmissions from "../components/Tabs/AllSubmissions";
+import AllInterviews from "../components/Tabs/AllInterviews";
 
 // Icons
 import HomeIcon from "@mui/icons-material/Home";
@@ -36,22 +42,17 @@ import GroupIcon from '@mui/icons-material/Group';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import InterpreterModeIcon from '@mui/icons-material/InterpreterMode';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
+import ViewListIcon from '@mui/icons-material/ViewList';
 
 // Assets
 import logo from "../assets/logo-01.png";
-import AdminDashboard from "../components/AdminDashboard";
-import AttendanceTracker from "../components/AttendanceTracker";
-import EmployeeTimesheet from "../components/EmployeeTimesheet";
-import UsersList from "../components/Tabs/UsersList";
-import AllSubmissions from "../components/Tabs/AllSubmissions";
-import ViewListIcon from '@mui/icons-material/ViewList';
-import AllInterviews from "../components/Tabs/AllInterviews";
 
 // Tabs configuration based on roles
 const TABS_BY_ROLE = {
   EMPLOYEE: [
-    
-    
     {
       label: "Assigned",
       value: "ASSIGNED",
@@ -76,7 +77,6 @@ const TABS_BY_ROLE = {
       component: <AttendanceTracker />,
       icon: <AccessTimeIcon />,
     },
-    
   ],
   ADMIN: [
     {
@@ -91,7 +91,6 @@ const TABS_BY_ROLE = {
       component: <Planned />,
       icon: <HomeIcon />,
     },
-
     {
       label: "Bench",
       value: "BENCH",
@@ -104,7 +103,6 @@ const TABS_BY_ROLE = {
       component: <AddUser />,
       icon: <AddIcon />,
     },
-    
   ],
   SUPERADMIN: [
     {
@@ -120,6 +118,36 @@ const TABS_BY_ROLE = {
       icon: <AssignmentIcon />,
     },
     {
+      label: "Job Form",
+      value: "JOB_FORM",
+      component: <JobForm />,
+      icon: <WorkIcon />,
+    },
+    {
+      label: "AddUser",
+      value: "ADDUSER",
+      component: <AddUser />,
+      icon: <AppRegistrationIcon />,
+    },
+    {
+      label: "Users",
+      value: "USERS",
+      component: <UsersList />,
+      icon: <PeopleAltIcon />,
+    },
+    {
+      label: "Submissions",
+      value: "ALLSUBMISSIONS",
+      component: <AllSubmissions />,
+      icon: <PersonSearchIcon />,
+    },
+    {
+      label: "Interviews",
+      value: "ALLINTERVIEWS",
+      component: <AllInterviews />,
+      icon: <InterpreterModeIcon />,
+    },
+    {
       label: "Planned",
       value: "PLANNED",
       component: <Planned />,
@@ -132,92 +160,48 @@ const TABS_BY_ROLE = {
       icon: <HourglassEmptyIcon />,
     },
     {
-      label: "Job Form",
-      value: "JOB_FORM",
-      component: <JobForm />,
-      icon: <WorkIcon />,
-    },
-    {
-      label: "AddUser",
-      value: "ADDUSER",
-      component: <AddUser />,
-      icon: <AddIcon />,
-    },
-    {
       label: "Timesheet",
       value: "TIMESHEET",
       component: <EmployeeTimesheet />,
       icon: <AccessTimeIcon />,
     },
-    {
-      label: "Users",
-      value: "USERS",
-      component: <UsersList />,
-      icon: <PeopleAltIcon />,
-    },
-    {
-      label: "Submissions",
-      value: "ALLSUBMISSIONS",
-      component: <AllSubmissions />,
-      icon: <ViewListIcon />,
-    },
-    {
-      label: "Interviews",
-      value: "ALLINTERVIEWS",
-      component: <AllInterviews />,
-      icon: <ViewListIcon />,
-    },
-   
   ],
 };
 
 const DashboardPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery("(max-width:600px)");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
 
   const { roles, logInTimeStamp, user, isAuthenticated } = useSelector(
     (state) => state.auth
   );
 
-  console.log('user id from the dashborad ',user);
-  
-
   const [selectedTab, setSelectedTab] = useState(null);
 
-  const userId = user || null; 
-  const defaultRole = "SUPERADMIN"; // Default role if none exists
-  const userRole = roles?.[0] || defaultRole; // Use the first role or fallback to default
-  // const activeTabs = TABS_BY_ROLE[userRole] || []; // Tabs for the current role
-
+  const userId = user || null;
+  const defaultRole = "SUPERADMIN";
+  const userRole = roles?.[0] || defaultRole;
   const activeTabs = useMemo(() => TABS_BY_ROLE[userRole] || [], [userRole, TABS_BY_ROLE]);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
 
-  // Set default selected tab on role or tabs change
-//   useEffect(() => {
-//   if (activeTabs.length > 0) {
-//     setSelectedTab((prevTab) => prevTab || activeTabs[0].value);
-//   }
-// }, [activeTabs]);
+  useEffect(() => {
+    if (activeTabs.length > 0) {
+      setSelectedTab((prevTab) => prevTab || activeTabs[0].value);
+    }
+  }, [activeTabs]);
 
-useEffect(() => {
-  if (activeTabs.length > 0) {
-    setSelectedTab((prevTab) => prevTab || activeTabs[0].value);
-  }
-}, [activeTabs]);
-
-  // Handle logout
   const handleLogout = () => {
     dispatch(logoutAsync(userId));
-    navigate("/"); // Redirect to home after logout
+    navigate("/");
   };
 
-  // Find the component for the selected tab
   const selectedTabComponent =
     activeTabs.find((tab) => tab.value === selectedTab)?.component || (
       <Box>No content available for the selected tab.</Box>
@@ -243,62 +227,76 @@ useEffect(() => {
           orglogo={logo}
           onLogout={handleLogout}
         />
+        {isMobile && (
+          <IconButton
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            sx={{ position: "absolute", left: 10, top: 10 }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
       </Box>
 
       {/* Main Content */}
       <Box sx={{ display: "flex", flex: 1, mt: "64px" }}>
         {/* Sidebar */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            width: "16.66%",
-            flexShrink: 0,
-            "& .MuiDrawer-paper": {
-              width: "16.66%",
-              boxSizing: "border-box",
-              marginTop: "6.4%",
-              bgcolor: "rgba(232, 245, 233, 0.5)",
-            },
-          }}
-        >
-          <List>
-            {activeTabs.map((tab) => (
-              <ListItem
-                button
-                key={tab.value}
-                onClick={() => setSelectedTab(tab.value)}
-                sx={{
-                  borderRadius: "8px",
-                  marginBottom: "8px",
-                  border: selectedTab === tab.value ? "2px solid #4B70F5" : "inherit",
-                  "&:hover": {
-                    backgroundColor: "#4B70F5",
-                    color: "#fff",
-                    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+        {isSidebarOpen && (
+          <Drawer
+            variant={isMobile ? "temporary" : "permanent"}
+            open={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            sx={{
+              width: isMobile ? "80%" : "17.86%",
+              flexShrink: 0,
+              "& .MuiDrawer-paper": {
+                width: isMobile ? "80%" : "17.86%",
+                boxSizing: "border-box",
+                marginTop: isMobile ? "64px" : "6.4%",
+                bgcolor: "rgba(232, 245, 233, 0.5)",
+                overflowY: "auto", // Enable vertical scrolling
+                height: "calc(100vh - 64px)", // Set height to fill the viewport
+              },
+            }}
+          >
+            <List sx={{ padding: 1 }}>
+              {activeTabs.map((tab) => (
+                <ListItem
+                  button
+                  key={tab.value}
+                  onClick={() => {
+                    setSelectedTab(tab.value);
+                    if (isMobile) setIsSidebarOpen(false);
+                  }}
+                  sx={{
                     borderRadius: "8px",
-                  },
-                  "&:hover .MuiListItemIcon-root": { color: "#fff" },
-                  "&:hover .MuiListItemText-primary": { color: "#fff" }, // Add this line to target the text
-                }}
-              >
-                <ListItemIcon sx={{ color: "inherit" }}>{tab.icon}</ListItemIcon>
-                <ListItemText primary={tab.label} />
-              </ListItem>
-            ))}
-          </List>
-        </Drawer>
+                    marginBottom: "8px",
+                    border: selectedTab === tab.value ? "2px solid #4B70F5" : "inherit",
+                    "&:hover": {
+                      backgroundColor: "#4B70F5",
+                      color: "#fff",
+                      boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+                      borderRadius: "8px",
+                    },
+                    "&:hover .MuiListItemIcon-root": { color: "#fff" },
+                    "&:hover .MuiListItemText-primary": { color: "#fff" },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "inherit" }}>{tab.icon}</ListItemIcon>
+                  <ListItemText primary={tab.label} />
+                </ListItem>
+              ))}
+            </List>
+          </Drawer>
+        )}
 
         {/* Main Content Area */}
         <Box
           sx={{
             flex: 1,
             padding: 3,
-            width: "83.33%",
+            width: isMobile ? "100%" : "83.33%",
             height: "calc(100vh - 64px)",
-            overflow: "hidden",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            overflow: "auto",
           }}
         >
           {selectedTabComponent}

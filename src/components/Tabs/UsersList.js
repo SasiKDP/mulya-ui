@@ -52,7 +52,7 @@ const UsersList = () => {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
-    severity: "success", // Default to success
+    severity: "success",
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
@@ -66,10 +66,10 @@ const UsersList = () => {
   const userIdRegex = /^DQIND\d{2,4}$/;
 
   const [formErrors, setFormErrors] = useState({
-    personalEmail: "",
+    personalemail: "",
     email: "",
-    phone: "",
-    userId: "",
+    phoneNumber: "",
+    employeeId: "",
   });
 
   useEffect(() => {
@@ -129,13 +129,12 @@ const UsersList = () => {
 
   const handleOpenEditDialog = (employee) => {
     setSelectedEmployee(employee);
-    // Ensure roles is properly formatted as an array and contains the current values
     const currentRoles = Array.isArray(employee.roles)
       ? employee.roles
       : typeof employee.roles === "string"
       ? employee.roles.split(", ")
       : [];
-
+  
     setEditFormData({
       ...employee,
       roles: currentRoles,
@@ -147,6 +146,7 @@ const UsersList = () => {
     setEditDialogOpen(false);
     setSelectedEmployee(null);
     setEditFormData({});
+    setFormErrors({});
     dispatch(resetUpdateStatus());
   };
 
@@ -156,14 +156,14 @@ const UsersList = () => {
     // Basic validation on each input field
     let errors = { ...formErrors };
 
-    if (name === "personalEmail" && !personalEmailRegex.test(value)) {
-      errors.personalEmail = "Invalid Gmail address.";
-    } else if (name === "email" && !emailRegex.test(value)) {
-      errors.email = "Invalid DataQ email address.";
-    } else if (name === "phone" && !phoneRegex.test(value)) {
-      errors.phone = "Phone number must be 10 digits.";
+    if (name === "personalemail" && !personalEmailRegex.test(value)) {
+      errors.personalemail = "Invalid Gmail address";
+    } else if (name === "employeeId" && !emailRegex.test(value)) {
+      errors.email = "Invalid DataQ email address";
+    } else if (name === "phoneNumber" && !phoneRegex.test(value)) {
+      errors.phoneNumber = "Phone number must be 10 digits";
     } else if (name === "userId" && !userIdRegex.test(value)) {
-      errors.userId = "User ID must match DQINDXX format.";
+      errors.userId = "User ID must match DQINDXX format";
     } else {
       errors[name] = "";
     }
@@ -178,8 +178,26 @@ const UsersList = () => {
 
   const handleSubmitEdit = (e) => {
     e.preventDefault();
-
-    // Ensure roles is an array before sending it to the backend
+  
+    // Prevent SuperAdmin from editing their role
+    if (
+      selectedEmployee &&
+      selectedEmployee.roles.includes("SUPERADMIN") &&
+      editFormData.roles.includes("SUPERADMIN")
+    ) {
+      setSnackbar({
+        open: true,
+        message: "SuperAdmin role cannot be changed by SuperAdmin.",
+        severity: "error",
+      });
+      return;
+    }
+  
+    // Validate all fields before submission
+    const errors = {};
+    if (editFormData.personalemail && !personalEmailRegex.test(editFormData.personalemail)) {
+      errors.personalemail = "Invalid Gmail address";
+    }
     if (!editFormData.roles || editFormData.roles.length === 0) {
       setSnackbar({
         open: true,
@@ -188,16 +206,19 @@ const UsersList = () => {
       });
       return;
     }
-
+  
+    // Check if there are any validation errors
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+  
     const normalizedData = {
       ...editFormData,
-      personalemail:
-        editFormData["personal email"] || editFormData.personalemail,
-      roles: Array.isArray(editFormData.roles)
-        ? editFormData.roles
-        : [editFormData.roles],
+      personalemail: editFormData.personalemail,
+      roles: Array.isArray(editFormData.roles) ? editFormData.roles : [editFormData.roles],
     };
-
+  
     dispatch(updateEmployee(normalizedData));
   };
 
@@ -295,9 +316,7 @@ const UsersList = () => {
                     <TableCell sx={{ border: "1px solid #ddd" }}>
                       <IconButton
                         color="error"
-                        onClick={() =>
-                          handleDeleteEmployee(employee.employeeId)
-                        }
+                        onClick={() => handleDeleteEmployee(employee.employeeId)}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -346,6 +365,7 @@ const UsersList = () => {
                   key === "roles" ? (
                     <Autocomplete
                       key={key}
+                      
                       options={VALID_ROLES}
                       value={editFormData.roles || []}
                       onChange={(event, newValue) => {
@@ -359,6 +379,7 @@ const UsersList = () => {
                           {...params}
                           label="Roles"
                           placeholder="Select roles"
+                          disabled={selectedEmployee && selectedEmployee.roles.includes("SUPERADMIN")}
                         />
                       )}
                       renderTags={(value, getTagProps) =>
@@ -392,8 +413,7 @@ const UsersList = () => {
                       disabled
                       fullWidth
                     />
-                  ) :
-                   key === "email" ? (
+                  ) : key === "email" ? (
                     <TextField
                       key={key}
                       label="Employee Email"
@@ -401,8 +421,18 @@ const UsersList = () => {
                       disabled
                       fullWidth
                     />
-                  ) :
-                  (
+                  ) : key === "personalemail" ? (
+                    <TextField
+                      key={key}
+                      label="Personal Email"
+                      name="personalemail"
+                      value={editFormData[key] || ""}
+                      onChange={handleInputChange}
+                      error={!!formErrors.personalemail}
+                      helperText={formErrors.personalemail}
+                      fullWidth
+                    />
+                  ) : (
                     <TextField
                       key={key}
                       label={key.charAt(0).toUpperCase() + key.slice(1)}
@@ -410,7 +440,7 @@ const UsersList = () => {
                       value={editFormData[key] || ""}
                       onChange={handleInputChange}
                       fullWidth
-                      error={formErrors[key] ? true : false}
+                      error={!!formErrors[key]}
                       helperText={formErrors[key]}
                     />
                   )
@@ -425,11 +455,7 @@ const UsersList = () => {
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleSubmitEdit}
-              variant="contained"
-              color="primary"
-            >
+            <Button onClick={handleSubmitEdit} variant="contained" color="primary">
               Update User
             </Button>
           </DialogActions>
