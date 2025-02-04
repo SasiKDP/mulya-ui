@@ -595,7 +595,7 @@ const JobForm = () => {
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Grid container spacing={2}>
-              {/* Priority */}
+              {/* Priority
               <Grid item xs={12} sm={6} md={3}>
                 <FormControl fullWidth variant="outlined" sx={textFieldStyle}>
                   <InputLabel>Priority</InputLabel>
@@ -612,7 +612,7 @@ const JobForm = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Grid> */}
 
               {/* Job Type */}
               <Grid item xs={12} sm={6} md={3}>

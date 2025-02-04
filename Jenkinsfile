@@ -3,7 +3,7 @@ pipeline {
     environment {
     registryCredential = 'docker-hub'
     DOCKER_IMAGE_NAME = 'ats-portal'
-    registry = "sandycis476/dataquad-prod"
+    registry = "sandycis476/dataquadui-prod - Dataquad-Outsourcing-UI"
     dockerImage = ''
   }
 agent any

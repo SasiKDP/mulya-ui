@@ -31,28 +31,19 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "../../redux/features/employeesSlice";
 import BASE_URL from "../../redux/apiConfig";
 
-// CellContent component for handling table cell display and dialog
 const CellContent = ({ content, title }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
   const MAX_CELL_LENGTH = 15;
 
   const truncatedContent =
     content?.length > MAX_CELL_LENGTH
       ? `${content.slice(0, MAX_CELL_LENGTH)}...`
       : content;
-
-  const handleCopyContent = () => {
-    navigator.clipboard.writeText(content);
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
-  };
 
   return (
     <TableCell
@@ -175,7 +166,29 @@ const Requirements = () => {
     severity: "success",
   });
 
-  // Filter active recruiters
+  const [jobToDeleteDetails, setJobToDeleteDetails] = useState({
+    jobId: "",
+  });
+
+  const staticHeaders = [
+    "Recruiter Names",
+    "Job Id",
+    "Job Title",
+    "Client Name",
+    "Job Description",
+    "Job Type",
+    "Location",
+    "Job Mode",
+    "Experience Required",
+    "Notice Period",
+    "Relevant Experience",
+    "Qualification",
+    "Status",
+    "Recruiter IDs",
+
+    "Actions",
+  ];
+
   const recruiters = employeesList.filter(
     (emp) => emp.roles === "EMPLOYEE" && emp.status === "ACTIVE"
   );
@@ -198,7 +211,6 @@ const Requirements = () => {
     }
   };
 
-  // Pagination handlers
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -208,7 +220,6 @@ const Requirements = () => {
     setPage(0);
   };
 
-  // Edit handlers
   const handleEdit = (job) => {
     setEditFormData({
       ...job,
@@ -274,9 +285,13 @@ const Requirements = () => {
     }
   };
 
-  // Delete handlers
-  const handleDeleteClick = (jobId) => {
-    setJobToDelete(jobId);
+  const handleDeleteClick = (job) => {
+    // Changed to accept the whole job object
+    setJobToDelete(job);
+
+    setJobToDeleteDetails({
+      jobId: job,
+    }); // Store the details
     setDeleteDialogOpen(true);
   };
 
@@ -291,6 +306,7 @@ const Requirements = () => {
         severity: "success",
       });
       fetchRequirements();
+      setJobToDeleteDetails({ jobId: "", jobTitle: "" });
     } catch (err) {
       setSnackbar({
         open: true,
@@ -301,12 +317,10 @@ const Requirements = () => {
     setDeleteDialogOpen(false);
   };
 
-  // Snackbar handler
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  // Recruiter selection handler
   const handleSelectRecruiter = (event) => {
     const selectedNames = event.target.value;
     setEditFormData((prev) => ({
@@ -320,7 +334,6 @@ const Requirements = () => {
     }));
   };
 
-  // Pagination calculation
   const paginatedData = requirementsList.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
@@ -364,83 +377,24 @@ const Requirements = () => {
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    {Object.keys(requirementsList[0] || {})
-                      .filter(
-                        (key) =>
-                          key !== "requirementAddedTimeStamp" &&
-                          key !== "recruiterIds" &&
-                          key !== "recruiterName"
-                      )
-                      .map((key) => (
-                        <TableCell
-                          key={key}
-                          sx={{
-                            fontWeight: "bold",
-                            backgroundColor: "#00796b",
-                            color: "white",
-                            border: "1px solid #ddd",
-                          }}
-                        >
-                          {key
-                            .replace(/([A-Z])/g, " $1")
-                            .replace(/^./, (str) => str.toUpperCase())}
-                        </TableCell>
-                      ))}
-                    <TableCell
-                      sx={{
-                        fontWeight: "bold",
-                        backgroundColor: "#00796b",
-                        color: "white",
-                        border: "1px solid #ddd",
-                      }}
-                    >
-                      Recruiter IDs
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: "bold",
-                        backgroundColor: "#00796b",
-                        color: "white",
-                        border: "1px solid #ddd",
-                      }}
-                    >
-                      Recruiter Names
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: "bold",
-                        backgroundColor: "#00796b",
-                        color: "white",
-                        border: "1px solid #ddd",
-                      }}
-                    >
-                      Actions
-                    </TableCell>
+                    {staticHeaders.map((header) => (
+                      <TableCell
+                        key={header}
+                        sx={{
+                          fontWeight: "bold",
+                          backgroundColor: "#00796b",
+                          color: "white",
+                          border: "1px solid #ddd",
+                        }}
+                      >
+                        {header}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {paginatedData.map((row) => (
                     <TableRow key={row.jobId} hover>
-                      {Object.entries(row)
-                        .filter(
-                          ([key]) =>
-                            key !== "recruiterIds" &&
-                            key !== "requirementAddedTimeStamp" &&
-                            key !== "recruiterName"
-                        )
-                        .map(([key, value]) => (
-                          <CellContent
-                            key={key}
-                            content={String(value)}
-                            title={key
-                              .replace(/([A-Z])/g, " $1")
-                              .replace(/^./, (str) => str.toUpperCase())}
-                          />
-                        ))}
-                      <CellContent
-                        content={row.recruiterIds?.join(", ") || "No recruiter"}
-                        title="Recruiter IDs"
-                      />
                       <CellContent
                         content={
                           Array.isArray(row.recruiterName)
@@ -449,12 +403,47 @@ const Requirements = () => {
                         }
                         title="Recruiter Names"
                       />
+                      <CellContent content={row.jobId} title="Job Id" />
+                      <CellContent content={row.jobTitle} title="Job Title" />
+                      <CellContent
+                        content={row.clientName}
+                        title="Client Name"
+                      />
+                      <CellContent
+                        content={row.jobDescription}
+                        title="Job Description"
+                      />
+                      <CellContent content={row.jobType} title="Job Type" />
+                      <CellContent content={row.location} title="Location" />
+                      <CellContent content={row.jobMode} title="Job Mode" />
+                      <CellContent
+                        content={row.experienceRequired}
+                        title="Experience Required"
+                      />
+                      <CellContent
+                        content={row.noticePeriod}
+                        title="Notice Period"
+                      />
+                      <CellContent
+                        content={row.relevantExperience}
+                        title="Relevant Experience"
+                      />
+                      <CellContent
+                        content={row.qualification}
+                        title="Qualification"
+                      />
+                      <CellContent content={row.status} title="Status" />
+                      <CellContent
+                        content={row.recruiterIds?.join(", ") || "No recruiter"}
+                        title="Recruiter IDs"
+                      />
+
                       <TableCell
                         sx={{
                           border: "1px solid #ddd",
                           display: "flex",
                           alignItems: "center",
-                          gap: 1, // Adds spacing between icons
+                          gap: 1,
                         }}
                       >
                         <Tooltip title="Edit">
@@ -480,7 +469,6 @@ const Requirements = () => {
               </Table>
             </TableContainer>
 
-            {/* Edit Dialog */}
             <Dialog
               open={editDialogOpen}
               onClose={handleCloseEditDialog}
@@ -522,7 +510,6 @@ const Requirements = () => {
                       </Grid>
                     ))}
 
-                  {/* Recruiter Selection */}
                   <Grid item xs={12} sm={6}>
                     <Select
                       multiple
@@ -603,7 +590,6 @@ const Requirements = () => {
               </DialogActions>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
             <Dialog
               open={deleteDialogOpen}
               onClose={() => setDeleteDialogOpen(false)}
@@ -629,8 +615,14 @@ const Requirements = () => {
               </DialogTitle>
               <DialogContent sx={{ mt: 2 }}>
                 <Typography>
-                  Are you sure you want to delete this job requirement? This
-                  action cannot be undone.
+                  Are you sure you want to delete this job requirement?
+                </Typography>
+                <Typography variant="subtitle1" sx={{ mt: 1 }}>
+                  Job ID: {jobToDeleteDetails.jobId}
+                </Typography>
+
+                <Typography sx={{ mt: 1 }}>
+                  This action cannot be undone.
                 </Typography>
               </DialogContent>
               <DialogActions sx={{ p: 2, backgroundColor: "grey.50" }}>
@@ -643,10 +635,10 @@ const Requirements = () => {
                 <Button
                   onClick={handleConfirmDelete}
                   variant="contained"
-                  color="primary" // For primary button color (background)
+                  color="primary"
                   sx={{
-                    backgroundColor: "primary.main", // Custom background color using theme
-                    color: "#fff", // Text color
+                    backgroundColor: "primary.main",
+                    color: "#fff",
                   }}
                   startIcon={<DeleteIcon />}
                 >
@@ -671,7 +663,6 @@ const Requirements = () => {
               </Alert>
             </Snackbar>
 
-            {/* Pagination */}
             <TablePagination
               component="div"
               count={requirementsList.length}
