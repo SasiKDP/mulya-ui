@@ -137,7 +137,7 @@ const TABS_BY_ROLE = {
     },
     {
       label: "Submissions",
-      value: "ALLSUBMISSIONS",
+      value: "SUBMISSIONS",
       component: <AllSubmissions />,
       icon: <PersonSearchIcon />,
     },

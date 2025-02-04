@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import {
+  Alert,
   CircularProgress,
   Box,
   Button,
@@ -292,8 +293,17 @@ const Interview = () => {
 
   if (error) {
     return (
-      <Box sx={{ textAlign: "center", padding: 4, color: "error.main" }}>
-        Failed to load interviews. Please try again later.
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "60vh",
+        }}
+      >
+        <Alert severity="error" sx={{ width: "100%", maxWidth: 600 }}>
+          Failed to load interviews. Please try again later.
+        </Alert>
       </Box>
     );
   }

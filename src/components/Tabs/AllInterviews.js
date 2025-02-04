@@ -1,29 +1,13 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {
-  Typography,
-  CircularProgress,
-  Box,
-  Paper,
-  Container,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Alert,
-  AlertTitle,
-} from "@mui/material";
+import { Typography, CircularProgress, Box, Paper, Container, Alert, AlertTitle } from "@mui/material";
 import BASE_URL from "../../redux/apiConfig";
+import DataTable from "../MuiComponents/DataTable"; // Importing the DataTable component
 
 const AllInterviews = () => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(0); // Pagination state
-  const [rowsPerPage, setRowsPerPage] = useState(10); // Rows per page
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -55,15 +39,6 @@ const AllInterviews = () => {
   };
 
   const columns = generateColumns(submissions);
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset page when rows per page changes
-  };
 
   if (loading) {
     return (
@@ -115,53 +90,11 @@ const AllInterviews = () => {
             Scheduled Interviews
           </Typography>
 
-          <TableContainer
-            sx={{ border: "1px solid #ddd", overflow: "auto", maxHeight: 500 }}
-          >
-            <Table sx={{ minWidth: 650, borderCollapse: "collapse" }}>
-              <TableHead sx={{ backgroundColor: "#00796b" }}>
-                <TableRow>
-                  {columns.map((col) => (
-                    <TableCell
-                      key={col.key}
-                      sx={{
-                        fontWeight: "bold",
-                        color: "#fff",
-                        border: "1px solid #ddd",
-                      }}
-                    >
-                      {col.label}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {submissions
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => (
-                    <TableRow key={row.jobId} hover>
-                      {columns.map((col) => (
-                        <TableCell
-                          key={col.key}
-                          sx={{ border: "1px solid #ddd" }}
-                        >
-                          {row[col.key]}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={submissions.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
+          {/* Reusing DataTable component */}
+          <DataTable
+            data={submissions}
+            columns={columns}
+            pageLimit={10} // You can adjust the page limit here
           />
         </Box>
       </Paper>

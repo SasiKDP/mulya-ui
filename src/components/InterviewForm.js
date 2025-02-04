@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Formik, Form, Field } from "formik";
+import * as Yup from "yup";
 import {
-  updateFormField,
   resetForm,
   submitInterviewForm,
   clearError,
@@ -24,6 +25,44 @@ import {
 import { Check } from "lucide-react";
 import dayjs from "dayjs";
 
+// Validation Schema
+const validationSchema = Yup.object().shape({
+  jobId: Yup.string().required("Job ID is required"),
+  candidateId: Yup.string().required("Candidate ID is required"),
+  candidateFullName: Yup.string().required("Candidate name is required"),
+  candidateContactNo: Yup.string().required("Contact number is required"),
+  candidateEmailId: Yup.string()
+    .email("Invalid email format")
+    .required("Candidate email is required"),
+  userEmail: Yup.string()
+    .email("Invalid email format")
+    .required("User email is required"),
+  clientName: Yup.string().required("Client name is required"),
+  clientEmail: Yup.string()
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "Invalid email format (e.g., clientname@somthing.com)"
+    )
+    .required("Client email is required"),
+  interviewDateTime: Yup.date()
+    .required("Interview date and time is required")
+    .min(new Date(), "Interview date and time must be in the future"),
+  duration: Yup.number()
+    .required("Duration is required")
+    .min(15, "Duration must be at least 15 minutes")
+    .max(60, "Duration cannot exceed 60 minutes"),
+  zoomLink: Yup.string()
+    .required("Zoom link is required")
+    .url("Must be a valid URL"),
+  interviewLevel: Yup.string()
+    .required("Interview level is required")
+    .oneOf(["Internal", "External"]),
+  externalInterviewDetails: Yup.string().when("interviewLevel", {
+    is: "External",
+    then: Yup.string().required("External interview details are required"),
+  }),
+});
+
 const InterviewForm = ({
   jobId,
   candidateId,
@@ -36,119 +75,27 @@ const InterviewForm = ({
   handleCloseInterviewDialog,
 }) => {
   const dispatch = useDispatch();
-  const {
-    formData,
-    isSubmitting,
-    submissionSuccess,
-    error,
-    interviewResponse,
-  } = useSelector((state) => state.interviewForm);
+  const { isSubmitting, submissionSuccess, error, interviewResponse } = useSelector(
+    (state) => state.interviewForm
+  );
 
-  const [dateError, setDateError] = useState("");
-  const [formError, setFormError] = useState("");
-
-  // Initialize form data
-  useEffect(() => {
-    dispatch(updateFormField({ name: "jobId", value: jobId }));
-    dispatch(updateFormField({ name: "candidateId", value: candidateId }));
-    dispatch(
-      updateFormField({ name: "candidateFullName", value: candidateFullName })
-    );
-    dispatch(
-      updateFormField({ name: "candidateContactNo", value: candidateContactNo })
-    );
-    dispatch(updateFormField({ name: "clientName", value: clientName }));
-    dispatch(updateFormField({ name: "userId", value: userId }));
-    dispatch(
-      updateFormField({ name: "candidateEmailId", value: candidateEmailId })
-    );
-    dispatch(updateFormField({ name: "userEmail", value: userEmail }));
-  }, [
+  // Initial form values
+  const initialValues = {
     jobId,
     candidateId,
     candidateFullName,
     candidateContactNo,
     clientName,
     userId,
-    userEmail,
     candidateEmailId,
-    dispatch,
-  ]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    dispatch(updateFormField({ name, value }));
-    if (formError) setFormError("");
-  };
-
-  const handleDateTimeChange = (fieldName, newValue) => {
-    const now = dayjs();
-
-    if (newValue && !dayjs(newValue).isValid()) {
-      setDateError("Please select a valid date and time.");
-      return;
-    }
-
-    if (fieldName === "interviewDateTime") {
-      if (newValue && dayjs(newValue).isBefore(now)) {
-        setDateError("Interview date and time must be in the future.");
-        return;
-      }
-      setDateError("");
-
-      dispatch(updateFormField({ name: "interviewDateTime", value: newValue }));
-      const timestamp = newValue ? dayjs(newValue).valueOf() : null;
-      dispatch(
-        updateFormField({
-          name: "interviewScheduledTimestamp",
-          value: timestamp,
-        })
-      );
-    }
-  };
-
-  const validateForm = () => {
-    const requiredFields = {
-      interviewDateTime: "Interview date and time",
-      duration: "Duration",
-      zoomLink: "Zoom link",
-      interviewLevel: "Interview level",
-      clientEmail: "Client email",
-    };
-
-    for (const [field, label] of Object.entries(requiredFields)) {
-      if (!formData[field]) {
-        setFormError(`${label} is required`);
-        return false;
-      }
-    }
-
-    if (
-      formData.interviewLevel === "External" &&
-      !formData.externalInterviewDetails
-    ) {
-      setFormError("External interview details are required");
-      return false;
-    }
-
-    if (dateError) {
-      setFormError(dateError);
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    const formDataToSubmit = {
-      ...formData,
-      interviewDateTime: dayjs(formData.interviewDateTime).format(),
-    };
-
-    dispatch(submitInterviewForm(formDataToSubmit));
+    userEmail,
+    clientEmail: "",
+    interviewDateTime: "",
+    duration: "",
+    zoomLink: "",
+    interviewLevel: "Internal",
+    externalInterviewDetails: "",
+    interviewScheduledTimestamp: null,
   };
 
   // Auto close dialog on success
@@ -161,10 +108,33 @@ const InterviewForm = ({
     }
   }, [submissionSuccess, dispatch, handleCloseInterviewDialog]);
 
+  const handleSubmit = async (values, { setSubmitting }) => {
+    const formattedValues = {
+      ...values,
+      interviewDateTime: dayjs(values.interviewDateTime).format(),
+      interviewScheduledTimestamp: dayjs(values.interviewDateTime).valueOf(),
+    };
+
+    dispatch(submitInterviewForm(formattedValues));
+    setSubmitting(false);
+  };
+
   const handleDialogClose = () => {
     dispatch(clearError());
     handleCloseInterviewDialog();
   };
+
+  // Custom TextField component for Formik
+  const FormikTextField = ({ field, form: { touched, errors }, ...props }) => (
+    <TextField
+      {...field}
+      {...props}
+      error={touched[field.name] && Boolean(errors[field.name])}
+      helperText={touched[field.name] && errors[field.name]}
+      fullWidth
+      variant="filled"
+    />
+  );
 
   // Success Message Component
   const SuccessMessage = () => {
@@ -179,7 +149,7 @@ const InterviewForm = ({
         >
           <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
             Interview scheduled for <strong>Candidate ID:</strong>{" "}
-            {interviewResponse.candidateId}{" "}successfully and email notifications
+            {interviewResponse.candidateId} successfully and email notifications
             sent.
           </Typography>
         </Alert>
@@ -189,8 +159,6 @@ const InterviewForm = ({
 
   return (
     <Box
-      component="form"
-      onSubmit={handleSubmit}
       sx={{
         p: 3,
         display: "flex",
@@ -203,206 +171,175 @@ const InterviewForm = ({
     >
       <SuccessMessage />
 
-      {(error || formError) && (
+      {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {error || formError}
+          {error}
         </Alert>
       )}
 
-      <Grid container spacing={2}>
-        {/* Read-only Fields */}
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Job ID"
-            name="jobId"
-            value={formData.jobId || ""}
-            onChange={handleChange}
-            fullWidth
-            disabled
-            variant="filled"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Candidate ID"
-            name="candidateId"
-            value={formData.candidateId || ""}
-            onChange={handleChange}
-            fullWidth
-            disabled
-            variant="filled"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Candidate Name"
-            name="candidateFullName"
-            value={formData.candidateFullName || ""}
-            onChange={handleChange}
-            fullWidth
-            disabled
-            variant="filled"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Contact Number"
-            name="candidateContactNo"
-            value={formData.candidateContactNo || ""}
-            onChange={handleChange}
-            fullWidth
-            disabled
-            variant="filled"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Candidate Email"
-            name="candidateEmailId"
-            value={formData.candidateEmailId || ""}
-            onChange={handleChange}
-            fullWidth
-            disabled
-            variant="filled"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="User Email"
-            name="userEmail"
-            value={formData.userEmail || ""}
-            onChange={handleChange}
-            fullWidth
-            disabled
-            variant="filled"
-          />
-        </Grid>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+      >
+        {({ values, touched, errors, handleChange }) => (
+          <Form>
+            <Grid container spacing={2}>
+              {/* Read-only Fields */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="jobId"
+                  component={FormikTextField}
+                  label="Job ID"
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="candidateId"
+                  component={FormikTextField}
+                  label="Candidate ID"
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="candidateFullName"
+                  component={FormikTextField}
+                  label="Candidate Name"
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="candidateContactNo"
+                  component={FormikTextField}
+                  label="Contact Number"
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="candidateEmailId"
+                  component={FormikTextField}
+                  label="Candidate Email"
+                  disabled
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="userEmail"
+                  component={FormikTextField}
+                  label="User Email"
+                  disabled
+                />
+              </Grid>
 
-        {/* Editable Fields */}
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Client Name"
-            name="clientName"
-            value={formData.clientName || ""}
-            onChange={handleChange}
-            fullWidth
-            required
-            variant="filled"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Client Email"
-            name="clientEmail"
-            type="email"
-            value={formData.clientEmail || ""}
-            onChange={handleChange}
-            fullWidth
-            required
-            variant="filled"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Interview Date & Time"
-            name="interviewDateTime"
-            type="datetime-local"
-            value={formData.interviewDateTime || ""}
-            onChange={(e) =>
-              handleDateTimeChange("interviewDateTime", e.target.value)
-            }
-            fullWidth
-            required
-            variant="filled"
-            InputLabelProps={{ shrink: true }}
-            error={!!dateError}
-            helperText={dateError}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Duration (Minutes)"
-            name="duration"
-            type="number"
-            value={formData.duration || ""}
-            onChange={handleChange}
-            fullWidth
-            required
-            variant="filled"
-            helperText="Minimum 15 minutes"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            label="Zoom Link"
-            name="zoomLink"
-            value={formData.zoomLink || ""}
-            onChange={handleChange}
-            fullWidth
-            required
-            variant="filled"
-          />
-        </Grid>
+              {/* Editable Fields */}
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="clientName"
+                  component={FormikTextField}
+                  label="Client Name"
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="clientEmail"
+                  component={FormikTextField}
+                  label="Client Email"
+                  type="email"
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="interviewDateTime"
+                  component={FormikTextField}
+                  label="Interview Date & Time"
+                  type="datetime-local"
+                  required
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="duration"
+                  component={FormikTextField}
+                  label="Duration (Minutes)"
+                  type="number"
+                  required
+                  inputProps={{ min: 15, max: 60 }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>
+                <Field
+                  name="zoomLink"
+                  component={FormikTextField}
+                  label="Zoom Link"
+                  required
+                />
+              </Grid>
 
-        <Grid item xs={12}>
-          <FormControl component="fieldset" required>
-            <FormLabel component="legend">Interview Level</FormLabel>
-            <RadioGroup
-              row
-              name="interviewLevel"
-              value={formData.interviewLevel || ""}
-              onChange={handleChange}
-            >
-              <FormControlLabel
-                value="Internal"
-                control={<Radio />}
-                label="Internal"
-              />
-              <FormControlLabel
-                value="External"
-                control={<Radio />}
-                label="External"
-              />
-            </RadioGroup>
-          </FormControl>
-        </Grid>
+              <Grid item xs={12}>
+                <FormControl component="fieldset" required>
+                  <FormLabel component="legend">Interview Level</FormLabel>
+                  <Field name="interviewLevel">
+                    {({ field }) => (
+                      <RadioGroup {...field} row>
+                        <FormControlLabel
+                          value="Internal"
+                          control={<Radio />}
+                          label="Internal"
+                        />
+                        <FormControlLabel
+                          value="External"
+                          control={<Radio />}
+                          label="External"
+                        />
+                      </RadioGroup>
+                    )}
+                  </Field>
+                </FormControl>
+              </Grid>
 
-        {formData.interviewLevel === "External" && (
-          <Grid item xs={12}>
-            <TextField
-              label="External Interview Details"
-              name="externalInterviewDetails"
-              value={formData.externalInterviewDetails || ""}
-              onChange={handleChange}
-              fullWidth
-              required
-              variant="filled"
-              multiline
-              rows={3}
-            />
-          </Grid>
+              {values.interviewLevel === "External" && (
+                <Grid item xs={12}>
+                  <Field
+                    name="externalInterviewDetails"
+                    component={FormikTextField}
+                    label="External Interview Details"
+                    multiline
+                    rows={3}
+                    required
+                  />
+                </Grid>
+              )}
+            </Grid>
+
+            <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 3 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={isSubmitting}
+                startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
+              >
+                {isSubmitting ? "Scheduling..." : "Schedule Interview"}
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleDialogClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+            </Box>
+          </Form>
         )}
-      </Grid>
-
-      <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 3 }}>
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          disabled={isSubmitting}
-          startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
-        >
-          {isSubmitting ? "Scheduling..." : "Schedule Interview"}
-        </Button>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={handleDialogClose}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-      </Box>
+      </Formik>
     </Box>
   );
 };

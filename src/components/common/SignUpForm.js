@@ -60,7 +60,7 @@ const SignUpForm = () => {
 
   // Validation regex
   // const userIdRegex = /^DQIND\d{2,4}$/;
-  const personalEmailRegex = /^[a-z0-9._%+-]+@gmail\.com$/;
+  const personalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   const emailRegex = /^[a-z0-9._%+-]+@dataqinc\.com$/;
   const phoneRegex = /^[0-9]{10}$/;
   const passwordRegex =
@@ -74,8 +74,22 @@ const SignUpForm = () => {
       : "User ID must start with 'DQIND' followed by 2 to 4 digits";
   };
 
-  const validateUserName = (userName) =>
-    userName.length <= 20 ? "" : "User Name must not exceed 20 characters";
+  const validateUserName = (userName) => {
+    // Check if username has only alphabetic characters and no spaces
+    const regex = /^[a-zA-Z]+$/;
+  
+    if (!regex.test(userName)) {
+      return "User Name must contain only alphabetic characters (a-z, A-Z) and no spaces.";
+    }
+  
+    // Check if the username length exceeds 20 characters
+    if (userName.length > 20) {
+      return "User Name must not exceed 20 characters";
+    }
+  
+    // If no issues, return an empty string (valid)
+    return "";
+  };
 
   const validateEmail = (email) => {
     // Check if email contains capital letters

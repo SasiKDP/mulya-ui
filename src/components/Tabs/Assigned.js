@@ -17,6 +17,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import UploadIcon from "@mui/icons-material/Upload";
 import CandidateSubmissionForm from "../CandidateSubmissionFrom";
+import CustomDialog from "../MuiComponents/CustomDialog";
 import BASE_URL from "../../redux/apiConfig";
 import DataTable from "../MuiComponents/DataTable";
 
@@ -28,6 +29,7 @@ const Assigned = () => {
   const [selectedJobForSubmit, setSelectedJobForSubmit] = useState(null);
   const [openDescriptionDialog, setOpenDescriptionDialog] = useState(false);
   const [selectedJobDescription, setSelectedJobDescription] = useState("");
+  const [currentJobTitle, setCurrentJobTitle] = useState("");
   const [employeesList, setEmployeesList] = useState([]);
   const [fetchStatus, setFetchStatus] = useState("idle");
   const [fetchError, setFetchError] = useState(null);
@@ -39,10 +41,7 @@ const Assigned = () => {
   const generateColumns = (data) => {
     if (data.length === 0) return [];
 
-    // Get the first data item to extract keys
     const sampleData = data[0];
-
-    // Custom header labels mapping
     const headerLabels = {
       jobId: "Job ID",
       jobTitle: "Job Title",
@@ -54,15 +53,13 @@ const Assigned = () => {
       experience: "Experience",
       primarySkills: "Primary Skills",
       secondarySkills: "Secondary Skills",
-      // Add more mappings as needed
     };
 
-    // Create columns array from object keys
     return Object.keys(sampleData).map((key) => ({
       key: key,
       label:
         headerLabels[key] ||
-        key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"), // Default to formatted key if no mapping exists
+        key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
     }));
   };
 
@@ -108,22 +105,25 @@ const Assigned = () => {
             ...item,
             jobDescription: (
               <Box>
-                {item.jobDescription.slice(0, 10)}...{" "}
-                <Button
-                  onClick={() =>
-                    handleOpenDescriptionDialog(item.jobDescription)
-                  }
-                  size="small"
-                  variant="text"
-                  sx={{
-                    color: "#3f51b5",
-                    textTransform: "capitalize",
-                    padding: 0,
-                    minWidth: "auto",
-                  }}
-                >
-                  View More
-                </Button>
+                {item.jobDescription.length > 30
+                  ? `${item.jobDescription.slice(0, 30)}...`
+                  : item.jobDescription}
+                {item.jobDescription.length > 30 && (
+                  <Button
+                    onClick={() => handleOpenDescriptionDialog(item.jobDescription, item.jobTitle)}
+                    size="small"
+                    variant="text"
+                    sx={{
+                      color: "#3f51b5",
+                      textTransform: "capitalize",
+                      padding: 0,
+                      minWidth: "auto",
+                      ml: 1
+                    }}
+                  >
+                    View More
+                  </Button>
+                )}
               </Box>
             ),
             requirementAddedTimeStamp: new Date(
@@ -151,7 +151,6 @@ const Assigned = () => {
 
         setData(processedData);
 
-        // Generate columns after data is processed
         if (processedData.length > 0) {
           const generatedColumns = generateColumns(processedData);
           setColumns(generatedColumns);
@@ -174,14 +173,16 @@ const Assigned = () => {
     setSelectedJobForSubmit(null);
   };
 
-  const handleOpenDescriptionDialog = (description) => {
+  const handleOpenDescriptionDialog = (description, jobTitle) => {
     setSelectedJobDescription(description);
+    setCurrentJobTitle(jobTitle);
     setOpenDescriptionDialog(true);
   };
 
   const handleCloseDescriptionDialog = () => {
     setOpenDescriptionDialog(false);
     setSelectedJobDescription("");
+    setCurrentJobTitle("");
   };
 
   if (!userId || fetchStatus === "loading") {
@@ -201,7 +202,7 @@ const Assigned = () => {
 
   return (
     <>
-      <Grid item xs={10} md={8}>
+      <Grid item xs={10} md={8} sx={{marginTop:'2vh'}}>
         <Box
           sx={{
             display: "flex",
@@ -210,10 +211,9 @@ const Assigned = () => {
             width: "calc(165vh - 5vh)",
             mb: 2,
             px: { xs: 1, sm: 2 },
-            maxHeight: "calc(100vh - 150px)", // Adjust based on your layout needs
+            maxHeight: "calc(100vh - 150px)",
             overflowY: "auto",
             overflowX: "auto",
-
           }}
         >
           <Typography
@@ -231,16 +231,23 @@ const Assigned = () => {
           >
             Assigned Requirements
           </Typography>
+          {/* Conditional check for empty data */}
+        {data.length === 0 ? (
+          <Typography variant="h6" color="textSecondary">
+            No assigned jobs available.
+          </Typography>
+        ) : (
           <DataTable
             data={data}
             columns={columns}
             pageLimit={5}
             sx={{
-              maxHeight: "400px", // or any height that fits your design
+              maxHeight: "400px",
               overflowY: "auto",
               overflowX: "auto",
             }}
           />
+        )}
         </Box>
       </Grid>
 
@@ -286,30 +293,12 @@ const Assigned = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <CustomDialog
         open={openDescriptionDialog}
         onClose={handleCloseDescriptionDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Typography variant="h6" align="center" color="primary">
-            Job Description
-          </Typography>
-        </DialogTitle>
-        <DialogContent dividers sx={{ maxHeight: "300px", overflowY: "auto" }}>
-          <Typography>{selectedJobDescription}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleCloseDescriptionDialog}
-            variant="contained"
-            color="primary"
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title={currentJobTitle}
+        content={selectedJobDescription}
+      />
     </>
   );
 };

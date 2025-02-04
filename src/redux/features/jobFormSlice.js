@@ -170,6 +170,11 @@ const jobFormSlice = createSlice({
       state.error = null;
       state.jobPostingSuccessResponse = null;
     },
+    clearMessages: (state) => {
+      // Clears error and success messages
+      state.error = null;
+      state.jobPostingSuccessResponse = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -193,6 +198,6 @@ const jobFormSlice = createSlice({
 });
 
 // Exporting actions and reducer
-export const { updateField, resetForm } = jobFormSlice.actions;
+export const { updateField, resetForm ,clearMessages} = jobFormSlice.actions;
 export default jobFormSlice.reducer;
 

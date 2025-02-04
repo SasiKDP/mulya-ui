@@ -117,13 +117,7 @@ const AdminDashboard = () => {
       color: "#fbc02d",
       bgColor: "#fff9c4",
     },
-    {
-      label: "Departments",
-      count: 5,
-      icon: <Building size={24} />,
-      color: "#7b1fa2",
-      bgColor: "#f3e5f5",
-    },
+    
     {
       label: "Submissions",
       count: candidates.length,
