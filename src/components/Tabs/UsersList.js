@@ -43,23 +43,24 @@ const UsersList = () => {
   const dispatch = useDispatch();
   const { employeesList, fetchStatus, fetchError, updateStatus, updateError } =
     useSelector((state) => state.employees);
+  const { roles, user } = useSelector((state) => state.auth);
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [editFormData, setEditFormData] = useState({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [employeeToDelete, setEmployeeToDelete] = useState(null);
 
   const VALID_ROLES = ["SUPERADMIN", "EMPLOYEE", "ADMIN"];
 
-  // Regular expressions for validation
+  // Validation regex patterns
   const personalEmailRegex = /^[a-z0-9._%+-]+@gmail\.com$/;
   const emailRegex = /^[a-z0-9._%+-]+@dataqinc\.com$/;
   const phoneRegex = /^[0-9]{10}$/;
@@ -71,6 +72,28 @@ const UsersList = () => {
     phoneNumber: "",
     employeeId: "",
   });
+
+  // Check if current user can edit specific employee
+  const canEditUser = (employeeToEdit) => {
+    const currentUser = user;
+    if (!roles.includes("SUPERADMIN")) {
+      return false;
+    }
+    if (employeeToEdit.employeeId === currentUser) {
+      return true;
+    }
+    if (employeeToEdit.roles.includes("SUPERADMIN")) {
+      return false;
+    }
+
+    if (
+      employeeToEdit.roles.includes("SUPERADMIN") &&
+      employeeToEdit.employeeId !== currentUser
+    ) {
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -95,6 +118,17 @@ const UsersList = () => {
   }, [updateStatus, updateError, dispatch]);
 
   const handleDeleteEmployee = (employeeId) => {
+    const employeeToDelete = employeesList.find(
+      (emp) => emp.employeeId === employeeId
+    );
+    if (!canEditUser(employeeToDelete)) {
+      setSnackbar({
+        open: true,
+        message: "You don't have permission to delete this user.",
+        severity: "error",
+      });
+      return;
+    }
     setEmployeeToDelete(employeeId);
     setDeleteDialogOpen(true);
   };
@@ -128,13 +162,21 @@ const UsersList = () => {
   };
 
   const handleOpenEditDialog = (employee) => {
+    if (!canEditUser(employee)) {
+      setSnackbar({
+        open: true,
+        message: "You don't have permission to edit this user.",
+        severity: "error",
+      });
+      return;
+    }
+
     setSelectedEmployee(employee);
     const currentRoles = Array.isArray(employee.roles)
       ? employee.roles
       : typeof employee.roles === "string"
       ? employee.roles.split(", ")
       : [];
-  
     setEditFormData({
       ...employee,
       roles: currentRoles,
@@ -152,24 +194,34 @@ const UsersList = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
-    // Basic validation on each input field
     let errors = { ...formErrors };
 
-    if (name === "personalemail" && !personalEmailRegex.test(value)) {
-      errors.personalemail = "Invalid Gmail address";
-    } else if (name === "employeeId" && !emailRegex.test(value)) {
-      errors.email = "Invalid DataQ email address";
-    } else if (name === "phoneNumber" && !phoneRegex.test(value)) {
-      errors.phoneNumber = "Phone number must be 10 digits";
-    } else if (name === "userId" && !userIdRegex.test(value)) {
-      errors.userId = "User ID must match DQINDXX format";
-    } else {
-      errors[name] = "";
+    switch (name) {
+      case "personalemail":
+        errors.personalemail = !personalEmailRegex.test(value)
+          ? "Invalid Gmail address"
+          : "";
+        break;
+      case "email":
+        errors.email = !emailRegex.test(value)
+          ? "Invalid DataQ email address"
+          : "";
+        break;
+      case "phoneNumber":
+        errors.phoneNumber = !phoneRegex.test(value)
+          ? "Phone number must be 10 digits"
+          : "";
+        break;
+      case "userId":
+        errors.userId = !userIdRegex.test(value)
+          ? "User ID must match DQINDXX format"
+          : "";
+        break;
+      default:
+        break;
     }
 
     setFormErrors(errors);
-
     setEditFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -178,24 +230,13 @@ const UsersList = () => {
 
   const handleSubmitEdit = (e) => {
     e.preventDefault();
-  
-    // Prevent SuperAdmin from editing their role
-    if (
-      selectedEmployee &&
-      selectedEmployee.roles.includes("SUPERADMIN") &&
-      editFormData.roles.includes("SUPERADMIN")
-    ) {
-      setSnackbar({
-        open: true,
-        message: "SuperAdmin role cannot be changed by SuperAdmin.",
-        severity: "error",
-      });
-      return;
-    }
-  
-    // Validate all fields before submission
+
+    // Validate all fields
     const errors = {};
-    if (editFormData.personalemail && !personalEmailRegex.test(editFormData.personalemail)) {
+    if (
+      editFormData.personalemail &&
+      !personalEmailRegex.test(editFormData.personalemail)
+    ) {
       errors.personalemail = "Invalid Gmail address";
     }
     if (!editFormData.roles || editFormData.roles.length === 0) {
@@ -206,25 +247,100 @@ const UsersList = () => {
       });
       return;
     }
-  
-    // Check if there are any validation errors
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
-  
+
     const normalizedData = {
       ...editFormData,
-      personalemail: editFormData.personalemail,
-      roles: Array.isArray(editFormData.roles) ? editFormData.roles : [editFormData.roles],
+      roles: Array.isArray(editFormData.roles)
+        ? editFormData.roles
+        : [editFormData.roles],
     };
-  
+
     dispatch(updateEmployee(normalizedData));
   };
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
+
+  const renderRolesField = (key) => {
+    const isCurrentUser = selectedEmployee.employeeId === user;
+    const isSuperAdmin = selectedEmployee.roles.includes("SUPERADMIN");
+  
+    // If the current user is a SUPERADMIN and is editing their own role, allow them to edit
+    if (isSuperAdmin && isCurrentUser) {
+      return (
+        <Autocomplete
+          key={key}
+         
+          options={VALID_ROLES} // Allow all roles, including SUPERADMIN
+          value={editFormData.roles || []}
+          onChange={(event, newValue) => {
+            setEditFormData((prev) => ({
+              ...prev,
+              roles: newValue,
+            }));
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Roles" placeholder="Select roles" />
+          )}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip key={index} label={option} {...getTagProps({ index })} />
+            ))
+          }
+        />
+      );
+    }
+  
+    // If the current user is not editing their own role or is not a SUPERADMIN
+    if (isSuperAdmin) {
+      return (
+        <TextField
+          key={key}
+          label="Roles"
+          value={
+            Array.isArray(selectedEmployee.roles)
+              ? selectedEmployee.roles.join(", ")
+              : selectedEmployee.roles || ""
+          }
+          disabled
+          fullWidth
+        />
+      );
+    }
+  
+    // For non-SUPERADMIN users
+    const availableRoles = VALID_ROLES.filter((role) => role !== "SUPERADMIN");
+  
+    return (
+      <Autocomplete
+        key={key}
+        multiple
+        options={availableRoles}
+        value={editFormData.roles || []}
+        onChange={(event, newValue) => {
+          setEditFormData((prev) => ({
+            ...prev,
+            roles: newValue,
+          }));
+        }}
+        renderInput={(params) => (
+          <TextField {...params} label="Roles" placeholder="Select roles" />
+        )}
+        renderTags={(value, getTagProps) =>
+          value.map((option, index) => (
+            <Chip key={index} label={option} {...getTagProps({ index })} />
+          ))
+        }
+      />
+    );
+  };
+  
 
   const paginatedEmployees = employeesList.slice(
     page * rowsPerPage,
@@ -301,6 +417,7 @@ const UsersList = () => {
                             <IconButton
                               color="primary"
                               onClick={() => handleOpenEditDialog(employee)}
+                              disabled={!canEditUser(employee)}
                               sx={{ ml: 1 }}
                             >
                               <EditIcon />
@@ -316,7 +433,10 @@ const UsersList = () => {
                     <TableCell sx={{ border: "1px solid #ddd" }}>
                       <IconButton
                         color="error"
-                        onClick={() => handleDeleteEmployee(employee.employeeId)}
+                        onClick={() =>
+                          handleDeleteEmployee(employee.employeeId)
+                        }
+                        disabled={!canEditUser(employee)}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -325,6 +445,7 @@ const UsersList = () => {
                 ))}
               </TableBody>
             </Table>
+
             <TablePagination
               component="div"
               count={employeesList.length}
@@ -337,114 +458,63 @@ const UsersList = () => {
           </TableContainer>
         )}
 
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={handleCloseSnackbar}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-
-        {/* Edit Dialog */}
         <Dialog
           open={editDialogOpen}
           onClose={handleCloseEditDialog}
           fullWidth
-          sx={{
-            maxWidth: 500,
-          }}
+          maxWidth="sm"
         >
           <DialogTitle>Edit Employee Details</DialogTitle>
           <DialogContent>
             <Stack spacing={2} mt={2}>
               {selectedEmployee &&
-                Object.keys(selectedEmployee).map((key) =>
-                  key === "roles" ? (
-                    <Autocomplete
-                      key={key}
-                      
-                      options={VALID_ROLES}
-                      value={editFormData.roles || []}
-                      onChange={(event, newValue) => {
-                        setEditFormData((prev) => ({
-                          ...prev,
-                          roles: newValue,
-                        }));
-                      }}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Roles"
-                          placeholder="Select roles"
-                          disabled={selectedEmployee && selectedEmployee.roles.includes("SUPERADMIN")}
-                        />
-                      )}
-                      renderTags={(value, getTagProps) =>
-                        value.map((option, index) => (
-                          <Chip
-                            key={index}
-                            label={option}
-                            {...getTagProps({ index })}
-                          />
-                        ))
-                      }
-                    />
-                  ) : key === "status" ? (
-                    <FormControl fullWidth key={key}>
-                      <InputLabel>Status</InputLabel>
-                      <Select
-                        name="status"
-                        value={editFormData.status || "INACTIVE"}
+                Object.keys(selectedEmployee).map((key) => {
+                  if (key === "roles") {
+                    return renderRolesField(key);
+                  } else if (key === "status") {
+                    return (
+                      <FormControl fullWidth key={key}>
+                        <InputLabel>Status</InputLabel>
+                        <Select
+                          name="status"
+                          value={editFormData.status || "INACTIVE"}
+                          onChange={handleInputChange}
+                          label="Status"
+                        >
+                          <MenuItem value="ACTIVE">ACTIVE</MenuItem>
+                          <MenuItem value="INACTIVE">INACTIVE</MenuItem>
+                        </Select>
+                      </FormControl>
+                    );
+                  } else if (key === "employeeId" || key === "email") {
+                    return (
+                      <TextField
+                        key={key}
+                        label={
+                          key === "employeeId"
+                            ? "Employee ID"
+                            : "Employee Email"
+                        }
+                        value={editFormData[key] || ""}
+                        disabled
+                        fullWidth
+                      />
+                    );
+                  } else {
+                    return (
+                      <TextField
+                        key={key}
+                        label={key.charAt(0).toUpperCase() + key.slice(1)}
+                        name={key}
+                        value={editFormData[key] || ""}
                         onChange={handleInputChange}
-                        label="Status"
-                      >
-                        <MenuItem value="ACTIVE">ACTIVE</MenuItem>
-                        <MenuItem value="INACTIVE">INACTIVE</MenuItem>
-                      </Select>
-                    </FormControl>
-                  ) : key === "employeeId" ? (
-                    <TextField
-                      key={key}
-                      label="Employee ID"
-                      value={editFormData[key] || ""}
-                      disabled
-                      fullWidth
-                    />
-                  ) : key === "email" ? (
-                    <TextField
-                      key={key}
-                      label="Employee Email"
-                      value={editFormData[key] || ""}
-                      disabled
-                      fullWidth
-                    />
-                  ) : key === "personalemail" ? (
-                    <TextField
-                      key={key}
-                      label="Personal Email"
-                      name="personalemail"
-                      value={editFormData[key] || ""}
-                      onChange={handleInputChange}
-                      error={!!formErrors.personalemail}
-                      helperText={formErrors.personalemail}
-                      fullWidth
-                    />
-                  ) : (
-                    <TextField
-                      key={key}
-                      label={key.charAt(0).toUpperCase() + key.slice(1)}
-                      name={key}
-                      value={editFormData[key] || ""}
-                      onChange={handleInputChange}
-                      fullWidth
-                      error={!!formErrors[key]}
-                      helperText={formErrors[key]}
-                    />
-                  )
-                )}
+                        error={!!formErrors[key]}
+                        helperText={formErrors[key]}
+                        fullWidth
+                      />
+                    );
+                  }
+                })}
             </Stack>
           </DialogContent>
           <DialogActions>
@@ -455,13 +525,16 @@ const UsersList = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmitEdit} variant="contained" color="primary">
+            <Button
+              onClick={handleSubmitEdit}
+              variant="contained"
+              color="primary"
+            >
               Update User
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* Delete Dialog */}
         <Dialog
           open={deleteDialogOpen}
           onClose={handleCloseDeleteDialog}
@@ -470,17 +543,32 @@ const UsersList = () => {
         >
           <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
           <DialogContent>
-            <Typography id="alert-dialog-description">
+            <Typography>
               Are you sure you want to delete this employee?
             </Typography>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-            <Button onClick={handleConfirmDelete} autoFocus>
+            <Button onClick={handleConfirmDelete} color="error" autoFocus>
               Delete
             </Button>
           </DialogActions>
         </Dialog>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Paper>
     </Container>
   );

@@ -46,10 +46,12 @@ const Submissions = () => {
     };
 
     return Object.keys(sampleData)
-      .filter(key => key !== "interviewStatus") // Exclude interviewStatus as per original logic
-      .map(key => ({
+      .filter((key) => key !== "interviewStatus") // Exclude interviewStatus as per original logic
+      .map((key) => ({
         key: key,
-        label: headerLabels[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')
+        label:
+          headerLabels[key] ||
+          key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
       }));
   };
 
@@ -114,21 +116,24 @@ const Submissions = () => {
               <OpenInNewIcon fontSize="small" />
             </a>
           ),
-          Interview: item.interviewStatus === "Scheduled" ? (
-            <span style={{ color: "gray", cursor: "not-allowed" }}>Scheduled</span>
-          ) : (
-            <Link
-              to="#"
-              onClick={() => handleOpenInterviewDialog(item)}
-              style={{ color: "blue", cursor: "pointer" }}
-            >
-              Schedule Interview
-            </Link>
-          ),
+          Interview:
+            item.interviewStatus === "Scheduled" ? (
+              <span style={{ color: "gray", cursor: "not-allowed" }}>
+                Scheduled
+              </span>
+            ) : (
+              <Link
+                to="#"
+                onClick={() => handleOpenInterviewDialog(item)}
+                style={{ color: "blue", cursor: "pointer" }}
+              >
+                Schedule Interview
+              </Link>
+            ),
         }));
 
         setData(processedData);
-        
+
         // Generate columns after data is processed
         if (processedData.length > 0) {
           const generatedColumns = generateColumns(processedData);
@@ -169,12 +174,29 @@ const Submissions = () => {
 
   return (
     <>
-      <Box sx={{ width: '100%', overflow: 'auto' ,overflowX:'auto',maxHeight:600 }}>
-        <DataTable 
-          data={data}
-          columns={columns}
-          pageLimit={5}
-        />
+      <Typography
+        variant="h5"
+        align="start"
+        color="primary"
+        gutterBottom
+        sx={{
+          backgroundColor: "rgba(232, 245, 233)",
+          padding: 1,
+          borderRadius: 1,
+          textAlign: "start",
+        }}
+      >
+        Candidate Submissions
+      </Typography>
+      <Box
+        sx={{
+          width: "100%",
+          overflow: "auto",
+          overflowX: "auto",
+          maxHeight: 600,
+        }}
+      >
+        <DataTable data={data} columns={columns} pageLimit={5} />
       </Box>
 
       <Dialog

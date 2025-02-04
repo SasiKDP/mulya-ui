@@ -38,26 +38,29 @@ const AddUser = () => {
         "User ID must start with 'DQIND' followed by 2 to 4 digits"
       )
       .required("User ID is required"),
-    userName: Yup.string()
+      userName: Yup.string()
+      .matches(/^[a-zA-Z]+$/, "User Name must only contain letters")
       .min(1, "User Name must be at least 1 character")
       .max(20, "User Name must not exceed 20 characters")
       .required("User Name is required"),
     email: Yup.string()
       .matches(
-        /^[a-zA-Z0-9._%+-]+@dataqinc\.com$/,
-        "Please enter a valid company email"
+        /^[a-z0-9._%+-]+@dataqinc\.com$/,
+        "Please enter a valid company email (lowercase only)"
       )
       .required("Company email is required"),
     personalemail: Yup.string()
       .matches(
-        /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
+        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
         "Please enter a valid personal email"
       )
       .required("Personal email is required"),
     phoneNumber: Yup.string()
       .matches(/^[0-9]{10}$/, "Phone number must be 10 digits")
       .required("Phone number is required"),
-    designation: Yup.string().required("Designation is required"),
+      designation: Yup.string()
+      .required("Designation is required")
+      .matches(/^[A-Za-z\s]+$/, "Designation can only contain letters and spaces"),
     gender: Yup.string().required("Gender is required"),
     roles: Yup.array()
       .min(1, "At least one role must be selected")
@@ -99,7 +102,7 @@ const AddUser = () => {
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
       await dispatch(submitFormData(values)).unwrap();
-      resetForm()
+      resetForm();
     } catch (err) {
       toast.error(err.message || "Failed to Registering user");
     } finally {
@@ -135,7 +138,6 @@ const AddUser = () => {
         }
       );
       dispatch(clearFormData());
-      
     }
   }, [status, error, response, dispatch]);
 
@@ -225,7 +227,9 @@ const AddUser = () => {
                     name="personalemail"
                     label="Personal Email"
                     fullWidth
-                    error={touched.personalemail && Boolean(errors.personalemail)}
+                    error={
+                      touched.personalemail && Boolean(errors.personalemail)
+                    }
                     helperText={touched.personalemail && errors.personalemail}
                   />
                 </Grid>
@@ -388,7 +392,9 @@ const AddUser = () => {
                     error={
                       touched.confirmPassword && Boolean(errors.confirmPassword)
                     }
-                    helperText={touched.confirmPassword && errors.confirmPassword}
+                    helperText={
+                      touched.confirmPassword && errors.confirmPassword
+                    }
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">

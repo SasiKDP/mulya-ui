@@ -6,34 +6,19 @@ import {
   Box,
   Paper,
   Container,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   Alert,
   AlertTitle,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Button,
 } from "@mui/material";
 import BASE_URL from "../../redux/apiConfig";
-import CustomDialog from "../MuiComponents/CustomDialog";
+import DataTable from "../MuiComponents/DataTable";
+import CustomDialog from "../MuiComponents/CustomDialog"; // Import CustomDialog
 
 const AllSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(0); // Pagination state
-  const [rowsPerPage, setRowsPerPage] = useState(10); // Rows per page
-  const [dialogOpen, setDialogOpen] = useState(false); // State to manage dialog visibility
-  const [feedbackContent, setFeedbackContent] = useState(""); // Store feedback content
-  const [fullFeedback, setFullFeedback] = useState(""); // Store full content of feedback for the dialog
-  const [isContentTruncated, setIsContentTruncated] = useState(false); // Track if content is truncated
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [skillsContent, setSkillsContent] = useState(""); // Store the skills content
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -66,38 +51,14 @@ const AllSubmissions = () => {
 
   const columns = generateColumns(submissions);
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset page when rows per page changes
-  };
-
-  const handleOpenDialog = (feedback) => {
-    if (feedback.length > 15) {
-      setFeedbackContent(feedback.slice(0, 15)); // Display only first 15 characters initially
-      setFullFeedback(feedback); // Store the full feedback
-      setIsContentTruncated(true); // Mark content as truncated
-    } else {
-      setFeedbackContent(feedback); // If content is short, display it fully
-      setFullFeedback(feedback);
-      setIsContentTruncated(false); // No truncation
-    }
+  const handleOpenDialog = (skills) => {
+    setSkillsContent(skills); // Set the skills content when clicked
     setDialogOpen(true); // Open the dialog
   };
 
   const handleCloseDialog = () => {
-    setDialogOpen(false); // Close the dialog
-    setFeedbackContent(""); // Clear feedback content
-    setFullFeedback(""); // Clear full content
-    setIsContentTruncated(false); // Reset truncation state
-  };
-
-  const handleSeeMore = () => {
-    setFeedbackContent(fullFeedback); // Display full content in the dialog
-    setIsContentTruncated(false); // Set truncation flag to false
+    setDialogOpen(false);
+    setSkillsContent(""); // Reset skills content when closing
   };
 
   if (loading) {
@@ -147,95 +108,27 @@ const AllSubmissions = () => {
               mb: 3,
             }}
           >
-             Submitted candidates
+            Submitted candidates
           </Typography>
 
-          <TableContainer
-            sx={{ border: "1px solid #ddd", overflow: "auto", maxHeight: 500 }}
-          >
-            <Table sx={{ minWidth: 650, borderCollapse: "collapse" }}>
-              <TableHead sx={{ backgroundColor: "#00796b" }}>
-                <TableRow>
-                  {columns.map((col) => (
-                    <TableCell
-                      key={col.key}
-                      sx={{
-                        fontWeight: "bold",
-                        color: "#fff",
-                        border: "1px solid #ddd",
-                      }}
-                    >
-                      {col.label}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {submissions
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((row) => (
-                    <TableRow key={row.jobId} hover>
-                      {columns.map((col) => (
-                        <TableCell
-                          key={col.key}
-                          sx={{ border: "1px solid #ddd" }}
-                          onClick={
-                            col.key === "overallFeedback" &&
-                            row[col.key]?.length > 15 // Check if feedback length is greater than 15
-                              ? () => handleOpenDialog(row[col.key])
-                              : undefined
-                          }
-                        >
-                          {col.key === "overallFeedback" ? (
-                            <>
-                              {row[col.key]?.slice(0, 15)}{" "}
-                              {row[col.key]?.length > 15 && (
-                                <Button
-                                  size="small"
-                                  variant="text"
-                                  onClick={() => handleOpenDialog(row[col.key])}
-                                  sx={{ padding: 0, minWidth: "auto" }}
-                                >
-                                  See More
-                                </Button>
-                              )}
-                            </>
-                          ) : (
-                            row[col.key]
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={submissions.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
+          {/* Reuse DataTable component */}
+          <DataTable
+            data={submissions}
+            columns={columns}
+            onRowClick={(row) =>
+              handleOpenDialog(row.skills) // Open dialog for the skills content
+            }
           />
         </Box>
       </Paper>
 
-      {/* Dialog Box to show the full content of the overallFeedback */}
-
-      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-        <DialogTitle>Overall Feedback</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">{fullFeedback}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Dialog Box to show the full content of the skills */}
+      <CustomDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        title="Skills"
+        content={skillsContent} // Pass the skills content to the dialog
+      />
     </Container>
   );
 };

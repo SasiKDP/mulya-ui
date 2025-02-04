@@ -155,21 +155,38 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
                 }}
               >
                 Logged in at:{" "}
-                {logInTimeStamp
-                  ? new Date(logInTimeStamp).toLocaleString("en-IN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                      timeZone: "Asia/Kolkata",
-                    }) +
-                    " - " +
-                    new Date(logInTimeStamp).toLocaleString("en-IN", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      timeZone: "Asia/Kolkata",
-                    })
-                  : "12:45 AM - 30/01/2025"}
+                {logInTimeStamp ? (
+                  <>
+                    {(() => {
+                      const formattedTimestamp = logInTimeStamp.split(".")[0]; // Remove fractional seconds
+                      const date = new Date(formattedTimestamp);
+
+                      if (isNaN(date)) {
+                        return "Invalid Date"; // Check if the date is valid
+                      }
+
+                      return (
+                        <>
+                          {date.toLocaleString("en-IN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                            timeZone: "Asia/Kolkata",
+                          })}{" "}
+                          -{" "}
+                          {date.toLocaleString("en-IN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            timeZone: "Asia/Kolkata",
+                          })}
+                        </>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  "12:45 AM - 30/01/2025"
+                )}
               </Typography>
             </Box>
             <Box
