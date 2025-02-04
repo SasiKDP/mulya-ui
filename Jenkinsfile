@@ -3,14 +3,14 @@ pipeline {
     environment {
     registryCredential = 'docker-hub'
     DOCKER_IMAGE_NAME = 'ats-portal'
-    registry = "sandycis476/dataquad"
+    registry = "sandycis476/dataquad-prod"
     dockerImage = ''
   }
 agent any
    stages {
     stage('Cloning Git') {
       steps {
-        git([url: 'https://github.com/NaveenKumar-dataquad/Dataquad-Outsourcing-UI.git', branch: 'master', credentialsId: 'Naveen-DataQuad'])
+        git([url: 'https://github.com/NaveenKumar-dataquad/Dataquad-Outsourcing-UI.git', branch: 'main', credentialsId: 'Naveen-DataQuad'])
  
       }
     }
