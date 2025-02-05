@@ -14,6 +14,7 @@ import { FileText, Users, Calendar, Clock, Building } from "lucide-react";
 
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "../redux/features/employeesSlice";
+import BASE_URL from "../redux/config";
 
 const AdminDashboard = () => {
   const appconfig = require("../redux/apiConfig");
@@ -37,7 +38,7 @@ const AdminDashboard = () => {
     }
   }, [tabIndex, dispatch]);
 
-  const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
+ 
 
   // Function to handle API calls for other tabs
   const fetchData = async (endpoint) => {

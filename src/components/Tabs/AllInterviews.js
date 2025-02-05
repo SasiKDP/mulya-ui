@@ -3,10 +3,10 @@ import axios from "axios";
 import { Typography, CircularProgress, Box, Paper, Container, Alert, AlertTitle } from "@mui/material";
 //import appconfig.PROD_appconfig.PROD_BASE_URL from "../../redux/apiConfig";
 import DataTable from "../MuiComponents/DataTable"; // Importing the DataTable component
+import BASE_URL from "../../redux/config";
 
-const appconfig = require("../../redux/apiConfig");
 
-const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
+
 
 const AllInterviews = () => {
   const [submissions, setSubmissions] = useState([]);

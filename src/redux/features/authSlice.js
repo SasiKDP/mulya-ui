@@ -1,12 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import BASE_URL from "../config";
 
-const appconfig = require("../apiConfig");
 
-// ✅ Directly use the production URL
-const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
-
-console.log("Using BASE_URL:", BASE_URL);
 
 // Initial state
 const initialState = {

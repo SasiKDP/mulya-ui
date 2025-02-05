@@ -13,10 +13,9 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import DataTable from "../MuiComponents/DataTable";
-const appconfig = require("../../redux/apiConfig");
+import BASE_URL from "../../redux/config";
 
-// ✅ Directly use the production URL
-const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
+
 
 const INTERVIEW_LEVELS = {
   ALL: "all",
@@ -74,7 +73,7 @@ const Interview = () => {
         setError(false);
 
         const response = await axios.get(
-          `${appconfig.PROD_appconfig.PROD_BASE_URL}/candidate/interviews/${userId}`
+          `${BASE_URL}/candidate/interviews/${userId}`
         );
         const interviewData = response.data || [];
 

@@ -16,9 +16,8 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import InterviewForm from "../InterviewForm";
 //import appconfig.PROD_appconfig.PROD_BASE_URL from "../../redux/apiConfig";
 import DataTable from "../MuiComponents/DataTable";
+import BASE_URL from "../../redux/config";
 
-const appconfig = require("../../redux/apiConfig");
-const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
 
 const Submissions = () => {
   const [data, setData] = useState([]);

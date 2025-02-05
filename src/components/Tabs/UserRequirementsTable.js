@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ReusableTable from "../ReusableTable";  // Assuming you have this file in the same directory
+import BASE_URL from "../../redux/config";
 //import appconfig.PROD_appconfig.PROD_BASE_URL from "../../redux/apiConfig";
 
-const appconfig = require("../apiConfig");
+
 
 const UserRequirementsTable = ({ userId }) => {
   const [data, setData] = useState([]);
@@ -15,7 +16,7 @@ const UserRequirementsTable = ({ userId }) => {
     const fetchUserSpecificData = async () => {
       try {
         const response = await axios.get(
-          `${appconfig.PROD_appconfig.PROD_BASE_URL}/users/${userId}/specific-data` // Replace with the API endpoint for user-specific data
+          `${BASE_URL}/users/${userId}/specific-data` // Replace with the API endpoint for user-specific data
         );
         setData(response.data.items);
         setTotalCount(response.data.totalCount);  // Assuming the API response includes a totalCount
