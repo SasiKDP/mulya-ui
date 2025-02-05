@@ -17,10 +17,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "../redux/features/employeesSlice";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import BASE_URL from "../redux/config";
 
-const appconfig = require("../redux/apiConfig");
 
-const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
 
 // Extend dayjs to use the isSameOrAfter plugin
 dayjs.extend(isSameOrAfter);
