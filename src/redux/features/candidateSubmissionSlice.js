@@ -1,6 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../apiConfig";
+
+const appconfig = require("../apiConfig");
+
+// ✅ Directly use the production URL
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
+
+console.log("Using BASE_URL:", BASE_URL);
 
 // Initial state
 const initialState = {
@@ -19,13 +25,13 @@ const initialState = {
     noticePeriod: "",
     currentLocation: "",
     preferredLocation: "",
-    skills: '',
+    skills: "",
     resumeFile: null,
     resumeFilePath: "",
     communicationSkills: "",
     requiredTechnologiesRating: "",
     overallFeedback: "",
-    userEmail:'',
+    userEmail: "",
   },
   loading: false,
   successMessage: "",
@@ -37,14 +43,17 @@ const initialState = {
 
 // Helper function to validate file type
 const isValidFileType = (file) => {
-  const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  const validTypes = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
   return file && validTypes.includes(file.type);
 };
 
 // Form submission thunk
 export const submitFormData = createAsyncThunk(
   "candidateSubmission/submit",
-  async ({ formData, userId, jobId ,userEmail}, { rejectWithValue }) => {
+  async ({ formData, userId, jobId, userEmail }, { rejectWithValue }) => {
     try {
       // Validate file type before submission
       if (formData.resumeFile && !isValidFileType(formData.resumeFile)) {
@@ -75,10 +84,9 @@ export const submitFormData = createAsyncThunk(
         form.append("resumeFilePath", formData.resumeFilePath);
       }
 
-      
-
       // Make API call
-      const response = await axios.post(`${BASE_URL}/candidate/candidatesubmissions`,
+      const response = await axios.post(
+        `${BASE_URL}/candidate/candidatesubmissions`,
         form,
         {
           headers: {
@@ -91,7 +99,7 @@ export const submitFormData = createAsyncThunk(
         message: response.data.message,
         candidateId: response.data.candidateId,
         employeeId: response.data.employeeId,
-        jobId: response.data.jobId
+        jobId: response.data.jobId,
       };
     } catch (error) {
       // Handle API error response
@@ -100,7 +108,7 @@ export const submitFormData = createAsyncThunk(
           message: error.response.data.message,
           candidateId: null,
           employeeId: null,
-          jobId: null
+          jobId: null,
         });
       }
       // Handle other errors
@@ -108,7 +116,7 @@ export const submitFormData = createAsyncThunk(
         message: "Failed to submit candidate data. Please try again.",
         candidateId: null,
         employeeId: null,
-        jobId: null
+        jobId: null,
       });
     }
   }
@@ -125,7 +133,7 @@ const candidateSubmissionSlice = createSlice({
         ...action.payload,
       };
     },
-    
+
     resetForm: (state) => {
       state.formData = { ...initialState.formData };
       state.successMessage = "";

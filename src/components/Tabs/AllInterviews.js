@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Typography, CircularProgress, Box, Paper, Container, Alert, AlertTitle } from "@mui/material";
-import BASE_URL from "../../redux/apiConfig";
+//import appconfig.PROD_appconfig.PROD_BASE_URL from "../../redux/apiConfig";
 import DataTable from "../MuiComponents/DataTable"; // Importing the DataTable component
+
+const appconfig = require("../../redux/apiConfig");
+
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
 
 const AllInterviews = () => {
   const [submissions, setSubmissions] = useState([]);

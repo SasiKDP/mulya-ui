@@ -1,24 +1,30 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../apiConfig";
+
+const appconfig = require("../apiConfig");
+
+
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
+
+console.log("Using BASE_URL:", BASE_URL);
 
 // AsyncThunk for form submission
 export const submitInterviewForm = createAsyncThunk(
   "interviewForm/submitInterviewForm",
   async (formData, { rejectWithValue }) => {
-    console.log('interview from data ', formData);
-    
+    console.log("Interview form data:", formData);
+
     try {
       const response = await axios.post(
         `${BASE_URL}/candidate/interview-schedule/${formData.userId}`,
         formData,
         {
           headers: {
-            'Content-Type': 'application/json',  
+            "Content-Type": "application/json",
           },
         }
       );
-      return response.data; 
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Submission Failed");
     }
@@ -31,14 +37,14 @@ const initialState = {
     candidateId: "",
     candidateFullName: "",
     candidateContactNo: "",
-    candidateEmailId: '',
+    candidateEmailId: "",
     userEmail: "",
     userId: "",
     interviewDateTime: null,
     duration: "",
     zoomLink: "",
     interviewScheduledTimestamp: null,
-    clientEmail: '',
+    clientEmail: "",
     clientName: "",
     interviewLevel: "",
   },
@@ -57,14 +63,14 @@ const interviewFormSlice = createSlice({
       state.formData[name] = value;
     },
     resetForm(state) {
-      state.formData = initialState.formData;
+      state.formData = { ...initialState.formData };
       state.submissionSuccess = null;
       state.error = null;
       state.interviewResponse = null; // Reset interview response
     },
     clearError: (state) => {
-      state.error = null;  // Clear error message
-    }
+      state.error = null; // Clear error message
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -79,7 +85,7 @@ const interviewFormSlice = createSlice({
         state.error = null;
         if (action.payload?.success) {
           state.interviewResponse = action.payload.payload;
-          console.log('success response payload ',action)
+          console.log("Success response payload:", action);
         } else {
           state.error = action.payload?.message || "Interview scheduling failed.";
           state.submissionSuccess = false;

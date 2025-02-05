@@ -1,6 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../apiConfig";
+
+const appconfig = require("../apiConfig");
+
+// ✅ Directly use the production URL
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
+
+console.log("Using BASE_URL:", BASE_URL);
 
 // Fetch employees thunk
 export const fetchEmployees = createAsyncThunk(
@@ -18,7 +24,7 @@ export const updateEmployee = createAsyncThunk(
     // Store employeeId in a separate variable for the path variable
     const { employeeId, ...updatedData } = employeeData;
 
-    console.log('employee data from the edit  ', updatedData);  // Log the updated data without employeeId
+    console.log("employee data from the edit  ", updatedData); // Log the updated data without employeeId
 
     // Now send the request with the updated data (without employeeId) and use employeeId in the URL path
     const response = await axios.put(
@@ -34,7 +40,6 @@ export const updateEmployee = createAsyncThunk(
   }
 );
 
-
 // Delete employee thunk
 export const deleteEmployee = createAsyncThunk(
   "employee/deleteEmployee",
@@ -43,8 +48,6 @@ export const deleteEmployee = createAsyncThunk(
     return employeeId; // Return the ID of the deleted employee
   }
 );
-
-
 
 const employeesSlice = createSlice({
   name: "employee",
@@ -56,7 +59,7 @@ const employeesSlice = createSlice({
     updateError: null,
     deleteStatus: "idle",
     deleteError: null,
-    updatedUserResponse:null,
+    updatedUserResponse: null,
   },
   reducers: {
     resetUpdateStatus: (state) => {

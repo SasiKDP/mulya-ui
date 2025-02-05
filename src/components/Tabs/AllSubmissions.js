@@ -9,9 +9,14 @@ import {
   Alert,
   AlertTitle,
 } from "@mui/material";
-import BASE_URL from "../../redux/apiConfig";
+//import appconfig.PROD_appconfig.PROD_BASE_URL from "../../redux/apiConfig";
 import DataTable from "../MuiComponents/DataTable";
 import CustomDialog from "../MuiComponents/CustomDialog"; // Import CustomDialog
+
+
+const appconfig = require("../../redux/apiConfig");
+
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
 
 const AllSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
