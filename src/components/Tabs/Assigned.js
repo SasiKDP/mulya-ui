@@ -18,8 +18,12 @@ import CloseIcon from "@mui/icons-material/Close";
 import UploadIcon from "@mui/icons-material/Upload";
 import CandidateSubmissionForm from "../CandidateSubmissionFrom";
 import CustomDialog from "../MuiComponents/CustomDialog";
-import BASE_URL from "../../redux/apiConfig";
+
 import DataTable from "../MuiComponents/DataTable";
+
+const appconfig = require("../../redux/apiConfig");
+
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
 
 const Assigned = () => {
   const [data, setData] = useState([]);
@@ -67,7 +71,7 @@ const Assigned = () => {
     const fetchEmployees = async () => {
       setFetchStatus("loading");
       try {
-        const response = await axios.get(`${BASE_URL}/users/employee`);
+        const response = await axios.get(`${appconfig.PROD_appconfig.PROD_BASE_URL}/users/employee`);
         setEmployeesList(response.data);
         setFetchStatus("succeeded");
       } catch (error) {
@@ -95,7 +99,7 @@ const Assigned = () => {
     const fetchUserSpecificData = async () => {
       try {
         const response = await axios.get(
-          `${BASE_URL}/requirements/recruiter/${userId}`
+          `${appconfig.PROD_appconfig.PROD_BASE_URL}/requirements/recruiter/${userId}`
         );
         const userData = response.data || [];
         setTotalCount(response.data.totalCount || userData.length || 0);

@@ -11,11 +11,12 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { FileText, Users, Calendar, Clock, Building } from "lucide-react";
-import BASE_URL from "../redux/apiConfig";
+
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "../redux/features/employeesSlice";
 
 const AdminDashboard = () => {
+  const appconfig = require("../redux/apiConfig");
   const [tabIndex, setTabIndex] = useState(0);
   const [requirements, setRequirements] = useState([]);
   const [candidates, setCandidates] = useState([]);
@@ -35,6 +36,8 @@ const AdminDashboard = () => {
       dispatch(fetchEmployees()); // Fetch employees when tabIndex is 5
     }
   }, [tabIndex, dispatch]);
+
+  const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
 
   // Function to handle API calls for other tabs
   const fetchData = async (endpoint) => {

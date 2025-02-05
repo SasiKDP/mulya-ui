@@ -14,8 +14,11 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import InterviewForm from "../InterviewForm";
-import BASE_URL from "../../redux/apiConfig";
+//import appconfig.PROD_appconfig.PROD_BASE_URL from "../../redux/apiConfig";
 import DataTable from "../MuiComponents/DataTable";
+
+const appconfig = require("../../redux/apiConfig");
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
 
 const Submissions = () => {
   const [data, setData] = useState([]);

@@ -1,6 +1,6 @@
 // import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 // import axios from "axios";
-// import BASE_URL from "../apiConfig";
+// import appconfig.PROD_appconfig.PROD_BASE_URL from "../apiConfig";
 
 // // const url = 'http://35.188.150.92';
 
@@ -9,7 +9,7 @@
 //   "jobForm/postJobRequirement",
 //   async (formData, { rejectWithValue }) => {
 //     try {
-//       const response = await axios.post(`${BASE_URL}/requirements/assignJob`, formData, {
+//       const response = await axios.post(`${appconfig.PROD_appconfig.PROD_BASE_URL}/requirements/assignJob`, formData, {
 //         headers: {
 //           "Content-Type": "application/json; charset=UTF-8",
 //         },
@@ -106,7 +106,13 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../apiConfig";
+
+const appconfig = require("../apiConfig");
+
+// ✅ Directly use the production URL
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
+
+console.log("Using BASE_URL:", BASE_URL);
 
 // Async thunk for posting job requirements
 export const postJobRequirement = createAsyncThunk(
@@ -118,7 +124,7 @@ export const postJobRequirement = createAsyncThunk(
           "Content-Type": "application/json; charset=UTF-8",
         },
       });
-      console.log("job posting log ==== ", response.data);
+      console.log("Job posting log:", response.data);
       return response.data; // Return API response data
     } catch (error) {
       return rejectWithValue(
@@ -198,6 +204,6 @@ const jobFormSlice = createSlice({
 });
 
 // Exporting actions and reducer
-export const { updateField, resetForm ,clearMessages} = jobFormSlice.actions;
+export const { updateField, resetForm, clearMessages } = jobFormSlice.actions;
 export default jobFormSlice.reducer;
 

@@ -1,8 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../apiConfig";
 
-// const BASE_URL = 'http://192.168.0.194:8083'
+const appconfig = require("../apiConfig");
+
+// ✅ Directly use the production URL
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
+
+console.log("Using BASE_URL:", BASE_URL);
 
 // Initial state
 const initialState = {
@@ -24,10 +28,10 @@ export const loginAsync = createAsyncThunk(
         `${BASE_URL}/users/login`, 
         { email, password },
         {
-         withCredentials:true,
+          withCredentials: true,
           headers: {
             "Content-Type": "application/json",
-           "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Origin": "*",
           },
         }
       );
@@ -51,7 +55,7 @@ export const loginAsync = createAsyncThunk(
           return rejectWithValue("Invalid credentials or bad request.");
         } else {
           return rejectWithValue(
-            error.response.data?.error.errorMessage || "An unexpected error occurred."
+            error.response.data?.error?.errorMessage || "An unexpected error occurred."
           );
         }
       } else if (error.request) {

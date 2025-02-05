@@ -10,13 +10,17 @@ import {
   Snackbar,
 } from "@mui/material";
 import axios from "axios";
-import BASE_URL from "../redux/apiConfig";
+//import appconfig.PROD_appconfig.PROD_BASE_URL from "../redux/apiConfig";
 import dayjs from "dayjs";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter"; // Import plugin for isSameOrAfter
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "../redux/features/employeesSlice";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+
+const appconfig = require("../redux/apiConfig");
+
+const BASE_URL = appconfig.PROD_appconfig.PROD_BASE_URL;
 
 // Extend dayjs to use the isSameOrAfter plugin
 dayjs.extend(isSameOrAfter);
