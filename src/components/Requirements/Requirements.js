@@ -28,8 +28,6 @@ import { fetchEmployees } from "../../redux/features/employeesSlice";
 import RequirementsTable from "./RequirementsTable";
 import BASE_URL from "../../redux/config";
 
-
-
 const Requirements = () => {
   const dispatch = useDispatch();
   const { employeesList } = useSelector((state) => state.employees);
@@ -57,7 +55,9 @@ const Requirements = () => {
 
   const fetchRequirements = async () => {
     try {
-      const response = await axios.get(`${BASE_URL}/requirements/getAssignments`);
+      const response = await axios.get(
+        `${BASE_URL}/requirements/getAssignments`
+      );
       setRequirementsList(response.data);
       setLoading(false);
     } catch (err) {
@@ -67,15 +67,27 @@ const Requirements = () => {
   };
 
   const handleEdit = (job) => {
+    // Ensure unique recruiter IDs and names while editing
+    const uniqueRecruiters = job.recruiterIds
+      ? job.recruiterIds.map((id, index) => ({
+          id,
+          name: job.recruiterName[index] || "",
+        }))
+      : [];
+  
+    const filteredRecruiters = uniqueRecruiters.reduce((acc, emp) => {
+      if (emp.id && !acc.some((e) => e.id === emp.id)) {
+        acc.push(emp);
+      }
+      return acc;
+    }, []);
+  
     setEditFormData({
       ...job,
-      recruiterName: Array.isArray(job.recruiterName)
-        ? job.recruiterName
-        : [job.recruiterName],
-      recruiterIds: Array.isArray(job.recruiterIds)
-        ? job.recruiterIds
-        : [job.recruiterIds],
+      recruiterName: filteredRecruiters.map((emp) => emp.name),
+      recruiterIds: filteredRecruiters.map((emp) => emp.id),
     });
+  
     setEditDialogOpen(true);
   };
 
@@ -150,28 +162,36 @@ const Requirements = () => {
 
   const handleSelectRecruiter = (event) => {
     const selectedNames = event.target.value;
+    const selectedRecruiters = selectedNames.map(
+      (name) => recruiters.find((emp) => emp.userName === name)
+    );
+  
+    // Ensure unique recruiter IDs
+    const uniqueRecruiters = selectedRecruiters.reduce((acc, emp) => {
+      if (emp && !acc.some((e) => e.employeeId === emp.employeeId)) {
+        acc.push(emp);
+      }
+      return acc;
+    }, []);
+  
     setEditFormData((prev) => ({
       ...prev,
-      recruiterName: selectedNames,
-      recruiterIds: selectedNames
-        .map(
-          (name) => recruiters.find((emp) => emp.userName === name)?.employeeId
-        )
-        .filter(Boolean),
+      recruiterName: uniqueRecruiters.map((emp) => emp.userName),
+      recruiterIds: uniqueRecruiters.map((emp) => emp.employeeId),
     }));
   };
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 3, backgroundColor: "#f5f5f5" }}>
+      <Paper elevation={3} sx={{ p: 1, backgroundColor: "#f5f5f5" }}>
         <Typography
           variant="h5"
           gutterBottom
           sx={{
             fontWeight: 600,
-            backgroundColor: "primary.light",
+            backgroundColor: "#00796b",
             color: "white",
-            padding: "10px",
+            padding: 2,
             borderRadius: 1,
           }}
         >
@@ -199,10 +219,12 @@ const Requirements = () => {
             <Dialog
               open={editDialogOpen}
               onClose={handleCloseEditDialog}
-              maxWidth="md"
+              maxWidth="sm"
               fullWidth
             >
-              <DialogTitle sx={{ backgroundColor: "primary.main", color: "white" }}>
+              <DialogTitle
+                sx={{ backgroundColor: "#004d40", color: "white" }}
+              >
                 Edit Job Requirement
               </DialogTitle>
               <DialogContent sx={{ mt: 2 }}>
@@ -231,7 +253,12 @@ const Requirements = () => {
                       </Grid>
                     ))}
 
-                  <Grid item xs={12}>
+                  <Grid
+                    item
+                    xs={12}
+                    md={6}
+                    sx={{ overflowY: "auto", maxHeight: 400 }}
+                  >
                     <Typography variant="subtitle1" sx={{ mb: 1 }}>
                       Select Recruiters
                     </Typography>
@@ -242,6 +269,14 @@ const Requirements = () => {
                       renderValue={(selected) => selected.join(", ")}
                       fullWidth
                       sx={{ minHeight: 56 }}
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            maxHeight: 300, // Limit dropdown height
+                            overflowY: "auto", // Enable scrollbar
+                          },
+                        },
+                      }}
                     >
                       {recruiters.map((emp) => (
                         <MenuItem key={emp.employeeId} value={emp.userName}>
@@ -282,7 +317,9 @@ const Requirements = () => {
               onClose={() => setDeleteDialogOpen(false)}
               maxWidth="sm"
             >
-              <DialogTitle sx={{ backgroundColor: "error.main", color: "white" }}>
+              <DialogTitle
+                sx={{ backgroundColor: "#00796b", color: "white" }}
+              >
                 Confirm Delete
               </DialogTitle>
               <DialogContent sx={{ mt: 2 }}>
@@ -303,7 +340,8 @@ const Requirements = () => {
                 <Button
                   onClick={handleConfirmDelete}
                   variant="contained"
-                  color="error"
+                  color="#fff"
+                  backgroundColor='#00796b'
                 >
                   Delete
                 </Button>

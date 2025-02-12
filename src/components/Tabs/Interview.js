@@ -2,20 +2,29 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import {
-  Alert,
   CircularProgress,
   Box,
-  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   Typography,
-  ButtonGroup,
+  Button,
+  TextField,
+  Snackbar,
+  Alert,
+  DialogActions,
   Container,
-  useTheme,
-  useMediaQuery,
+  ButtonGroup,
+  Tooltip,
+  MenuItem,
+  Grid,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import DataTable from "../MuiComponents/DataTable";
 import BASE_URL from "../../redux/config";
-
-
 
 const INTERVIEW_LEVELS = {
   ALL: "all",
@@ -24,20 +33,24 @@ const INTERVIEW_LEVELS = {
 };
 
 const Interview = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
   const [data, setData] = useState([]);
   const [columns, setColumns] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [filterLevel, setFilterLevel] = useState(INTERVIEW_LEVELS.ALL);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingInterview, setEditingInterview] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [interviewToDelete, setInterviewToDelete] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const { user } = useSelector((state) => state.auth);
   const userId = user;
 
-  // Function to generate column headers from data
   const generateColumns = (data) => {
     if (data.length === 0) return [];
 
@@ -53,7 +66,7 @@ const Interview = () => {
       interviewScheduledTimestamp: "Scheduled On",
       userEmail: "Recruiter Email",
       clientEmail: "Client Email",
-      // Add more mappings as needed
+      Actions: "Actions",
     };
 
     return Object.keys(sampleData).map((key) => ({
@@ -62,145 +75,6 @@ const Interview = () => {
         headerLabels[key] ||
         key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
     }));
-  };
-
-  useEffect(() => {
-    const fetchInterviewDetails = async () => {
-      if (!userId) return;
-
-      try {
-        setLoading(true);
-        setError(false);
-
-        const response = await axios.get(
-          `${BASE_URL}/candidate/interviews/${userId}`
-        );
-        const interviewData = response.data || [];
-
-        // Process the data to include formatted values
-        const processedData = interviewData.map((interview) => ({
-          ...interview,
-          interviewDateTime: formatDateTime(interview.interviewDateTime),
-          interviewScheduledTimestamp: formatDateTime(
-            interview.interviewScheduledTimestamp
-          ),
-          duration: interview.duration ? `${interview.duration} minutes` : "",
-          zoomLink: interview.zoomLink ? (
-            <Button
-              variant="contained"
-              size="small"
-              href={interview.zoomLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                textTransform: "none",
-                minWidth: "100px",
-                fontSize: "0.875rem",
-              }}
-            >
-              Join Meeting
-            </Button>
-          ) : (
-            ""
-          ),
-          candidateContactNo: interview.candidateContactNo ? (
-            <a
-              href={`tel:${interview.candidateContactNo}`}
-              style={{
-                textDecoration: "none",
-                color: theme.palette.primary.main,
-              }}
-            >
-              {interview.candidateContactNo}
-            </a>
-          ) : (
-            ""
-          ),
-          candidateEmailId: interview.candidateEmailId ? (
-            <a
-              href={`mailto:${interview.candidateEmailId}`}
-              style={{
-                textDecoration: "none",
-                color: theme.palette.primary.main,
-              }}
-            >
-              {interview.candidateEmailId}
-            </a>
-          ) : (
-            ""
-          ),
-          userEmail: interview.userEmail ? (
-            <a
-              href={`mailto:${interview.userEmail}`}
-              style={{
-                textDecoration: "none",
-                color: theme.palette.primary.main,
-              }}
-            >
-              {interview.userEmail}
-            </a>
-          ) : (
-            ""
-          ),
-          clientEmail: interview.clientEmail ? (
-            <a
-              href={`mailto:${interview.clientEmail}`}
-              style={{
-                textDecoration: "none",
-                color: theme.palette.primary.main,
-              }}
-            >
-              {interview.clientEmail}
-            </a>
-          ) : (
-            ""
-          ),
-        }));
-
-        setData(processedData);
-
-        // Generate columns after data is processed
-        if (processedData.length > 0) {
-          const generatedColumns = generateColumns(processedData);
-          setColumns(generatedColumns);
-        }
-
-        applyFilter(processedData, INTERVIEW_LEVELS.ALL);
-      } catch (err) {
-        console.error("Failed to fetch interview details:", err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInterviewDetails();
-  }, [userId, theme.palette.primary.main]);
-
-  const filterDataWithValidSchedule = (interviews) => {
-    return interviews.filter((interview) => {
-      return (
-        interview.interviewDateTime && interview.duration && interview.zoomLink
-      );
-    });
-  };
-
-  const applyFilter = (interviews, level) => {
-    let filtered = [];
-
-    if (level === INTERVIEW_LEVELS.ALL) {
-      filtered = filterDataWithValidSchedule(interviews);
-    } else {
-      filtered = interviews.filter(
-        (interview) =>
-          interview.interviewLevel === level &&
-          interview.interviewDateTime &&
-          interview.duration &&
-          interview.zoomLink
-      );
-    }
-
-    setFilteredData(filtered);
   };
 
   const formatDateTime = (dateTime) => {
@@ -220,62 +94,193 @@ const Interview = () => {
     }
   };
 
+  const fetchInterviewDetails = async () => {
+    if (!userId) return;
+
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${BASE_URL}/candidate/interviews/${userId}`
+      );
+      const interviewData = response.data || [];
+
+      const scheduledInterviews = interviewData.filter(
+        (interview) => interview.interviewStatus.toUpperCase() === "SCHEDULED"
+      );
+
+      const processedData = scheduledInterviews.map((interview) => ({
+        ...interview,
+        interviewDateTime: formatDateTime(interview.interviewDateTime),
+        interviewScheduledTimestamp: formatDateTime(
+          interview.interviewScheduledTimestamp
+        ),
+        duration: interview.duration ? `${interview.duration} minutes` : "",
+        zoomLink: interview.zoomLink ? (
+          <Button
+            variant="contained"
+            size="small"
+            href={interview.zoomLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{
+              textTransform: "none",
+              minWidth: "100px",
+              fontSize: "0.875rem",
+            }}
+          >
+            Join Meeting
+          </Button>
+        ) : (
+          ""
+        ),
+        Actions: (
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <Tooltip title="Edit">
+              <IconButton
+                color="primary"
+                onClick={() => handleEditInterview(interview)}
+                sx={{
+                  borderRadius: "8px",
+                  "&:hover": { backgroundColor: "#1B3A8C1A" },
+                }}
+              >
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                color="error"
+                onClick={() => handleDeleteClick(interview)}
+                sx={{
+                  borderRadius: "8px",
+                  "&:hover": { backgroundColor: "#B71C1C1A" },
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      }));
+
+      setData(processedData);
+      if (processedData.length > 0) {
+        const generatedColumns = generateColumns(processedData);
+        setColumns(generatedColumns);
+      }
+      applyFilter(processedData, filterLevel);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to fetch interview details. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInterviewDetails();
+  }, [userId]);
+
+  const handleEditInterview = (interview) => {
+    setEditingInterview(interview);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (interview) => {
+    setInterviewToDelete(interview);
+    setDeleteDialogOpen(true);
+  };
+
+  const updateInterview = async () => {
+    if (!editingInterview || !userId) return;
+
+    const payload = {
+      interviewDateTime: editingInterview.interviewDateTime,
+      duration: editingInterview.duration,
+      zoomLink: editingInterview.zoomLink,
+      userId: userId,
+      candidateId: editingInterview.candidateId,
+      jobId: editingInterview.jobId,
+      clientName: editingInterview.clientName,
+      fullName: editingInterview.fullName,
+      contactNumber: editingInterview.contactNumber,
+      userEmail: editingInterview.userEmail,
+      interviewLevel: editingInterview.interviewLevel,
+      clientEmail: editingInterview.clientEmail,
+    };
+
+    try {
+      setLoading(true);
+      await axios.put(
+        `${BASE_URL}/candidate/interview-update/${userId}/${editingInterview.candidateId}`,
+        payload,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      setSnackbar({
+        open: true,
+        message: "Interview updated successfully!",
+        severity: "success",
+      });
+      setEditDialogOpen(false);
+      fetchInterviewDetails();
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to update interview. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteInterview = async () => {
+    if (!interviewToDelete || !interviewToDelete.candidateId) return;
+
+    try {
+      setLoading(true);
+      await axios.delete(
+        `${BASE_URL}/candidate/deleteinterview/${interviewToDelete.candidateId}`,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      setSnackbar({
+        open: true,
+        message: "Interview deleted successfully!",
+        severity: "success",
+      });
+
+      setDeleteDialogOpen(false);
+      fetchInterviewDetails();
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Failed to delete interview. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilter = (interviews, level) => {
+    let filtered =
+      level === INTERVIEW_LEVELS.ALL
+        ? interviews
+        : interviews.filter((interview) => interview.interviewLevel === level);
+    setFilteredData(filtered);
+  };
+
   const handleFilterChange = (level) => {
     setFilterLevel(level);
     applyFilter(data, level);
-  };
-
-  const FilterButtonGroup = () => {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "start",
-          width: "100%",
-          mb: 2,
-          px: { xs: 1, sm: 2 },
-        }}
-      >
-        <ButtonGroup
-          variant="outlined"
-          sx={{
-            borderRadius: "12px",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-            "& .MuiButton-root": {
-              minWidth: { xs: "80px", sm: "110px" },
-              height: "44px",
-              textTransform: "none",
-              fontSize: { xs: "0.8rem", sm: "0.95rem" },
-              fontWeight: 600,
-              borderColor: "#004d40", // Dark teal border color
-              color: "#004d40", // Matching text color
-              backgroundColor: "transparent", // Transparent background
-              transition: "all 0.3s ease",
-              "&:hover": {
-                backgroundColor: "rgba(18, 107, 94, 0.1)", // Soft teal hover effect
-                borderColor: "#004d40", // Retain border color on hover
-                color: "#004d40", // Retain text color on hover
-              },
-              "&.active": {
-                backgroundColor: "#004d40", // Dark teal background for active button
-                color: "#fff", // White text for active button
-                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)", // Subtle shadow on active state
-              },
-            },
-          }}
-        >
-          {Object.entries(INTERVIEW_LEVELS).map(([key, value]) => (
-            <Button
-              key={key}
-              className={filterLevel === value ? "active" : ""}
-              onClick={() => handleFilterChange(value)}
-            >
-              {key === "ALL" ? "All" : value}
-            </Button>
-          ))}
-        </ButtonGroup>
-      </Box>
-    );
   };
 
   if (loading) {
@@ -293,68 +298,33 @@ const Interview = () => {
     );
   }
 
-  if (error) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "60vh",
-        }}
-      >
-        <Alert severity="error" sx={{ width: "100%", maxWidth: 600 }}>
-          Failed to load interviews. Please try again later.
-        </Alert>
-      </Box>
-    );
-  }
-
   return (
-    <Container maxWidth="xl" maxHeight="100vh" sx={{ py: { xs: 2, sm: 3 } }}>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
       <Box
         sx={{
           backgroundColor: "background.paper",
           borderRadius: 1,
           boxShadow: 1,
-          display: "flex",
-          flexDirection: "column",
-          height: "88vh",
         }}
       >
         <Box
           sx={{
-            pl: 1,
-            borderBottom: 1,
-            borderColor: "divider",
-            flexShrink: 0,
             backgroundColor: "rgba(232, 245, 233)",
-            padding: 1,
-            borderRadius: 1,
-            marginBottom: 1,
+            padding: 2,
+            borderRadius: "4px 4px 0 0",
           }}
         >
           <Typography
             variant="h5"
             component="h1"
-            sx={{
-              fontSize: { xs: "1.25rem", sm: "1.5rem" },
-              fontWeight: 600,
-              color: "#333",
-              mb: 2,
-            }}
+            sx={{ fontWeight: 600, color: "#333" }}
           >
-            Interview Schedule{" "}
+            Interview Schedule
             {data.length > 0 && (
               <Typography
                 variant="body2"
                 color="text.secondary"
-                sx={{
-                  display: "inline",
-                  fontSize: { xs: "0.875rem", sm: "1rem" },
-                  fontWeight: 500,
-                  ml: 1,
-                }}
+                sx={{ display: "inline", ml: 1 }}
               >
                 [scheduled interviews {filteredData.length}{" "}
                 {filterLevel !== "all" ? filterLevel : ""}]
@@ -363,32 +333,262 @@ const Interview = () => {
           </Typography>
         </Box>
 
-        <FilterButtonGroup />
+        <Box sx={{ p: 2 }}>
+          <ButtonGroup
+            variant="outlined"
+            sx={{
+              mb: 3,
+              "& .MuiButton-root": {
+                minWidth: "110px",
+                textTransform: "none",
+                borderColor: "#004d40",
+                color: "#004d40",
+                "&.active": {
+                  backgroundColor: "#004d40",
+                  color: "#fff",
+                },
+              },
+            }}
+          >
+            {Object.entries(INTERVIEW_LEVELS).map(([key, value]) => (
+              <Button
+                key={key}
+                className={filterLevel === value ? "active" : ""}
+                onClick={() => handleFilterChange(value)}
+              >
+                {key === "ALL" ? "All" : value}
+              </Button>
+            ))}
+          </ButtonGroup>
 
-        <Box
-          sx={{
-            p: { xs: 1, sm: 2 },
-            flexGrow: 1,
-            overflowY: "auto",
-            maxHeight: "calc(100vh - 230px)",
-          }}
-        >
-          {filteredData.length === 0 ? (
-            <Typography
-              variant="body1"
-              sx={{
-                textAlign: "center",
-                py: 4,
-                color: "text.secondary",
-              }}
-            >
-              No interview data available.
-            </Typography>
-          ) : (
-            <DataTable data={filteredData} columns={columns} pageLimit={5} />
-          )}
+          <DataTable data={filteredData} columns={columns} pageLimit={5} />
         </Box>
       </Box>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Edit Interview
+          <IconButton
+            onClick={() => setEditDialogOpen(false)}
+            sx={{ position: "absolute", right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {editingInterview && (
+            <Box sx={{ flexGrow: 1, mt: 2 }}>
+              <Grid container spacing={2}>
+                {Object.entries(editingInterview).map(([key, value]) => {
+                  if (
+                    ![
+                      "Actions",
+                      "id",
+                      "interviewDateTime",
+                      "externalInterviewDetails",
+                    ].includes(key)
+                  ) {
+                    return (
+                      <Grid item xs={12} sm={6} key={key}>
+                        {/* Dropdown for interviewLevel */}
+                        {key === "interviewLevel" ? (
+                          <TextField
+                            select
+                            label="Interview Level"
+                            value={value || editingInterview.interviewLevel}
+                            onChange={(e) =>
+                              setEditingInterview({
+                                ...editingInterview,
+                                [key]: e.target.value,
+                              })
+                            }
+                            fullWidth
+                          >
+                            <MenuItem value="INTERNAL">INTERNAL</MenuItem>
+                            <MenuItem value="EXTERNAL">EXTERNAL</MenuItem>
+                          </TextField>
+                        ) : (
+                          <TextField
+                            label={key.replace(/([A-Z])/g, " $1").trim()}
+                            value={value || ""}
+                            onChange={(e) =>
+                              setEditingInterview({
+                                ...editingInterview,
+                                [key]: e.target.value,
+                              })
+                            }
+                            fullWidth
+                            disabled={[
+                              "jobId",
+                              "candidateId",
+                              "userId",
+                              "interviewScheduledTimestamp",
+                            ].includes(key)}
+                          />
+                        )}
+                      </Grid>
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* Ensure interviewDateTime appears immediately after interviewScheduledTimestamp */}
+                {editingInterview.interviewScheduledTimestamp && (
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      key="interviewDateTime"
+                      label="Interview Date & Time"
+                      type="datetime-local"
+                      value={
+                        editingInterview.interviewDateTime
+                          ? new Date(editingInterview.interviewDateTime)
+                              .toISOString()
+                              .slice(0, 16)
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const selectedDate = new Date(e.target.value);
+
+                        // Get dynamic timezone offset
+                        const timezoneOffset = selectedDate.getTimezoneOffset();
+                        const offsetHours = Math.abs(
+                          Math.floor(timezoneOffset / 60)
+                        )
+                          .toString()
+                          .padStart(2, "0");
+                        const offsetMinutes = Math.abs(timezoneOffset % 60)
+                          .toString()
+                          .padStart(2, "0");
+                        const offsetSign = timezoneOffset > 0 ? "-" : "+";
+
+                        const formattedDateTime = `${selectedDate.getFullYear()}-${(
+                          selectedDate.getMonth() + 1
+                        )
+                          .toString()
+                          .padStart(2, "0")}-${selectedDate
+                          .getDate()
+                          .toString()
+                          .padStart(2, "0")}T${selectedDate
+                          .getHours()
+                          .toString()
+                          .padStart(2, "0")}:${selectedDate
+                          .getMinutes()
+                          .toString()
+                          .padStart(2, "0")}:${selectedDate
+                          .getSeconds()
+                          .toString()
+                          .padStart(
+                            2,
+                            "0"
+                          )}${offsetSign}${offsetHours}:${offsetMinutes}`;
+
+                        setEditingInterview({
+                          ...editingInterview,
+                          interviewDateTime: formattedDateTime,
+                        });
+                      }}
+                      fullWidth
+                    />
+                  </Grid>
+                )}
+
+                {/* Show External Interview Details when interviewLevel is EXTERNAL */}
+                {editingInterview.interviewLevel === "EXTERNAL" && (
+                  <Grid item xs={12}>
+                    <TextField
+                      key="externalInterviewDetails"
+                      label="External Interview Details"
+                      multiline
+                      rows={3}
+                      value={editingInterview.externalInterviewDetails || ""}
+                      onChange={(e) =>
+                        setEditingInterview({
+                          ...editingInterview,
+                          externalInterviewDetails: e.target.value,
+                        })
+                      }
+                      fullWidth
+                    />
+                  </Grid>
+                )}
+              </Grid>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+          <Button onClick={updateInterview} variant="contained" color="primary">
+          Reschedule Interview
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          Confirm Delete
+          <IconButton
+            onClick={() => setDeleteDialogOpen(false)}
+            sx={{ position: "absolute", right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mt: 2 }}>
+            Are you sure you want to delete this interview? This action cannot
+            be undone.
+          </Typography>
+          {interviewToDelete && (
+            <Box
+              sx={{ mt: 2, backgroundColor: "grey.100", p: 2, borderRadius: 1 }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Candidate: {interviewToDelete.candidateName}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={deleteInterview}
+            color="error"
+            variant="contained"
+            startIcon={<DeleteIcon />}
+          >
+            Delete Interview
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

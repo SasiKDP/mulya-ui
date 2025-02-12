@@ -21,7 +21,7 @@ import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 
-const DataTable = ({ data, columns, pageLimit = 5 }) => {
+const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageLimit);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -33,7 +33,7 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0); // Reset page when rows per page changes
+    setPage(0);
   };
 
   const handleDialogOpen = (content) => {
@@ -46,8 +46,22 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
     setDialogContent("");
   };
 
-  // Determine if the bottom header should be shown based on the number of records
   const shouldShowBottomHeader = data.length > 20;
+
+  const highlightText = (text, highlight) => {
+    if (!highlight.trim() || !text) return text;
+    
+    const parts = String(text).split(new RegExp(`(${highlight})`, 'gi'));
+    return parts.map((part, index) => 
+      part.toLowerCase() === highlight.toLowerCase() ? (
+        <span key={index} style={{ backgroundColor: '#fff3cd', padding: '0.1rem' }}>
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+  };
 
   return (
     <>
@@ -60,7 +74,6 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
         }}
       >
         <Table>
-          {/* Top Header */}
           <TableHead>
             <TableRow style={{ backgroundColor: "#00796b" }}>
               {columns.map((column) => (
@@ -91,8 +104,24 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
                 .map((row, index) => (
                   <TableRow key={index}>
                     {columns.map((column) => {
-                      const cellData = row[column.key];
+                      // Check if column has a render function
+                      if (column.render) {
+                        return (
+                          <TableCell
+                            key={column.key}
+                            style={{
+                              border: "1px solid #ccc",
+                              padding: "8px",
+                              textAlign: "center",
+                            }}
+                          >
+                            {column.render(row)}
+                          </TableCell>
+                        );
+                      }
 
+                      const cellData = row[column.key];
+                      
                       return (
                         <TableCell
                           key={column.key}
@@ -102,29 +131,29 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
                             textAlign: "center",
                           }}
                         >
-                          {cellData && cellData.length > 20 ? (
+                          {cellData && String(cellData).length > 20 ? (
                             <>
-                              {cellData.slice(0, 15)}...
+                              {highlightText(String(cellData).slice(0, 15), searchQuery)}...
                               <Button
-                                variant="text" // Removes the border
+                                variant="text"
                                 color="primary"
                                 onClick={() => handleDialogOpen(cellData)}
                                 style={{
-                                  marginLeft: "0.25rem", // minimal margin
+                                  marginLeft: "0.25rem",
                                   textTransform: "none",
-                                  padding: "0.125rem 0.25rem", // even smaller padding
-                                  borderRadius: "0.2rem", // slightly smaller rounded corners
-                                  fontWeight: "500", // lighter font weight
-                                  fontSize: "0.6875rem", // smaller font size (11px)
-                                  minWidth: "auto", // removes extra width
+                                  padding: "0.125rem 0.25rem",
+                                  borderRadius: "0.2rem",
+                                  fontWeight: "500",
+                                  fontSize: "0.6875rem",
+                                  minWidth: "auto",
                                 }}
                                 sx={{
                                   "&:hover": {
-                                    backgroundColor: "lightgray", // or any light color you prefer
+                                    backgroundColor: "lightgray",
                                   },
                                   "&:focus": {
                                     outline: "none",
-                                    borderColor: "lightgray", // Optional: adjust border color on focus as well
+                                    borderColor: "lightgray",
                                   },
                                 }}
                               >
@@ -133,13 +162,13 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
                                   sx={{
                                     display: "flex",
                                     alignItems: "center",
-                                    fontSize: "0.6875rem", // smaller font size for the text
+                                    fontSize: "0.6875rem",
                                   }}
                                 >
                                   <VisibilityIcon
                                     sx={{
-                                      marginRight: "0.125rem", // smaller margin for the icon
-                                      fontSize: "0.875rem", // smaller icon size (14px)
+                                      marginRight: "0.125rem",
+                                      fontSize: "0.875rem",
                                     }}
                                   />
                                   See More
@@ -147,7 +176,7 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
                               </Button>
                             </>
                           ) : (
-                            cellData
+                            highlightText(cellData, searchQuery)
                           )}
                         </TableCell>
                       );
@@ -157,7 +186,6 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
             )}
           </TableBody>
 
-          {/* Bottom Header */}
           {shouldShowBottomHeader && (
             <TableHead>
               <TableRow style={{ backgroundColor: "#00796b" }}>
@@ -204,7 +232,6 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
         />
       </TableContainer>
 
-      {/* Dialog to show full content */}
       <Dialog
         open={dialogOpen}
         onClose={handleDialogClose}
@@ -220,7 +247,7 @@ const DataTable = ({ data, columns, pageLimit = 5 }) => {
               color: "#333",
             }}
           >
-            {dialogContent}
+            {highlightText(dialogContent, searchQuery)}
           </div>
         </DialogContent>
         <DialogActions>

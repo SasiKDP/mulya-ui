@@ -75,6 +75,7 @@ export const logoutAsync = createAsyncThunk(
         {
           headers: {
             "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
           },
         }
       );

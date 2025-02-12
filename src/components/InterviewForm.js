@@ -41,7 +41,7 @@ const validationSchema = Yup.object().shape({
   clientEmail: Yup.string()
     .matches(
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Invalid email format (e.g., clientname@somthing.com)"
+      "Invalid email format (e.g., clientname@something.com)"
     )
     .required("Client email is required"),
   interviewDateTime: Yup.date()
@@ -57,11 +57,13 @@ const validationSchema = Yup.object().shape({
   interviewLevel: Yup.string()
     .required("Interview level is required")
     .oneOf(["Internal", "External"]),
-  externalInterviewDetails: Yup.string().when("interviewLevel", {
-    is: "External",
-    then: Yup.string().required("External interview details are required"),
+  externalInterviewDetails: Yup.string().when("interviewLevel", (interviewLevel, schema) => {
+    return interviewLevel === "External"
+      ? schema.required("External interview details are required")
+      : schema;
   }),
 });
+
 
 const InterviewForm = ({
   jobId,
@@ -277,7 +279,7 @@ const InterviewForm = ({
                 <Field
                   name="zoomLink"
                   component={FormikTextField}
-                  label="Zoom Link"
+                  label="Interview Link"
                   required
                 />
               </Grid>
