@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
- import BASE_URL from "../apiConfig";
+import BASE_URL from "../config";
+
 
 
 export const submitFormData = createAsyncThunk(
@@ -115,6 +116,26 @@ const formSlice = createSlice({
       };
       state.response = null;
     },
+
+    // Clear success response and error response
+    clearResponse: (state) => {
+      state.response = null;
+      state.error = {
+        userId: null,
+        userName: null,
+        password: null,
+        confirmPassword: null,
+        email: null,
+        personalemail: null,
+        phoneNumber: null,
+        designation: null,
+        gender: null,
+        joiningDate: null,
+        dob: null,
+        roles: null,
+        general: null,
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -128,13 +149,13 @@ const formSlice = createSlice({
       })
       .addCase(submitFormData.fulfilled, (state, action) => {
         const { success, message, data, error } = action.payload;
-        console.log(action.payload)
+        console.log(action.payload);
 
         if (success) {
           state.status = "succeeded";
           state.response = {
             message,
-            data, 
+            data,
           };
         } else {
           state.status = "failed";
@@ -162,9 +183,7 @@ const formSlice = createSlice({
           // General error fallback
           if (!state.error.userId && !state.error.email) {
             state.error.general = action.payload;
-            console.log('general state ',action.payload);
-            
-            
+            console.log("general state ", action.payload);
           }
         } else {
           state.error.general = "An unknown error occurred. Please try again later.";
@@ -173,6 +192,6 @@ const formSlice = createSlice({
   },
 });
 
-export const { updateFormData, clearFormData } = formSlice.actions;
+export const { updateFormData, clearFormData, clearResponse } = formSlice.actions;
 
 export default formSlice.reducer;

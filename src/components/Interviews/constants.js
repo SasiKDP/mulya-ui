@@ -1,0 +1,14 @@
+export const INTERVIEW_LEVELS = {
+    ALL: "ALL",
+    INTERNAL: "INTERNAL",
+    EXTERNAL: "EXTERNAL",
+  };
+  
+  export const INTERVIEW_STATUS = {
+    SCHEDULED: "SCHEDULED",
+    COMPLETED: "COMPLETED",
+    CANCELLED: "CANCELLED",
+  };
+  
+  
+  

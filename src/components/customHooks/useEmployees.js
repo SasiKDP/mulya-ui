@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import BASE_URL from "../../redux/apiConfig";
+//import appconfig.PROD_appconfig.PROD_BASE_URL from "../../redux/apiConfig";
+
+const appconfig = require("../apiConfig");
 
 const useEmployees = (roleFilter = 'EMPLOYEE') => {
   const [employees, setEmployees] = useState([]);
@@ -12,7 +14,7 @@ const useEmployees = (roleFilter = 'EMPLOYEE') => {
     const fetchEmployees = async () => {
       setStatus('loading');
       try {
-        const response = await axios.get(`${BASE_URL}/users/employee`);
+        const response = await axios.get(`${appconfig.PROD_appconfig.PROD_BASE_URL}/users/employee`);
         const allEmployees = response.data;
         
         // Apply role filtering if specified

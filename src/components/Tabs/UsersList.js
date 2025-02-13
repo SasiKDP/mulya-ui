@@ -38,6 +38,7 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import CloseIcon from "@mui/icons-material/Close";
 
 const UsersList = () => {
   const dispatch = useDispatch();
@@ -268,79 +269,30 @@ const UsersList = () => {
   };
 
   const renderRolesField = (key) => {
-    const isCurrentUser = selectedEmployee.employeeId === user;
-    const isSuperAdmin = selectedEmployee.roles.includes("SUPERADMIN");
-  
-    // If the current user is a SUPERADMIN and is editing their own role, allow them to edit
-    if (isSuperAdmin && isCurrentUser) {
-      return (
-        <Autocomplete
-          key={key}
-         
-          options={VALID_ROLES} // Allow all roles, including SUPERADMIN
-          value={editFormData.roles || []}
-          onChange={(event, newValue) => {
+    const availableRoles = VALID_ROLES; // Show all roles
+    return (
+      <FormControl fullWidth key={key}>
+        <InputLabel>Role</InputLabel>
+        <Select
+          name="roles"
+          value={editFormData.roles ? editFormData.roles[0] : ""}
+          onChange={(event) => {
             setEditFormData((prev) => ({
               ...prev,
-              roles: newValue,
+              roles: [event.target.value], // Ensure only one role is selected
             }));
           }}
-          renderInput={(params) => (
-            <TextField {...params} label="Roles" placeholder="Select roles" />
-          )}
-          renderTags={(value, getTagProps) =>
-            value.map((option, index) => (
-              <Chip key={index} label={option} {...getTagProps({ index })} />
-            ))
-          }
-        />
-      );
-    }
-  
-    // If the current user is not editing their own role or is not a SUPERADMIN
-    if (isSuperAdmin) {
-      return (
-        <TextField
-          key={key}
-          label="Roles"
-          value={
-            Array.isArray(selectedEmployee.roles)
-              ? selectedEmployee.roles.join(", ")
-              : selectedEmployee.roles || ""
-          }
-          disabled
-          fullWidth
-        />
-      );
-    }
-  
-    // For non-SUPERADMIN users
-    const availableRoles = VALID_ROLES.filter((role) => role !== "SUPERADMIN");
-  
-    return (
-      <Autocomplete
-        key={key}
-        multiple
-        options={availableRoles}
-        value={editFormData.roles || []}
-        onChange={(event, newValue) => {
-          setEditFormData((prev) => ({
-            ...prev,
-            roles: newValue,
-          }));
-        }}
-        renderInput={(params) => (
-          <TextField {...params} label="Roles" placeholder="Select roles" />
-        )}
-        renderTags={(value, getTagProps) =>
-          value.map((option, index) => (
-            <Chip key={index} label={option} {...getTagProps({ index })} />
-          ))
-        }
-      />
+          label="Role"
+        >
+          {availableRoles.map((role) => (
+            <MenuItem key={role} value={role}>
+              {role}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     );
   };
-  
 
   const paginatedEmployees = employeesList.slice(
     page * rowsPerPage,
@@ -464,7 +416,20 @@ const UsersList = () => {
           fullWidth
           maxWidth="sm"
         >
-          <DialogTitle>Edit Employee Details</DialogTitle>
+          <DialogTitle>
+            Edit Employee Details
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseEditDialog}
+              sx={{
+                position: "absolute",
+                right: 8,
+                top: 8,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
           <DialogContent>
             <Stack spacing={2} mt={2}>
               {selectedEmployee &&

@@ -18,7 +18,7 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useSelector, useDispatch } from "react-redux";
-import { submitFormData, clearFormData } from "../../redux/features/formSlice";
+import { submitFormData, clearFormData ,clearResponse} from "../../redux/features/formSlice";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -121,6 +121,7 @@ const AddUser = () => {
           ? error.general.errormessage || "An unknown error occurred."
           : error.general;
       toast.error(errorMessage);
+      dispatch(clearResponse())
     }
 
     if (status === "succeeded" && response) {
@@ -138,6 +139,8 @@ const AddUser = () => {
         }
       );
       dispatch(clearFormData());
+      dispatch(clearResponse())
+
     }
   }, [status, error, response, dispatch]);
 

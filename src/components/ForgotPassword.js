@@ -14,14 +14,16 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import BASE_URL from "../redux/apiConfig";
+import BASE_URL from "../redux/config";
+//import appconfig.PROD_appconfig.PROD_BASE_URL from "../redux/apiConfig";
+
+
 
 const API_ENDPOINTS = {
   SEND_OTP: `${BASE_URL}/users/send-otp`,
   VERIFY_OTP: `${BASE_URL}/users/verify-otp`,
   RESET_PASSWORD: `${BASE_URL}/users/update-password`,
 };
-
 const ForgotPassword = () => {
   const navigate = useNavigate();
 

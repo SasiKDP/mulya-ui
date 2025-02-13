@@ -158,30 +158,36 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
                 {logInTimeStamp ? (
                   <>
                     {(() => {
-                      const formattedTimestamp = logInTimeStamp.split(".")[0]; // Remove fractional seconds
-                      const date = new Date(formattedTimestamp);
+                      try {
+                        // Convert timestamp string to Date
+                        const formattedTimestamp = logInTimeStamp.split(".")[0]; // Remove fractional seconds
+                        const utcDate = new Date(formattedTimestamp + "Z"); // Ensure UTC format
 
-                      if (isNaN(date)) {
-                        return "Invalid Date"; // Check if the date is valid
+                        if (isNaN(utcDate.getTime())) {
+                          return "Invalid Date"; // Check if date conversion is valid
+                        }
+
+                        // Convert to IST
+                        return (
+                          <>
+                            {utcDate.toLocaleString("en-IN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                              timeZone: "Asia/Kolkata",
+                            })}{" "}
+                            -{" "}
+                            {utcDate.toLocaleString("en-IN", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              timeZone: "Asia/Kolkata",
+                            })}
+                          </>
+                        );
+                      } catch (error) {
+                        return "Error Parsing Date";
                       }
-
-                      return (
-                        <>
-                          {date.toLocaleString("en-IN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                            timeZone: "Asia/Kolkata",
-                          })}{" "}
-                          -{" "}
-                          {date.toLocaleString("en-IN", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            timeZone: "Asia/Kolkata",
-                          })}
-                        </>
-                      );
                     })()}
                   </>
                 ) : (
@@ -209,7 +215,7 @@ const Header = ({ userId, logInTimeStamp, orglogo }) => {
               >
                 {image ? (
                   <img
-                    src={`data:image/png;base64,${image}`}
+                    src={""}
                     alt="User Profile"
                     style={{
                       width: "100%",

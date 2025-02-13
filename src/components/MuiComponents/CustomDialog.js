@@ -6,15 +6,14 @@ import {
   DialogActions,
   Button,
   Typography,
+  IconButton,
+  Paper,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
 // Helper function to format content
 const formatContent = (content) => {
-  if (typeof content !== "string") {
-    console.error("Content is not a string:", content);
-    return <Typography variant="body2" color="error">Invalid content format</Typography>;
-  }
+ 
 
   const paragraphs = content.split("\n");
 
@@ -26,9 +25,10 @@ const formatContent = (content) => {
         key={index}
         variant="body2"
         sx={{
-          marginBottom: 2,
+          marginBottom: 1.5,
           fontWeight: isHeading ? "bold" : "normal",
           lineHeight: 1.6,
+          color: isHeading ? "primary.main" : "text.secondary",
         }}
       >
         {paragraph}
@@ -41,53 +41,83 @@ const CustomDialog = ({ open, onClose, title, content }) => (
   <Dialog
     open={open}
     onClose={onClose}
+    maxWidth="sm"
     fullWidth
-    maxWidth="sm" // Decreased the max width
-    sx={{
-      "& .MuiDialog-paper": {
-        minWidth: "300px", // Min width for the dialog
-        maxWidth: "600px", // Max width for the dialog
+    PaperProps={{
+      sx: {
+        borderRadius: 3,
+        boxShadow: "0px 6px 24px rgba(0, 0, 0, 0.15)",
+        maxHeight: 500,
+        p: 1,
+        backgroundColor: "#ffffff",
       },
     }}
   >
-    <DialogTitle sx={{ paddingRight: "16px", paddingTop: "5px", position: "relative" }}>
-      <Typography
-        variant="h5"
-        align="start"
-        color="primary"
-        gutterBottom
-        sx={{
-          backgroundColor: "rgba(232, 245, 233)",
-          padding: 1,
-          borderRadius: 1,
-        }}
-      >
+    {/* Dialog Title */}
+    <DialogTitle
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "#004d40",
+        color: "white",
+        
+        fontWeight: "bold",
+        borderRadius: "4px 4px 0 0",
+      }}
+    >
+      <Typography variant="h6" sx={{ fontSize: "1.1rem" }}>
         {title}
       </Typography>
-
-      {/* Custom close button */}
-      <Button
+      <IconButton
+        size="small"
         onClick={onClose}
         sx={{
-          position: "absolute",
-          top: 8,
-          right: 8,
-          color: "#000",
+          color: "white",
+          transition: "0.2s",
+          "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.2)" },
         }}
       >
         <CloseIcon />
-      </Button>
+      </IconButton>
     </DialogTitle>
-    <DialogContent
-      sx={{
-        padding: 2,
-        maxHeight: "30vh", // Decreased height to make dialog more compact
-        overflowY: "auto",
-        whiteSpace: "pre-line",
-      }}
-    >
-      {formatContent(content)}
+
+    {/* Dialog Content */}
+    <DialogContent sx={{ mt: 2, px: 3 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2.5,
+          backgroundColor: "#f5f5f5",
+          borderRadius: 2,
+          fontSize: "1rem",
+          lineHeight: 1.6,
+          color: "#333",
+        }}
+      >
+        {formatContent(content)}
+      </Paper>
     </DialogContent>
+
+    {/* Dialog Actions */}
+    <DialogActions sx={{ p: 2, justifyContent: "end" }}>
+      <Button
+        variant="contained"
+        onClick={onClose}
+        sx={{
+          backgroundColor: "#00796b",
+          color: "white",
+          borderRadius: 2,
+          px: 3,
+          py: 1,
+          textTransform: "none",
+          fontSize: "0.95rem",
+          "&:hover": { backgroundColor: "#005a4f" },
+        }}
+      >
+        Close
+      </Button>
+    </DialogActions>
   </Dialog>
 );
 

@@ -100,13 +100,15 @@ const validationSchema = Yup.object().shape({
   ),
 });
 
-const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
+const CandidateSubmissionForm = ({ jobId, userId, userEmail,closeDialog }) => {
   const dispatch = useDispatch();
   const successMessage = useSelector(
-    (state) => state.candidateSubmission.successMessage
+    (state) => state.candidateSubmission.successResponse
   );
+
+  console.log("success message ",successMessage)
   const errorMessage = useSelector(
-    (state) => state.candidateSubmission.errorMessage
+    (state) => state.candidateSubmission.errorResponse
   );
   const loading = useSelector((state) => state.candidateSubmission.loading);
   const candidateId = useSelector(
@@ -211,18 +213,15 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
 
       setAlert({
         open: true,
-        message: `${successMessage} ${
-          candidateId ? `Candidate ID: ${candidateId}` : ""
-        } ${employeeId ? `Employee ID: ${employeeId}` : ""} ${
-          submittedJobId ? `Job ID: ${submittedJobId}` : ""
-        }`,
+        message: `${successMessage?.message}`,
         severity: "success",
       });
 
       setTimeout(() => {
         resetForm();
         dispatch(clearMessages());
-      }, 5000);
+        closeDialog()
+      }, 4000);
     } catch (error) {
       setAlert({
         open: true,
@@ -493,7 +492,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail }) => {
                       setFieldValue("resumeFile", file);
                       setFieldValue("resumeFilePath", file.name);
                     }}
-                    inputProps={{ accept: ".pdf,.docx" }}
+                    inputProps={{ accept: ".pdf,.doc,.docx,.docs" }}
                   />
                 </FormControl>
               </Grid>

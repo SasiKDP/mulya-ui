@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../apiConfig";
+import BASE_URL from "../config";
 
-// const BASE_URL = 'http://192.168.0.194:8083'
+
 
 // Initial state
 const initialState = {
@@ -24,10 +24,10 @@ export const loginAsync = createAsyncThunk(
         `${BASE_URL}/users/login`, 
         { email, password },
         {
-         withCredentials:true,
+          withCredentials: true,
           headers: {
             "Content-Type": "application/json",
-           "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Origin": "*",
           },
         }
       );
@@ -51,7 +51,7 @@ export const loginAsync = createAsyncThunk(
           return rejectWithValue("Invalid credentials or bad request.");
         } else {
           return rejectWithValue(
-            error.response.data?.error.errorMessage || "An unexpected error occurred."
+            error.response.data?.error?.errorMessage || "An unexpected error occurred."
           );
         }
       } else if (error.request) {
@@ -75,6 +75,7 @@ export const logoutAsync = createAsyncThunk(
         {
           headers: {
             "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
           },
         }
       );

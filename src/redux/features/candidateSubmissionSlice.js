@@ -1,6 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../apiConfig";
+import BASE_URL from "../config";
+
+
+
+
 
 // Initial state
 const initialState = {
@@ -19,16 +23,16 @@ const initialState = {
     noticePeriod: "",
     currentLocation: "",
     preferredLocation: "",
-    skills: '',
+    skills: "",
     resumeFile: null,
     resumeFilePath: "",
     communicationSkills: "",
     requiredTechnologiesRating: "",
     overallFeedback: "",
-    userEmail:'',
+    userEmail: "",
   },
   loading: false,
-  successMessage: "",
+  successResponse: null,
   errorMessage: "",
   candidateId: "",
   employeeId: "",
@@ -37,14 +41,17 @@ const initialState = {
 
 // Helper function to validate file type
 const isValidFileType = (file) => {
-  const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  const validTypes = [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
   return file && validTypes.includes(file.type);
 };
 
 // Form submission thunk
 export const submitFormData = createAsyncThunk(
   "candidateSubmission/submit",
-  async ({ formData, userId, jobId ,userEmail}, { rejectWithValue }) => {
+  async ({ formData, userId, jobId, userEmail }, { rejectWithValue }) => {
     try {
       // Validate file type before submission
       if (formData.resumeFile && !isValidFileType(formData.resumeFile)) {
@@ -75,10 +82,9 @@ export const submitFormData = createAsyncThunk(
         form.append("resumeFilePath", formData.resumeFilePath);
       }
 
-      
-
       // Make API call
-      const response = await axios.post(`${BASE_URL}/candidate/candidatesubmissions`,
+      const response = await axios.post(
+        `${BASE_URL}/candidate/candidatesubmissions`,
         form,
         {
           headers: {
@@ -88,10 +94,13 @@ export const submitFormData = createAsyncThunk(
       );
 
       return {
+        status: "Success",
         message: response.data.message,
-        candidateId: response.data.candidateId,
-        employeeId: response.data.employeeId,
-        jobId: response.data.jobId
+        payload: {
+          candidateId: response.data.candidateId,
+          employeeId: response.data.employeeId,
+          jobId: response.data.jobId,
+        },
       };
     } catch (error) {
       // Handle API error response
@@ -100,7 +109,7 @@ export const submitFormData = createAsyncThunk(
           message: error.response.data.message,
           candidateId: null,
           employeeId: null,
-          jobId: null
+          jobId: null,
         });
       }
       // Handle other errors
@@ -108,7 +117,7 @@ export const submitFormData = createAsyncThunk(
         message: "Failed to submit candidate data. Please try again.",
         candidateId: null,
         employeeId: null,
-        jobId: null
+        jobId: null,
       });
     }
   }
@@ -125,7 +134,7 @@ const candidateSubmissionSlice = createSlice({
         ...action.payload,
       };
     },
-    
+
     resetForm: (state) => {
       state.formData = { ...initialState.formData };
       state.successMessage = "";
@@ -142,26 +151,20 @@ const candidateSubmissionSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(submitFormData.pending, (state) => {
-        state.loading = true;
-        state.errorMessage = "";
-        state.successMessage = "";
-      })
-      .addCase(submitFormData.fulfilled, (state, action) => {
-        state.loading = false;
-        state.successMessage = action.payload.message;
-        state.candidateId = action.payload.candidateId;
-        state.employeeId = action.payload.employeeId;
-        state.jobId = action.payload.jobId;
-        state.formData = initialState.formData;
-      })
-      .addCase(submitFormData.rejected, (state, action) => {
-        state.loading = false;
-        state.errorMessage = action.payload.message;
-        state.candidateId = action.payload.candidateId;
-        state.employeeId = action.payload.employeeId;
-        state.jobId = action.payload.jobId;
-      });
+    .addCase(submitFormData.pending, (state) => {
+      state.loading = true;
+      state.successResponse = null;
+      state.errorResponse = null;
+    })
+    .addCase(submitFormData.fulfilled, (state, action) => {
+      state.loading = false;
+      state.successResponse = action.payload;
+      state.formData = initialState.formData;
+    })
+    .addCase(submitFormData.rejected, (state, action) => {
+      state.loading = false;
+      state.errorResponse = action.payload;
+    });
   },
 });
 

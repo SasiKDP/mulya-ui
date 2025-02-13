@@ -1,13 +1,13 @@
 // import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 // import axios from 'axios';
 
-// const API_BASE_URL = 'http://192.168.0.194:8080/api';
+// const API_appconfig.PROD_appconfig.PROD_BASE_URL = 'http://192.168.0.194:8080/api';
 // const HARDCODED_EMPLOYEE_ID = 'DQIND012'; // Replace with your employee ID
 
 // export const fetchAttendanceRecords = createAsyncThunk(
 //   'attendance/fetchRecords',
 //   async () => {
-//     const response = await axios.get(`${API_BASE_URL}/timesheets/${HARDCODED_EMPLOYEE_ID}`, {
+//     const response = await axios.get(`${API_appconfig.PROD_appconfig.PROD_BASE_URL}/timesheets/${HARDCODED_EMPLOYEE_ID}`, {
 //       headers: {
 //         'Content-Type': 'application/json'
 //       }
@@ -26,7 +26,7 @@
 //       status: 'Present'
 //     };
     
-//     const response = await axios.post(`${API_BASE_URL}/timesheets/login`, checkInData, {
+//     const response = await axios.post(`${API_appconfig.PROD_appconfig.PROD_BASE_URL}/timesheets/login`, checkInData, {
 //       headers: {
 //         'Content-Type': 'application/json'
 //       }
@@ -38,7 +38,7 @@
 // export const updateAttendanceRecord = createAsyncThunk(
 //   'attendance/updateRecord',
 //   async () => {
-//     const response = await axios.put(`${API_BASE_URL}/timesheets/logout/${HARDCODED_EMPLOYEE_ID}`, {}, {
+//     const response = await axios.put(`${API_appconfig.PROD_appconfig.PROD_BASE_URL}/timesheets/logout/${HARDCODED_EMPLOYEE_ID}`, {}, {
 //       headers: {
 //         'Content-Type': 'application/json'
 //       }
@@ -130,7 +130,7 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import BASE_URL from '../apiConfig';
+import BASE_URL from '../config';
 
 
 

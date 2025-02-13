@@ -29,7 +29,7 @@
 //   DateRange as DateRangeIcon
 // } from '@mui/icons-material';
 
-// const API_BASE_URL = '/api/timesheet'; // Replace with your API base URL
+// const API_appconfig.PROD_appconfig.PROD_BASE_URL = '/api/timesheet'; // Replace with your API base URL
 
 // const EmployeeTimesheet = () => {
 //   const theme = useTheme();
@@ -48,7 +48,7 @@
 //   const fetchEntries = async () => {
 //     setLoading(true);
 //     try {
-//       const response = await fetch(`${API_BASE_URL}/entries`);
+//       const response = await fetch(`${API_appconfig.PROD_appconfig.PROD_BASE_URL}/entries`);
 //       if (!response.ok) throw new Error('Failed to fetch entries');
 //       const data = await response.json();
 //       setEntries(data);
@@ -62,7 +62,7 @@
 //   // Create new entry
 //   const createEntry = async (entryData) => {
 //     try {
-//       const response = await fetch(`${API_BASE_URL}/entries`, {
+//       const response = await fetch(`${API_appconfig.PROD_appconfig.PROD_BASE_URL}/entries`, {
 //         method: 'POST',
 //         headers: {
 //           'Content-Type': 'application/json',
@@ -81,7 +81,7 @@
 //   // Update entry
 //   const updateEntry = async (id, entryData) => {
 //     try {
-//       const response = await fetch(`${API_BASE_URL}/entries/${id}`, {
+//       const response = await fetch(`${API_appconfig.PROD_appconfig.PROD_BASE_URL}/entries/${id}`, {
 //         method: 'PUT',
 //         headers: {
 //           'Content-Type': 'application/json',
@@ -100,7 +100,7 @@
 //   // Delete entry
 //   const deleteEntry = async (id) => {
 //     try {
-//       const response = await fetch(`${API_BASE_URL}/entries/${id}`, {
+//       const response = await fetch(`${API_appconfig.PROD_appconfig.PROD_BASE_URL}/entries/${id}`, {
 //         method: 'DELETE',
 //       });
 //       if (!response.ok) throw new Error('Failed to delete entry');
@@ -114,7 +114,7 @@
 //   // Submit timesheet
 //   const submitTimesheet = async () => {
 //     try {
-//       const response = await fetch(`${API_BASE_URL}/submit`, {
+//       const response = await fetch(`${API_appconfig.PROD_appconfig.PROD_BASE_URL}/submit`, {
 //         method: 'POST',
 //         headers: {
 //           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@
 //     setLoading(true);
 //     try {
 //       const response = await fetch(
-//         `${API_BASE_URL}/entries?startDate=${startDate}&endDate=${endDate}`
+//         `${API_appconfig.PROD_appconfig.PROD_BASE_URL}/entries?startDate=${startDate}&endDate=${endDate}`
 //       );
 //       if (!response.ok) throw new Error('Failed to fetch entries');
 //       const data = await response.json();
@@ -445,6 +445,10 @@ import {
 } from "@mui/icons-material";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
+import BASE_URL from "../redux/config";
+
+
+
 
 const EmployeeTimesheet = () => {
   const [entries, setEntries] = React.useState([]);
