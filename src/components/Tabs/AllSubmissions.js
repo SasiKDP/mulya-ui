@@ -19,7 +19,7 @@ import DataTable from "../MuiComponents/DataTable"; // Importing the reusable Da
 
 const AllSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
-  const [filteredSubmissions, setFilteredSubmissions] = useState([]);
+ 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,7 +53,7 @@ const AllSubmissions = () => {
           `${BASE_URL}/candidate/submissions/allsubmittedcandidates`
         );
         setSubmissions(response.data);
-        setFilteredSubmissions(response.data);
+       
       } catch (err) {
         setError(err.message || "Failed to load submissions");
       } finally {
@@ -64,18 +64,7 @@ const AllSubmissions = () => {
     fetchSubmissions();
   }, []);
 
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = submissions.filter(row =>
-        Object.values(row).some(value =>
-          String(value).toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-      setFilteredSubmissions(filtered);
-    } else {
-      setFilteredSubmissions(submissions);
-    }
-  }, [submissions, searchQuery]);
+
 
   if (loading) {
     return (
@@ -119,40 +108,14 @@ const AllSubmissions = () => {
           Submitted Candidates
         </Typography>
 
-        {/* Global Search */}
-        <Box sx={{ mb: 3 }}>
-          <TextField
-            sx={{ width: 300 }}
-            variant="outlined"
-            placeholder="Search candidates..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setSearchQuery("")}
-                    size="small"
-                  >
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-        </Box>
+       
 
         {/* DataTable Component with Search Query */}
         <DataTable
-          data={filteredSubmissions}
+          data={submissions}
           columns={columns}
           pageLimit={10}
-          searchQuery={searchQuery} // 🔥 Passes search query to DataTable
+         
         />
       </Paper>
     </Container>

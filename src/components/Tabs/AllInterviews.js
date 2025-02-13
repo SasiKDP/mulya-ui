@@ -19,10 +19,10 @@ import DataTable from "../MuiComponents/DataTable"; // Importing the reusable Da
 
 const AllInterviews = () => {
   const [submissions, setSubmissions] = useState([]);
-  const [filteredSubmissions, setFilteredSubmissions] = useState([]);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -30,7 +30,7 @@ const AllInterviews = () => {
       try {
         const response = await axios.get(`${BASE_URL}/candidate/allscheduledinterviews`);
         setSubmissions(response.data);
-        setFilteredSubmissions(response.data); // Initialize with full data
+       
       } catch (err) {
         setError(err.message || "Failed to load submissions");
       } finally {
@@ -41,18 +41,7 @@ const AllInterviews = () => {
     fetchSubmissions();
   }, []);
 
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = submissions.filter(row =>
-        Object.values(row).some(value =>
-          String(value).toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-      setFilteredSubmissions(filtered);
-    } else {
-      setFilteredSubmissions(submissions);
-    }
-  }, [submissions, searchQuery]);
+
 
   // 👇 Define a custom column order
   const columnOrder = [
@@ -125,31 +114,10 @@ const AllInterviews = () => {
         </Typography>
 
         {/* Global Search */}
-        <Box sx={{ mb: 3 }}>
-          <TextField
-            variant="outlined"
-            placeholder="Search interviews..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton onClick={() => setSearchQuery("")} size="small">
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-        </Box>
+        
 
         {/* Reusing DataTable component with searchQuery prop */}
-        <DataTable data={filteredSubmissions} columns={columns} pageLimit={10} searchQuery={searchQuery} />
+        <DataTable data={submissions} columns={columns} pageLimit={10}  />
       </Paper>
     </Container>
   );

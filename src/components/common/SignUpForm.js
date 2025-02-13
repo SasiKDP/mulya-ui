@@ -517,7 +517,7 @@ const SignUpForm = () => {
                   {/* User ID Field */}
                   <Grid item xs={12} sm={6}>
                     <TextField
-                      placeholder="DQIND001"
+                      placeholder="DQINDXXXX"
                       label="Employee ID"
                       name="userId"
                       type="text"

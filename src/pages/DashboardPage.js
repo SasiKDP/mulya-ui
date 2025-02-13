@@ -15,12 +15,15 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Button,
   IconButton,
   useMediaQuery,
   useTheme,
   Divider,
+  Badge,
+  Tooltip,
+  Paper,
+  Fade,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -42,6 +45,8 @@ import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import InterpreterModeIcon from "@mui/icons-material/InterpreterMode";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import CloseIcon from "@mui/icons-material/Close";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 // Components
 import Requirements from "../components/Requirements/Requirements";
@@ -63,8 +68,6 @@ import LeaveApplication from "../components/LeaveApplication";
 import logoOrg from "../assets/logo-01.png";
 import SubmissionsMain from "../components/Submissions/SubmissionsMain";
 import InterviewMain from "../components/Interviews/InterviewMain";
-
-
 
 const DRAWER_WIDTH = 240;
 
@@ -147,6 +150,12 @@ const TABS_BY_ROLE = {
       icon: <PeopleIcon />,
     },
     {
+      label: "Add User",
+      value: "ADDUSER",
+      component: <AddUser />,
+      icon: <AddIcon />,
+    },
+    {
       label: "Submissions",
       value: "SUBMISSIONS",
       component: <AllSubmissions />,
@@ -172,6 +181,8 @@ const TABS_BY_ROLE = {
     },
   ],
 };
+
+// import logoOrg from "../assets/logo-01.png";
 
 const DashboardPage = () => {
   const theme = useTheme();
@@ -209,14 +220,6 @@ const DashboardPage = () => {
     setDrawerOpen(!drawerOpen);
   };
 
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   const handleLogout = async () => {
     try {
       await dispatch(logoutAsync(userId)).unwrap();
@@ -226,121 +229,141 @@ const DashboardPage = () => {
     }
   };
 
-  const CustomDialog = ({ open, onClose, title, children }) => {
-    return (
-      <Dialog
-        open={open}
-        onClose={onClose}
-        maxWidth="md"
-        fullWidth
-        sx={{ height: 600 }}
+  const CustomDialog = ({ open, onClose, title, children }) => (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
+          maxHeight: "90vh",
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "#00796b",
+          py: 2,
+          borderRadius: 2,
+        }}
       >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            backgroundColor: "rgb(191, 240, 195)", // Light Green Background
-            padding: "10px",
-            borderRadius: "8px 8px 0 0", // Rounded top corners
-          }}
-        >
-          <Typography variant="h5" color="primary" fontWeight="medium">
-            {title}
-          </Typography>
-
-          <IconButton onClick={onClose} sx={{ color: "black" }}>
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        {/* Dynamic Content */}
-        <DialogContent>{children}</DialogContent>
-      </Dialog>
-    );
-  };
-
-  const handleProfileImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const selectedTabComponent = activeTabs.find(
-    (tab) => tab.value === selectedTab
-  )?.component || (
-    <Box sx={{ p: 3 }}>No content available for the selected tab.</Box>
+        <Typography variant="h6" color="primary.dark" fontWeight="600">
+          {title}
+        </Typography>
+        <IconButton onClick={onClose} size="small" sx={{ color: "#FFF" }}>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ mt: 2 }}>{children}</DialogContent>
+    </Dialog>
   );
 
   const drawer = (
-    <Box sx={{ height: "100%", bgcolor: "#e8f5e9" }}>
+    <Box
+      sx={{
+        height: "100vh",
+        backgroundColor: theme.palette.background.default,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Fixed Header */}
       <Box
         sx={{
+          p: 2,
           display: "flex",
           alignItems: "center",
-          p: 2,
           justifyContent: "space-between",
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          flexShrink: 0, // Prevents header from shrinking
         }}
       >
-        <Typography variant="h6" noWrap component="div">
-          Menu
+        <Typography variant="h6" color="primary" fontWeight="600" sx={{ p: 1 }}>
+          Dashboard
         </Typography>
         {isMobile && (
-          <IconButton onClick={handleDrawerToggle}>
+          <IconButton onClick={handleDrawerToggle} size="small">
             <ChevronLeftIcon />
           </IconButton>
         )}
       </Box>
-      <Divider />
-      <List>
-        {activeTabs.map((tab) => (
-          <ListItem
-            button
-            key={tab.value}
-            selected={selectedTab === tab.value}
-            onClick={() => {
-              setSelectedTab(tab.value);
-              if (isMobile) setDrawerOpen(false);
-            }}
-            sx={{
-              my: 0.5,
-              mx: 1,
-              borderRadius: "8px", // Rounded corners
-              transition: "background-color 0.3s ease, color 0.3s ease",
-              "&:hover": {
-                bgcolor: selectedTab === tab.value ? "#233B80" : "#1B3A8C", // Darker blue on hover
-                color: "#FFFFFF",
-                "& .MuiListItemIcon-root": {
-                  color: "#FFFFFF",
-                },
-              },
-              "&.Mui-selected": {
-                bgcolor: "#2A4DBD", // Lighter blue for active tab
-                color: "black", // Differentiate from hover
-                fontWeight: "bold",
-                "& .MuiListItemIcon-root": {
-                  color: "#233B80", // Change icon color to #233B80 when active
-                },
-              },
-            }}
-          >
-            <ListItemIcon
+
+      {/* Scrollable Menu */}
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflowY: "auto",
+          px: 2,
+          py: 1,
+          "&::-webkit-scrollbar": {
+            width: "8px", // Scrollbar width
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#aaa",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "#888",
+          },
+        }}
+      >
+        <List>
+          {activeTabs.map((tab) => (
+            <ListItem
+              button
+              key={tab.value}
+              selected={selectedTab === tab.value}
+              onClick={() => {
+                setSelectedTab(tab.value);
+                if (isMobile) setDrawerOpen(false);
+              }}
               sx={{
-                color: selectedTab === tab.value ? "#233B80" : "inherit",
-                transition: "color 0.3s ease",
+                borderRadius: 2,
+                mb: 0.5,
+                transition: "all 0.2s",
+                "&.Mui-selected": {
+                  backgroundColor: "primary.main",
+                  color: "primary.contrastText",
+                  "&:hover": {
+                    backgroundColor: "primary.dark",
+                  },
+                  "& .MuiListItemIcon-root": {
+                    color: "#FFF",
+                  },
+                },
+                "&:hover": {
+                  backgroundColor: "primary.light",
+                  color: "#FFF",
+                  "& .MuiListItemIcon-root": {
+                    color: "#FFF",
+                  },
+                },
               }}
             >
-              {tab.icon}
-            </ListItemIcon>
-            <ListItemText primary={tab.label} />
-          </ListItem>
-        ))}
-      </List>
+              <ListItemIcon
+                sx={{
+                  minWidth: 40,
+                  color: selectedTab === tab.value ? "inherit" : "primary.main",
+                }}
+              >
+                {tab.icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={tab.label}
+                primaryTypographyProps={{
+                  fontSize: "0.95rem",
+                  fontWeight: selectedTab === tab.value ? 600 : 400,
+                }}
+              />
+            </ListItem>
+          ))}
+        </List>
+      </Box>
     </Box>
   );
 
@@ -348,108 +371,112 @@ const DashboardPage = () => {
     <Box sx={{ display: "flex", height: "100vh" }}>
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           zIndex: theme.zIndex.drawer + 1,
-          bgcolor: "#e8f5e9",
-          color: "text.primary",
-          boxShadow: 1,
-          borderRadius: 0,
+          backgroundColor: "background.paper",
+          borderBottom: `1px solid ${theme.palette.divider}`,
         }}
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { lg: "none" } }}
-          >
-            <MenuIcon />
-          </IconButton>
-
-          <Box sx={{ flexGrow: 1, display: "flex", alignItems: "center" }}>
-            <img
-              src={logoOrg}
-              alt="Logo"
-              style={{ height: 40, marginRight: theme.spacing(2) }}
-            />
+        <Toolbar sx={{ justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <IconButton
+              color="black"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ display: { lg: "none" } }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <img src={logoOrg} alt="Logo" style={{ height: 40 }} />
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-              }}
-            >
-              <Typography variant="subtitle2">{userId}</Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: { xs: "0.65rem", md: "0.75rem" },
-                  color: "#000000",
-                }}
-              >
-                Logged in at:{" "}
-                {logInTimeStamp ? (
-                  <>
-                    {(() => {
-                      try {
-                        // Convert timestamp string to Date
-                        const formattedTimestamp = logInTimeStamp.split(".")[0]; // Remove fractional seconds
-                        const utcDate = new Date(formattedTimestamp + "Z"); // Ensure UTC format
+          <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
+            {/* <Tooltip title="Notifications">
+              <IconButton color="primary">
+                <Badge badgeContent={3} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip> */}
 
-                        if (isNaN(utcDate.getTime())) {
-                          return "Invalid Date"; // Check if date conversion is valid
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ textAlign: "right" }}>
+                <Typography
+                  variant="subtitle2"
+                  color="primary.main"
+                  fontWeight="600"
+                >
+                  {userId}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: { xs: "0.65rem", md: "0.95rem" },
+                    color: "primary.main",
+                    fontWeight: "200",
+                  }}
+                >
+                  Logged in at:{" "}
+                  {logInTimeStamp ? (
+                    <>
+                      {(() => {
+                        try {
+                          // Convert timestamp string to Date
+                          const formattedTimestamp =
+                            logInTimeStamp.split(".")[0]; // Remove fractional seconds
+                          const utcDate = new Date(formattedTimestamp + "Z"); // Ensure UTC format
+
+                          if (isNaN(utcDate.getTime())) {
+                            return "Invalid Date"; // Check if date conversion is valid
+                          }
+
+                          // Convert to IST
+                          return (
+                            <>
+                              {utcDate.toLocaleString("en-IN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                                timeZone: "Asia/Kolkata",
+                              })}{" "}
+                              -{" "}
+                              {utcDate.toLocaleString("en-IN", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                timeZone: "Asia/Kolkata",
+                              })}
+                            </>
+                          );
+                        } catch (error) {
+                          return "Error Parsing Date";
                         }
+                      })()}
+                    </>
+                  ) : (
+                    "12:45 AM - 30/01/2025"
+                  )}
+                </Typography>
+              </Box>
 
-                        // Convert to IST
-                        return (
-                          <>
-                            {utcDate.toLocaleString("en-IN", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: true,
-                              timeZone: "Asia/Kolkata",
-                            })}{" "}
-                            -{" "}
-                            {utcDate.toLocaleString("en-IN", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              timeZone: "Asia/Kolkata",
-                            })}
-                          </>
-                        );
-                      } catch (error) {
-                        return "Error Parsing Date";
-                      }
-                    })()}
-                  </>
-                ) : (
-                  "12:45 AM - 30/01/2025"
-                )}
-              </Typography>
-            </Box>
-
-            <Avatar
-              onClick={handleMenuClick}
-              sx={{
-                cursor: "pointer",
-                bgcolor: "primary.main",
-                "&:hover": { opacity: 0.8 },
-              }}
-            >
-              {profileImage ? (
-                <img
+              <Button
+                onClick={(e) => setAnchorEl(e.currentTarget)}
+                endIcon={<KeyboardArrowDownIcon />}
+                sx={{ ml: 1 }}
+              >
+                <Avatar
                   src={profileImage}
-                  alt="Profile"
-                  style={{ width: "100%", height: "100%" }}
-                />
-              ) : (
-                <AccountCircleIcon />
-              )}
-            </Avatar>
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    border: `2px solid ${theme.palette.primary.main}`,
+                  }}
+                >
+                  <AccountCircleIcon />
+                </Avatar>
+              </Button>
+            </Box>
           </Box>
         </Toolbar>
       </AppBar>
@@ -464,11 +491,11 @@ const DashboardPage = () => {
           "& .MuiDrawer-paper": {
             width: DRAWER_WIDTH,
             boxSizing: "border-box",
+            borderRight: `1px solid ${theme.palette.divider}`,
           },
-          borderRadius: 0,
         }}
       >
-        <Toolbar /> {/* Spacer for AppBar */}
+        <Toolbar />
         {drawer}
       </Drawer>
 
@@ -476,73 +503,136 @@ const DashboardPage = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 1,
+          p: 0.5,
           width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
-          mt: "80px",
-          height: "calc(100vh - 64px)",
-          overflow: "auto",
+          mt: "64px",
+          height: "calc(100vh - 64px)", // Ensures it fits within viewport
+          overflowY: "auto", // Enables vertical scrolling
+          backgroundColor: "grey.50",
+
+          /* Custom Scrollbar */
+          "&::-webkit-scrollbar": {
+            width: "8px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "#aaa",
+            borderRadius: "4px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            backgroundColor: "#888",
+          },
         }}
       >
-        {selectedTabComponent}
+        <Fade in timeout={500}>
+          <Paper
+            elevation={0}
+            sx={{
+              minHeight: "100%", // Allows content to grow
+              borderRadius: 2,
+              backgroundColor: "background.paper",
+            }}
+          >
+            {activeTabs.find((tab) => tab.value === selectedTab)?.component || (
+              <Box sx={{ p: 3 }}>
+                <Typography color="text.secondary">
+                  No content available for the selected tab.
+                </Typography>
+              </Box>
+            )}
+          </Paper>
+        </Fade>
       </Box>
 
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
+        onClose={() => setAnchorEl(null)}
         PaperProps={{
-          elevation: 0,
+          elevation: 3, // Slightly increased elevation for depth
           sx: {
-            overflow: "visible",
-            filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.32))",
             mt: 1.5,
+            borderRadius: "12px", // Smooth border radius
+            minWidth: 130, // Adjusted for better spacing
+            overflow: "hidden",
+            boxShadow: "0px 5px 15px rgba(0,0,0,0.1)", // Subtle shadow
+            bgcolor: "background.paper",
+            "&:before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              top: 0,
+              right: 18,
+              width: 12,
+              height: 12,
+              bgcolor: "background.paper",
+              transform: "translateY(-50%) rotate(45deg)",
+              boxShadow: "-1px -1px 2px rgba(0,0,0,0.1)", // Soft shadow for effect
+              zIndex: 0,
+            },
           },
         }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
+        {/* Profile */}
         <MenuItem
           onClick={() => {
             setOpenProfileDialog(true);
-            handleMenuClose();
+            setAnchorEl(null);
           }}
           sx={{
-            transition: "background-color 0.3s ease, color 0.3s ease",
+            fontSize: "0.9rem",
+            fontWeight: 500,
+            px: 2,
             "&:hover": {
-              bgcolor: "#0D6EFD", // Blue on hover
-              color: "#FFFFFF",
-              borderRadius: 1,
+              backgroundColor: "primary.light",
+              color: "#FFF",
+              borderRadius:1,
             },
           }}
         >
           Profile
         </MenuItem>
 
+        {/* Apply Leave */}
         <MenuItem
           onClick={() => {
             setOpenLeaveDialog(true);
-            handleMenuClose();
+            setAnchorEl(null);
           }}
           sx={{
-            transition: "background-color 0.3s ease, color 0.3s ease",
+            fontSize: "0.9rem",
+            fontWeight: 500,
+            px: 2,
             "&:hover": {
-              bgcolor: "#0D6EFD", // Blue on hover
-              color: "#FFFFFF",
-              borderRadius: 1,
+              backgroundColor: "primary.light",
+              color: "#FFF",
+              borderRadius:1,
             },
           }}
         >
           Apply Leave
         </MenuItem>
 
+        {/* Divider for better separation */}
+        <Divider sx={{ my: 1 }} />
+
+        {/* Logout with Red Color & Hover Effect */}
         <MenuItem
-          onClick={handleLogout}
+          onClick={() => {
+            handleLogout();
+            setAnchorEl(null);
+          }}
           sx={{
-            transition: "background-color 0.3s ease, color 0.3s ease",
+            fontSize: "0.9rem",
+            fontWeight: 500,
+            px: 2,
+            color: "error.main",
             "&:hover": {
-              bgcolor: "#0D6EFD", // Blue on hover
-              color: "#fff",
-              borderRadius: 1,
+              backgroundColor: "error.light",
+              color: "#000000",
+              borderRadius:1,
             },
-            color: "red",
           }}
         >
           Logout
@@ -560,7 +650,7 @@ const DashboardPage = () => {
       <CustomDialog
         open={openLeaveDialog}
         onClose={() => setOpenLeaveDialog(false)}
-        title="Leave Application Form"
+        title="Leave Application"
       >
         <LeaveApplication />
       </CustomDialog>

@@ -31,10 +31,9 @@ import {
 import CandidateSubmissionForm from "../CandidateSubmissionFrom";
 import CustomDialog from "../MuiComponents/CustomDialog";
 import DataTable from "../MuiComponents/DataTable";
-import BASE_URL from "../../redux/config";
-
-import ListAltIcon from "@mui/icons-material/ListAlt"; // Import Icon
+import ListAltIcon from "@mui/icons-material/ListAlt";
 import SectionHeader from "../MuiComponents/SectionHeader";
+import BASE_URL from "../../redux/config";
 
 const Assigned = () => {
   const theme = useTheme();
@@ -51,14 +50,14 @@ const Assigned = () => {
   const [fetchError, setFetchError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-
   
 
   const { user } = useSelector((state) => state.auth);
   const userId = user;
+
   const generateColumns = (data) => {
     if (data.length === 0) return [];
-  
+
     const headerLabels = {
       jobId: "Job ID",
       jobTitle: "Job Title",
@@ -70,9 +69,9 @@ const Assigned = () => {
       experience: "Experience",
       primarySkills: "Primary Skills",
       secondarySkills: "Secondary Skills",
-      salaryPackage: "Salary Package", 
+      salaryPackage: "Salary Package",
     };
-  
+
     return Object.keys(data[0]).map((key) => ({
       key,
       label:
@@ -80,7 +79,6 @@ const Assigned = () => {
         key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
     }));
   };
-  
 
   const fetchUserSpecificData = async () => {
     setIsRefreshing(true);
@@ -119,7 +117,7 @@ const Assigned = () => {
         requirementAddedTimeStamp: new Date(
           item.requirementAddedTimeStamp
         ).toLocaleString(),
-        salaryPackage: item.salaryPackage ? `${item.salaryPackage} LPA` : "N/A", // Ensure Salary is formatted properly
+        salaryPackage: item.salaryPackage ? `${item.salaryPackage} LPA` : "N/A",
         submitCandidate: (
           <Tooltip title="Submit Candidate">
             <Button
@@ -134,7 +132,6 @@ const Assigned = () => {
           </Tooltip>
         ),
       }));
-      
 
       setData(processedData);
       if (processedData.length > 0) {
@@ -274,58 +271,58 @@ const Assigned = () => {
   return (
     <Fade in timeout={500}>
       <Box sx={{ p: 3 }}>
-        <Paper
-          elevation={3}
-          sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}
-        >
+        <Paper elevation={3} sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
           <SectionHeader
             title="Assigned Requirements"
             totalCount={totalCount}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
-            icon={<ListAltIcon sx={{ color: "#1B5E20" }} />}
+            icon={<ListAltIcon sx={{ color: "#FFF" }} />}
           />
 
           <Box sx={{ p: 2 }}>
-            {data.length === 0 ? (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <AlertTitle>No Assignments</AlertTitle>
-                No requirements have been assigned yet.
-              </Alert>
-            ) : (
-              <Box sx={{ position: "relative" }}>
-                {isRefreshing && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      bgcolor: "rgba(255, 255, 255, 0.7)",
-                      zIndex: 1,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <CircularProgress />
-                  </Box>
-                )}
-                <DataTable
-                  data={data}
-                  columns={columns}
-                  pageLimit={5}
+            <Box sx={{ position: "relative" }}>
+              {isRefreshing && (
+                <Box
                   sx={{
-                    "& .MuiDataGrid-root": {
-                      border: "none",
-                      borderRadius: 2,
-                      overflow: "hidden",
-                    },
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bgcolor: "rgba(255, 255, 255, 0.7)",
+                    zIndex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
-                />
-              </Box>
-            )}
+                >
+                  <CircularProgress />
+                </Box>
+              )}
+              <DataTable
+                data={data}
+                columns={columns}
+                pageLimit={5}
+                noDataMessage={
+                  <Box sx={{ py: 4, textAlign: "center" }}>
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      No Records Found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      No requirements have been assigned yet.
+                    </Typography>
+                  </Box>
+                }
+                sx={{
+                  "& .MuiDataGrid-root": {
+                    border: "none",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  },
+                }}
+              />
+            </Box>
           </Box>
         </Paper>
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -14,18 +14,36 @@ import {
   DialogContent,
   DialogActions,
   Typography,
+  TextField,
+  InputAdornment,
+  Box,
+  Grid,
 } from "@mui/material";
 import FirstPageRoundedIcon from "@mui/icons-material/FirstPageRounded";
 import LastPageRoundedIcon from "@mui/icons-material/LastPageRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import SearchIcon from "@mui/icons-material/Search";
 
-const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
+const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageLimit);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogContent, setDialogContent] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredData, setFilteredData] = useState(initialData);
+
+  useEffect(() => {
+    const filtered = initialData.filter((row) =>
+      Object.keys(row).some((key) => {
+        const value = row[key];
+        return typeof value == "string" && value.toLowerCase().includes(searchQuery.toLowerCase());
+      })
+    );
+    setFilteredData(filtered);
+    setPage(0);
+  }, [searchQuery, initialData]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -46,15 +64,22 @@ const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
     setDialogContent("");
   };
 
-  const shouldShowBottomHeader = data.length > 20;
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const shouldShowBottomHeader = filteredData.length > 20;
 
   const highlightText = (text, highlight) => {
     if (!highlight.trim() || !text) return text;
-    
-    const parts = String(text).split(new RegExp(`(${highlight})`, 'gi'));
-    return parts.map((part, index) => 
+
+    const parts = String(text).split(new RegExp(`(${highlight})`, "gi"));
+    return parts.map((part, index) =>
       part.toLowerCase() === highlight.toLowerCase() ? (
-        <span key={index} style={{ backgroundColor: '#fff3cd', padding: '0.1rem' }}>
+        <span
+          key={index}
+          style={{ backgroundColor: "#fff3cd", padding: "0.1rem" }}
+        >
           {part}
         </span>
       ) : (
@@ -64,7 +89,36 @@ const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
   };
 
   return (
-    <>
+    <Box sx={{ width: "100%" }}>
+      
+      <Grid container spacing={2} sx={{ mb: 2, justifyContent: "start" }}>
+        <Grid item xs={12} sm={8} md={6} lg={5}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search in all columns..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2, // Makes it look modern
+                backgroundColor: "#ffffff",
+                "& fieldset": { borderColor: "#00796b" },
+                "&:hover fieldset": { borderColor: "#00796b" },
+                "&.Mui-focused fieldset": { borderColor: "#00796b" },
+              },
+            }}
+          />
+        </Grid>
+      </Grid>
+
       <TableContainer
         component={Paper}
         style={{
@@ -92,19 +146,18 @@ const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {data.length === 0 ? (
+            {filteredData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} align="center">
-                  No records
+                  No records found
                 </TableCell>
               </TableRow>
             ) : (
-              data
+              filteredData
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => (
                   <TableRow key={index}>
                     {columns.map((column) => {
-                      // Check if column has a render function
                       if (column.render) {
                         return (
                           <TableCell
@@ -121,7 +174,7 @@ const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
                       }
 
                       const cellData = row[column.key];
-                      
+
                       return (
                         <TableCell
                           key={column.key}
@@ -133,7 +186,11 @@ const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
                         >
                           {cellData && String(cellData).length > 20 ? (
                             <>
-                              {highlightText(String(cellData).slice(0, 15), searchQuery)}...
+                              {highlightText(
+                                String(cellData).slice(0, 15),
+                                searchQuery
+                              )}
+                              ...
                               <Button
                                 variant="text"
                                 color="primary"
@@ -208,7 +265,7 @@ const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
         </Table>
         <TablePagination
           component="div"
-          count={data.length}
+          count={filteredData.length}
           page={page}
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
@@ -262,7 +319,7 @@ const DataTable = ({ data, columns, pageLimit = 5, searchQuery = "" }) => {
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 };
 

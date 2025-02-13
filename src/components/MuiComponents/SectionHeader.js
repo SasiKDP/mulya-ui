@@ -3,11 +3,17 @@ import { Box, Typography, IconButton, Tooltip } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ListAltIcon from "@mui/icons-material/ListAlt"; // Default icon
 
-const SectionHeader = ({ title, totalCount, onRefresh, isRefreshing, icon = <ListAltIcon />  }) => {
+const SectionHeader = ({
+  title,
+  totalCount,
+  onRefresh,
+  isRefreshing,
+  icon = <ListAltIcon />,
+}) => {
   return (
     <Box
       sx={{
-        bgcolor: "rgba(232, 245, 233)", // Light greenish background
+        bgcolor: "#00796b", // Light greenish background
         p: 2,
         borderRadius: 2,
         boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)", // Subtle shadow for depth
@@ -23,10 +29,7 @@ const SectionHeader = ({ title, totalCount, onRefresh, isRefreshing, icon = <Lis
       >
         {/* Title & Total Assigned Count */}
         <Box>
-          <Typography
-            variant="h5"
-            sx={{ fontWeight: "bold", color: "#1B5E20" }}
-          >
+          <Typography variant="h5" sx={{ fontWeight: "400", color: "#FFF" }}>
             {title}
           </Typography>
 
@@ -36,8 +39,8 @@ const SectionHeader = ({ title, totalCount, onRefresh, isRefreshing, icon = <Lis
             <Typography
               variant="subtitle1"
               sx={{
-                color: "#1B5E20",
-               
+                color: "#FFF",
+
                 fontSize: "16px",
                 ml: 1, // Margin for spacing between icon & text
               }}
@@ -53,9 +56,9 @@ const SectionHeader = ({ title, totalCount, onRefresh, isRefreshing, icon = <Lis
             onClick={onRefresh}
             disabled={isRefreshing}
             sx={{
-              bgcolor: "#1B5E20", // Dark green button background
-              color: "#FFFFFF", // White icon color
-              "&:hover": { bgcolor: "#145A32" }, // Darker green on hover
+              bgcolor: "#00796b", // Updated background color
+              color: "#FFF", // White icon color
+              "&:hover": { bgcolor: "#005f56" }, // Slightly darker green on hover
               width: 40,
               height: 40, // Ensures equal size
             }}

@@ -39,11 +39,13 @@ const validationSchema = Yup.object().shape({
     .required("User email is required"),
   clientName: Yup.string().required("Client name is required"),
   clientEmail: Yup.string()
-    .matches(
-      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Invalid email format (e.g., clientname@something.com)"
-    )
-    .required("Client email is required"),
+  .nullable() // Allows null or empty values
+  .trim()
+  .matches(
+    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+    "Invalid email format (e.g., clientname@something.com)"
+  ),
+
   interviewDateTime: Yup.date()
     .required("Interview date and time is required")
     .min(new Date(), "Interview date and time must be in the future"),
@@ -51,9 +53,13 @@ const validationSchema = Yup.object().shape({
     .required("Duration is required")
     .min(15, "Duration must be at least 15 minutes")
     .max(60, "Duration cannot exceed 60 minutes"),
-  zoomLink: Yup.string()
-    .required("Zoom link is required")
-    .url("Must be a valid URL"),
+    zoomLink: Yup.string()
+    .nullable() // Allows null or empty values
+    .trim()
+    .matches(
+      /^(https?:\/\/[^\s$.?#].[^\s]*)?$/,
+      "Must be a valid URL"
+    ),
   interviewLevel: Yup.string()
     .required("Interview level is required")
     .oneOf(["Internal", "External"]),
@@ -252,7 +258,7 @@ const InterviewForm = ({
                   component={FormikTextField}
                   label="Client Email"
                   type="email"
-                  required
+                  // required
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -280,7 +286,7 @@ const InterviewForm = ({
                   name="zoomLink"
                   component={FormikTextField}
                   label="Interview Link"
-                  required
+                  // required
                 />
               </Grid>
 

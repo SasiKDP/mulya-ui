@@ -5,6 +5,7 @@ import BASE_URL from "../config";
 
 
 
+
 // Async thunk for posting job requirements
 export const postJobRequirement = createAsyncThunk(
   "jobForm/postJobRequirement",
