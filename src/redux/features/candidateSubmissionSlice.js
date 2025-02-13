@@ -4,6 +4,8 @@ import BASE_URL from "../config";
 
 
 
+
+
 // Initial state
 const initialState = {
   formData: {
@@ -30,7 +32,7 @@ const initialState = {
     userEmail: "",
   },
   loading: false,
-  successMessage: "",
+  successResponse: null,
   errorMessage: "",
   candidateId: "",
   employeeId: "",
@@ -92,10 +94,13 @@ export const submitFormData = createAsyncThunk(
       );
 
       return {
+        status: "Success",
         message: response.data.message,
-        candidateId: response.data.candidateId,
-        employeeId: response.data.employeeId,
-        jobId: response.data.jobId,
+        payload: {
+          candidateId: response.data.candidateId,
+          employeeId: response.data.employeeId,
+          jobId: response.data.jobId,
+        },
       };
     } catch (error) {
       // Handle API error response
@@ -146,26 +151,20 @@ const candidateSubmissionSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(submitFormData.pending, (state) => {
-        state.loading = true;
-        state.errorMessage = "";
-        state.successMessage = "";
-      })
-      .addCase(submitFormData.fulfilled, (state, action) => {
-        state.loading = false;
-        state.successMessage = action.payload.message;
-        state.candidateId = action.payload.candidateId;
-        state.employeeId = action.payload.employeeId;
-        state.jobId = action.payload.jobId;
-        state.formData = initialState.formData;
-      })
-      .addCase(submitFormData.rejected, (state, action) => {
-        state.loading = false;
-        state.errorMessage = action.payload.message;
-        state.candidateId = action.payload.candidateId;
-        state.employeeId = action.payload.employeeId;
-        state.jobId = action.payload.jobId;
-      });
+    .addCase(submitFormData.pending, (state) => {
+      state.loading = true;
+      state.successResponse = null;
+      state.errorResponse = null;
+    })
+    .addCase(submitFormData.fulfilled, (state, action) => {
+      state.loading = false;
+      state.successResponse = action.payload;
+      state.formData = initialState.formData;
+    })
+    .addCase(submitFormData.rejected, (state, action) => {
+      state.loading = false;
+      state.errorResponse = action.payload;
+    });
   },
 });
 

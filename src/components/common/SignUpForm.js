@@ -12,6 +12,7 @@ import {
   Select,
   MenuItem,
   Alert,
+  Tooltip,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
@@ -28,6 +29,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import LoginIcon from "@mui/icons-material/Login";
 import "react-toastify/dist/ReactToastify.css";
+import EmailVerificationDialog from "./EmailVerificationDialog";
+
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import EmailIcon from "@mui/icons-material/Email";
 
 const SignUpForm = () => {
   const [showAlert, setShowAlert] = useState(false);
@@ -38,6 +43,9 @@ const SignUpForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSignIn, setIsSignIn] = useState(true);
+
+  const [isEmailVerificationOpen, setIsEmailVerificationOpen] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   const [formData, setFormData] = useState({
     userId: "",
@@ -76,17 +84,17 @@ const SignUpForm = () => {
 
   const validateUserName = (userName) => {
     // Check if username has only alphabetic characters and no spaces
-    const regex = /^[a-zA-Z]+$/;
-  
+    const regex = /^[a-zA-Z\s]+$/;
+
     if (!regex.test(userName)) {
       return "User Name must contain only alphabetic characters (a-z, A-Z) and no spaces.";
     }
-  
+
     // Check if the username length exceeds 20 characters
     if (userName.length > 20) {
       return "User Name must not exceed 20 characters";
     }
-  
+
     // If no issues, return an empty string (valid)
     return "";
   };
@@ -349,6 +357,11 @@ const SignUpForm = () => {
       return;
     }
 
+    if (!isEmailVerified) {
+      setIsEmailVerificationOpen(true);
+      return;
+    }
+
     // Dispatch the form data
     dispatch(submitFormData(formData));
   };
@@ -408,6 +421,8 @@ const SignUpForm = () => {
     });
 
     setFormError({});
+    window.location.reload();
+
   };
 
   return (
@@ -502,7 +517,7 @@ const SignUpForm = () => {
                   {/* User ID Field */}
                   <Grid item xs={12} sm={6}>
                     <TextField
-                      placeholder="DQIND001"
+                      placeholder="DQINDXXXX"
                       label="Employee ID"
                       name="userId"
                       type="text"
@@ -531,8 +546,7 @@ const SignUpForm = () => {
                     />
                   </Grid>
 
-                  {/* Email Field */}
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={12} md={12}>
                     <TextField
                       label="Official Email Id"
                       name="email"
@@ -544,8 +558,67 @@ const SignUpForm = () => {
                       fullWidth
                       error={!!formError.email}
                       helperText={formError.email}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            {!isEmailVerified ? (
+                              <Tooltip
+                                title={
+                                  isEmailVerified
+                                    ? "Email Verified"
+                                    : "Verify Email"
+                                }
+                              >
+                                <IconButton
+                                  onClick={() => {
+                                    if (formData.email && !formError.email) {
+                                      setIsEmailVerificationOpen(true);
+                                    } else {
+                                      toast.error(
+                                        "Please enter a valid email first!"
+                                      );
+                                    }
+                                  }}
+                                  color={
+                                    isEmailVerified ? "success" : "primary"
+                                  }
+                                  disabled={
+                                    !formData.email || !!formError.email
+                                  } // Disable if email is invalid
+                                >
+                                  {isEmailVerified ? (
+                                    <VerifiedUserIcon />
+                                  ) : (
+                                    <EmailIcon />
+                                  )}
+                                </IconButton>
+                              </Tooltip>
+                            ) : (
+                              <VerifiedUserIcon color="success" />
+                            )}
+                          </InputAdornment>
+                        ),
+                      }}
                     />
                   </Grid>
+
+                  {/* Email Verification Dialog */}
+                  <EmailVerificationDialog
+                    open={isEmailVerificationOpen}
+                    onClose={() => setIsEmailVerificationOpen(false)}
+                    email={formData.email}
+                    onVerificationSuccess={() => {
+                      setIsEmailVerified(true);
+                      toast.success("✅ Email Verified Successfully!", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: true,
+                        closeOnClick: true,
+                        pauseOnHover: false,
+                        draggable: true,
+                      });
+                    }}
+                  />
 
                   {/* Personal Email Field */}
                   <Grid item xs={12} sm={6}>
@@ -736,7 +809,7 @@ const SignUpForm = () => {
                     type="submit"
                     variant="contained"
                     color="primary"
-                    disabled={!isFormValid}
+                    disabled={!isFormValid && !isEmailVerified }
                   >
                     Register
                   </Button>

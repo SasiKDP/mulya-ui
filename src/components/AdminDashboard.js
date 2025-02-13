@@ -11,36 +11,29 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { FileText, Users, Calendar, Clock, Building } from "lucide-react";
-
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "../redux/features/employeesSlice";
 import BASE_URL from "../redux/config";
+import DataTable from "../components/MuiComponents/DataTable"; // Importing the reusable DataTable component
 
 const AdminDashboard = () => {
-  const appconfig = require("../redux/apiConfig");
   const [tabIndex, setTabIndex] = useState(0);
   const [requirements, setRequirements] = useState([]);
   const [candidates, setCandidates] = useState([]);
-  const [interviews, setInterviews] = useState([]); // Interviews state
+  const [interviews, setInterviews] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const { employeesList, fetchStatus, fetchError } = useSelector(
-    (state) => state.employees
-  );
+  const { employeesList } = useSelector((state) => state.employees);
   const dispatch = useDispatch();
 
-  // Fetch employees data when the component mounts
   useEffect(() => {
-    if (tabIndex === 5) {
-      dispatch(fetchEmployees()); // Fetch employees when tabIndex is 5
+    if (tabIndex === 1) {
+      dispatch(fetchEmployees());
     }
   }, [tabIndex, dispatch]);
 
- 
-
-  // Function to handle API calls for other tabs
   const fetchData = async (endpoint) => {
     setLoading(true);
     setError(null);
@@ -49,8 +42,7 @@ const AdminDashboard = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      return data;
+      return await response.json();
     } catch (err) {
       setError(err.message);
       return [];
@@ -59,36 +51,33 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch data based on active tab
   useEffect(() => {
     const endpoints = {
       0: "/requirements/getAssignments",
       1: "/candidate/submissions/allsubmittedcandidates",
-      2: "/candidate/allscheduledinterviews", // Interview data API endpoint
+      2: "/candidate/allscheduledinterviews",
       3: "/attendance/all",
     };
 
-    const updateState = (data) => {
-      switch (tabIndex) {
-        case 0:
-          setRequirements(data);
-          break;
-        case 1:
-          setCandidates(data); // Set candidates for "All Submissions"
-          break;
-        case 2:
-          setInterviews(data); // Set interviews for "All Interviews"
-          break;
-        case 3:
-          setAttendance(data);
-          break;
-        default:
-          break;
-      }
-    };
-
     if (endpoints[tabIndex]) {
-      fetchData(endpoints[tabIndex]).then(updateState);
+      fetchData(endpoints[tabIndex]).then((data) => {
+        switch (tabIndex) {
+          case 0:
+            setRequirements(data);
+            break;
+          case 1:
+            setCandidates(data);
+            break;
+          case 2:
+            setInterviews(data);
+            break;
+          case 3:
+            setAttendance(data);
+            break;
+          default:
+            break;
+        }
+      });
     }
   }, [tabIndex]);
 
@@ -108,9 +97,9 @@ const AdminDashboard = () => {
       bgColor: "#e8f5e9",
     },
     {
-      label: "Interviews", // Replacing the Leaves card with Interviews
+      label: "Interviews",
       count: interviews.length,
-      icon: <Calendar size={24} />, // Changing the icon to represent Interviews
+      icon: <Calendar size={24} />,
       color: "#d32f2f",
       bgColor: "#ffebee",
     },
@@ -121,7 +110,6 @@ const AdminDashboard = () => {
       color: "#fbc02d",
       bgColor: "#fff9c4",
     },
-    
     {
       label: "Submissions",
       count: candidates.length,
@@ -134,6 +122,35 @@ const AdminDashboard = () => {
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
   };
+
+  // Function to dynamically generate columns from data
+  const generateColumns = (data) => {
+    if (!data || data.length === 0) return [];
+
+    const firstRow = data[0]; // Get the first object to extract keys
+    return Object.keys(firstRow)
+      .filter((key) => typeof firstRow[key] !== "object") // Ignore nested objects/arrays
+      .map((key) => ({
+        key: key,
+        label: key
+          .replace(/([A-Z])/g, " $1") // Convert camelCase to readable format
+          .replace(/^./, (str) => str.toUpperCase()), // Capitalize first letter
+      }));
+  };
+
+  // Select the data and generate columns dynamically
+  const selectedData =
+    tabIndex === 0
+      ? requirements
+      : tabIndex === 1
+      ? employeesList
+      : tabIndex === 2
+      ? interviews
+      : tabIndex === 3
+      ? attendance
+      : candidates;
+
+  const columns = generateColumns(selectedData);
 
   return (
     <Box
@@ -153,7 +170,6 @@ const AdminDashboard = () => {
         Dashboard Overview
       </Typography>
 
-      {/* Grid for summary cards */}
       <Box
         sx={{
           display: "grid",
@@ -204,30 +220,18 @@ const AdminDashboard = () => {
         elevation={0}
         sx={{ flex: 1, overflow: "hidden", bgcolor: "white", borderRadius: 2 }}
       >
-        {/* Tabs Section */}
         <Tabs
           value={tabIndex}
           onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
-          sx={{
-            px: 2,
-            borderBottom: 1,
-            borderColor: "divider",
-            "& .MuiTab-root": {
-              textTransform: "none",
-              fontWeight: 500,
-              fontSize: "0.95rem",
-              minHeight: 48,
-            },
-          }}
+          sx={{ px: 2, borderBottom: 1, borderColor: "divider" }}
         >
           {summaryData.map((tab, index) => (
             <Tab key={index} label={tab.label} />
           ))}
         </Tabs>
 
-        {/* Loading or Error Handling */}
         {loading ? (
           <Box
             sx={{
@@ -244,8 +248,17 @@ const AdminDashboard = () => {
             Error: {error}
           </Box>
         ) : (
-          <Box sx={{ p: 2, textAlign: "center" }}>
-            <Typography variant="h5">No Data Available</Typography>
+          <Box
+            sx={{
+              p: 2,
+              height: "65vh", // Set a fixed height for the table container
+              overflow: "auto", // Enables scrolling when content overflows
+              border: "1px solid #ddd", // Optional: Adds a subtle border for better structure
+              borderRadius: "8px", // Optional: Smoothens corners for aesthetics
+              boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)", // Optional: Adds a light shadow effect
+            }}
+          >
+            <DataTable data={selectedData} columns={columns} pageLimit={5} />
           </Box>
         )}
       </Paper>
