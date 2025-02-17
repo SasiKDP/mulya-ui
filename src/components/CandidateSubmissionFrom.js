@@ -213,9 +213,10 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail,closeDialog }) => {
 
       setAlert({
         open: true,
-        message: `${successMessage?.message}`,
+        message: successMessage?.message || "Candidate submitted successfully",
         severity: "success",
       });
+      
 
       setTimeout(() => {
         resetForm();
