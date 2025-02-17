@@ -335,11 +335,17 @@ const DashboardPage = () => {
                   "& .MuiListItemIcon-root": {
                     color: "#FFF",
                   },
+                  "& .MuiListItemText-primary": {
+                    color: "#FFF",
+                  },
                 },
                 "&:hover": {
                   backgroundColor: "primary.light",
                   color: "#FFF",
                   "& .MuiListItemIcon-root": {
+                    color: "#FFF",
+                  },
+                  "& .MuiListItemText-primary": {
                     color: "#FFF",
                   },
                 },
@@ -358,6 +364,7 @@ const DashboardPage = () => {
                 primaryTypographyProps={{
                   fontSize: "0.95rem",
                   fontWeight: selectedTab === tab.value ? 600 : 400,
+                  sx: { transition: "color 0.2s" }, // Smooth transition for text color change
                 }}
               />
             </ListItem>
@@ -587,7 +594,7 @@ const DashboardPage = () => {
             "&:hover": {
               backgroundColor: "primary.light",
               color: "#FFF",
-              borderRadius:1,
+              borderRadius: 1,
             },
           }}
         >
@@ -607,7 +614,7 @@ const DashboardPage = () => {
             "&:hover": {
               backgroundColor: "primary.light",
               color: "#FFF",
-              borderRadius:1,
+              borderRadius: 1,
             },
           }}
         >
@@ -631,7 +638,7 @@ const DashboardPage = () => {
             "&:hover": {
               backgroundColor: "error.light",
               color: "#000000",
-              borderRadius:1,
+              borderRadius: 1,
             },
           }}
         >
