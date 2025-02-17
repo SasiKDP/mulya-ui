@@ -1,49 +1,45 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
-  Typography,
   CircularProgress,
   Box,
   Paper,
   Container,
   Alert,
   AlertTitle,
-  TextField,
-  InputAdornment,
-  IconButton,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import ClearIcon from "@mui/icons-material/Clear";
 import BASE_URL from "../../redux/config";
-import DataTable from "../MuiComponents/DataTable"; // Importing the reusable DataTable component
+import DataTable from "../MuiComponents/DataTable"; // Reusable DataTable component
+import SectionHeader from "../MuiComponents/SectionHeader"; // Import the reusable SectionHeader
 
 const AllInterviews = () => {
   const [submissions, setSubmissions] = useState([]);
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    const fetchSubmissions = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get(`${BASE_URL}/candidate/allscheduledinterviews`);
-        setSubmissions(response.data);
-       
-      } catch (err) {
-        setError(err.message || "Failed to load submissions");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchSubmissions();
   }, []);
 
+  // Fetch interview submissions
+  const fetchSubmissions = async () => {
+    setIsRefreshing(true);
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/candidate/allscheduledinterviews`
+      );
+      setSubmissions(response.data);
+    } catch (err) {
+      setError(err.message || "Failed to load submissions");
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  };
 
-
-  // 👇 Define a custom column order
+  // Custom column order
   const columnOrder = [
     "candidateFullName",
     "candidateContactNo",
@@ -59,7 +55,7 @@ const AllInterviews = () => {
     "clientEmail",
     "clientName",
     "interviewLevel",
-    "interviewStatus"
+    "interviewStatus",
   ];
 
   // Generate columns dynamically with manual order
@@ -78,7 +74,12 @@ const AllInterviews = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -97,28 +98,18 @@ const AllInterviews = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-        <Typography
-          variant="h5"
-          gutterBottom
-          sx={{
-            backgroundColor: "rgba(232, 245, 233)",
-            color: "#000",
-            px: 2,
-            py: 1,
-            borderRadius: 1,
-            mb: 3
-          }}
-        >
-          Scheduled Interviews
-        </Typography>
+      {/* Reusable SectionHeader */}
+      <Box sx={{mb:1}}> 
+        <SectionHeader
+          title="Scheduled Interviews"
+          totalCount={submissions.length}
+          onRefresh={fetchSubmissions}
+          isRefreshing={isRefreshing}
+        />
+      </Box>
 
-        {/* Global Search */}
-        
-
-        {/* Reusing DataTable component with searchQuery prop */}
-        <DataTable data={submissions} columns={columns} pageLimit={10}  />
-      </Paper>
+      {/* Reusing DataTable component */}
+      <DataTable data={submissions} columns={columns} pageLimit={10} />
     </Container>
   );
 };

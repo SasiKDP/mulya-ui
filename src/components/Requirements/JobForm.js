@@ -32,6 +32,7 @@ import {
   reduxResetForm,
   clearMessages,
 } from "../../redux/features/jobFormSlice";
+import RecruiterMultiSelect from "../MuiComponents/RecruiterMultiSelect";
 
 // Validation Schema
 const JobFormSchema = Yup.object().shape({
@@ -63,7 +64,7 @@ const JobFormSchema = Yup.object().shape({
   noticePeriod: Yup.string().required("Notice period is required"),
   jobDescription: Yup.string()
     .required("Job description is required")
-    .min(50, "Job description must be at least 50 characters"),
+    .min(20, "Job description must be at least 20 characters"),
   recruiterName: Yup.array()
     .min(1, "At least one recruiter must be selected")
     .required("At least one recruiter must be selected"),
@@ -167,7 +168,7 @@ const JobForm = () => {
         ...values,
         experienceRequired: `${values.experienceRequired} years`,
         relevantExperience: `${values.relevantExperience} years`,
-        salaryPackage: Number(values.salaryPackage),
+        salaryPackage: `${Number(values.salaryPackage)} LPA`,
         noOfPositions: Number(values.noOfPositions),
       };
 
@@ -209,12 +210,12 @@ const JobForm = () => {
           <Form>
             <Box sx={{ p: 3 }}>
               {/* Header Section */}
-              <Card sx={{ mb: 2, backgroundColor: "rgba(232, 245, 233)" }}>
+              <Card sx={{ mb: 2, backgroundColor: "#00796b" }}>
                 <CardContent>
                   <Typography
                     variant="h5"
                     component="h1"
-                    color="primary"
+                    color="#FFFFFF"
                     fontWeight="500"
                   >
                     Post Job Requirement
@@ -317,7 +318,7 @@ const JobForm = () => {
                         name="noOfPositions"
                         component={CustomTextField}
                         fullWidth
-                        type="number"
+                        type="text"
                         label="Number of Positions"
                         variant="outlined"
                         sx={textFieldStyle}
@@ -328,7 +329,7 @@ const JobForm = () => {
                         name="salaryPackage"
                         component={CustomTextField}
                         fullWidth
-                        type="number"
+                        type="text"
                         label="Salary Package (LPA)"
                         variant="outlined"
                         sx={textFieldStyle}
@@ -411,77 +412,14 @@ const JobForm = () => {
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={5}>
-                      <FormControl
-                        fullWidth
-                        error={
-                          touched.recruiterName && Boolean(errors.recruiterName)
-                        }
-                      >
-                        <InputLabel>Select Recruiters</InputLabel>
-                        <Select
-                          multiple
-                          value={
-                            Array.isArray(values.recruiterName)
-                              ? values.recruiterName
-                              : []
-                          } // Ensure recruiterName is an array
-                          onChange={(event) => {
-                            if (!event.target || !event.target.value) {
-                              console.error(
-                                "event.target.value is undefined:",
-                                event
-                              );
-                              return; // Prevent further execution if value is undefined
-                            }
-
-                            const selectedValues = event.target.value || []; // Ensure selectedValues is always an array
-                            const selectedNames = Array.isArray(selectedValues)
-                              ? selectedValues
-                              : [selectedValues];
-
-                            const selectedIds = selectedNames
-                              .map((name) => {
-                                const employee = recruiters.find(
-                                  (emp) => emp.userName === name
-                                );
-                                return employee ? employee.employeeId : null;
-                              })
-                              .filter((id) => id !== null);
-
-                            setFieldValue("recruiterName", selectedNames);
-                            setFieldValue("recruiterIds", selectedIds);
-                          }}
-                          renderValue={(selected) =>
-                            Array.isArray(selected) ? selected.join(", ") : ""
-                          } // Ensure safe rendering
-                        >
-                          {fetchStatus === "loading" ? (
-                            <CircularProgress size={20} />
-                          ) : (
-                            recruiters.map((emp) => (
-                              <MenuItem
-                                key={emp.employeeId}
-                                value={emp.userName}
-                              >
-                                <Checkbox
-                                  checked={values.recruiterName.includes(
-                                    emp.userName
-                                  )}
-                                />
-                                <ListItemText primary={emp.userName} />
-                              </MenuItem>
-                            ))
-                          )}
-                        </Select>
-
-                        {touched.recruiterName && errors.recruiterName && (
-                          <FormHelperText>
-                            {errors.recruiterName}
-                          </FormHelperText>
-                        )}
-                      </FormControl>
-                    </Grid>
+                    <RecruiterMultiSelect
+                      recruiters={recruiters}
+                      values={values}
+                      setFieldValue={setFieldValue}
+                      errors={errors}
+                      touched={touched}
+                      fetchStatus={fetchStatus}
+                    />
 
                     <Grid item xs={12} md={7}>
                       <Field
