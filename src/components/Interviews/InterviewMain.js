@@ -175,7 +175,9 @@ const InterviewMain = () => {
         onDelete={() =>
           deleteInterview(interviewToDelete, setSnackbar, fetchInterviewDetails)
         }
-      />
+      >
+        
+      </DeleteInterviewDialog>
 
       <Snackbar
         open={snackbar.open}
