@@ -27,7 +27,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 
-const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
+const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageLimit);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -80,7 +80,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
       part.toLowerCase() === highlight.toLowerCase() ? (
         <span
           key={index}
-          style={{ backgroundColor: "#fff3cd", padding: "0.1rem" }}
+          style={{ backgroundColor: "#F6C90E", padding: "0.1rem" }}
         >
           {part}
         </span>
@@ -90,13 +90,17 @@ const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
     );
   };
 
-
-  
-
   return (
-    <Box sx={{ width: "100%" }}>
-      <Grid container spacing={2} sx={{ mb: 2, justifyContent: "start" }}>
-        <Grid item xs={12} sm={8} md={6} lg={5}>
+    <Box
+      sx={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={8} md={6} lg={4}>
           <TextField
             fullWidth
             variant="outlined"
@@ -133,27 +137,54 @@ const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
 
       <Paper
         sx={{
-          width: "100%",
-          overflow: "hidden",
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
           border: "1px solid #ccc",
-          borderRadius: "8px",
+          borderRadius: 2,
           boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+          overflow: "hidden",
         }}
       >
         <TableContainer
           sx={{
-            maxHeight: 440,
+            flexGrow: 1,
+            height: "400px", // Fixed height to ensure pagination is visible
+            overflow: "auto",
+            "&::-webkit-scrollbar": {
+              width: "8px",
+              height: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "#f1f1f1",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "#888",
+              borderRadius: "4px",
+            },
             "& .MuiTableCell-root": {
-              borderLeft: "1px solid #ccc",
-              "&:first-of-type": {
-                borderLeft: "none",
-              },
+              borderBottom: "1px solid #ccc",
+              borderRight: "1px solid #ccc",
             },
           }}
         >
           <Table stickyHeader>
             <TableHead>
               <TableRow>
+                {/* Add Serial Number Column */}
+                <TableCell
+                  sx={{
+                    backgroundColor: "#00796b",
+                    color: "#fff",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    padding: 2.5,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  S.No
+                </TableCell>
+
                 {columns.map((column) => (
                   <TableCell
                     key={column.key}
@@ -162,9 +193,11 @@ const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
                       color: "#fff",
                       fontWeight: "bold",
                       textAlign: "center",
-                      zIndex: 1,
-                      border: "1px solid #ccc", 
-                      
+                      padding: 2,
+                      whiteSpace: "normal", // Allows text to wrap
+                      wordWrap: "break-word", // Ensures long words break
+                      maxWidth: "150px", // Set max width for better alignment
+                      overflow: "hidden",
                     }}
                   >
                     {column.label}
@@ -183,17 +216,32 @@ const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
                 filteredData
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((row, index) => (
-                    <TableRow key={index}>
+                    <TableRow
+                      key={index}
+                      sx={{
+                        backgroundColor:
+                          index % 2 === 0
+                            ? "#f9f9f9"
+                            : "rgba(192, 238, 211, 0.34)",
+                        "&:hover": {
+                          backgroundColor: "rgba(0, 121, 107, 0.04)",
+                        },
+                      }}
+                    >
+                      <TableCell
+                        sx={{ textAlign: "center", fontWeight: "bold" }}
+                      >
+                        {page * rowsPerPage + index + 1}
+                      </TableCell>
+
                       {columns.map((column) => {
                         if (column.render) {
                           return (
                             <TableCell
                               key={column.key}
                               sx={{
-                                padding: "8px",
-                                textAlign: "center",
-                                border: "1px solid #ccc", // Adds bottom border to rows
-                               
+                                padding: 2,
+                                textAlign: "left",
                               }}
                             >
                               {column.render(row)}
@@ -207,56 +255,59 @@ const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
                           <TableCell
                             key={column.key}
                             sx={{
-                              padding: "8px",
-                              textAlign: "center",
+                              padding: 2,
+                              textAlign: "left",
+                              whiteSpace: "nowrap",
+                              maxWidth: "200px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
                             }}
                           >
-                            {cellData && String(cellData).length > 20 ? (
-                              <>
-                                {highlightText(
-                                  String(cellData).slice(0, 15),
-                                  searchQuery
-                                )}
-                                ...
-                                <Button
-                                  variant="text"
-                                  color="primary"
-                                  onClick={() => handleDialogOpen(cellData)}
+                            {cellData && String(cellData).length > 15 ? (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
                                   sx={{
-                                    marginLeft: "0.25rem",
-                                    textTransform: "none",
-                                    padding: "0.125rem 0.25rem",
-                                    borderRadius: "0.2rem",
-                                    fontWeight: "500",
-                                    fontSize: "0.6875rem",
-                                    minWidth: "auto",
-                                    "&:hover": {
-                                      backgroundColor: "lightgray",
-                                    },
-                                    "&:focus": {
-                                      outline: "none",
-                                      borderColor: "lightgray",
-                                    },
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
                                   }}
                                 >
-                                  <Typography
-                                    variant="button"
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      fontSize: "0.6875rem",
-                                    }}
-                                  >
-                                    <VisibilityIcon
-                                      sx={{
-                                        marginRight: "0.125rem",
-                                        fontSize: "0.875rem",
-                                      }}
-                                    />
+                                  {highlightText(
+                                    String(cellData).slice(0, 15),
+                                    searchQuery
+                                  )}
+                                  ...
+                                </Typography>
+
+                                <Button
+                                  variant="text"
+                                  onClick={() => handleDialogOpen(cellData)}
+                                  sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    ml: 1,
+                                    minWidth: "auto",
+                                    p: "2px 8px",
+                                    color: "#00796b",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <VisibilityIcon
+                                    sx={{ fontSize: "1rem", mr: 0.5 }}
+                                  />
+                                  <span style={{ fontSize: "0.75rem" }}>
                                     See More
-                                  </Typography>
+                                  </span>
                                 </Button>
-                              </>
+                              </Box>
                             ) : (
                               highlightText(cellData, searchQuery)
                             )}
@@ -276,7 +327,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25, { label: "All", value: -1 }]}
+          rowsPerPageOptions={[10, 20, 30, 40, 50, { label: "All", value: -1 }]}
           sx={{
             borderTop: "1px solid #ccc",
             backgroundColor: "#fff",
@@ -302,28 +353,41 @@ const DataTable = ({ data: initialData, columns, pageLimit = 5 }) => {
       <Dialog
         open={dialogOpen}
         onClose={handleDialogClose}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Full Content</DialogTitle>
+        <DialogTitle
+          sx={{
+            backgroundColor: "#00796b",
+            color: "#fff",
+            fontWeight: "bold",
+          }}
+        >
+          Full Content
+        </DialogTitle>
         <DialogContent dividers>
-          <div
-            style={{
+          <Typography
+            variant="body1"
+            sx={{
               fontFamily: "Roboto, sans-serif",
-              fontSize: "16px",
               color: "#333",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
             }}
           >
             {highlightText(dialogContent, searchQuery)}
-          </div>
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button
             onClick={handleDialogClose}
-            color="primary"
             variant="contained"
-            size="large"
-            style={{ textTransform: "none" }}
+            sx={{
+              backgroundColor: "#00796b",
+              "&:hover": {
+                backgroundColor: "#00695c",
+              },
+            }}
           >
             Close
           </Button>
