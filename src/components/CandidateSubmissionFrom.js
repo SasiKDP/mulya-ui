@@ -100,13 +100,13 @@ const validationSchema = Yup.object().shape({
   ),
 });
 
-const CandidateSubmissionForm = ({ jobId, userId, userEmail,closeDialog }) => {
+const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
   const dispatch = useDispatch();
   const successMessage = useSelector(
     (state) => state.candidateSubmission.successResponse
   );
 
-  console.log("success message ",successMessage)
+  console.log("success message ", successMessage);
   const errorMessage = useSelector(
     (state) => state.candidateSubmission.errorResponse
   );
@@ -221,7 +221,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail,closeDialog }) => {
       setTimeout(() => {
         resetForm();
         dispatch(clearMessages());
-        closeDialog()
+        closeDialog();
       }, 4000);
     } catch (error) {
       setAlert({
@@ -474,15 +474,16 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail,closeDialog }) => {
                       }
 
                       const validTypes = [
-                        "application/pdf",
-                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "application/pdf", // PDF
+                        "application/msword", // DOC
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
                       ];
+
                       if (!validTypes.includes(file.type)) {
                         setAlert({
                           open: true,
-
                           message:
-                            "Invalid file type. Only PDF and DOCX are allowed",
+                            "Invalid file type. Only PDF, DOC, and DOCX are allowed.",
                           severity: "error",
                         });
                         setFieldValue("resumeFile", null);
@@ -493,7 +494,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail,closeDialog }) => {
                       setFieldValue("resumeFile", file);
                       setFieldValue("resumeFilePath", file.name);
                     }}
-                    inputProps={{ accept: ".pdf,.doc,.docx,.docs" }}
+                    inputProps={{ accept: ".pdf,.doc,.docx" }}
                   />
                 </FormControl>
               </Grid>

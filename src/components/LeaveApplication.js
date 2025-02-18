@@ -177,8 +177,8 @@ const LeaveApplication = () => {
     >
       <DialogTitle
         sx={{
-          bgcolor: "success.light",
-          color: "success.contrastText",
+          bgcolor: "#00796b",
+          color: "#FFFFFF",
           display: "flex",
           alignItems: "center",
           gap: 1,
@@ -252,8 +252,6 @@ const LeaveApplication = () => {
         }}
       >
         <Stack spacing={3}>
-         
-
           <Divider />
 
           {errorMessage && (
@@ -368,9 +366,14 @@ const LeaveApplication = () => {
               </Grid>
 
               {/* Manager Selection */}
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={6} sx={{ height: 120 }}>
                 <FormControl
                   fullWidth
+                  sx={{
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
                   error={Boolean(
                     errorMessage && formData.managerEmail.length === 0
                   )}
@@ -387,6 +390,18 @@ const LeaveApplication = () => {
                       }))
                     }
                     renderValue={(selected) => selected.join(", ")}
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          maxHeight: 200, // Fixed height for dropdown
+                          overflowY: "auto", // Scrollbar for dropdown
+                        },
+                      },
+                    }}
+                    sx={{
+                      flexGrow: 1,
+                      minHeight: 40, // Ensures visibility
+                    }}
                   >
                     {activeManagers.length > 0 ? (
                       activeManagers.map((manager) => (
