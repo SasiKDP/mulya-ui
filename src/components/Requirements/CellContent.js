@@ -13,6 +13,8 @@ import {
   Paper,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import DescriptionIcon from '@mui/icons-material/Description';
+
 
 const CellContent = ({ content, title, globalSearch }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -39,7 +41,9 @@ const CellContent = ({ content, title, globalSearch }) => {
       : textContent;
 
   return (
-    <TableCell sx={{ border: "1px solid #ddd", minWidth: "100px", maxWidth: "200px" }}>
+    <TableCell
+      sx={{ border: "1px solid #ddd", minWidth: "100px", maxWidth: "200px" }}
+    >
       <Box display="flex" alignItems="center" gap={1}>
         {/* Apply highlighting only if there's search text */}
         <Typography
@@ -51,18 +55,14 @@ const CellContent = ({ content, title, globalSearch }) => {
 
         {textContent.length > MAX_CELL_LENGTH && (
           <Tooltip title="View Full Content">
-            <IconButton
-              size="small"
+            <Button
               onClick={() => setDialogOpen(true)}
-              sx={{
-                color: "primary.main",
-                "&:hover": { backgroundColor: "rgba(0, 121, 107, 0.08)" },
-              }}
+              size="small"
+              startIcon={<DescriptionIcon />} // Use the same icon as job description
+              sx={{ minWidth: 0 }}
             >
-              <span className="material-icons-outlined" style={{ fontSize: "14px" }}>
-                See more
-              </span>
-            </IconButton>
+              View
+            </Button>
           </Tooltip>
         )}
       </Box>
