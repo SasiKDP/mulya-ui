@@ -12,54 +12,62 @@ import {
   Alert,
   IconButton,
   styled,
-  useTheme
+  useTheme,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import axios from "axios";
-import BASE_URL from "../../redux/config";
+// import BASE_URL from "../../redux/config";
+
+const BASE_URL = "http://192.168.0.194:8083";
 
 // Styled components
 const StyledDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialog-paper": {
     borderRadius: theme.shape.borderRadius * 2,
     [theme.breakpoints.down("sm")]: {
-      margin: theme.spacing(2)
-    }
-  }
+      margin: theme.spacing(2),
+    },
+  },
 }));
 
 const StyledOtpInput = styled(TextField)(({ theme }) => ({
   width: "52px",
   margin: theme.spacing(0, 0.5),
   "& .MuiInputBase-root": {
-    height: "52px"
+    height: "52px",
   },
   "& input": {
     textAlign: "center",
     fontSize: "1.5rem",
     padding: theme.spacing(1),
     fontWeight: "bold",
-    caretColor: theme.palette.primary.main
+    caretColor: theme.palette.primary.main,
   },
   "& .MuiOutlinedInput-root": {
     "&.Mui-focused": {
       "& .MuiOutlinedInput-notchedOutline": {
         borderColor: theme.palette.primary.main,
-        borderWidth: 2
-      }
-    }
-  }
+        borderWidth: 2,
+      },
+    },
+  },
 }));
 
-const EmailVerificationDialog = ({ open, onClose, email, onVerificationSuccess }) => {
+const EmailVerificationDialog = ({
+  open,
+  onClose,
+  email,
+  onVerificationSuccess,
+}) => {
   const theme = useTheme();
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [timeLeft, setTimeLeft] = useState(300);
   const [error, setError] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     if (open && email) {
@@ -77,26 +85,37 @@ const EmailVerificationDialog = ({ open, onClose, email, onVerificationSuccess }
   }, [timeLeft, open]);
 
   const handleSendOtp = async () => {
+    if (!email || email.trim() === "") {
+      setError("Email cannot be empty.");
+      return;
+    }
+  
     setIsSending(true);
     try {
       const response = await axios.post(
-        `${BASE_URL}/users/send-otp`,
-        null,
-        { params: { email } }
+        `${BASE_URL}/api/users/send-otp?email=${encodeURIComponent(email)}`,
+        {}, 
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
-
-      if (response.status == 200) {
-        throw new Error("Failed to send OTP");
+      if (response.data.success) {
+        setTimeLeft(300);
+        setError("");
+        setSuccessMessage(response.data.message || "OTP sent successfully!"); 
+      } else {
+        throw new Error(response.data.message || "Failed to send OTP");
       }
-
-      setTimeLeft(300);
-      setError("");
     } catch (err) {
-      setError("Failed to send OTP. Please try again.");
+      console.error("Error details:", err.response?.data || err);
+      setError(err.response?.data?.message || "Failed to send OTP. Please try again.");
     } finally {
       setIsSending(false);
     }
   };
+  
 
   const handleVerifyOtp = async () => {
     const otpString = otp.join("");
@@ -104,27 +123,49 @@ const EmailVerificationDialog = ({ open, onClose, email, onVerificationSuccess }
       setError("Please enter the complete OTP.");
       return;
     }
-
+  
     setIsVerifying(true);
     try {
       const response = await axios.post(
-        `${BASE_URL}/users/verify-otp`,
+        `${BASE_URL}/api/users/verify-otp`,
         { email, otp: otpString },
         { headers: { "Content-Type": "application/json" } }
       );
-
-      if (response.status !== 200) {
-        throw new Error("Invalid OTP");
+  
+      if (response.data.success) {
+        setError(""); // Clear any previous error message
+        setSuccessMessage("OTP verified successfully!"); // Set success message
+  
+        setTimeout(() => {
+          onVerificationSuccess();
+          onClose();
+          setSuccessMessage(""); // Clear success message after closing
+        }, 2000);
+      } else {
+        // Handle API error message properly
+        throw new Error(response.data.message || "Invalid OTP");
       }
-
-      onVerificationSuccess();
-      onClose();
     } catch (err) {
-      setError("Invalid OTP. Please try again.");
+      console.error("Verification Error:", err.response?.data || err);
+  
+      if (err.response?.data?.message) {
+        setError(err.response.data.message); // Display API error message
+      } else {
+        setError("Invalid OTP. Please try again."); // Fallback error
+      }
     } finally {
       setIsVerifying(false);
     }
   };
+  
+  const handleClose = () => {
+    setOtp(["", "", "", "", "", ""]); // Clear OTP input
+    setError(""); // Clear error messages
+    setSuccessMessage(""); // Clear success message
+    setTimeLeft(300); // Reset timer
+    onClose(); // Call the parent onClose function
+  };
+  
 
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return;
@@ -152,74 +193,79 @@ const EmailVerificationDialog = ({ open, onClose, email, onVerificationSuccess }
   };
 
   return (
-    <StyledDialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="sm" 
+    <StyledDialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
       fullWidth
       PaperProps={{
-        elevation: 3
+        elevation: 3,
       }}
     >
-      <DialogTitle 
-        sx={{ 
-          display: "flex", 
-          justifyContent: "space-between", 
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          pb: 1
+          pb: 1,
         }}
       >
         <Typography variant="h6" fontWeight="600">
           Verify Your Email
         </Typography>
-        <IconButton 
+        <IconButton
           onClick={onClose}
           size="small"
-          sx={{ 
-            '&:hover': { 
-              backgroundColor: theme.palette.action.hover 
-            }
+          sx={{
+            "&:hover": {
+              backgroundColor: theme.palette.action.hover,
+            },
           }}
         >
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
+      {successMessage && (
+        <Alert severity="success" sx={{ my: 2 }}>
+          {successMessage}
+        </Alert>
+      )}
 
       <DialogContent>
         <Box sx={{ p: 2, textAlign: "center" }}>
           <Typography variant="body1" color="text.secondary">
             We've sent a verification code to:
           </Typography>
-          <Typography 
-            variant="body1" 
-            fontWeight="600" 
-            color="primary" 
+          <Typography
+            variant="body1"
+            fontWeight="600"
+            color="primary"
             sx={{ mt: 0.5 }}
           >
             {email}
           </Typography>
 
           {error && (
-            <Alert 
-              severity="error" 
-              sx={{ 
+            <Alert
+              severity="error"
+              sx={{
                 my: 2,
-                '& .MuiAlert-message': {
-                  width: '100%',
-                  textAlign: 'left'
-                }
+                "& .MuiAlert-message": {
+                  width: "100%",
+                  textAlign: "left",
+                },
               }}
             >
               {error}
             </Alert>
           )}
 
-          <Box 
-            sx={{ 
-              my: 4, 
-              display: "flex", 
+          <Box
+            sx={{
+              my: 4,
+              display: "flex",
               justifyContent: "center",
-              gap: 1
+              gap: 1,
             }}
           >
             {otp.map((digit, index) => (
@@ -245,9 +291,9 @@ const EmailVerificationDialog = ({ open, onClose, email, onVerificationSuccess }
           >
             <Typography variant="body2" color="text.secondary">
               Time remaining:{" "}
-              <Typography 
-                component="span" 
-                fontWeight="600" 
+              <Typography
+                component="span"
+                fontWeight="600"
                 color="error"
                 sx={{ ml: 0.5 }}
               >
@@ -260,16 +306,18 @@ const EmailVerificationDialog = ({ open, onClose, email, onVerificationSuccess }
               variant="outlined"
               onClick={handleSendOtp}
               disabled={timeLeft > 0 || isSending}
-              startIcon={isSending ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                <AutorenewIcon />
-              )}
-              sx={{ 
+              startIcon={
+                isSending ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <AutorenewIcon />
+                )
+              }
+              sx={{
                 minWidth: 120,
-                '&.Mui-disabled': {
-                  borderColor: theme.palette.action.disabledBackground
-                }
+                "&.Mui-disabled": {
+                  borderColor: theme.palette.action.disabledBackground,
+                },
               }}
             >
               {isSending ? "Sending..." : "Resend OTP"}
@@ -278,35 +326,33 @@ const EmailVerificationDialog = ({ open, onClose, email, onVerificationSuccess }
         </Box>
       </DialogContent>
 
-      <DialogActions 
-        sx={{ 
-          p: 3, 
+      <DialogActions
+        sx={{
+          p: 3,
           pt: 2,
           justifyContent: "center",
-          gap: 1
+          gap: 1,
         }}
       >
-        <Button 
-          variant="outlined" 
-          onClick={onClose}
-          sx={{ minWidth: 100 }}
-        >
+        <Button variant="outlined" onClick={handleClose} sx={{ minWidth: 100 }}>
           Cancel
         </Button>
         <Button
           variant="contained"
           onClick={handleVerifyOtp}
           disabled={otp.join("").length !== 6 || isVerifying}
-          startIcon={isVerifying ? (
-            <CircularProgress size={20} color="inherit" />
-          ) : (
-            <VerifiedIcon />
-          )}
-          sx={{ 
+          startIcon={
+            isVerifying ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <VerifiedIcon />
+            )
+          }
+          sx={{
             minWidth: 100,
-            '&.Mui-disabled': {
-              backgroundColor: theme.palette.action.disabledBackground
-            }
+            "&.Mui-disabled": {
+              backgroundColor: theme.palette.action.disabledBackground,
+            },
           }}
         >
           {isVerifying ? "Verifying..." : "Verify"}
@@ -317,3 +363,6 @@ const EmailVerificationDialog = ({ open, onClose, email, onVerificationSuccess }
 };
 
 export default EmailVerificationDialog;
+
+
+

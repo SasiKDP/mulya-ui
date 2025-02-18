@@ -375,7 +375,7 @@ const DashboardPage = () => {
   );
 
   return (
-    <Box sx={{ display: "flex", height: "100vh" }}>
+    <Box sx={{ display: "flex", height: "100vh"}}>
       <AppBar
         position="fixed"
         elevation={0}
@@ -383,6 +383,7 @@ const DashboardPage = () => {
           zIndex: theme.zIndex.drawer + 1,
           backgroundColor: "background.paper",
           borderBottom: `1px solid ${theme.palette.divider}`,
+          borderRadius:0 
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
@@ -406,6 +407,8 @@ const DashboardPage = () => {
                 </Badge>
               </IconButton>
             </Tooltip> */}
+            
+            
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box sx={{ textAlign: "right" }}>
@@ -540,7 +543,7 @@ const DashboardPage = () => {
             }}
           >
             {activeTabs.find((tab) => tab.value === selectedTab)?.component || (
-              <Box sx={{ p: 3 }}>
+              <Box sx={{ p:1 }}>
                 <Typography color="text.secondary">
                   No content available for the selected tab.
                 </Typography>

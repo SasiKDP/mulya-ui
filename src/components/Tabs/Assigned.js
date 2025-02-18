@@ -57,13 +57,13 @@ const Assigned = () => {
 
   const generateColumns = (data) => {
     if (data.length === 0) return [];
-
+  
     const headerLabels = {
+      submitCandidate: "Actions", // Move Actions to the top
       jobId: "Job ID",
       jobTitle: "Job Title",
       jobDescription: "Job Description",
       requirementAddedTimeStamp: "Posted Date",
-      submitCandidate: "Actions",
       companyName: "Company",
       location: "Location",
       experience: "Experience",
@@ -71,14 +71,21 @@ const Assigned = () => {
       secondarySkills: "Secondary Skills",
       salaryPackage: "Salary Package",
     };
-
-    return Object.keys(data[0]).map((key) => ({
+  
+    const columns = Object.keys(data[0]).map((key) => ({
       key,
       label:
         headerLabels[key] ||
         key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
     }));
+  
+    // Move "submitCandidate" (Actions) to the first position
+    const actionsColumn = columns.find((col) => col.key === "submitCandidate");
+    const filteredColumns = columns.filter((col) => col.key !== "submitCandidate");
+  
+    return actionsColumn ? [actionsColumn, ...filteredColumns] : filteredColumns;
   };
+  
 
   const fetchUserSpecificData = async () => {
     setIsRefreshing(true);

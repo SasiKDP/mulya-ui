@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
@@ -32,6 +32,9 @@ import {
   reduxResetForm,
   clearMessages,
 } from "../../redux/features/jobFormSlice";
+import RecruiterMultiSelect from "../MuiComponents/RecruiterMultiSelect";
+import { RadioGroup, FormControlLabel, Radio } from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 // Validation Schema
 const JobFormSchema = Yup.object().shape({
@@ -61,12 +64,49 @@ const JobFormSchema = Yup.object().shape({
   jobType: Yup.string().required("Job type is required"),
   jobMode: Yup.string().required("Job mode is required"),
   noticePeriod: Yup.string().required("Notice period is required"),
-  jobDescription: Yup.string()
-    .required("Job description is required")
-    .min(50, "Job description must be at least 50 characters"),
+
   recruiterName: Yup.array()
     .min(1, "At least one recruiter must be selected")
     .required("At least one recruiter must be selected"),
+  jobDescription: Yup.string().when("jobDescriptionFile", {
+    is: (file) => !file, // Validate only if no file is uploaded
+    then: (schema) => schema.required("Job description is required").min(20),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  jobDescriptionFile: Yup.mixed()
+    .nullable()
+    .test(
+      "job-description-check",
+      "Provide either text or a file for Job Description",
+      function (value) {
+        const jobDescription = this.resolve(Yup.ref("jobDescription"));
+        if (!jobDescription && !value) {
+          return this.createError({
+            message: "Either text or file is required for Job Description",
+          });
+        }
+        return true;
+      }
+    )
+    .test(
+      "fileSize",
+      "File too large (Max: 5MB)",
+      (value) => !value || (value && value.size <= 5 * 1024 * 1024)
+    )
+    .test(
+      "fileType",
+      "Unsupported format (Allowed: PDF, DOCX, Images)",
+      (value) =>
+        !value ||
+        (value &&
+          [
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "image/png",
+            "image/jpeg",
+          ].includes(value.type))
+    ),
 });
 
 // Custom Field Components
@@ -111,6 +151,8 @@ const JobForm = () => {
   const recruiters = employeesList.filter(
     (emp) => emp.roles === "EMPLOYEE" && emp.status === "ACTIVE"
   );
+
+  const [jobDescriptionType, setJobDescriptionType] = useState("text");
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -163,17 +205,44 @@ const JobForm = () => {
 
   const handleSubmit = async (values, { resetForm }) => {
     try {
-      const finalData = {
-        ...values,
-        experienceRequired: `${values.experienceRequired} years`,
-        relevantExperience: `${values.relevantExperience} years`,
-        salaryPackage: Number(values.salaryPackage),
-        noOfPositions: Number(values.noOfPositions),
-      };
+      const formData = new FormData();
+      formData.append("jobTitle", values.jobTitle);
+      formData.append("clientName", values.clientName);
+      formData.append("location", values.location);
+      formData.append(
+        "experienceRequired",
+        `${values.experienceRequired} years`
+      );
+      formData.append(
+        "relevantExperience",
+        `${values.relevantExperience} years`
+      );
+      formData.append("qualification", values.qualification);
+      formData.append("salaryPackage", `${Number(values.salaryPackage)} LPA`);
+      formData.append("noOfPositions", Number(values.noOfPositions));
+      formData.append("jobType", values.jobType);
+      formData.append("jobMode", values.jobMode);
+      formData.append("noticePeriod", values.noticePeriod);
+      formData.append("status", values.status);
 
-      const response = await dispatch(postJobRequirement(finalData));
+      formData.append("recruiterIds", JSON.stringify(values.recruiterIds));
+      formData.append(
+        "recruiterEmails",
+        JSON.stringify(values.recruiterEmails)
+      );
+      formData.append("recruiterName", JSON.stringify(values.recruiterName));
+
+      if (jobDescriptionType === "text" && values.jobDescription) {
+        formData.append("jobDescription", values.jobDescription);
+      } else if (jobDescriptionType === "file" && values.jobDescriptionFile) {
+        formData.append("jobDescriptionFile", values.jobDescriptionFile);
+      }
+
+      const response = await dispatch(postJobRequirement(formData));
+
       if (response.payload?.successMessage) {
         resetForm();
+        toast.success("Job Requirement Posted Successfully!");
       } else {
         toast.error("Failed to create job posting");
       }
@@ -209,12 +278,12 @@ const JobForm = () => {
           <Form>
             <Box sx={{ p: 3 }}>
               {/* Header Section */}
-              <Card sx={{ mb: 2, backgroundColor: "rgba(232, 245, 233)" }}>
+              <Card sx={{ mb: 2, backgroundColor: "#00796b" }}>
                 <CardContent>
                   <Typography
                     variant="h5"
                     component="h1"
-                    color="primary"
+                    color="#FFFFFF"
                     fontWeight="500"
                   >
                     Post Job Requirement
@@ -317,7 +386,7 @@ const JobForm = () => {
                         name="noOfPositions"
                         component={CustomTextField}
                         fullWidth
-                        type="number"
+                        type="text"
                         label="Number of Positions"
                         variant="outlined"
                         sx={textFieldStyle}
@@ -328,7 +397,7 @@ const JobForm = () => {
                         name="salaryPackage"
                         component={CustomTextField}
                         fullWidth
-                        type="number"
+                        type="text"
                         label="Salary Package (LPA)"
                         variant="outlined"
                         sx={textFieldStyle}
@@ -411,90 +480,213 @@ const JobForm = () => {
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={5}>
-                      <FormControl
-                        fullWidth
-                        error={
-                          touched.recruiterName && Boolean(errors.recruiterName)
+                    <RecruiterMultiSelect
+                      recruiters={recruiters}
+                      values={values}
+                      setFieldValue={setFieldValue}
+                      errors={errors}
+                      touched={touched}
+                      fetchStatus={fetchStatus}
+                    />
+
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        Job Description Input Type
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={jobDescriptionType}
+                        onChange={(event) =>
+                          setJobDescriptionType(event.target.value)
                         }
                       >
-                        <InputLabel>Select Recruiters</InputLabel>
-                        <Select
-                          multiple
-                          value={
-                            Array.isArray(values.recruiterName)
-                              ? values.recruiterName
-                              : []
-                          } // Ensure recruiterName is an array
-                          onChange={(event) => {
-                            if (!event.target || !event.target.value) {
-                              console.error(
-                                "event.target.value is undefined:",
-                                event
-                              );
-                              return; // Prevent further execution if value is undefined
-                            }
-
-                            const selectedValues = event.target.value || []; // Ensure selectedValues is always an array
-                            const selectedNames = Array.isArray(selectedValues)
-                              ? selectedValues
-                              : [selectedValues];
-
-                            const selectedIds = selectedNames
-                              .map((name) => {
-                                const employee = recruiters.find(
-                                  (emp) => emp.userName === name
-                                );
-                                return employee ? employee.employeeId : null;
-                              })
-                              .filter((id) => id !== null);
-
-                            setFieldValue("recruiterName", selectedNames);
-                            setFieldValue("recruiterIds", selectedIds);
-                          }}
-                          renderValue={(selected) =>
-                            Array.isArray(selected) ? selected.join(", ") : ""
-                          } // Ensure safe rendering
-                        >
-                          {fetchStatus === "loading" ? (
-                            <CircularProgress size={20} />
-                          ) : (
-                            recruiters.map((emp) => (
-                              <MenuItem
-                                key={emp.employeeId}
-                                value={emp.userName}
-                              >
-                                <Checkbox
-                                  checked={values.recruiterName.includes(
-                                    emp.userName
-                                  )}
-                                />
-                                <ListItemText primary={emp.userName} />
-                              </MenuItem>
-                            ))
-                          )}
-                        </Select>
-
-                        {touched.recruiterName && errors.recruiterName && (
-                          <FormHelperText>
-                            {errors.recruiterName}
-                          </FormHelperText>
-                        )}
-                      </FormControl>
+                        <FormControlLabel
+                          value="text"
+                          control={<Radio />}
+                          label="Text"
+                        />
+                        <FormControlLabel
+                          value="file"
+                          control={<Radio />}
+                          label="File Upload"
+                        />
+                      </RadioGroup>
                     </Grid>
 
                     <Grid item xs={12} md={7}>
-                      <Field
-                        name="jobDescription"
-                        component={CustomTextField}
-                        fullWidth
-                        multiline
-                        rows={4}
-                        label="Job Description"
-                        variant="outlined"
-                        sx={textFieldStyle}
-                      />
+                      {jobDescriptionType === "text" ? (
+                        <Field
+                          name="jobDescription"
+                          component={CustomTextField}
+                          fullWidth
+                          multiline
+                          rows={4}
+                          label="Job Description"
+                          variant="outlined"
+                          sx={textFieldStyle}
+                        />
+                      ) : (
+                        <>
+                          <Grid item xs={12} md={7}>
+                            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                              Upload Job Description (PDF, DOCX, Image)
+                            </Typography>
+
+                            {/* Styled Box for File Upload */}
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 1,
+                                border: "1px dashed #ccc",
+                                padding: 2,
+                                borderRadius: 2,
+                                textAlign: "center",
+                                cursor: "pointer",
+                                "&:hover": { borderColor: "primary.main" },
+                              }}
+                            >
+                              {/* Hidden File Input */}
+                              <input
+                                type="file"
+                                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                style={{ display: "none" }}
+                                id="job-description-file"
+                                onChange={(event) => {
+                                  const file = event.target.files[0];
+                                  setFieldValue("jobDescriptionFile", file);
+                                }}
+                              />
+
+                              {/* File Upload Button */}
+                              <label htmlFor="job-description-file">
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  alignItems="center"
+                                >
+                                  <Button
+                                    component="span"
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<CloudUploadIcon />}
+                                  >
+                                    Upload File
+                                  </Button>
+                                  <Typography variant="body2">
+                                    {values.jobDescriptionFile
+                                      ? values.jobDescriptionFile.name
+                                      : "No file selected"}
+                                  </Typography>
+                                </Stack>
+                              </label>
+                            </Box>
+
+                            {/* Error Message */}
+                            {errors.jobDescriptionFile &&
+                              touched.jobDescriptionFile && (
+                                <FormHelperText error>
+                                  {errors.jobDescriptionFile}
+                                </FormHelperText>
+                              )}
+                          </Grid>
+                        </>
+                      )}
                     </Grid>
+
+                    {/* <Grid item xs={12}>
+                      <Typography variant="subtitle1">
+                        Job Description Input Type
+                      </Typography>
+                      <RadioGroup
+                        row
+                        value={jobDescriptionType}
+                        onChange={(event) =>
+                          setJobDescriptionType(event.target.value)
+                        }
+                      >
+                        <FormControlLabel
+                          value="text"
+                          control={<Radio />}
+                          label="Text"
+                        />
+                        <FormControlLabel
+                          value="file"
+                          control={<Radio />}
+                          label="File Upload"
+                        />
+                      </RadioGroup>
+                    </Grid>
+
+                    <Grid item xs={12} md={7}>
+                      {jobDescriptionType === "text" ? (
+                        <Field
+                          name="jobDescription"
+                          component={CustomTextField}
+                          fullWidth
+                          multiline
+                          rows={4}
+                          label="Job Description"
+                          variant="outlined"
+                          sx={textFieldStyle}
+                        />
+                      ) : (
+                        <>
+                          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                            Upload Job Description (PDF, DOCX, Image)
+                          </Typography>
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                            onChange={(event) => {
+                              const file = event.currentTarget.files[0];
+                              setFieldValue("jobDescriptionFile", file); // Track the file manually
+                            }}
+                          />
+                          {errors.jobDescriptionFile &&
+                            touched.jobDescriptionFile && (
+                              <FormHelperText error>
+                                {errors.jobDescriptionFile}
+                              </FormHelperText>
+                            )}
+                        </>
+                      )}
+                    </Grid> */}
+
+                    {/* <Grid item xs={12} md={7}>
+                      {jobDescriptionType === "text" ? (
+                        <Field
+                          name="jobDescription"
+                          component={CustomTextField}
+                          fullWidth
+                          multiline
+                          rows={4}
+                          label="Job Description"
+                          variant="outlined"
+                          sx={textFieldStyle}
+                        />
+                      ) : (
+                        <>
+                          <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                            Upload Job Description (PDF, DOCX, Image)
+                          </Typography>
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                            onChange={(event) => {
+                              const file = event.currentTarget.files[0];
+                              setFieldValue("jobDescriptionFile", file);
+                            }}
+                          />
+                          {errors.jobDescriptionFile &&
+                            touched.jobDescriptionFile && (
+                              <FormHelperText error>
+                                {errors.jobDescriptionFile}
+                              </FormHelperText>
+                            )}
+                        </>
+                      )}
+                    </Grid> */}
                   </Grid>
                 </Grid>
               </Grid>

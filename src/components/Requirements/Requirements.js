@@ -53,9 +53,6 @@ const Requirements = () => {
     fetchRequirements();
   }, [dispatch]);
 
-
-  
-
   const fetchRequirements = async () => {
     try {
       const response = await axios.get(
@@ -77,20 +74,20 @@ const Requirements = () => {
           name: job.recruiterName[index] || "",
         }))
       : [];
-  
+
     const filteredRecruiters = uniqueRecruiters.reduce((acc, emp) => {
       if (emp.id && !acc.some((e) => e.id === emp.id)) {
         acc.push(emp);
       }
       return acc;
     }, []);
-  
+
     setEditFormData({
       ...job,
       recruiterName: filteredRecruiters.map((emp) => emp.name),
       recruiterIds: filteredRecruiters.map((emp) => emp.id),
     });
-  
+
     setEditDialogOpen(true);
   };
 
@@ -165,10 +162,10 @@ const Requirements = () => {
 
   const handleSelectRecruiter = (event) => {
     const selectedNames = event.target.value;
-    const selectedRecruiters = selectedNames.map(
-      (name) => recruiters.find((emp) => emp.userName === name)
+    const selectedRecruiters = selectedNames.map((name) =>
+      recruiters.find((emp) => emp.userName === name)
     );
-  
+
     // Ensure unique recruiter IDs
     const uniqueRecruiters = selectedRecruiters.reduce((acc, emp) => {
       if (emp && !acc.some((e) => e.employeeId === emp.employeeId)) {
@@ -176,7 +173,7 @@ const Requirements = () => {
       }
       return acc;
     }, []);
-  
+
     setEditFormData((prev) => ({
       ...prev,
       recruiterName: uniqueRecruiters.map((emp) => emp.userName),
@@ -222,80 +219,123 @@ const Requirements = () => {
             <Dialog
               open={editDialogOpen}
               onClose={handleCloseEditDialog}
-              maxWidth="sm"
+              maxWidth="md"
               fullWidth
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+              }}
             >
+              {/* Fix: Ensure DialogTitle does not overlap fields */}
               <DialogTitle
-                sx={{ backgroundColor: "#004d40", color: "white" }}
+                sx={{
+                  backgroundColor: "#004d40",
+                  color: "white",
+                  padding: "16px",
+                  position: "relative",
+                  zIndex: 1000, // Ensures it's always above
+                }}
               >
                 Edit Job Requirement
               </DialogTitle>
-              <DialogContent sx={{ mt: 2 }}>
-                <Grid container spacing={3}>
-                  {Object.keys(editFormData)
-                    .filter(
-                      (key) =>
-                        key !== "requirementAddedTimeStamp" &&
-                        key !== "status" &&
-                        key !== "recruiterIds" &&
-                        key !== "recruiterName"
-                    )
-                    .map((key) => (
-                      <Grid item xs={12} sm={6} key={key}>
-                        <TextField
-                          name={key}
-                          label={key
-                            .replace(/([A-Z])/g, " $1")
-                            .replace(/^./, (str) => str.toUpperCase())}
-                          value={editFormData[key] || ""}
-                          onChange={handleInputChange}
-                          fullWidth
-                          variant="outlined"
-                          disabled={key === "jobId"}
-                        />
-                      </Grid>
-                    ))}
 
-                  <Grid
-                    item
-                    xs={12}
-                    md={6}
-                    sx={{ overflowY: "auto", maxHeight: 400 }}
-                  >
-                    <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                      Select Recruiters
-                    </Typography>
-                    <Select
-                      multiple
-                      value={editFormData.recruiterName || []}
-                      onChange={handleSelectRecruiter}
-                      renderValue={(selected) => selected.join(", ")}
-                      fullWidth
-                      sx={{ minHeight: 56 }}
-                      MenuProps={{
-                        PaperProps: {
-                          sx: {
-                            maxHeight: 300, // Limit dropdown height
-                            overflowY: "auto", // Enable scrollbar
-                          },
-                        },
-                      }}
-                    >
-                      {recruiters.map((emp) => (
-                        <MenuItem key={emp.employeeId} value={emp.userName}>
-                          <Checkbox
-                            checked={
-                              Array.isArray(editFormData.recruiterName) &&
-                              editFormData.recruiterName.includes(emp.userName)
-                            }
+              <DialogContent
+                sx={{
+                  mt: "24px", // Ensures content doesn't overlap
+                  padding: "16px",
+                  overflowY: "auto",
+                  maxHeight: "70vh", // Prevents dialog from growing too large
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                {/* Wrap everything inside a Box */}
+                <Box
+                  sx={{
+                    backgroundColor: "white",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    boxShadow: "0px 4px 10px rgba(0,0,0,0.1)", // Adds shadow effect
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  <Grid container spacing={3}>
+                    {Object.keys(editFormData)
+                      .filter(
+                        (key) =>
+                          key !== "requirementAddedTimeStamp" &&
+                          key !== "status" &&
+                          key !== "recruiterIds" &&
+                          key !== "recruiterName"
+                      )
+                      .map((key) => (
+                        <Grid item xs={12} sm={6} md={4} lg={4} key={key}>
+                          <TextField
+                            name={key}
+                            label={key
+                              .replace(/([A-Z])/g, " $1")
+                              .replace(/^./, (str) => str.toUpperCase())}
+                            value={editFormData[key] || ""}
+                            onChange={handleInputChange}
+                            fullWidth
+                            variant="outlined"
+                            disabled={key === "jobId"}
+                            sx={{
+                              backgroundColor: "white",
+                              borderRadius: "5px",
+                            }}
                           />
-                          <ListItemText primary={emp.userName} />
-                        </MenuItem>
+                        </Grid>
                       ))}
-                    </Select>
+
+                    {/* Fix: Recruiter Selection Section */}
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      md={6}
+                      lg={4}
+                      sx={{ overflowY: "auto", maxHeight: 400 }}
+                    >
+                      <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                        Select Recruiters
+                      </Typography>
+                      <Select
+                        multiple
+                        value={editFormData.recruiterName || []}
+                        onChange={handleSelectRecruiter}
+                        renderValue={(selected) => selected.join(", ")}
+                        fullWidth
+                        sx={{ minHeight: 56 }}
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              maxHeight: 300,
+                              overflowY: "auto",
+                            },
+                          },
+                        }}
+                      >
+                        {recruiters.map((emp) => (
+                          <MenuItem key={emp.employeeId} value={emp.userName}>
+                            <Checkbox
+                              checked={
+                                Array.isArray(editFormData.recruiterName) &&
+                                editFormData.recruiterName.includes(
+                                  emp.userName
+                                )
+                              }
+                            />
+                            <ListItemText primary={emp.userName} />
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </Grid>
                   </Grid>
-                </Grid>
+                </Box>
               </DialogContent>
+
+              {/* Fix: Ensure proper padding & background */}
               <DialogActions sx={{ p: 2, backgroundColor: "grey.100" }}>
                 <Button
                   onClick={handleCloseEditDialog}
@@ -320,9 +360,7 @@ const Requirements = () => {
               onClose={() => setDeleteDialogOpen(false)}
               maxWidth="sm"
             >
-              <DialogTitle
-                sx={{ backgroundColor: "#00796b", color: "white" }}
-              >
+              <DialogTitle sx={{ backgroundColor: "#00796b", color: "white" }}>
                 Confirm Delete
               </DialogTitle>
               <DialogContent sx={{ mt: 2 }}>
@@ -344,7 +382,7 @@ const Requirements = () => {
                   onClick={handleConfirmDelete}
                   variant="contained"
                   color="#fff"
-                  backgroundColor='#00796b'
+                  backgroundColor="#00796b"
                 >
                   Delete
                 </Button>

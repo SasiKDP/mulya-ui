@@ -11,6 +11,7 @@ import InterviewForm from "./components/InterviewForm";
 import CandidateSubmissionForm from "./components/CandidateSubmissionFrom";
 import AttendanceTracker from "./components/AttendanceTracker";
 import AdminDashboard from "./components/AdminDashboard";
+import PreventNavigation from "./components/common/PreventNavigation";
 
 function App() {
   const { roles } = useSelector((state) => state.auth);
@@ -18,7 +19,7 @@ function App() {
   return (
     <Router>
      
-     
+     <PreventNavigation />
       <ToastContainer 
         position="top-right" 
         autoClose={5000} 
@@ -38,6 +39,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/timesheet" element={<AttendanceTracker />} />
         <Route path="/admindashboard" element={<AdminDashboard />} />
+       
         
 
         {/* Protected Routes based on roles */}

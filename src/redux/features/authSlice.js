@@ -49,7 +49,12 @@ export const loginAsync = createAsyncThunk(
           return rejectWithValue("Your account is not authorized to log in.");
         } else if (error.response.status === 400) {
           return rejectWithValue("Invalid credentials or bad request.");
-        } else {
+        } else if(error.response.status === 201 && error.response.data?.success === false)  {
+          return rejectWithValue(
+            error.response.data?.error?.errorMessage || "User is already logged in."
+          );
+        }
+        else{
           return rejectWithValue(
             error.response.data?.error?.errorMessage || "An unexpected error occurred."
           );

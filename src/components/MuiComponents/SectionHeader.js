@@ -16,7 +16,7 @@ const SectionHeader = ({
         bgcolor: "#00796b", // Light greenish background
         p: 2,
         borderRadius: 2,
-        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)", // Subtle shadow for depth
+        boxShadow: "0px 2px 4px rgba(204, 199, 199, 0.1)", // Subtle shadow for depth
       }}
     >
       {/* Header with Title, Total Count & Reload Icon */}
@@ -56,9 +56,9 @@ const SectionHeader = ({
             onClick={onRefresh}
             disabled={isRefreshing}
             sx={{
-              bgcolor: "#00796b", // Updated background color
-              color: "#FFF", // White icon color
-              "&:hover": { bgcolor: "#005f56" }, // Slightly darker green on hover
+              bgcolor: "#FFF", // Updated background color
+              color: "#00796b", // White icon color
+              "&:hover": { bgcolor: "#005f56",color:'#FFF' }, 
               width: 40,
               height: 40, // Ensures equal size
             }}
