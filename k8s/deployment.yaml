@@ -14,11 +14,7 @@ spec:
     spec:
       containers:
       - name: datasourcing-ui
-<<<<<<< HEAD
-        image: sandycis476/dataquaddev:latest
-=======
         image: sandycis476/dataquadprod:latest
->>>>>>> 750e321351f94c927bb54218d456f17724614b5c
         ports:
         - containerPort: 3000
 ---
