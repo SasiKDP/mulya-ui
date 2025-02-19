@@ -29,24 +29,6 @@ const RecruiterMultiSelect = ({ values, setFieldValue, errors, touched }) => {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
-  const handleChange = (event) => {
-    const selectedNames = event.target.value;
-
-    // Extract recruiterIds, recruiterEmails, and recruiterNames
-    const selectedRecruiters = recruiters.filter((emp) =>
-      selectedNames.includes(emp.userName)
-    );
-
-    const recruiterIds = selectedRecruiters.map((emp) => emp.employeeId);
-    const recruiterEmails = selectedRecruiters.map((emp) => emp.email);
-    const recruiterNames = selectedRecruiters.map((emp) => emp.userName);
-
-    // Set recruiter details in Formik
-    setFieldValue("recruiterName", recruiterNames);
-    setFieldValue("recruiterIds", recruiterIds);
-    setFieldValue("recruiterEmails", recruiterEmails);
-  };
-
   return (
     <Grid item xs={12} md={5}>
       <FormControl fullWidth error={touched.recruiterName && Boolean(errors.recruiterName)}>
@@ -54,11 +36,26 @@ const RecruiterMultiSelect = ({ values, setFieldValue, errors, touched }) => {
         <Select
           multiple
           value={Array.isArray(values.recruiterName) ? values.recruiterName : []}
-          onChange={handleChange}
+          onChange={(event) => {
+            const selectedValues = event.target.value || [];
+            const selectedNames = Array.isArray(selectedValues) ? selectedValues : [selectedValues];
+
+            const selectedIds = selectedNames
+              .map((name) => {
+                const employee = recruiters.find((emp) => emp.userName === name);
+                return employee ? employee.employeeId : null;
+              })
+              .filter((id) => id !== null);
+
+            setFieldValue("recruiterName", selectedNames);
+            setFieldValue("recruiterIds", selectedIds);
+          }}
           renderValue={(selected) => selected.join(", ")}
           MenuProps={{
             PaperProps: {
-              style: { maxHeight: 300 }, // Scrollable dropdown
+              style: {
+                maxHeight: 300, // Scrollable dropdown
+              },
             },
           }}
         >
@@ -72,7 +69,7 @@ const RecruiterMultiSelect = ({ values, setFieldValue, errors, touched }) => {
             recruiters.map((emp) => (
               <MenuItem key={emp.employeeId} value={emp.userName}>
                 <Checkbox checked={values.recruiterName.includes(emp.userName)} />
-                <ListItemText primary={`${emp.userName} (${emp.email})`} />
+                <ListItemText primary={emp.userName} />
               </MenuItem>
             ))
           ) : (
