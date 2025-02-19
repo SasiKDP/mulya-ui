@@ -12,6 +12,10 @@ import CandidateSubmissionForm from "./components/CandidateSubmissionFrom";
 import AttendanceTracker from "./components/AttendanceTracker";
 import AdminDashboard from "./components/AdminDashboard";
 import PreventNavigation from "./components/common/PreventNavigation";
+import SignUpFormMain from "./components/Registration/SignUpFormMain";
+
+
+
 
 function App() {
   const { roles } = useSelector((state) => state.auth);
@@ -68,11 +72,8 @@ function App() {
           }
         />
 
-        {/* Other Routes */}
-        <Route path="/jobform" element={<JobForm />} />
-        <Route path="/leave" element={<LeaveApplication />} />
-        <Route path="/interview" element={<InterviewForm />} />
-        <Route path="/candidate-submission" element={<CandidateSubmissionForm />} />
+      
+        
       </Routes>
     </Router>
   );
