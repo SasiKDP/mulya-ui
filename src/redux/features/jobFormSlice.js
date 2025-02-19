@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../config";
+// import BASE_URL from "../config";
 
-
+const BASE_URL = "http://192.168.0.246:8111"
 
 
 
@@ -10,14 +10,22 @@ import BASE_URL from "../config";
 export const postJobRequirement = createAsyncThunk(
   "jobForm/postJobRequirement",
   async (formData, { rejectWithValue }) => {
-console.log(formData)
-
     try {
-      const response = await axios.post(`${BASE_URL}/requirements/assignJob`, formData, {
-        headers: {
-          "Content-Type": "application/json; charset=UTF-8",
-        },
-      });
+      // Check if a file is included
+      const hasFile = formData.has("jobDescriptionFile");
+
+      const response = await axios.post(
+        `${BASE_URL}/requirements/assignJob`,
+        formData,
+        {
+          headers: {
+            "Content-Type": hasFile ? "multipart/form-data" : "application/x-www-form-urlencoded",
+            "versioninfo": "1.0", // Add required version header
+            "Accept": "application/json",
+          },
+        }
+      );
+
       console.log("Job posting log:", response.data);
       return response.data;
     } catch (error) {
@@ -27,6 +35,8 @@ console.log(formData)
     }
   }
 );
+
+
 
 // Initial state with dynamic fields for job posting
 const initialState = {

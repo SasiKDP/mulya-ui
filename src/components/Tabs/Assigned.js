@@ -50,47 +50,47 @@ const Assigned = () => {
   const [fetchError, setFetchError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  
-
   const { user } = useSelector((state) => state.auth);
   const userId = user;
 
   const generateColumns = (data) => {
     if (data.length === 0) return [];
-
-    const headerLabels = {
-      jobId: "Job ID",
-      jobTitle: "Job Title",
-      jobDescription: "Job Description",
-      requirementAddedTimeStamp: "Posted Date",
-      submitCandidate: "Actions",
-      companyName: "Company",
-      location: "Location",
-      experience: "Experience",
-      primarySkills: "Primary Skills",
-      secondarySkills: "Secondary Skills",
-      salaryPackage: "Salary Package",
-    };
-
-    return Object.keys(data[0]).map((key) => ({
-      key,
-      label:
-        headerLabels[key] ||
-        key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
-    }));
+  
+    return [
+      { key: "submitCandidate", label: "Actions",  },      
+      { key: "jobTitle", label: "Job Title", type: "text" },
+      { key: "jobId", label: "Job ID", type: "select" },
+      { key: "clientName", label: "Client Name", type: "text" },
+      { key: "jobDescription", label: "Job Description" },
+      { key: "jobType", label: "Job Type", type: "select" },
+      { key: "jobMode", label: "Job Mode", type: "select" },
+      { key: "location", label: "Location", type: "text" },
+      { key: "experienceRequired", label: "Experience Required", type: "text" },
+      { key: "noticePeriod", label: "Notice Period", type: "select" },
+      { key: "relevantExperience", label: "Relevant Experience", type: "text" },
+      { key: "qualification", label: "Qualification", type: "text" },
+      { key: "requirementAddedTimeStamp", label: "Posted Date", type: "select" },
+      { key: "status", label: "Status", type: "select" },
+      { key: "salaryPackage", label: "Salary Package", type: "text" },
+      { key: "noOfPositions", label: "No. of Positions", type: "text" },
+      
+    ];
   };
 
   const fetchUserSpecificData = async () => {
     setIsRefreshing(true);
     setFetchStatus("loading");
     try {
-      const response = await axios.get(
-        `${BASE_URL}/requirements/recruiter/${userId}`
-      );
+      const response = await axios.get(`${BASE_URL}/requirements/recruiter/${userId}`);
       const userData = response.data || [];
       setTotalCount(response.data.totalCount || userData.length || 0);
-
-      const processedData = userData.map((item) => ({
+  
+      // Sort data by latest date first (Descending Order)
+      const sortedData = userData.sort((a, b) =>
+        new Date(b.requirementAddedTimeStamp) - new Date(a.requirementAddedTimeStamp)
+      );
+  
+      const processedData = sortedData.map((item) => ({
         ...item,
         jobDescription: (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -101,9 +101,7 @@ const Assigned = () => {
             {item.jobDescription.length > 15 && (
               <Tooltip title="View Full Description">
                 <Button
-                  onClick={() =>
-                    handleOpenDescriptionDialog(item.jobDescription, item.jobTitle)
-                  }
+                  onClick={() => handleOpenDescriptionDialog(item.jobDescription, item.jobTitle)}
                   size="small"
                   startIcon={<DescriptionIcon />}
                   sx={{ minWidth: 0 }}
@@ -114,9 +112,9 @@ const Assigned = () => {
             )}
           </Box>
         ),
-        requirementAddedTimeStamp: new Date(
-          item.requirementAddedTimeStamp
-        ).toLocaleString(),
+        requirementAddedTimeStamp: item.requirementAddedTimeStamp
+          ? new Date(item.requirementAddedTimeStamp).toISOString().split("T")[0] // Extract only YYYY-MM-DD
+          : "N/A", // Handle missing timestamps
         salaryPackage: item.salaryPackage ? `${item.salaryPackage} LPA` : "N/A",
         submitCandidate: (
           <Tooltip title="Submit Candidate">
@@ -132,11 +130,9 @@ const Assigned = () => {
           </Tooltip>
         ),
       }));
-
+  
       setData(processedData);
-      if (processedData.length > 0) {
-        setColumns(generateColumns(processedData));
-      }
+      setColumns(generateColumns(processedData)); // Set columns in the new format
       setFetchStatus("succeeded");
     } catch (err) {
       setFetchStatus("failed");
@@ -145,6 +141,8 @@ const Assigned = () => {
       setIsRefreshing(false);
     }
   };
+  
+  
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -270,61 +268,59 @@ const Assigned = () => {
 
   return (
     <Fade in timeout={500}>
-      <Box sx={{ p: 3 }}>
-        <Paper elevation={3} sx={{ mb: 3, borderRadius: 2, overflow: "hidden" }}>
-          <SectionHeader
-            title="Assigned Requirements"
-            totalCount={totalCount}
-            onRefresh={handleRefresh}
-            isRefreshing={isRefreshing}
-            icon={<ListAltIcon sx={{ color: "#FFF" }} />}
-          />
+      <Box sx={{ p: 1 }}>
+        <SectionHeader
+          title="Assigned Requirements"
+          totalCount={totalCount}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+          icon={<ListAltIcon sx={{ color: "#FFF" }} />}
+        />
 
-          <Box sx={{ p: 2 }}>
-            <Box sx={{ position: "relative" }}>
-              {isRefreshing && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    bgcolor: "rgba(255, 255, 255, 0.7)",
-                    zIndex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              )}
-              <DataTable
-                data={data}
-                columns={columns}
-                pageLimit={5}
-                noDataMessage={
-                  <Box sx={{ py: 4, textAlign: "center" }}>
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                      No Records Found
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      No requirements have been assigned yet.
-                    </Typography>
-                  </Box>
-                }
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ position: "relative" }}>
+            {isRefreshing && (
+              <Box
                 sx={{
-                  "& .MuiDataGrid-root": {
-                    border: "none",
-                    borderRadius: 2,
-                    overflow: "hidden",
-                  },
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  bgcolor: "rgba(255, 255, 255, 0.7)",
+                  zIndex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
-              />
-            </Box>
+              >
+                <CircularProgress />
+              </Box>
+            )}
+            <DataTable
+              data={data}
+              columns={columns}
+              pageLimit={5}
+              noDataMessage={
+                <Box sx={{ py: 4, textAlign: "center" }}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No Records Found
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    No requirements have been assigned yet.
+                  </Typography>
+                </Box>
+              }
+              sx={{
+                "& .MuiDataGrid-root": {
+                  border: "none",
+                  borderRadius: 2,
+                  overflow: "hidden",
+                },
+              }}
+            />
           </Box>
-        </Paper>
+        </Box>
 
         <Dialog
           open={openSubmitDialog}
@@ -337,20 +333,21 @@ const Assigned = () => {
         >
           <DialogTitle
             sx={{
-              bgcolor: "rgba(232, 245, 233)",
+              bgcolor: "#00796b",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              borderRadius:1,
             }}
           >
             <Typography
               variant="h6"
-              sx={{ color: theme.palette.primary.main, fontWeight: 600 }}
+              sx={{ color: '#FFF', fontWeight: 600 }}
             >
               Submit Candidate
             </Typography>
-            <IconButton onClick={handleCloseSubmitDialog} size="small">
-              <CloseIcon />
+            <IconButton onClick={handleCloseSubmitDialog} size="small" sx={{color:'#FFF'}} >
+              <CloseIcon  />
             </IconButton>
           </DialogTitle>
           <DialogContent sx={{ mt: 2 }}>

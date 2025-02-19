@@ -17,6 +17,7 @@ import {
   Select,
   MenuItem,
   InputAdornment,
+  Typography,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -24,6 +25,7 @@ import {
   resetForm,
   clearMessages,
 } from "../redux/features/candidateSubmissionSlice";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 
 // Validation Schema
 const validationSchema = Yup.object().shape({
@@ -64,7 +66,6 @@ const validationSchema = Yup.object().shape({
     .min(0, "Total experience cannot be negative")
     .max(50, "Total experience cannot be more than 50 years")
     .required("Total experience is required"),
-
   relevantExperience: Yup.number()
     .min(0, "Relevant experience cannot be negative")
     .max(50, "Relevant experience cannot be more than 50 years")
@@ -105,22 +106,10 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
   const successMessage = useSelector(
     (state) => state.candidateSubmission.successResponse
   );
-
-  console.log("success message ", successMessage);
   const errorMessage = useSelector(
     (state) => state.candidateSubmission.errorResponse
   );
   const loading = useSelector((state) => state.candidateSubmission.loading);
-  const candidateId = useSelector(
-    (state) => state.candidateSubmission.candidateId
-  );
-  const employeeId = useSelector(
-    (state) => state.candidateSubmission.employeeId
-  );
-  const submittedJobId = useSelector(
-    (state) => state.candidateSubmission.jobId
-  );
-
   const [alert, setAlert] = useState({
     open: false,
     message: "",
@@ -213,10 +202,9 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
 
       setAlert({
         open: true,
-        message: successMessage?.message || "Candidate submitted successfully",
+        message: "Candidate submitted successfully",
         severity: "success",
       });
-      
 
       setTimeout(() => {
         resetForm();
@@ -251,7 +239,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
   }, [errorMessage, dispatch]);
 
   return (
-    <Paper sx={{ padding: 2, maxWidth: 1200, position: "relative" }}>
+    <Paper sx={{ padding: 4, maxWidth: 1200, margin: "auto" }}>
       <Snackbar
         open={alert.open}
         autoHideDuration={6000}
@@ -272,12 +260,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
-        {({
-          values,
-          setFieldValue,
-          resetForm: formikResetForm,
-          isSubmitting,
-        }) => (
+        {({ values, setFieldValue, isSubmitting }) => (
           <Form>
             <Grid container spacing={3}>
               {/* Basic Information */}
@@ -287,6 +270,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   component={FormikTextField}
                   label="Full Name"
                   required
+                  placeholder="Enter your full name"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -296,6 +280,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   label="Candidate Email ID"
                   required
                   type="email"
+                  placeholder="Enter your email"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -304,6 +289,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   component={FormikTextField}
                   label="Contact Number"
                   required
+                  placeholder="Enter your contact number"
                 />
               </Grid>
 
@@ -313,6 +299,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   name="currentOrganization"
                   component={FormikTextField}
                   label="Current Organization"
+                  placeholder="Enter your current organization"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -320,6 +307,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   name="qualification"
                   component={FormikTextField}
                   label="Qualification"
+                  placeholder="Enter your qualification"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -328,9 +316,9 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   component={FormikTextField}
                   label="Total Experience (in years)"
                   type="number"
+                  placeholder="e.g., 3.5"
                   InputProps={{
                     inputProps: { min: 0, max: 50, step: 0.1 },
-                    placeholder: "e.g., 3.5",
                   }}
                 />
               </Grid>
@@ -342,9 +330,9 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   component={FormikTextField}
                   label="Relevant Experience (in years)"
                   type="number"
+                  placeholder="e.g., 3.5"
                   InputProps={{
                     inputProps: { min: 0, max: 50, step: 0.1 },
-                    placeholder: "e.g., 3.5",
                   }}
                 />
               </Grid>
@@ -353,11 +341,11 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   name="currentCTC"
                   component={FormikTextField}
                   label="Current CTC"
+                  placeholder="e.g., 3.5"
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">LPA</InputAdornment>
                     ),
-                    placeholder: "e.g., 3.5",
                   }}
                 />
               </Grid>
@@ -366,11 +354,11 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   name="expectedCTC"
                   component={FormikTextField}
                   label="Expected CTC"
+                  placeholder="e.g., 3.5"
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end">LPA</InputAdornment>
                     ),
-                    placeholder: "e.g., 3.5",
                   }}
                 />
               </Grid>
@@ -395,6 +383,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   name="currentLocation"
                   component={FormikTextField}
                   label="Current Location"
+                  placeholder="Enter your current location"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -402,6 +391,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   name="preferredLocation"
                   component={FormikTextField}
                   label="Preferred Location"
+                  placeholder="Enter your preferred location"
                 />
               </Grid>
 
@@ -411,6 +401,7 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   name="skills"
                   component={FormikTextField}
                   label="Skills (comma-separated)"
+                  placeholder="e.g., Java, React, SQL"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -419,10 +410,10 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   component={FormikTextField}
                   label="Communication Skills Rating"
                   type="number"
+                  placeholder="Enter rating (1-5)"
                   InputProps={{
                     inputProps: { min: 1, max: 5, step: 0.1 },
                   }}
-                  placeholder="Enter rating (1-5)"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
@@ -431,10 +422,10 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   component={FormikTextField}
                   label="Required Technologies Rating"
                   type="number"
+                  placeholder="Enter rating (1-5)"
                   InputProps={{
                     inputProps: { min: 1, max: 5, step: 0.1 },
                   }}
-                  placeholder="Enter rating (1-5)"
                 />
               </Grid>
 
@@ -446,67 +437,78 @@ const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {
                   label="Overall Feedback"
                   multiline
                   rows={2}
+                  placeholder="Enter your feedback"
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>
-                <FormControl fullWidth>
-                  <InputLabel
-                    shrink
-                    htmlFor="resume-file"
+                <FormControl fullWidth margin="normal">
+                  <InputLabel shrink>Upload Resume</InputLabel>
+                  <Box
                     sx={{
-                      color: "primary.main",
-                      fontWeight: "bold",
-                      fontSize: "1.1rem",
-                      letterSpacing: "0.5px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mt: 2,
                     }}
                   >
-                    Upload Resume
-                  </InputLabel>
-                  <Input
-                    id="resume-file"
-                    type="file"
-                    onChange={(event) => {
-                      const file = event.currentTarget.files[0];
-                      if (!file) {
-                        setFieldValue("resumeFile", null);
-                        setFieldValue("resumeFilePath", "");
-                        return;
-                      }
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      startIcon={<AttachFileIcon />}
+                    >
+                      Upload Resume
+                      <input
+                        type="file"
+                        hidden
+                        accept=".pdf,.doc,.docx"
+                        onChange={(event) => {
+                          const file = event.currentTarget.files[0];
+                          if (!file) {
+                            setFieldValue("resumeFile", null);
+                            setFieldValue("resumeFilePath", "");
+                            return;
+                          }
 
-                      const validTypes = [
-                        "application/pdf", // PDF
-                        "application/msword", // DOC
-                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
-                      ];
+                          const validTypes = [
+                            "application/pdf", // PDF
+                            "application/msword", // DOC
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
+                          ];
 
-                      if (!validTypes.includes(file.type)) {
-                        setAlert({
-                          open: true,
-                          message:
-                            "Invalid file type. Only PDF, DOC, and DOCX are allowed.",
-                          severity: "error",
-                        });
-                        setFieldValue("resumeFile", null);
-                        setFieldValue("resumeFilePath", "");
-                        return;
-                      }
+                          if (!validTypes.includes(file.type)) {
+                            setAlert({
+                              open: true,
+                              message:
+                                "Invalid file type. Only PDF, DOC, and DOCX are allowed.",
+                              severity: "error",
+                            });
+                            setFieldValue("resumeFile", null);
+                            setFieldValue("resumeFilePath", "");
+                            return;
+                          }
 
-                      setFieldValue("resumeFile", file);
-                      setFieldValue("resumeFilePath", file.name);
-                    }}
-                    inputProps={{ accept: ".pdf,.doc,.docx" }}
-                  />
+                          setFieldValue("resumeFile", file);
+                          setFieldValue("resumeFilePath", file.name);
+                        }}
+                      />
+                    </Button>
+                    {values.resumeFilePath && (
+                      <Typography variant="body2">
+                        Selected: {values.resumeFilePath}
+                      </Typography>
+                    )}
+                  </Box>
                 </FormControl>
               </Grid>
             </Grid>
 
             {/* Submit and Reset Buttons */}
-            <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
+            <Box mt={4} display="flex" justifyContent="flex-end" gap={2}>
               <Button
                 variant="outlined"
                 color="primary"
                 onClick={() => {
-                  formikResetForm();
+                  resetForm();
                   dispatch(resetForm());
                   setAlert({
                     open: true,

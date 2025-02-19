@@ -18,6 +18,16 @@ import {
   InputAdornment,
   Box,
   Grid,
+  IconButton,
+  Menu,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Chip,
+  Tooltip,
+  Popover,
+  Divider,
 } from "@mui/material";
 import FirstPageRoundedIcon from "@mui/icons-material/FirstPageRounded";
 import LastPageRoundedIcon from "@mui/icons-material/LastPageRounded";
@@ -26,6 +36,10 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import FilterAltIcon from "@mui/icons-material/FilterAlt";
+import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
+import ClearAllIcon from "@mui/icons-material/ClearAll";
 
 const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
   const [page, setPage] = useState(0);
@@ -35,19 +49,77 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(initialData);
 
+  // State for column filters
+  const [filters, setFilters] = useState({});
+  const [filterAnchorEl, setFilterAnchorEl] = useState(null);
+  const [activeFilterColumn, setActiveFilterColumn] = useState(null);
+  const [uniqueValues, setUniqueValues] = useState({});
+
+  // Initialize unique values for each column for dropdown filters
   useEffect(() => {
-    const filtered = initialData.filter((row) =>
-      Object.keys(row).some((key) => {
-        const value = row[key];
-        return (
-          typeof value === "string" &&
-          value.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      })
-    );
-    setFilteredData(filtered);
+    const uniqueValuesMap = {};
+
+    columns.forEach((column) => {
+      if (column.type === "select") {
+        const values = new Set();
+        initialData.forEach((row) => {
+          if (row[column.key] !== undefined && row[column.key] !== null) {
+            values.add(String(row[column.key]));
+          }
+        });
+        uniqueValuesMap[column.key] = Array.from(values).sort();
+      }
+    });
+
+    setUniqueValues(uniqueValuesMap);
+  }, [initialData, columns]);
+
+  // Apply all filters and search
+  useEffect(() => {
+    let result = [...initialData];
+
+    // Apply search query
+    if (searchQuery) {
+      result = result.filter((row) =>
+        Object.keys(row).some((key) => {
+          const value = row[key];
+          return (
+            value !== null &&
+            value !== undefined &&
+            String(value).toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        })
+      );
+    }
+
+    // Apply column filters
+    Object.keys(filters).forEach((key) => {
+      const filterValue = filters[key];
+      if (
+        filterValue !== undefined &&
+        filterValue !== null &&
+        filterValue !== ""
+      ) {
+        result = result.filter((row) => {
+          const cellValue = row[key];
+          if (cellValue === null || cellValue === undefined) return false;
+
+          // Handle different filter types
+          const column = columns.find((col) => col.key === key);
+          if (column && column.type === "select") {
+            return String(cellValue) === filterValue;
+          } else {
+            return String(cellValue)
+              .toLowerCase()
+              .includes(filterValue.toLowerCase());
+          }
+        });
+      }
+    });
+
+    setFilteredData(result);
     setPage(0);
-  }, [searchQuery, initialData]);
+  }, [searchQuery, filters, initialData, columns]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -72,6 +144,39 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
     setSearchQuery(event.target.value);
   };
 
+  const handleFilterClick = (event, column) => {
+    setFilterAnchorEl(event.currentTarget);
+    setActiveFilterColumn(column);
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+    setActiveFilterColumn(null);
+  };
+
+  const handleFilterChange = (column, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [column.key]: value,
+    }));
+  };
+
+  const handleClearFilter = (columnKey) => {
+    setFilters((prev) => {
+      const newFilters = { ...prev };
+      delete newFilters[columnKey];
+      return newFilters;
+    });
+  };
+
+  const handleClearAllFilters = () => {
+    setFilters({});
+  };
+
+  const getActiveFilterCount = () => {
+    return Object.keys(filters).length;
+  };
+
   const highlightText = (text, highlight) => {
     if (!highlight.trim() || !text) return text;
 
@@ -90,6 +195,113 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
     );
   };
 
+  // Render filter popover content based on column type
+  const renderFilterContent = (column) => {
+    if (!column || !column.type) return null; // Only apply filter if column has a type
+
+    if (column.type === "select") {
+      return (
+        <Box sx={{ p: 2, minWidth: 200 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Filter by {column.label}
+          </Typography>
+          <FormControl fullWidth variant="outlined" size="small" sx={{ mt: 1 }}>
+            <Select
+              value={filters[column.key] || ""}
+              onChange={(e) => handleFilterChange(column, e.target.value)}
+              displayEmpty
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    maxHeight: 200, // Set max height for dropdown
+                    overflowY: "auto", // Enable scrollbar if needed
+                  },
+                },
+              }}
+            >
+              <MenuItem value="">
+                <em>All</em>
+              </MenuItem>
+              {uniqueValues[column.key] &&
+                uniqueValues[column.key].map((value) => (
+                  <MenuItem key={value} value={value}>
+                    {value}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+
+          <Box sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}>
+            <Button
+              size="small"
+              startIcon={<FilterAltOffIcon />}
+              onClick={() => handleClearFilter(column.key)}
+              disabled={!filters[column.key]}
+            >
+              Clear
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={handleFilterClose}
+              sx={{ bgcolor: "#00796b", "&:hover": { bgcolor: "#00695c" } }}
+            >
+              Apply
+            </Button>
+          </Box>
+        </Box>
+      );
+    }
+
+    if (column.type === "text") {
+      return (
+        <Box sx={{ p: 2, minWidth: 250 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Filter by {column.label}
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            variant="outlined"
+            placeholder="Type to filter..."
+            value={filters[column.key] || ""}
+            onChange={(e) => handleFilterChange(column, e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: filters[column.key] && (
+                <InputAdornment position="end">
+                  <IconButton
+                    edge="end"
+                    size="small"
+                    onClick={() => handleClearFilter(column.key)}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={handleFilterClose}
+              sx={{ bgcolor: "#00796b", "&:hover": { bgcolor: "#00695c" } }}
+            >
+              Apply
+            </Button>
+          </Box>
+        </Box>
+      );
+    }
+
+    return null; // If column type is not defined, do not render any filter
+  };
+
   return (
     <Box
       sx={{
@@ -99,8 +311,8 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
         flexDirection: "column",
       }}
     >
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid item xs={12} sm={8} md={6} lg={4}>
+      <Grid container spacing={2} sx={{ m: 1, mb: 2 }}>
+        <Grid item xs={12} sm={6} md={4} lg={3}>
           <TextField
             fullWidth
             variant="outlined"
@@ -133,6 +345,26 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
             }}
           />
         </Grid>
+        {getActiveFilterCount() > 0 && (
+          <Grid item xs="auto" sx={{ display: "flex", alignItems: "center" }}>
+            <Chip
+              icon={<FilterListIcon />}
+              label={`${getActiveFilterCount()} active filter${
+                getActiveFilterCount() > 1 ? "s" : ""
+              }`}
+              onDelete={handleClearAllFilters}
+              deleteIcon={<ClearAllIcon />}
+              sx={{
+                bgcolor: "#e0f2f1",
+                color: "#00796b",
+                "& .MuiChip-deleteIcon": {
+                  color: "#e57373",
+                  "&:hover": { color: "#f44336" },
+                },
+              }}
+            />
+          </Grid>
+        )}
       </Grid>
 
       <Paper
@@ -149,7 +381,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
         <TableContainer
           sx={{
             flexGrow: 1,
-            height: "400px", // Fixed height to ensure pagination is visible
+            height: 450, // Fixed height to ensure pagination is visible
             overflow: "auto",
             "&::-webkit-scrollbar": {
               width: "8px",
@@ -171,7 +403,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                {/* Add Serial Number Column */}
+                {/* Serial Number Column */}
                 <TableCell
                   sx={{
                     backgroundColor: "#00796b",
@@ -194,22 +426,70 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                       fontWeight: "bold",
                       textAlign: "center",
                       padding: 2,
-                      whiteSpace: "normal", // Allows text to wrap
-                      wordWrap: "break-word", // Ensures long words break
-                      maxWidth: "150px", // Set max width for better alignment
+                      whiteSpace: "normal",
+                      wordWrap: "break-word",
+                      maxWidth: "150px",
                       overflow: "hidden",
                     }}
                   >
-                    {column.label}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {column.label}
+
+                      {/* Show filter icon only if column has a type */}
+                      {column.type && (
+                        <Tooltip title={`Filter ${column.label}`}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleFilterClick(e, column)}
+                            sx={{
+                              ml: 1,
+                              color: filters[column.key]
+                                ? "#F6C90E"
+                                : "inherit",
+                            }}
+                          >
+                            {filters[column.key] ? (
+                              <FilterAltIcon fontSize="small" />
+                            ) : (
+                              <FilterListIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </TableCell>
                 ))}
               </TableRow>
             </TableHead>
+
             <TableBody>
               {filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length} align="center">
-                    No records found
+                  <TableCell colSpan={columns.length + 1} align="center">
+                    <Box sx={{ py: 3 }}>
+                      <Typography variant="body1" sx={{ color: "#777" }}>
+                        No records found
+                      </Typography>
+                      {(searchQuery || getActiveFilterCount() > 0) && (
+                        <Button
+                          variant="text"
+                          startIcon={<ClearAllIcon />}
+                          onClick={() => {
+                            setSearchQuery("");
+                            setFilters({});
+                          }}
+                          sx={{ mt: 2, color: "#00796b" }}
+                        >
+                          Clear all filters
+                        </Button>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -350,6 +630,31 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
         />
       </Paper>
 
+      {/* Column Filter Popover */}
+      <Popover
+        open={Boolean(filterAnchorEl)}
+        anchorEl={filterAnchorEl}
+        onClose={handleFilterClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "center",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "center",
+        }}
+        PaperProps={{
+          sx: {
+            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+            borderRadius: 2,
+            mt: 0.5,
+          },
+        }}
+      >
+        {renderFilterContent(activeFilterColumn)}
+      </Popover>
+
+      {/* Full Content Dialog */}
       <Dialog
         open={dialogOpen}
         onClose={handleDialogClose}

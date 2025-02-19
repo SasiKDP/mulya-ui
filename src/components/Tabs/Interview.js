@@ -55,29 +55,64 @@ const Interview = () => {
 
   const generateColumns = (data) => {
     if (data.length === 0) return [];
-
-    const sampleData = data[0];
+  
     const headerLabels = {
-      candidateName: "Candidate Name",
-      candidateEmailId: "Candidate Email",
+      candidateId: "Candidate ID",
+      candidateFullName: "Full Name",
       candidateContactNo: "Contact Number",
-      interviewLevel: "Interview Level",
+      candidateEmailId: "Candidate Email",
+      userEmail: "Recruiter Email",
       interviewDateTime: "Interview Time",
       duration: "Duration",
       zoomLink: "Meeting Link",
       interviewScheduledTimestamp: "Scheduled On",
-      userEmail: "Recruiter Email",
       clientEmail: "Client Email",
-      Actions: "Actions",
+      clientName: "Client Name",
+      interviewLevel: "Interview Level",
+      interviewStatus: "Interview Status",
+      actions: "Actions",
     };
-
-    return Object.keys(sampleData).map((key) => ({
-      key: key,
-      label:
-        headerLabels[key] ||
-        key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
-    }));
+  
+    // Define which columns should have filters (select or text)
+    const filterableColumns = {
+      candidateFullName: "text",
+      candidateEmailId: "text",
+      candidateContactNo: "text",
+      interviewDateTime: "text",
+      duration: "text",
+      interviewLevel: "select",
+      interviewStatus: "select",
+      candidateId:'select',
+      interviewDateTime:'select'
+    };
+  
+    // Define manual column order
+    const columnOrder = [
+      "candidateId",
+      "candidateFullName",
+      "candidateEmailId",
+      "candidateContactNo",
+      "userEmail",
+      "clientEmail",
+      "clientName",
+      "interviewLevel",
+      "interviewDateTime",
+      "duration",
+      "zoomLink",
+      "interviewScheduledTimestamp",
+      "interviewStatus",
+      "actions",
+    ];
+  
+    return columnOrder
+      .filter((key) => data[0].hasOwnProperty(key)) // Ensure key exists in the data
+      .map((key) => ({
+        key: key,
+        label: headerLabels[key] || key.replace(/([A-Z])/g, " $1").trim(),
+        ...(filterableColumns[key] ? { type: filterableColumns[key] } : {}), // Apply type only if defined
+      }));
   };
+  
 
   const formatDateTime = (dateTime) => {
     if (!dateTime) return "";

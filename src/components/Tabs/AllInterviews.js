@@ -58,6 +58,24 @@ const AllInterviews = () => {
     "interviewStatus",
   ];
 
+  const columnsAll = [
+    { "key": "candidateFullName", "label": "Candidate FullName" },
+    { "key": "candidateContactNo", "label": "Candidate ContactNumber" },
+    { "key": "candidateEmailId", "label": "Candidate EmailID" },
+    { "key": "userEmail", "label": "User Email" },
+    { "key": "userId", "label": "User ID" },
+    { "key": "interviewDateTime", "label": "Interview Date-Time" },
+    { "key": "duration", "label": "Duration" },
+    { "key": "zoomLink", "label": "Zoom Link" },
+    { "key": "jobId", "label": "Job ID" },
+    { "key": "candidateId", "label": "Candidate ID" },
+    { "key": "interviewScheduledTimestamp", "label": "Interview Scheduled Timestamp" },
+    { "key": "clientEmail", "label": "Client Email" },
+    { "key": "clientName", "label": "Client Name" },
+    { "key": "interviewLevel", "label": "Interview Level" },
+    { "key": "interviewStatus", "label": "Interview Status" }
+  ]
+
   // Generate columns dynamically with manual order
   const generateColumns = (data, order) => {
     if (!data.length) return [];
@@ -109,7 +127,7 @@ const AllInterviews = () => {
       </Box>
 
       {/* Reusing DataTable component */}
-      <DataTable data={submissions} columns={columns} pageLimit={10} />
+      <DataTable data={submissions} columns={columnsAll} pageLimit={10} />
     </Container>
   );
 };

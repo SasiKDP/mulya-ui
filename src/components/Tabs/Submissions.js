@@ -34,8 +34,6 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import SectionHeader from "../MuiComponents/SectionHeader";
 import BASE_URL from "../../redux/config";
 
-
-
 const Submissions = () => {
   const [data, setData] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -60,26 +58,82 @@ const Submissions = () => {
   const generateColumns = (data) => {
     if (data.length === 0) return [];
 
-    const sampleData = data[0];
     const headerLabels = {
-      candidateId: "Candidate ID",
       fullName: "Full Name",
+      candidateId: "Candidate ID",
       emailId: "Email",
       contactNumber: "Contact Number",
       currentOrganization: "Current Organization",
-      experience: "Experience",
+      qualification: "Qualification",
+      totalExperience: "Total Experience",
+      relevantExperience: "Relevant Experience",
+      currentCTC: "Current CTC",
+      expectedCTC: "Expected CTC",
+      noticePeriod: "Notice Period",
+      currentLocation: "Current Location",
+      preferredLocation: "Preferred Location",
+      skills: "Skills",
+      communicationSkills: "Communication Skills",
+      requiredTechnologiesRating: "Tech Rating",
+      overallFeedback: "Overall Feedback",
+      userEmail: "Recruiter Email",
+      interviewStatus: "Interview Status",
       jobId: "Job ID",
       resumeFilePath: "Resume",
-      Interview: "Interview Status",
-      Actions: "Actions",
+      actions: "Actions",
     };
 
-    return Object.keys(sampleData).map((key) => ({
-      key: key,
-      label:
-        headerLabels[key] ||
-        key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
-    }));
+    // Define which columns should have filters (select or text)
+    const filterableColumns = {
+      fullName: "text",
+      emailId: "text",
+      contactNumber: "text",
+      currentOrganization: "text",
+      qualification: "select",
+      totalExperience: "select",
+      relevantExperience: "select",
+      currentCTC: "select",
+      expectedCTC: "select",
+      noticePeriod: "select",
+      currentLocation: "select",
+      preferredLocation: "select",
+      skills: "text",
+      interviewStatus: "select",
+    };
+
+    // Define manual column order
+    const columnOrder = [
+      "fullName",
+      "contactNumber",
+      "candidateId",
+      "emailId",
+      "currentOrganization",
+      "qualification",
+      "totalExperience",
+      "relevantExperience",
+      "currentCTC",
+      "expectedCTC",
+      "noticePeriod",
+      "currentLocation",
+      "preferredLocation",
+      "skills",
+      "communicationSkills",
+      "requiredTechnologiesRating",
+      "overallFeedback",
+      "userEmail",
+      "interviewStatus",
+      "jobId",
+      "resumeFilePath",
+      "actions",
+    ];
+
+    return columnOrder
+      .filter((key) => data[0].hasOwnProperty(key)) // Ensure the key exists in the data
+      .map((key) => ({
+        key: key,
+        label: headerLabels[key] || key.replace(/([A-Z])/g, " $1").trim(),
+        ...(filterableColumns[key] ? { type: filterableColumns[key] } : {}), // Apply type only if defined
+      }));
   };
 
   const fetchCurrentResume = async (candidateId) => {

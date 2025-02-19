@@ -257,7 +257,7 @@ const RequirementsTable = ({
                 {columns.map((column) => (
                   <CellContent
                     key={column}
-                    content={row[column] || "N/A"}
+                    content={row[column] || ""}
                     title={formatColumnName(column)}
                     globalSearch={globalSearch}
                   />

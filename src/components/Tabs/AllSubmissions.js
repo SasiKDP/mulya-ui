@@ -60,7 +60,7 @@ const AllSubmissions = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 100px)">
         <CircularProgress />
       </Box>
     );
@@ -78,21 +78,39 @@ const AllSubmissions = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      
-     
-
-      <Box sx={{mb:1}}>
-      <SectionHeader
-        title="Submitted Candidates"
-        totalCount={submissions.length}
-        onRefresh={fetchSubmissions}
-        isRefreshing={isRefreshing}
-      />
+    <Container 
+      maxWidth="lg" 
+      sx={{
+        height: "calc(100vh - 20px)", 
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+      }}
+    >
+      {/* Section Header with Fixed Height */}
+      <Box sx={{ flexShrink: 0, mb: 2 }}>
+        <SectionHeader
+          title="Submitted Candidates"
+          totalCount={submissions.length}
+          onRefresh={fetchSubmissions}
+          isRefreshing={isRefreshing}
+        />
       </Box>
 
-      {/* DataTable Component */}
-      <DataTable data={submissions} columns={columns} pageLimit={10} />
+      {/* DataTable should take the remaining space */}
+      <Box
+        sx={{
+          flexGrow: 1, 
+          overflow: "hidden",
+          height: "calc(100vh - 20vh)", // Subtract header & padding
+        }}
+      >
+        <DataTable 
+          data={submissions} 
+          columns={columns} 
+          pageLimit={10} 
+        />
+      </Box>
     </Container>
   );
 };

@@ -20,7 +20,7 @@ import VerifiedIcon from "@mui/icons-material/Verified";
 import axios from "axios";
 import BASE_URL from "../../redux/config";
 
-// const BASE_URL = "http://192.168.0.194:8083";
+
 
 // Styled components
 const StyledDialog = styled(Dialog)(({ theme }) => ({
@@ -93,7 +93,7 @@ const EmailVerificationDialog = ({
     setIsSending(true);
     try {
       const response = await axios.post(
-        `${BASE_URL}/api/users/send-otp?email=${encodeURIComponent(email)}`,
+        `${BASE_URL}/users/sendOtp?email=${encodeURIComponent(email)}`,
         {}, 
         {
           headers: {
@@ -127,7 +127,7 @@ const EmailVerificationDialog = ({
     setIsVerifying(true);
     try {
       const response = await axios.post(
-        `${BASE_URL}/api/users/verify-otp`,
+        `${BASE_URL}/users/verifyOtp`,
         { email, otp: otpString },
         { headers: { "Content-Type": "application/json" } }
       );
