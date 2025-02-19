@@ -42,6 +42,7 @@ import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
 
 const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
+const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageLimit);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -185,6 +186,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
       part.toLowerCase() === highlight.toLowerCase() ? (
         <span
           key={index}
+          style={{ backgroundColor: "#F6C90E", padding: "0.1rem" }}
           style={{ backgroundColor: "#F6C90E", padding: "0.1rem" }}
         >
           {part}
@@ -372,9 +374,14 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
           border: "1px solid #ccc",
           borderRadius: 2,
+          borderRadius: 2,
           boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+          overflow: "hidden",
           overflow: "hidden",
         }}
       >
@@ -395,6 +402,8 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
               borderRadius: "4px",
             },
             "& .MuiTableCell-root": {
+              borderBottom: "1px solid #ccc",
+              borderRight: "1px solid #ccc",
               borderBottom: "1px solid #ccc",
               borderRight: "1px solid #ccc",
             },
@@ -514,12 +523,32 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                         {page * rowsPerPage + index + 1}
                       </TableCell>
 
+                    <TableRow
+                      key={index}
+                      sx={{
+                        backgroundColor:
+                          index % 2 === 0
+                            ? "#f9f9f9"
+                            : "rgba(192, 238, 211, 0.34)",
+                        "&:hover": {
+                          backgroundColor: "rgba(0, 121, 107, 0.04)",
+                        },
+                      }}
+                    >
+                      <TableCell
+                        sx={{ textAlign: "center", fontWeight: "bold" }}
+                      >
+                        {page * rowsPerPage + index + 1}
+                      </TableCell>
+
                       {columns.map((column) => {
                         if (column.render) {
                           return (
                             <TableCell
                               key={column.key}
                               sx={{
+                                padding: 2,
+                                textAlign: "left",
                                 padding: 2,
                                 textAlign: "left",
                               }}
@@ -535,6 +564,12 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                           <TableCell
                             key={column.key}
                             sx={{
+                              padding: 2,
+                              textAlign: "left",
+                              whiteSpace: "nowrap",
+                              maxWidth: "200px",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
                               padding: 2,
                               textAlign: "left",
                               whiteSpace: "nowrap",
@@ -567,10 +602,37 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                                   ...
                                 </Typography>
 
+                            {cellData && String(cellData).length > 15 ? (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {highlightText(
+                                    String(cellData).slice(0, 15),
+                                    searchQuery
+                                  )}
+                                  ...
+                                </Typography>
+
                                 <Button
                                   variant="text"
                                   onClick={() => handleDialogOpen(cellData)}
                                   sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    ml: 1,
                                     display: "inline-flex",
                                     alignItems: "center",
                                     ml: 1,
@@ -584,9 +646,20 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                                     sx={{ fontSize: "1rem", mr: 0.5 }}
                                   />
                                   <span style={{ fontSize: "0.75rem" }}>
+                                    p: "2px 8px",
+                                    color: "#00796b",
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <VisibilityIcon
+                                    sx={{ fontSize: "1rem", mr: 0.5 }}
+                                  />
+                                  <span style={{ fontSize: "0.75rem" }}>
                                     See More
                                   </span>
+                                  </span>
                                 </Button>
+                              </Box>
                               </Box>
                             ) : (
                               highlightText(cellData, searchQuery)
@@ -607,6 +680,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 20, 30, 40, 50, { label: "All", value: -1 }]}
           rowsPerPageOptions={[10, 20, 30, 40, 50, { label: "All", value: -1 }]}
           sx={{
             borderTop: "1px solid #ccc",
@@ -659,8 +733,18 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
         open={dialogOpen}
         onClose={handleDialogClose}
         maxWidth="sm"
+        maxWidth="sm"
         fullWidth
       >
+        <DialogTitle
+          sx={{
+            backgroundColor: "#00796b",
+            color: "#fff",
+            fontWeight: "bold",
+          }}
+        >
+          Full Content
+        </DialogTitle>
         <DialogTitle
           sx={{
             backgroundColor: "#00796b",
@@ -674,19 +758,31 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
           <Typography
             variant="body1"
             sx={{
+          <Typography
+            variant="body1"
+            sx={{
               fontFamily: "Roboto, sans-serif",
               color: "#333",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
             }}
           >
             {highlightText(dialogContent, searchQuery)}
           </Typography>
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button
             onClick={handleDialogClose}
             variant="contained"
+            sx={{
+              backgroundColor: "#00796b",
+              "&:hover": {
+                backgroundColor: "#00695c",
+              },
+            }}
             sx={{
               backgroundColor: "#00796b",
               "&:hover": {
