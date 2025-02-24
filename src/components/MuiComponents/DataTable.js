@@ -40,6 +40,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
+import { Description } from "@mui/icons-material";
 
 const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
   const [page, setPage] = useState(0);
@@ -48,6 +49,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
   const [dialogContent, setDialogContent] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(initialData);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // State for column filters
   const [filters, setFilters] = useState({});
@@ -200,6 +202,14 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
     if (!column || !column.type) return null; // Only apply filter if column has a type
 
     if (column.type === "select") {
+      
+
+      const filteredValues = uniqueValues[column.key]
+        ? uniqueValues[column.key].filter((value) =>
+            value.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : [];
+
       return (
         <Box sx={{ p: 2, minWidth: 200 }}>
           <Typography variant="subtitle2" gutterBottom>
@@ -213,21 +223,38 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
               MenuProps={{
                 PaperProps: {
                   sx: {
-                    maxHeight: 200, // Set max height for dropdown
-                    overflowY: "auto", // Enable scrollbar if needed
+                    maxHeight: 250,
+                    overflowY: "auto",
+                    padding: 1,
                   },
                 },
               }}
+              renderValue={(selected) => (selected ? selected : <em>All</em>)}
             >
+              {/* Search Field inside Dropdown */}
+              <Box sx={{ p: 1 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </Box>
+
               <MenuItem value="">
                 <em>All</em>
               </MenuItem>
-              {uniqueValues[column.key] &&
-                uniqueValues[column.key].map((value) => (
+              {filteredValues.length > 0 ? (
+                filteredValues.map((value) => (
                   <MenuItem key={value} value={value}>
                     {value}
                   </MenuItem>
-                ))}
+                ))
+              ) : (
+                <MenuItem disabled>No results found</MenuItem>
+              )}
             </Select>
           </FormControl>
 
@@ -235,7 +262,10 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
             <Button
               size="small"
               startIcon={<FilterAltOffIcon />}
-              onClick={() => handleClearFilter(column.key)}
+              onClick={() => {
+                handleClearFilter(column.key);
+                setSearchTerm(""); // Reset search input
+              }}
               disabled={!filters[column.key]}
             >
               Clear
@@ -567,7 +597,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                                   ...
                                 </Typography>
 
-                                <Button
+                                {/* <Button
                                   variant="text"
                                   onClick={() => handleDialogOpen(cellData)}
                                   sx={{
@@ -580,13 +610,11 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                                     flexShrink: 0,
                                   }}
                                 >
-                                  <VisibilityIcon
-                                    sx={{ fontSize: "1rem", mr: 0.5 }}
-                                  />
+                                 
                                   <span style={{ fontSize: "0.75rem" }}>
-                                    See More
+                                    more
                                   </span>
-                                </Button>
+                                </Button> */}
                               </Box>
                             ) : (
                               highlightText(cellData, searchQuery)
@@ -660,17 +688,39 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
         onClose={handleDialogClose}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: "0px 6px 24px rgba(0, 0, 0, 0.15)",
+            overflow: "hidden",
+          },
+        }}
       >
+        {/* Dialog Title with Close Icon */}
         <DialogTitle
           sx={{
-            backgroundColor: "#00796b",
+            backgroundColor: "#004d40",
             color: "#fff",
             fontWeight: "bold",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "12px 16px",
+            borderRadius: 2,
           }}
         >
-          Full Content
+          {"Full Content"}
+          <IconButton
+            onClick={handleDialogClose}
+            sx={{ color: "#fff" }}
+            size="small"
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+
+        {/* Dialog Content */}
+        <DialogContent dividers sx={{ padding: "16px" }}>
           <Typography
             variant="body1"
             sx={{
@@ -683,15 +733,20 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
             {highlightText(dialogContent, searchQuery)}
           </Typography>
         </DialogContent>
-        <DialogActions>
+
+        {/* Dialog Actions */}
+        <DialogActions sx={{ padding: "12px 16px", justifyContent: "end" }}>
           <Button
             onClick={handleDialogClose}
             variant="contained"
             sx={{
-              backgroundColor: "#00796b",
-              "&:hover": {
-                backgroundColor: "#00695c",
-              },
+              backgroundColor: "#004d40",
+              borderRadius: 2,
+              px: 3,
+              py: 1,
+              textTransform: "none",
+              fontSize: "0.95rem",
+              "&:hover": { backgroundColor: "#00695c" },
             }}
           >
             Close

@@ -68,6 +68,8 @@ import LeaveApplication from "../components/LeaveApplication";
 import logoOrg from "../assets/logo-01.png";
 import SubmissionsMain from "../components/Submissions/SubmissionsMain";
 import InterviewMain from "../components/Interviews/InterviewMain";
+import UserAvatar from "../utils/UserAvatar";
+import JobFormMain from "../components/JobForm/JobFormMain";
 
 const DRAWER_WIDTH = 240;
 
@@ -229,6 +231,25 @@ const DashboardPage = () => {
     }
   };
 
+  // Function to extract user initials
+  const getInitials = () => {
+    if (userId) {
+      const nameParts = userId.split(" "); // Split the name into parts
+      if (nameParts.length > 1) {
+        return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase(); // First letter of First & Last name
+      }
+      return userId[0].toUpperCase(); // Only first letter if single name
+    }
+    return "U"; // Default Initial
+  };
+
+  // Function to generate avatar color dynamically
+  const getAvatarColor = () => {
+    const colors = ["#3f51b5", "#f44336", "#009688", "#673ab7", "#ff9800"];
+    const index = userId ? userId.charCodeAt(0) % colors.length : 0;
+    return colors[index];
+  };
+
   const CustomDialog = ({ open, onClose, title, children }) => (
     <Dialog
       open={open}
@@ -375,7 +396,7 @@ const DashboardPage = () => {
   );
 
   return (
-    <Box sx={{ display: "flex", height: "100vh"}}>
+    <Box sx={{ display: "flex", height: "100vh" }}>
       <AppBar
         position="fixed"
         elevation={0}
@@ -383,7 +404,7 @@ const DashboardPage = () => {
           zIndex: theme.zIndex.drawer + 1,
           backgroundColor: "background.paper",
           borderBottom: `1px solid ${theme.palette.divider}`,
-          borderRadius:0 
+          borderRadius: 0,
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
@@ -407,8 +428,6 @@ const DashboardPage = () => {
                 </Badge>
               </IconButton>
             </Tooltip> */}
-            
-            
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Box sx={{ textAlign: "right" }}>
@@ -475,16 +494,7 @@ const DashboardPage = () => {
                 endIcon={<KeyboardArrowDownIcon />}
                 sx={{ ml: 1 }}
               >
-                <Avatar
-                  src={profileImage}
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    border: `2px solid ${theme.palette.primary.main}`,
-                  }}
-                >
-                  <AccountCircleIcon />
-                </Avatar>
+                <UserAvatar size={32} border={true} />
               </Button>
             </Box>
           </Box>
@@ -516,7 +526,7 @@ const DashboardPage = () => {
           p: 0.5,
           width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
           mt: "64px",
-          height: "calc(100vh - 64px)", // Ensures it fits within viewport
+          height: "calc(100vh - 64px)",
           overflowY: "auto", // Enables vertical scrolling
           backgroundColor: "grey.50",
 
@@ -543,7 +553,7 @@ const DashboardPage = () => {
             }}
           >
             {activeTabs.find((tab) => tab.value === selectedTab)?.component || (
-              <Box sx={{ p:1 }}>
+              <Box sx={{ p: 1 }}>
                 <Typography color="text.secondary">
                   No content available for the selected tab.
                 </Typography>

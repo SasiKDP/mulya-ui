@@ -216,52 +216,7 @@ const AdminDashboard = () => {
         ))}
       </Box>
 
-      <Paper
-        elevation={0}
-        sx={{ flex: 1, overflow: "hidden", bgcolor: "white", borderRadius: 2 }}
-      >
-        <Tabs
-          value={tabIndex}
-          onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{ px: 2, borderBottom: 1, borderColor: "divider" }}
-        >
-          {summaryData.map((tab, index) => (
-            <Tab key={index} label={tab.label} />
-          ))}
-        </Tabs>
-
-        {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100%",
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Box sx={{ p: 2, textAlign: "center", color: "error.main" }}>
-            Error: {error}
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              p: 2,
-              height: "65vh", // Set a fixed height for the table container
-              overflow: "auto", // Enables scrolling when content overflows
-              border: "1px solid #ddd", // Optional: Adds a subtle border for better structure
-              borderRadius: "8px", // Optional: Smoothens corners for aesthetics
-              boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)", // Optional: Adds a light shadow effect
-            }}
-          >
-            <DataTable data={selectedData} columns={columns} pageLimit={5} />
-          </Box>
-        )}
-      </Paper>
+      
     </Box>
   );
 };

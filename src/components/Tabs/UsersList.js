@@ -22,23 +22,21 @@ import {
   Stack,
   Alert,
   Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  Autocomplete,
-  Chip,
   Select,
   MenuItem,
   InputLabel,
   FormControl,
+  Grid,
+  Tooltip,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CloseIcon from "@mui/icons-material/Close";
+import SearchIcon from "@mui/icons-material/Search";
+import DataTable from "../MuiComponents/DataTable";
+import SaveIcon from "@mui/icons-material/Save";
+import SectionHeader from "../MuiComponents/SectionHeader";
+import ListAltIcon from "@mui/icons-material/ListAlt";
 
 const UsersList = () => {
   const dispatch = useDispatch();
@@ -58,6 +56,9 @@ const UsersList = () => {
     message: "",
     severity: "success",
   });
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   const VALID_ROLES = ["SUPERADMIN", "EMPLOYEE", "ADMIN"];
 
@@ -73,6 +74,49 @@ const UsersList = () => {
     phoneNumber: "",
     employeeId: "",
   });
+
+  const renderActionsColumn = (employee) => {
+    const currentUser = user; // Logged-in user
+
+    // Check if the logged-in user is a Super Admin
+    const isSuperAdmin = roles.includes("SUPERADMIN");
+
+    // Disable Edit and Delete if the target user is a Super Admin but not the logged-in user
+    const isSameSuperAdmin =
+      isSuperAdmin &&
+      employee.roles === "SUPERADMIN" &&
+      employee.employeeId !== currentUser;
+
+    return (
+      <Box display="flex" alignItems="center">
+        <Tooltip title="Edit">
+          <span>
+            <IconButton
+              color="primary"
+              onClick={() => handleOpenEditDialog(employee)}
+              disabled={isSameSuperAdmin} // Disable if conditions are met
+              sx={{ ml: 1 }}
+            >
+              <EditIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+
+        <Tooltip title="Delete">
+          <span>
+            <IconButton
+              color="error"
+              onClick={() => handleDeleteEmployee(employee.employeeId)}
+              disabled={isSameSuperAdmin} // Disable if conditions are met
+              sx={{ ml: 1 }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Box>
+    );
+  };
 
   // Check if current user can edit specific employee
   const canEditUser = (employeeToEdit) => {
@@ -163,7 +207,14 @@ const UsersList = () => {
   };
 
   const handleOpenEditDialog = (employee) => {
-    if (!canEditUser(employee)) {
+    const currentUser = user; // Logged-in user
+
+    // Prevent Super Admins from editing other Super Admins
+    if (
+      roles.includes("SUPERADMIN") &&
+      employee.roles === "SUPERADMIN" &&
+      employee.employeeId !== currentUser
+    ) {
       setSnackbar({
         open: true,
         message: "You don't have permission to edit this user.",
@@ -172,6 +223,7 @@ const UsersList = () => {
       return;
     }
 
+    // Allow editing if conditions are met
     setSelectedEmployee(employee);
     const currentRoles = Array.isArray(employee.roles)
       ? employee.roles
@@ -184,6 +236,57 @@ const UsersList = () => {
     });
     setEditDialogOpen(true);
   };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value.toLowerCase());
+  };
+
+  // Function to highlight matched text
+  const highlightText = (text, query) => {
+    if (!query.trim() || !text) return text;
+
+    const parts = String(text).split(new RegExp(`(${query})`, "gi"));
+    return parts.map((part, index) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <span
+          key={index}
+          style={{ backgroundColor: "#F6C90E", padding: "0.1rem" }}
+        >
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+  };
+
+  const columns = [
+    { key: "employeeId", label: "Employee ID", type: "select" },
+    { key: "userName", label: "User Name", type: "text" },
+    { key: "roles", label: "Roles", type: "select" },
+    { key: "email", label: "Email", type: "text" },
+    { key: "designation", label: "Designation", type: "text" },
+    { key: "joiningDate", label: "Joining Date", type: "select" },
+    { key: "gender", label: "Gender", type: "select" },
+    { key: "dob", label: "Date of Birth", type: "select" },
+    { key: "phoneNumber", label: "Phone Number", type: "text" },
+    { key: "personalemail", label: "Personal Email" },
+    { key: "status", label: "Status", type: "select" },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (row) => renderActionsColumn(row),
+    },
+  ];
+
+  // Filter employees based on global search
+  const filteredEmployees = employeesList.filter((employee) =>
+    Object.values(employee).some(
+      (value) =>
+        value &&
+        value.toString().toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
 
   const handleCloseEditDialog = () => {
     setEditDialogOpen(false);
@@ -301,240 +404,268 @@ const UsersList = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 12 }}>
-      <Paper elevation={3} sx={{ p: 3, backgroundColor: "#f5f5f5" }}>
-        <Typography
-          variant="h4"
-          gutterBottom
+      <SectionHeader
+        title="Employees List"
+        totalCount={employeesList.length} 
+        onRefresh={fetchEmployees} 
+        isRefreshing={isRefreshing}
+        icon={<ListAltIcon sx={{ color: "#FFF" }} />}
+        sx={{
+          backgroundColor: "#00796b",
+          color: "white",
+          padding: 2,
+          borderRadius: 1,
+          fontWeight: 600,
+        }}
+      />
+
+      {fetchStatus === "loading" && (
+        <Box display="flex" justifyContent="center" p={3}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {fetchStatus === "failed" && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {fetchError}
+        </Alert>
+      )}
+
+      {fetchStatus === "loading" ? (
+        <Box display="flex" justifyContent="center" p={3}>
+          <CircularProgress />
+        </Box>
+      ) : fetchStatus === "failed" ? (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {fetchError}
+        </Alert>
+      ) : (
+        <DataTable
+          data={employeesList}
+          columns={columns}
+          searchQuery={searchQuery}
+        />
+      )}
+
+      <Dialog
+        open={editDialogOpen}
+        onClose={handleCloseEditDialog}
+        maxWidth="md"
+        fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            borderRadius: 3,
+            padding: 2,
+            minWidth: "600px",
+          },
+        }}
+      >
+        {/* 🔹 Dialog Title */}
+        <DialogTitle
           sx={{
-            fontWeight: 600,
-            backgroundColor: "#00796b",
-            color: "#fff",
-            padding: "10px",
+            fontWeight: "bold",
+            fontSize: "1.25rem",
+            bgcolor: "#00796b",
+            color: "#FFF",
+            p: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderRadius: 2,
           }}
         >
-          Employees List
-        </Typography>
-
-        {fetchStatus === "loading" && (
-          <Box display="flex" justifyContent="center" p={3}>
-            <CircularProgress />
-          </Box>
-        )}
-
-        {fetchStatus === "failed" && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {fetchError}
-          </Alert>
-        )}
-
-        {fetchStatus === "succeeded" && (
-          <TableContainer
-            sx={{ border: "1px solid #ddd", overflow: "auto", maxHeight: 500 }}
+          Edit Employee Details
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseEditDialog}
+            sx={{
+              color: "#FFF",
+              "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+            }}
           >
-            <Table sx={{ minWidth: 650, borderCollapse: "collapse" }}>
-              <TableHead sx={{ backgroundColor: "#00796b" }}>
-                <TableRow>
-                  {Object.keys(employeesList[0] || {}).map((key) => (
-                    <TableCell
-                      key={key}
-                      sx={{
-                        fontWeight: "bold",
-                        color: "#fff",
-                        border: "1px solid #ddd",
-                      }}
-                    >
-                      {key.charAt(0).toUpperCase() +
-                        key.slice(1).replace(/([A-Z])/g, " $1")}
-                    </TableCell>
-                  ))}
-                  <TableCell
-                    sx={{
-                      fontWeight: "bold",
-                      color: "#fff",
-                      border: "1px solid #ddd",
-                    }}
-                  >
-                    Actions
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedEmployees.map((employee) => (
-                  <TableRow key={employee.employeeId} hover>
-                    {Object.keys(employee).map((key, index) => (
-                      <TableCell key={index} sx={{ border: "1px solid #ddd" }}>
-                        {key === "employeeId" ? (
-                          <Box display="flex" alignItems="center">
-                            <Typography>{employee[key]}</Typography>
-                            <IconButton
-                              color="primary"
-                              onClick={() => handleOpenEditDialog(employee)}
-                              disabled={!canEditUser(employee)}
-                              sx={{ ml: 1 }}
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        {/* 🔹 Dialog Content */}
+        <DialogContent sx={{ p: 3 }}>
+          {selectedEmployee && (
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+              <Box
+                component="form"
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 2,
+                }}
+              >
+                <Grid container spacing={2}>
+                  {Object.keys(selectedEmployee).map((key) => {
+                    if (key === "roles") {
+                      return (
+                        <Grid item xs={12} sm={6} key={key}>
+                          {renderRolesField(key)}
+                        </Grid>
+                      );
+                    } else if (key === "status") {
+                      return (
+                        <Grid item xs={12} sm={6} key={key}>
+                          <FormControl fullWidth>
+                            <InputLabel>Status</InputLabel>
+                            <Select
+                              name="status"
+                              value={editFormData.status || "INACTIVE"}
+                              onChange={handleInputChange}
+                              label="Status"
                             >
-                              <EditIcon />
-                            </IconButton>
-                          </Box>
-                        ) : Array.isArray(employee[key]) ? (
-                          employee[key].join(", ")
-                        ) : (
-                          employee[key]
-                        )}
-                      </TableCell>
-                    ))}
-                    <TableCell sx={{ border: "1px solid #ddd" }}>
-                      <IconButton
-                        color="error"
-                        onClick={() =>
-                          handleDeleteEmployee(employee.employeeId)
-                        }
-                        disabled={!canEditUser(employee)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                              <MenuItem value="ACTIVE">ACTIVE</MenuItem>
+                              <MenuItem value="INACTIVE">INACTIVE</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      );
+                    } else if (key === "gender") {
+                      return (
+                        <Grid item xs={12} sm={6} key={key}>
+                          <FormControl fullWidth>
+                            <InputLabel>Gender</InputLabel>
+                            <Select
+                              name="gender"
+                              value={editFormData.gender || ""}
+                              onChange={handleInputChange}
+                              label="Gender"
+                            >
+                              <MenuItem value="Male">Male</MenuItem>
+                              <MenuItem value="Female">Female</MenuItem>
+                              <MenuItem value="Other">Other</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      );
+                    } else if (key === "joiningDate" || key === "dob") {
+                      return (
+                        <Grid item xs={12} sm={6} key={key}>
+                          <TextField
+                            label={
+                              key === "joiningDate"
+                                ? "Joining Date"
+                                : "Date of Birth"
+                            }
+                            name={key}
+                            type="date"
+                            value={editFormData[key] || ""}
+                            onChange={handleInputChange}
+                            fullWidth
+                            InputLabelProps={{ shrink: true }} // Ensures label stays above input
+                          />
+                        </Grid>
+                      );
+                    } else if (key === "employeeId" || key === "email") {
+                      return (
+                        <Grid item xs={12} sm={6} key={key}>
+                          <TextField
+                            label={
+                              key === "employeeId"
+                                ? "Employee ID"
+                                : "Employee Email"
+                            }
+                            value={editFormData[key] || ""}
+                            disabled
+                            fullWidth
+                            margin="dense"
+                            sx={{ bgcolor: "#f0f0f0", borderRadius: 1 }}
+                          />
+                        </Grid>
+                      );
+                    } else {
+                      return (
+                        <Grid item xs={12} sm={6} key={key}>
+                          <TextField
+                            label={key.replace(/([A-Z])/g, " $1").trim()}
+                            name={key}
+                            value={editFormData[key] || ""}
+                            onChange={handleInputChange}
+                            error={!!formErrors[key]}
+                            helperText={formErrors[key]}
+                            fullWidth
+                            margin="dense"
+                            sx={{ bgcolor: "#FFF", borderRadius: 1 }}
+                          />
+                        </Grid>
+                      );
+                    }
+                  })}
+                </Grid>
+              </Box>
+            </Paper>
+          )}
+        </DialogContent>
 
-            <TablePagination
-              component="div"
-              count={employeesList.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25]}
-            />
-          </TableContainer>
-        )}
-
-        <Dialog
-          open={editDialogOpen}
-          onClose={handleCloseEditDialog}
-          fullWidth
-          maxWidth="sm"
-        >
-          <DialogTitle>
-            Edit Employee Details
-            <IconButton
-              aria-label="close"
-              onClick={handleCloseEditDialog}
-              sx={{
-                position: "absolute",
-                right: 8,
-                top: 8,
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent>
-            <Stack spacing={2} mt={2}>
-              {selectedEmployee &&
-                Object.keys(selectedEmployee).map((key) => {
-                  if (key === "roles") {
-                    return renderRolesField(key);
-                  } else if (key === "status") {
-                    return (
-                      <FormControl fullWidth key={key}>
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                          name="status"
-                          value={editFormData.status || "INACTIVE"}
-                          onChange={handleInputChange}
-                          label="Status"
-                        >
-                          <MenuItem value="ACTIVE">ACTIVE</MenuItem>
-                          <MenuItem value="INACTIVE">INACTIVE</MenuItem>
-                        </Select>
-                      </FormControl>
-                    );
-                  } else if (key === "employeeId" || key === "email") {
-                    return (
-                      <TextField
-                        key={key}
-                        label={
-                          key === "employeeId"
-                            ? "Employee ID"
-                            : "Employee Email"
-                        }
-                        value={editFormData[key] || ""}
-                        disabled
-                        fullWidth
-                      />
-                    );
-                  } else {
-                    return (
-                      <TextField
-                        key={key}
-                        label={key.charAt(0).toUpperCase() + key.slice(1)}
-                        name={key}
-                        value={editFormData[key] || ""}
-                        onChange={handleInputChange}
-                        error={!!formErrors[key]}
-                        helperText={formErrors[key]}
-                        fullWidth
-                      />
-                    );
-                  }
-                })}
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={handleCloseEditDialog}
-              color="primary"
-              variant="outlined"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitEdit}
-              variant="contained"
-              color="primary"
-            >
-              Update User
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={handleCloseDeleteDialog}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
-          <DialogContent>
-            <Typography>
-              Are you sure you want to delete this employee?
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-            <Button onClick={handleConfirmDelete} color="error" autoFocus>
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={handleCloseSnackbar}
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <Alert
-            onClose={handleCloseSnackbar}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
+        {/* 🔹 Dialog Actions */}
+        <DialogActions sx={{ justifyContent: "flex-end", p: 2 }}>
+          <Button
+            onClick={handleCloseEditDialog}
+            variant="outlined"
+            startIcon={<CloseIcon />}
+            sx={{
+              borderColor: "primary",
+              color: "primary",
+              "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.1)" },
+            }}
           >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Paper>
+            Discard Changes
+          </Button>
+
+          <Button
+            onClick={handleSubmitEdit}
+            variant="contained"
+            startIcon={<SaveIcon />}
+            sx={{
+              backgroundColor: "primary",
+              color: "#FFF",
+              "&:hover": { backgroundColor: "primary" },
+              ml: 2,
+            }}
+          >
+            Update User
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this employee?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
+          <Button onClick={handleConfirmDelete} color="error" autoFocus>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

@@ -18,24 +18,28 @@ const AllSubmissions = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const columns = [
-    { key: "fullName", label: "Candidate Name" },
-    { key: "emailId", label: "Candidate Email" },
-    { key: "contactNumber", label: "Candidate Contact" },
-    { key: "currentOrganization", label: "Organization" },
-    { key: "qualification", label: "Qualification" },
-    { key: "totalExperience", label: "Total Exp" },
-    { key: "relevantExperience", label: "Relevant Exp" },
-    { key: "currentCTC", label: "Current CTC" },
-    { key: "expectedCTC", label: "Expected CTC" },
-    { key: "noticePeriod", label: "Notice Period" },
-    { key: "currentLocation", label: "Current Location" },
-    { key: "preferredLocation", label: "Preferred Location" },
-    { key: "skills", label: "Skills" },
-    { key: "communicationSkills", label: "Communication" },
-    { key: "requiredTechnologiesRating", label: "Tech Rating" },
-    { key: "candidateId", label: "Candidate ID" },
-    { key: "overallFeedback", label: "Feedback" },
-    { key: "interviewStatus", label: "Status" }
+   
+    { key: "fullName", label: "Candidate Name", type: "text" },
+    { key: "emailId", label: "Candidate Email", type: "text" },
+    { key: "contactNumber", label: "Candidate Contact", type: "text" },
+    { key: "currentOrganization", label: "Organization", type: "text" },
+    { key: "qualification", label: "Qualification", type: "select" },
+    { key: "totalExperience", label: "Total Exp", type: "text" },
+    { key: "relevantExperience", label: "Relevant Exp", type: "text" },
+    { key: "currentCTC", label: "Current CTC", type: "text" },
+    { key: "expectedCTC", label: "Expected CTC", type: "text" },
+    { key: "noticePeriod", label: "Notice Period", type: "select" },
+    { key: "currentLocation", label: "Current Location", type: "text" },
+    { key: "preferredLocation", label: "Preferred Location", type: "text" },
+    { key: "skills", label: "Skills", type: "text" },
+    { key: "communicationSkills", label: "Communication", type: "select" },
+    { key: "requiredTechnologiesRating", label: "Tech Rating", type: "text" },
+    { key: "overallFeedback", label: "Feedback", type: "text" },
+    { key: "userEmail", label: "User Email", type: "text" },
+    { key: "interviewStatus", label: "Status", type: "select" },
+    { key: "candidateId", label: "Candidate ID", type: "select" },
+    { key: "jobId", label: "Job ID", type: "text" },
+    { key: "userId", label: "User ID", type: "text" },
   ];
 
   const fetchSubmissions = async () => {

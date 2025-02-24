@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
@@ -11,8 +11,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Checkbox,
-  ListItemText,
   Grid,
   Paper,
   CircularProgress,
@@ -26,13 +24,10 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SendIcon from "@mui/icons-material/Send";
+import axios from "axios";
 import { fetchEmployees } from "../../redux/features/employeesSlice";
-import {
-  postJobRequirement,
-  reduxResetForm,
-  clearMessages,
-} from "../../redux/features/jobFormSlice";
 import RecruiterMultiSelect from "../MuiComponents/RecruiterMultiSelect";
+import BASE_URL from "../../redux/config";
 
 // Validation Schema
 const JobFormSchema = Yup.object().shape({
@@ -102,16 +97,13 @@ const CustomSelect = ({
 
 const JobForm = () => {
   const dispatch = useDispatch();
-  const { status, error, jobPostingSuccessResponse } = useSelector(
-    (state) => state.jobForm
-  );
   const { employeesList, fetchStatus } = useSelector(
     (state) => state.employees
   );
-
   const recruiters = employeesList.filter(
     (emp) => emp.roles === "EMPLOYEE" && emp.status === "ACTIVE"
   );
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -149,44 +141,48 @@ const JobForm = () => {
     },
   };
 
-  useEffect(() => {
-    if (status === "succeeded" && jobPostingSuccessResponse) {
-      toast.success(
-        `Job Created Successfully! Job Title: ${jobPostingSuccessResponse.jobTitle} Job ID: ${jobPostingSuccessResponse.jobId}`
-      );
-      dispatch(clearMessages());
-      dispatch(reduxResetForm());
-    }
-    if (status === "failed" && error) {
-      toast.error(error || "An error occurred");
-    }
-  }, [status, jobPostingSuccessResponse, error, dispatch]);
-
+  // API call made directly from the component on form submission
   const handleSubmit = async (values, { resetForm }) => {
-    try {
-      const finalData = {
-        ...values,
-        experienceRequired: `${values.experienceRequired} years`,
-        relevantExperience: `${values.relevantExperience} years`,
-        salaryPackage: `${Number(values.salaryPackage)} LPA`,
-        noOfPositions: Number(values.noOfPositions),
-      };
+    setSubmitting(true);
+    // Convert some fields to the expected format
+    const finalData = {
+      ...values,
+      experienceRequired: `${values.experienceRequired} years`,
+      relevantExperience: `${values.relevantExperience} years`,
+      salaryPackage: `${Number(values.salaryPackage)} LPA`,
+      noOfPositions: Number(values.noOfPositions),
+    };
 
-      const response = await dispatch(postJobRequirement(finalData));
-      if (response.payload?.successMessage) {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/requirements/assignJob`,
+        finalData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            versioninfo: "1.0",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.data.successMessage) {
+        toast.success(
+          `Job Created Successfully! Job Title: ${response.data.jobTitle} Job ID: ${response.data.jobId}`
+        );
         resetForm();
       } else {
         toast.error("Failed to create job posting");
       }
     } catch (error) {
-      toast.error("Unexpected error occurred");
+      toast.error(error.response?.data?.message || "Unexpected error occurred");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleClear = (resetForm) => {
     resetForm();
-    dispatch(reduxResetForm());
-    dispatch(clearMessages());
     toast.info("Form cleared successfully");
   };
 
@@ -210,18 +206,20 @@ const JobForm = () => {
           <Form>
             <Box sx={{ p: 3 }}>
               {/* Header Section */}
-              <Card sx={{ mb: 2, backgroundColor: "#00796b" }}>
-                <CardContent>
-                  <Typography
-                    variant="h5"
-                    component="h1"
-                    color="#FFFFFF"
-                    fontWeight="500"
-                  >
-                    Post Job Requirement
-                  </Typography>
-                </CardContent>
-              </Card>
+              <Typography
+                variant="h5"
+                component="h1"
+                sx={{
+                  backgroundColor: "#00796b",
+                  color: "#FFFFFF",
+                  p: 2,
+                  mb: 2,
+                  borderRadius:2,
+                  fontWeight: 500,
+                }}
+              >
+                Post Job Requirement
+              </Typography>
 
               <Grid container spacing={3}>
                 {/* Basic Information */}
@@ -420,7 +418,6 @@ const JobForm = () => {
                       touched={touched}
                       fetchStatus={fetchStatus}
                     />
-
                     <Grid item xs={12} md={7}>
                       <Field
                         name="jobDescription"
@@ -457,9 +454,9 @@ const JobForm = () => {
                   variant="contained"
                   color="primary"
                   startIcon={<SendIcon />}
-                  disabled={status === "loading"}
+                  disabled={submitting}
                 >
-                  {status === "loading" ? (
+                  {submitting ? (
                     <>
                       <CircularProgress
                         size={24}
@@ -476,7 +473,6 @@ const JobForm = () => {
           </Form>
         )}
       </Formik>
-
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </Paper>
   );

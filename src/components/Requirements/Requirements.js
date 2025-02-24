@@ -27,6 +27,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "../../redux/features/employeesSlice";
 import RequirementsTable from "./RequirementsTable";
 import BASE_URL from "../../redux/config";
+import CloseIcon from "@mui/icons-material/Close";
+import SectionHeader from "../MuiComponents/SectionHeader";
+import ListAltIcon from "@mui/icons-material/ListAlt";
+
+// const BASE_URL = "http://192.168.0.246:8111"
 
 const Requirements = () => {
   const dispatch = useDispatch();
@@ -47,6 +52,12 @@ const Requirements = () => {
   const recruiters = employeesList.filter(
     (emp) => emp.roles === "EMPLOYEE" && emp.status === "ACTIVE"
   );
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchRequirements().finally(() => setIsRefreshing(false));
+  };
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -183,20 +194,21 @@ const Requirements = () => {
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 1, backgroundColor: "#f5f5f5" }}>
-        <Typography
-          variant="h5"
-          gutterBottom
+     
+        <SectionHeader
+          title="Requirements List"
+          totalCount={requirementsList.length} // ✅ Pass count instead of array
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+          icon={<ListAltIcon sx={{ color: "#FFF" }} />}
           sx={{
-            fontWeight: 600,
             backgroundColor: "#00796b",
             color: "white",
             padding: 2,
             borderRadius: 1,
+            fontWeight: 600,
           }}
-        >
-          Requirements List
-        </Typography>
+        />
 
         {loading ? (
           <Box display="flex" justifyContent="center" p={3}>
@@ -233,10 +245,27 @@ const Requirements = () => {
                   color: "white",
                   padding: "16px",
                   position: "relative",
-                  zIndex: 1000, // Ensures it's always above
+                  zIndex: 1000,
+                  borderTopLeftRadius: "8px",
+                  borderTopRightRadius: "8px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
               >
                 Edit Job Requirement
+                <IconButton
+                  aria-label="close"
+                  onClick={handleCloseEditDialog}
+                  sx={{
+                    color: "white",
+                    position: "absolute",
+                    right: 16,
+                    top: 12,
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
               </DialogTitle>
 
               <DialogContent
@@ -407,7 +436,7 @@ const Requirements = () => {
             </Snackbar>
           </>
         )}
-      </Paper>
+      
     </Container>
   );
 };

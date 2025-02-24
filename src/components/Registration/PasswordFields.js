@@ -13,7 +13,7 @@ const PasswordFields = ({
   handleClickShowConfirmPassword
 }) => {
   return (
-    <>
+    <Grid container spacing={2}>
       <Grid item xs={12} md={6}>
         <TextField
           label="Password"
@@ -59,7 +59,7 @@ const PasswordFields = ({
           }}
         />
       </Grid>
-    </>
+    </Grid>
   );
 };
 

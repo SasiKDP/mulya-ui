@@ -59,22 +59,22 @@ const AllInterviews = () => {
   ];
 
   const columnsAll = [
-    { "key": "candidateFullName", "label": "Candidate FullName" },
-    { "key": "candidateContactNo", "label": "Candidate ContactNumber" },
-    { "key": "candidateEmailId", "label": "Candidate EmailID" },
-    { "key": "userEmail", "label": "User Email" },
-    { "key": "userId", "label": "User ID" },
-    { "key": "interviewDateTime", "label": "Interview Date-Time" },
-    { "key": "duration", "label": "Duration" },
-    { "key": "zoomLink", "label": "Zoom Link" },
-    { "key": "jobId", "label": "Job ID" },
-    { "key": "candidateId", "label": "Candidate ID" },
-    { "key": "interviewScheduledTimestamp", "label": "Interview Scheduled Timestamp" },
-    { "key": "clientEmail", "label": "Client Email" },
-    { "key": "clientName", "label": "Client Name" },
-    { "key": "interviewLevel", "label": "Interview Level" },
-    { "key": "interviewStatus", "label": "Interview Status" }
-  ]
+    { key: "candidateFullName", label: "Candidate FullName", type: "text" },
+    { key: "candidateContactNo", label: "Candidate ContactNumber", type: "text" },
+    { key: "candidateEmailId", label: "Candidate EmailID", type: "text" },
+    { key: "userEmail", label: "User Email", type: "text" },
+    { key: "userId", label: "User ID", type: "text" },
+    { key: "interviewDateTime", label: "Interview Date-Time", type: "datetime" },
+    { key: "duration", label: "Duration", type: "text" },
+    { key: "zoomLink", label: "Zoom Link", type: "link" },
+    { key: "jobId", label: "Job ID", type: "text" },
+    { key: "candidateId", label: "Candidate ID", type: "text" },
+    { key: "interviewScheduledTimestamp", label: "Interview Scheduled Timestamp", type: "datetime" },
+    { key: "clientEmail", label: "Client Email", type: "text" },
+    { key: "clientName", label: "Client Name", type: "text" },
+    { key: "interviewLevel", label: "Interview Level", type: "select" },
+    { key: "interviewStatus", label: "Interview Status", type: "select" }
+  ];
 
   // Generate columns dynamically with manual order
   const generateColumns = (data, order) => {

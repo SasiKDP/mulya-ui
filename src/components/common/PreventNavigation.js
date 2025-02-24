@@ -2,17 +2,18 @@ import { useEffect } from "react";
 
 const PreventNavigation = () => {
   useEffect(() => {
-    // Disable Back Button
-    const blockBackNavigation = () => {
+    // ✅ Prevent Back & Forward Navigation
+    const preventNavigation = () => {
       window.history.pushState(null, "", window.location.href);
     };
 
     window.history.pushState(null, "", window.location.href);
-    window.addEventListener("popstate", blockBackNavigation);
+    window.history.forward(); // Prevent forward button as well
+    window.addEventListener("popstate", preventNavigation);
 
-    // Disable Reload (F5, Ctrl+R)
+    // ✅ Disable Reload (F5, Ctrl+R)
     const disableReload = (event) => {
-      if (event.key === "F5" || (event.ctrlKey && event.key === "r")) {
+      if (event.key === "F5" || (event.ctrlKey && event.key.toLowerCase() === "r")) {
         event.preventDefault();
         alert("Page refresh is disabled!");
       }
@@ -20,12 +21,12 @@ const PreventNavigation = () => {
 
     window.addEventListener("keydown", disableReload);
 
-    // Disable Right Click
+    // ✅ Disable Right Click
     const disableRightClick = (event) => event.preventDefault();
     document.addEventListener("contextmenu", disableRightClick);
 
     return () => {
-      window.removeEventListener("popstate", blockBackNavigation);
+      window.removeEventListener("popstate", preventNavigation);
       window.removeEventListener("keydown", disableReload);
       document.removeEventListener("contextmenu", disableRightClick);
     };
