@@ -27,4 +27,4 @@ spec:
   ports:
   - port: 80
   selector:
-    app: datasourcing-ui
+    app: datasourcing-ui 
