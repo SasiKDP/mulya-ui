@@ -19,7 +19,7 @@ import {
 import { Visibility, VisibilityOff, ArrowBack, Email, VpnKey, LockReset } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import BASE_URL from "../redux/config";
+import BASE_URL from "../../redux/config";
 
 const API_ENDPOINTS = {
   SEND_OTP: `${BASE_URL}/users/send-otp`,
@@ -45,7 +45,7 @@ const steps = [
   },
 ];
 
-const ForgotPasswordMain = () => {
+const ForgotPasswordMain = ({showSignIn}) => {
   const navigate = useNavigate();
 
   // State management
@@ -147,7 +147,7 @@ const ForgotPasswordMain = () => {
       const response = await axios.post(API_ENDPOINTS.RESET_PASSWORD, { email, updatePassword: password, confirmPassword });
       if (response.data.success) {
         setSuccess("Password reset successfully! Redirecting to login...");
-        setTimeout(() => navigate("/login"), 3000);
+        setTimeout(() => goToSignIn(), 3000);
       } else {
         setError("Error resetting password. Please try again.");
       }
@@ -176,7 +176,7 @@ const ForgotPasswordMain = () => {
   };
 
   const goToSignIn = () => {
-    navigate("/login");
+   showSignIn()
   };
 
   return (
@@ -185,8 +185,8 @@ const ForgotPasswordMain = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        minHeight: "100vh",
-        bgcolor: "#f5f7fa",
+        maxHeight: "100vh",
+        bgcolor: "#FFF",
         p: 2
       }}
     >

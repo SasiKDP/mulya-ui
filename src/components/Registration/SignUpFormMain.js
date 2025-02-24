@@ -53,12 +53,13 @@ const steps = [
   },
 ];
 
-const SignUpFormMain = () => {
+const SignUpFormMain = ({ showSignIn }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { status, error, response } = useSelector((state) => state.form || {});
 
   const [activeStep, setActiveStep] = useState(0);
+  // State to determine if the official email is verified
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isEmailVerificationOpen, setIsEmailVerificationOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -92,7 +93,6 @@ const SignUpFormMain = () => {
     const { name, value } = e.target;
     const validatorFunction =
       formValidation[`validate${name.charAt(0).toUpperCase() + name.slice(1)}`];
-
     if (validatorFunction) {
       setFormError((prev) => ({
         ...prev,
@@ -101,11 +101,11 @@ const SignUpFormMain = () => {
     }
   };
 
-  // Step Validation
+  // Validate fields in the current step
   const validateStep = () => {
     const errors = {};
     const stepFields = {
-      0: ["userId", "userName", "designation", "gender", "dob"],
+      0: ["userId", "userName", "designation", "gender", "dob", "joiningDate"],
       1: ["email", "personalemail", "phoneNumber"],
       2: ["password", "confirmPassword"],
     };
@@ -124,8 +124,13 @@ const SignUpFormMain = () => {
     return Object.values(errors).every((error) => error === "");
   };
 
-  // Next Step
+  // Next Step handler – if in Contact Details step, ensure email is verified
   const handleNext = () => {
+    if (activeStep === 1 && !isEmailVerified) {
+      setIsEmailVerificationOpen(true);
+      toast.error("Please verify your email before proceeding.");
+      return;
+    }
     if (validateStep()) {
       setActiveStep((prevStep) => prevStep + 1);
     } else {
@@ -133,37 +138,40 @@ const SignUpFormMain = () => {
     }
   };
 
-  // Previous Step
+  // Previous Step handler
   const handleBack = () => {
     setActiveStep((prevStep) => prevStep - 1);
   };
 
-  // Submit Form
+  // Submit the form
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Ensure email is verified before proceeding
     if (!isEmailVerified) {
       setIsEmailVerificationOpen(true);
       return;
     }
-
+    // Validate password step before submitting
+    if (!validateStep()) {
+      toast.error("Please fix the errors in the password fields before submitting.");
+      return;
+    }
     setLoading(true);
-
     // Simulate API call
     setTimeout(() => {
       setLoading(false);
       setFormSubmitted(true);
       dispatch(submitFormData(formData));
       toast.success("Registration successful! Redirecting to login...");
-
-      // Redirect after delay
       setTimeout(() => {
-        navigate("/login");
+        showSignIn();
       }, 3000);
     }, 1500);
   };
+  
 
   const goToSignIn = () => {
-    navigate("/login");
+    showSignIn(false);
   };
 
   return (
@@ -172,16 +180,16 @@ const SignUpFormMain = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        minHeight: "100vh",
+        maxHeight: "100vh",
         bgcolor: "#f5f7fa",
         p: 2,
+        width: "100%",
       }}
     >
       <Card
         elevation={6}
         sx={{
           width: "100%",
-          maxWidth: 800,
           borderRadius: 2,
           boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
           overflow: "visible",
@@ -202,13 +210,12 @@ const SignUpFormMain = () => {
         </Box>
 
         <Box sx={{ p: 4 }}>
-          {error && (
+          {error && error.message && (
             <Alert severity="error" sx={{ mb: 3, borderRadius: 1 }}>
-              {error}
+              {error.message}
             </Alert>
           )}
 
-          {/* Stepper */}
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
             {steps.map((step, index) => (
               <Step key={step.label}>
@@ -282,16 +289,18 @@ const SignUpFormMain = () => {
               </Box>
 
               <Box sx={{ display: activeStep === 1 ? "block" : "none" }}>
-                <ContactFields
-                  formData={formData}
-                  handleChange={handleChange}
-                  handleBlur={handleBlur}
-                  formError={formError}
-                  isEmailVerified={isEmailVerified}
-                  onEmailVerificationClick={() =>
-                    setIsEmailVerificationOpen(true)
-                  }
-                />
+                <Box sx={{ display: activeStep === 1 ? "block" : "none" }}>
+                  <ContactFields
+                    formData={formData}
+                    handleChange={handleChange}
+                    handleBlur={handleBlur}
+                    formError={formError}
+                    isEmailVerified={isEmailVerified} // Pass parent's state
+                    onEmailVerificationClick={() =>
+                      setIsEmailVerificationOpen(true)
+                    } // Pass parent's handler
+                  />
+                </Box>
               </Box>
 
               <Box sx={{ display: activeStep === 2 ? "block" : "none" }}>
@@ -358,15 +367,22 @@ const SignUpFormMain = () => {
                   <Button
                     variant="contained"
                     onClick={handleNext}
+                    disabled={activeStep === 1 && !isEmailVerified}
                     sx={{
                       py: 1.5,
                       px: 4,
-                      backgroundColor: "#2A4DBD",
+                      backgroundColor:
+                        activeStep === 1 && !isEmailVerified
+                          ? "#a0a4b8"
+                          : "#2A4DBD",
                       fontWeight: 600,
                       borderRadius: 1.5,
                       textTransform: "none",
                       "&:hover": {
-                        backgroundColor: "#1a3a8a",
+                        backgroundColor:
+                          activeStep === 1 && !isEmailVerified
+                            ? "#a0a4b8"
+                            : "#1a3a8a",
                       },
                     }}
                   >
@@ -383,14 +399,14 @@ const SignUpFormMain = () => {
       <EmailVerificationDialog
         open={isEmailVerificationOpen}
         onClose={() => setIsEmailVerificationOpen(false)}
-        onVerify={() => {
+        email={formData.email}
+        onVerificationSuccess={() => {
           setIsEmailVerified(true);
           setIsEmailVerificationOpen(false);
           toast.success("Email verified successfully!");
         }}
       />
 
-      {/* Toast Container */}
       <ToastContainer
         position="top-right"
         autoClose={5000}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
   CircularProgress,
   Box,
@@ -14,6 +14,7 @@ import {
   TextField,
   Snackbar,
   Alert,
+  Grid,
   DialogActions,
   FormControl,
   InputLabel,
@@ -27,6 +28,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import EventIcon from "@mui/icons-material/Event";
 import InterviewForm from "../InterviewForm";
 import DataTable from "../MuiComponents/DataTable";
 import { Tooltip } from "@mui/material";
@@ -80,6 +82,7 @@ const Submissions = () => {
       interviewStatus: "Interview Status",
       jobId: "Job ID",
       resumeFilePath: "Resume",
+      scheduleInterview: "Schedule Interview",
       actions: "Actions",
     };
 
@@ -124,6 +127,7 @@ const Submissions = () => {
       "interviewStatus",
       "jobId",
       "resumeFilePath",
+      "scheduleInterview",
       "actions",
     ];
 
@@ -257,16 +261,23 @@ const Submissions = () => {
             No Resume Available
           </Typography>
         ),
-        Interview: (
-          <Link
-            to="#"
+        scheduleInterview: (
+          <Button
+            variant="outlined"
+            color="primary"
+            size="small"
+            startIcon={<EventIcon />}
             onClick={() => handleOpenInterviewDialog(item)}
-            style={{ color: "blue", cursor: "pointer" }}
+            sx={{
+              borderRadius: "8px",
+              textTransform: "none",
+              whiteSpace: "nowrap",
+            }}
           >
             Schedule Interview
-          </Link>
+          </Button>
         ),
-        Actions: (
+        actions: (
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <Tooltip title="Edit">
               <IconButton
@@ -479,8 +490,7 @@ const Submissions = () => {
       <Box
         sx={{
           width: "100%",
-          overflow: "auto",
-          overflowX: "auto",
+
           maxHeight: 600,
         }}
       >
@@ -499,33 +509,86 @@ const Submissions = () => {
         onClose={handleCloseEditDialog}
         maxWidth="md"
         fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            borderRadius: 3, // Rounded corners
+            padding: 2,
+            minWidth: "600px",
+          },
+        }}
       >
-        <DialogTitle>
+        <DialogTitle
+          sx={{
+            fontWeight: "bold",
+            fontSize: "1.25rem",
+            bgcolor: "#00796b", // Header background color
+            color: "#FFF", // White text
+            p: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderRadius: 2,
+          }}
+        >
           Edit Candidate
           <IconButton
             aria-label="close"
             onClick={handleCloseEditDialog}
-            sx={{ position: "absolute", right: 8, top: 8 }}
+            sx={{
+              color: "#FFF",
+              "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+            }}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+
+        <DialogContent sx={{ p: 3 }}>
           {editingCandidate && (
             <Box
               component="form"
-              sx={{ display: "flex", flexWrap: "wrap", gap: 2, mt: 2 }}
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 2,
+              }}
             >
-              {Object.entries(editingCandidate).map(([key, value]) => {
-                if (key === "resumeFilePath" || key === "resumeFile")
-                  return null;
+              <Grid container spacing={2}>
+                {Object.entries(editingCandidate).map(([key, value]) => {
+                  if (
+                    [
+                      "resumeFilePath",
+                      "resumeFile",
+                      "scheduleInterview",
+                      "actions",
+                    ].includes(key)
+                  )
+                    return null;
 
-                return (
-                  <Box key={key} sx={{ width: "48%" }}>
-                    {key === "interviewStatus" ? (
-                      <FormControl fullWidth margin="dense">
-                        <InputLabel>Interview Status</InputLabel>
-                        <Select
+                  return (
+                    <Grid item xs={12} sm={6} key={key}>
+                      {key === "interviewStatus" ? (
+                        <FormControl fullWidth>
+                          <InputLabel>Interview Status</InputLabel>
+                          <Select
+                            value={value || ""}
+                            onChange={(e) =>
+                              setEditingCandidate({
+                                ...editingCandidate,
+                                [key]: e.target.value,
+                              })
+                            }
+                          >
+                            <MenuItem value="SCHEDULED">Scheduled</MenuItem>
+                            <MenuItem value="COMPLETED">Completed</MenuItem>
+                            <MenuItem value="PENDING">Pending</MenuItem>
+                            <MenuItem value="CANCELLED">Cancelled</MenuItem>
+                          </Select>
+                        </FormControl>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label={key.replace(/([A-Z])/g, " $1").trim()}
                           value={value || ""}
                           onChange={(e) =>
                             setEditingCandidate({
@@ -533,101 +596,96 @@ const Submissions = () => {
                               [key]: e.target.value,
                             })
                           }
-                        >
-                          <MenuItem value="SCHEDULED">Scheduled</MenuItem>
-                          <MenuItem value="COMPLETED">Completed</MenuItem>
-                          <MenuItem value="PENDING">Pending</MenuItem>
-                          <MenuItem value="CANCELLED">Cancelled</MenuItem>
-                        </Select>
-                      </FormControl>
-                    ) : (
-                      <TextField
-                        fullWidth
-                        label={key.replace(/([A-Z])/g, " $1").trim()}
-                        value={value || ""}
-                        onChange={(e) =>
-                          setEditingCandidate({
-                            ...editingCandidate,
-                            [key]: e.target.value,
-                          })
-                        }
-                        margin="dense"
-                        disabled={[
-                          "candidateId",
-                          "jobId",
-                          "userId",
-                          "userEmail",
-                        ].includes(key)}
-                      />
-                    )}
-                  </Box>
-                );
-              })}
+                          margin="dense"
+                          disabled={[
+                            "candidateId",
+                            "jobId",
+                            "userId",
+                            "userEmail",
+                          ].includes(key)}
+                          sx={{ bgcolor: "#FFF", borderRadius: 1 }}
+                        />
+                      )}
+                    </Grid>
+                  );
+                })}
 
-              {/* Resume Upload Section */}
-              <Box sx={{ width: "100%", mt: 2 }}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    border: "1px dashed",
-                    borderColor: "primary.main",
-                    borderRadius: 1,
-                  }}
-                >
-                  <Typography variant="subtitle1" gutterBottom>
-                    Resume
-                  </Typography>
-
-                  {/* Current Resume Display */}
-                  {editingCandidate.resumeFile && (
-                    <Box sx={{ mb: 2, display: "flex", alignItems: "center" }}>
-                      <AttachFileIcon color="primary" sx={{ mr: 1 }} />
-                      <Typography variant="body2">
-                        Current: {editingCandidate.resumeFileName}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {/* File Upload Input with Styled Button */}
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<AttachFileIcon />}
+                {/* Resume Upload Section */}
+                <Grid item xs={12}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      border: "1px dashed",
+                      borderColor: "primary.main",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      gutterBottom
                     >
-                      Upload New Resume
-                      <input
-                        type="file"
-                        hidden
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) =>
-                          setEditingCandidate({
-                            ...editingCandidate,
-                            resumeFile: e.target.files[0],
-                            resumeFileName: e.target.files[0]?.name || "",
-                          })
-                        }
-                      />
-                    </Button>
+                      Upload Resume
+                    </Typography>
+
+                    {/* Current Resume Display */}
                     {editingCandidate.resumeFile && (
-                      <Typography variant="body2" color="text.secondary">
-                        Selected: {editingCandidate.resumeFileName}
-                      </Typography>
+                      <Box
+                        sx={{ mb: 2, display: "flex", alignItems: "center" }}
+                      >
+                        <AttachFileIcon color="primary" sx={{ mr: 1 }} />
+                        <Typography variant="body2">
+                          Current: {editingCandidate.resumeFileName}
+                        </Typography>
+                      </Box>
                     )}
-                  </Box>
-                </Paper>
-              </Box>
+
+                    {/* File Upload Input with Styled Button */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        startIcon={<AttachFileIcon />}
+                      >
+                        Upload New Resume
+                        <input
+                          type="file"
+                          hidden
+                          accept=".pdf,.doc,.docx"
+                          onChange={(e) =>
+                            setEditingCandidate({
+                              ...editingCandidate,
+                              resumeFile: e.target.files[0],
+                              resumeFileName: e.target.files[0]?.name || "",
+                            })
+                          }
+                        />
+                      </Button>
+                      {editingCandidate.resumeFile && (
+                        <Typography variant="body2" color="text.secondary">
+                          Selected: {editingCandidate.resumeFileName}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Paper>
+                </Grid>
+              </Grid>
             </Box>
           )}
         </DialogContent>
 
-        <DialogActions sx={{ p: 2 }}>
+        <DialogActions sx={{ justifyContent: "flex-end", p: 2 }}>
           <Button
             onClick={handleCloseEditDialog}
             variant="outlined"
             color="primary"
             startIcon={<CloseIcon />}
+            sx={{
+              borderColor: "#D32F2F",
+              color: "#D32F2F",
+              "&:hover": { backgroundColor: "rgba(211, 47, 47, 0.1)" },
+            }}
           >
             Discard Changes
           </Button>
@@ -635,11 +693,20 @@ const Submissions = () => {
           <Button
             onClick={updateCandidate}
             variant="contained"
-            color="primary"
+            sx={{
+              backgroundColor: "primary.main", // Primary background color
+              color: "#FFF", // White text
+              "&:hover": { backgroundColor: "#005f56" }, // Hover effect
+              ml: 2, // Space between buttons
+            }}
             startIcon={<SaveIcon />}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} /> : "Update Candidate"}
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "#FFF" }} />
+            ) : (
+              "Update Candidate"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -648,23 +715,80 @@ const Submissions = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            borderRadius: 3, // Rounded corners for modern look
+            padding: 2,
+            minWidth: "350px",
+          },
+        }}
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete {candidateToDelete?.fullName}'s
-            submission? This action cannot be undone.
+        <DialogTitle
+          sx={{
+            fontWeight: "bold",
+            fontSize: "1.25rem",
+            bgcolor: "#00796b", // Red background
+            color: "#FFF", // White text
+            p: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderRadius: 2,
+          }}
+        >
+          Confirm Delete
+          <IconButton
+            onClick={() => setDeleteDialogOpen(false)}
+            sx={{
+              color: "#FFF",
+              "&:hover": { backgroundColor: "rgba(255,255,255,0.2)" },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Typography variant="body1" color="text.primary" sx={{ mb: 2 }}>
+            Are you sure you want to delete <b>{candidateToDelete?.fullName}</b>
+            's submission?
+            <br />
+            <Typography component="span" color="error">
+              This action cannot be undone.
+            </Typography>
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+
+        <DialogActions sx={{ justifyContent: "flex-end", p: 2 }}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderColor: "#4CAF50",
+              color: "primary",
+              "&:hover": { backgroundColor: "rgba(76, 175, 80, 0.1)" },
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={deleteCandidate}
             color="error"
             variant="contained"
             disabled={loading}
+            sx={{
+              backgroundColor: "#D32F2F",
+              "&:hover": { backgroundColor: "#B71C1C" },
+              ml: 2, // Space between buttons
+            }}
           >
-            {loading ? <CircularProgress size={24} /> : "Delete"}
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "#FFF" }} />
+            ) : (
+              "Delete"
+            )}
           </Button>
         </DialogActions>
       </Dialog>

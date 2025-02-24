@@ -1,19 +1,27 @@
 import React from 'react';
-import { Grid, TextField, InputAdornment, IconButton, Tooltip } from '@mui/material';
-import VerifiedIcon from '@mui/icons-material/Verified'; // Correct import for the verified user icon
-import EmailIcon from '@mui/icons-material/Email'; // Correct import for the email icon
+import {
+  Grid,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import EmailIcon from '@mui/icons-material/Email';
 
-const ContactFields = ({ 
-  formData, 
-  handleChange, 
-  handleBlur, 
+const ContactFields = ({
+  formData,
+  handleChange,
+  handleBlur,
   formError,
-  isEmailVerified,
-  onEmailVerificationClick 
+  isEmailVerified,         // Use parent's state
+  onEmailVerificationClick // Use parent's handler
 }) => {
   return (
-    <>
-      <Grid item xs={12}>
+    <Grid container spacing={2}>
+      {/* Official Email Field */}
+      <Grid item xs={12} md={6}>
         <TextField
           label="Official Email Id"
           name="email"
@@ -29,13 +37,13 @@ const ContactFields = ({
             endAdornment: (
               <InputAdornment position="end">
                 {!isEmailVerified ? (
-                  <Tooltip title={isEmailVerified ? "Email Verified" : "Verify Email"}>
+                  <Tooltip title="Click to verify email">
                     <IconButton
                       onClick={onEmailVerificationClick}
-                      color={isEmailVerified ? "success" : "primary"}
+                      color="primary"
                       disabled={!formData.email || !!formError.email}
                     >
-                      {isEmailVerified ? <VerifiedIcon /> : <EmailIcon />}
+                      <EmailIcon />
                     </IconButton>
                   </Tooltip>
                 ) : (
@@ -45,8 +53,16 @@ const ContactFields = ({
             ),
           }}
         />
+        {/* Verification Info Message */}
+        {!isEmailVerified && formData.email && !formError.email && (
+          <Typography variant="caption" color="error">
+            Please verify your email before proceeding.
+          </Typography>
+        )}
       </Grid>
-      <Grid item xs={12} sm={6}>
+
+      {/* Personal Email Field */}
+      <Grid item xs={12} md={6}>
         <TextField
           label="Employee Personal Email"
           name="personalemail"
@@ -60,7 +76,9 @@ const ContactFields = ({
           helperText={formError.personalemail}
         />
       </Grid>
-      <Grid item xs={12} sm={6}>
+
+      {/* Phone Number Field */}
+      <Grid item xs={12} md={6}>
         <TextField
           label="Phone Number"
           name="phoneNumber"
@@ -73,7 +91,7 @@ const ContactFields = ({
           helperText={formError.phoneNumber}
         />
       </Grid>
-    </>
+    </Grid>
   );
 };
 

@@ -13,6 +13,8 @@ import AttendanceTracker from "./components/AttendanceTracker";
 import AdminDashboard from "./components/AdminDashboard";
 import PreventNavigation from "./components/common/PreventNavigation";
 import SignUpFormMain from "./components/Registration/SignUpFormMain";
+import UseLogoutOnUnload from "./utils/useLogoutOnUnload";
+import SignInMain from "./components/Registration/SignInMain";
 
 
 
@@ -24,6 +26,7 @@ function App() {
     <Router>
      
      <PreventNavigation />
+     <UseLogoutOnUnload />
       <ToastContainer 
         position="top-right" 
         autoClose={5000} 
@@ -39,7 +42,7 @@ function App() {
 
       <Routes>
         {/* Default Route */}
-        <Route path="/" element={<SignUpForm />} />
+        <Route path="/" element={<SignInMain />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/timesheet" element={<AttendanceTracker />} />
         <Route path="/admindashboard" element={<AdminDashboard />} />

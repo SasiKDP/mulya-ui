@@ -28,6 +28,7 @@ import {
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 
 // Validation Schema
+// Validation Schema (All fields required)
 const validationSchema = Yup.object().shape({
   fullName: Yup.string().required("Full Name is required"),
   candidateEmailId: Yup.string()
@@ -40,28 +41,10 @@ const validationSchema = Yup.object().shape({
   contactNumber: Yup.string()
     .matches(/^\d{10}$/, "Contact number must be exactly 10 digits")
     .required("Contact number is required"),
-  currentOrganization: Yup.string().max(
-    30,
-    "Organization name cannot be more than 30 characters"
-  ),
-  currentCTC: Yup.string().test(
-    "valid-ctc",
-    "Please enter a valid CTC value",
-    (value) => {
-      if (!value) return true;
-      const numValue = parseFloat(value.replace(/\s*LPA\s*/g, ""));
-      return !isNaN(numValue) && numValue >= 0;
-    }
-  ),
-  expectedCTC: Yup.string().test(
-    "valid-ctc",
-    "Please enter a valid CTC value",
-    (value) => {
-      if (!value) return true;
-      const numValue = parseFloat(value.replace(/\s*LPA\s*/g, ""));
-      return !isNaN(numValue) && numValue >= 0;
-    }
-  ),
+  currentOrganization: Yup.string()
+    .max(30, "Organization name cannot be more than 30 characters")
+    .required("Current Organization is required"),
+  qualification: Yup.string().required("Qualification is required"),
   totalExperience: Yup.number()
     .min(0, "Total experience cannot be negative")
     .max(50, "Total experience cannot be more than 50 years")
@@ -75,30 +58,50 @@ const validationSchema = Yup.object().shape({
       "Relevant experience cannot be more than total experience",
       function (value) {
         const { totalExperience } = this.parent;
-        if (value > totalExperience) {
-          return this.createError({
-            message: "Relevant experience cannot be more than total experience",
-          });
-        }
-        return true;
+        return value <= totalExperience;
       }
     ),
-  communicationSkills: Yup.number()
-    .min(1, "Rating must be between 1 and 5")
-    .max(5, "Rating must be between 1 and 5"),
-  requiredTechnologiesRating: Yup.number()
-    .min(1, "Rating must be between 1 and 5")
-    .max(5, "Rating must be between 1 and 5"),
-  preferredLocation: Yup.string()
-    .max(18, "Location cannot be more than 18 characters")
-    .matches(/^[A-Za-z\s]+$/, "Location can only contain letters and spaces"),
+  currentCTC: Yup.mixed()
+    .test("is-valid-ctc", "Please enter a valid CTC value in LPA", (value) => {
+      if (!value) return false; // Required field
+      const stringValue = String(value).trim();
+      if (/^\d+(\.\d{1,2})?$/.test(stringValue)) return true; // Accepts "3.5"
+      if (/^\d+(\.\d{1,2})?\s*LPA$/.test(stringValue)) return true; // Accepts "3.5 LPA"
+      return false;
+    })
+    .required("Current CTC is required"),
+
+  expectedCTC: Yup.mixed()
+    .test("is-valid-ctc", "Please enter a valid CTC value in LPA", (value) => {
+      if (!value) return false; // Required field
+      const stringValue = String(value).trim();
+      if (/^\d+(\.\d{1,2})?$/.test(stringValue)) return true; // Accepts "3.5"
+      if (/^\d+(\.\d{1,2})?\s*LPA$/.test(stringValue)) return true; // Accepts "3.5 LPA"
+      return false;
+    })
+    .required("Expected CTC is required"),
+  noticePeriod: Yup.string().required("Notice Period is required"),
   currentLocation: Yup.string()
     .max(18, "Location cannot be more than 18 characters")
-    .matches(/^[A-Za-z\s]+$/, "Location can only contain letters and spaces"),
-  overallFeedback: Yup.string().max(
-    100,
-    "Feedback cannot be more than 100 characters"
-  ),
+    .matches(/^[A-Za-z\s]+$/, "Location can only contain letters and spaces")
+    .required("Current Location is required"),
+  preferredLocation: Yup.string()
+    .max(18, "Location cannot be more than 18 characters")
+    .matches(/^[A-Za-z\s]+$/, "Location can only contain letters and spaces")
+    .required("Preferred Location is required"),
+  skills: Yup.string().required("Skills are required"),
+  communicationSkills: Yup.number()
+    .min(1, "Rating must be between 1 and 5")
+    .max(5, "Rating must be between 1 and 5")
+    .required("Communication Skills rating is required"),
+  requiredTechnologiesRating: Yup.number()
+    .min(1, "Rating must be between 1 and 5")
+    .max(5, "Rating must be between 1 and 5")
+    .required("Technology Skills rating is required"),
+  overallFeedback: Yup.string()
+    .max(100, "Feedback cannot be more than 100 characters")
+    .required("Overall feedback is required"),
+  resumeFile: Yup.mixed().required("Resume is required"),
 });
 
 const CandidateSubmissionForm = ({ jobId, userId, userEmail, closeDialog }) => {

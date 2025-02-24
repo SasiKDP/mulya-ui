@@ -297,29 +297,7 @@ const Profile = () => {
               />
             </Grid>
 
-            <Button
-              variant="contained"
-              sx={{
-                mt: 4,
-                background:
-                  "linear-gradient(45deg, #6a1b9a, rgb(245, 106, 64))",
-                color: "white",
-                borderRadius: 3,
-                fontWeight: "bold",
-                padding: "12px 25px",
-                "&:hover": {
-                  background:
-                    "linear-gradient(45deg, rgb(225, 85, 42), #6a1b9a)",
-                },
-                transition: "transform 0.2s",
-                "&:active": {
-                  transform: "scale(0.98)",
-                },
-              }}
-              fullWidth
-            >
-              Edit Profile
-            </Button>
+           
           </CardContent>
         </Card>
       </Box>
@@ -329,7 +307,7 @@ const Profile = () => {
 
 // Profile item component for each detail row
 const ProfileItem = ({ icon, label, value, fullWidth = false }) => (
-  <Grid item xs={12} md={fullWidth ? 12 : 6}>
+  <Grid item xs={12} md={fullWidth ?8 : 6}>
     <Box
       sx={{
         display: "flex",

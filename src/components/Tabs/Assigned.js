@@ -35,6 +35,9 @@ import ListAltIcon from "@mui/icons-material/ListAlt";
 import SectionHeader from "../MuiComponents/SectionHeader";
 import BASE_URL from "../../redux/config";
 
+
+// const BASE_URL = "http://192.168.0.246:8111"
+
 const Assigned = () => {
   const theme = useTheme();
   const [data, setData] = useState([]);
@@ -95,10 +98,10 @@ const Assigned = () => {
         jobDescription: (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography noWrap sx={{ maxWidth: 250 }}>
-              {item.jobDescription.slice(0, 15)}
-              {item.jobDescription.length > 15 && "..."}
+              {item.jobDescription ? item.jobDescription.slice(0, 15) : "No Description"}
+              {item.jobDescription && item.jobDescription.length > 15 && "..."}
             </Typography>
-            {item.jobDescription.length > 15 && (
+            {item.jobDescription && item.jobDescription.length > 15 && (
               <Tooltip title="View Full Description">
                 <Button
                   onClick={() => handleOpenDescriptionDialog(item.jobDescription, item.jobTitle)}

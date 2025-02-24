@@ -13,8 +13,7 @@ import {
   Paper,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import DescriptionIcon from '@mui/icons-material/Description';
-
+import DescriptionIcon from "@mui/icons-material/Description";
 
 const CellContent = ({ content, title, globalSearch }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -41,8 +40,21 @@ const CellContent = ({ content, title, globalSearch }) => {
       : textContent;
 
   return (
-    <TableCell
-      sx={{ border: "1px solid #ddd", minWidth: "100px", maxWidth: "200px" }}
+    <TableCell 
+      sx={{ 
+        minWidth: "100px", 
+        maxWidth: "200px", 
+        border: "none", 
+        borderBottom: "none",
+        borderTop: "none",
+        borderLeft: "none",
+        borderRight: "none",
+        padding: "8px",
+        "&.MuiTableCell-root": {
+          border: "none",
+          borderBottom: "none"
+        }
+      }}
     >
       <Box display="flex" alignItems="center" gap={1}>
         {/* Apply highlighting only if there's search text */}
@@ -58,10 +70,21 @@ const CellContent = ({ content, title, globalSearch }) => {
             <Button
               onClick={() => setDialogOpen(true)}
               size="small"
-              startIcon={<DescriptionIcon />} // Use the same icon as job description
-              sx={{ minWidth: 0 }}
+              //startIcon={<DescriptionIcon sx={{color:'#00796b',fontSize: "1rem", mr: 0.5}} />}
+              sx={{ 
+                minWidth: 0, 
+                border: "none",
+                boxShadow: "none",
+                color:'#00796b',
+                
+                "&:hover": {
+                  border: "none",
+                  boxShadow: "none"
+
+                }
+              }}
             >
-              View
+              more
             </Button>
           </Tooltip>
         )}
@@ -80,6 +103,7 @@ const CellContent = ({ content, title, globalSearch }) => {
             maxHeight: 500,
             p: 1,
             backgroundColor: "#ffffff",
+            border: "none"
           },
         }}
       >
@@ -94,9 +118,10 @@ const CellContent = ({ content, title, globalSearch }) => {
             p: 2,
             fontWeight: "bold",
             borderRadius: 0.5,
+            border: "none"
           }}
         >
-          <Typography variant="h6" sx={{ fontSize: "1.1rem" }}>
+          <Typography variant="h6" sx={{ fontSize: "1.1rem", border: "none" }}>
             {title}
           </Typography>
           <IconButton
@@ -105,6 +130,7 @@ const CellContent = ({ content, title, globalSearch }) => {
             sx={{
               color: "white",
               transition: "0.2s",
+              border: "none",
               "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.2)" },
             }}
           >
@@ -113,7 +139,7 @@ const CellContent = ({ content, title, globalSearch }) => {
         </DialogTitle>
 
         {/* Dialog Content */}
-        <DialogContent sx={{ mt: 2, px: 3 }}>
+        <DialogContent sx={{ mt: 2, px: 3, border: "none" }}>
           <Paper
             elevation={0}
             sx={{
@@ -124,10 +150,11 @@ const CellContent = ({ content, title, globalSearch }) => {
               fontSize: "1rem",
               lineHeight: 1.6,
               color: "#333",
+              border: "none"
             }}
           >
             <Typography
-              sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+              sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", border: "none" }}
               dangerouslySetInnerHTML={{
                 __html: highlightText(textContent, globalSearch),
               }}
@@ -136,7 +163,7 @@ const CellContent = ({ content, title, globalSearch }) => {
         </DialogContent>
 
         {/* Dialog Actions */}
-        <DialogActions sx={{ p: 2, justifyContent: "center" }}>
+        <DialogActions sx={{ p: 2, justifyContent: "end", border: "none" }}>
           <Button
             variant="contained"
             onClick={() => setDialogOpen(false)}
@@ -148,6 +175,7 @@ const CellContent = ({ content, title, globalSearch }) => {
               py: 1,
               textTransform: "none",
               fontSize: "0.95rem",
+              border: "none",
               "&:hover": { backgroundColor: "#005a4f" },
             }}
           >
