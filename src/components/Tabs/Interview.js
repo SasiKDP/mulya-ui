@@ -25,8 +25,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DataTable from "../MuiComponents/DataTable";
 import BASE_URL from "../../redux/config";
-
-
+import SectionHeader from "../MuiComponents/SectionHeader";
+import { ListIcon } from "lucide-react";
 
 const INTERVIEW_LEVELS = {
   ALL: "all",
@@ -56,8 +56,8 @@ const Interview = () => {
   const generateColumns = (data) => {
     if (data.length === 0) return [];
 
-    const sampleData = data[0];
     const headerLabels = {
+      candidateId: "Candidate ID",
       candidateName: "Candidate Name",
       candidateEmailId: "Candidate Email",
       candidateContactNo: "Contact Number",
@@ -68,15 +68,53 @@ const Interview = () => {
       interviewScheduledTimestamp: "Scheduled On",
       userEmail: "Recruiter Email",
       clientEmail: "Client Email",
-      Actions: "Actions",
+      clientName: "Client Name",
+      interviewStatus: "Interview Status",
+      scheduleInterview: "Schedule Interview",
+      actions: "Actions",
     };
 
-    return Object.keys(sampleData).map((key) => ({
-      key: key,
-      label:
-        headerLabels[key] ||
-        key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1"),
-    }));
+    // Define which columns should have filters (select or text)
+    const filterableColumns = {
+      candidateName: "text",
+      candidateEmailId: "text",
+      candidateContactNo: "text",
+      interviewLevel: "select",
+      interviewDateTime: "text",
+      duration: "text",
+      interviewStatus: "select",
+      interviewDateTime: "select",
+    };
+
+    // Define manual column order
+    const columnOrder = [
+      "candidateName",
+      "candidateId",
+      "candidateEmailId",
+      "candidateContactNo",
+      "interviewLevel",
+      "interviewDateTime",
+      "duration",
+      "zoomLink",
+      "interviewScheduledTimestamp",
+      "userEmail",
+      "clientEmail",
+      "clientName",
+      "interviewStatus",
+      "scheduleInterview",
+      "actions", // Ensuring Actions is always included
+    ];
+
+    return columnOrder
+      .filter(
+        (key) =>
+          key === "actions" || data.some((row) => row.hasOwnProperty(key))
+      ) // Ensuring actions column is included
+      .map((key) => ({
+        key: key,
+        label: headerLabels[key] || key.replace(/([A-Z])/g, " $1").trim(),
+        ...(filterableColumns[key] ? { type: filterableColumns[key] } : {}), // Apply type only if defined
+      }));
   };
 
   const formatDateTime = (dateTime) => {
@@ -135,7 +173,7 @@ const Interview = () => {
         ) : (
           ""
         ),
-        Actions: (
+        actions: (
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <Tooltip title="Edit">
               <IconButton
@@ -301,71 +339,30 @@ const Interview = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Box
-        sx={{
-          backgroundColor: "background.paper",
-          borderRadius: 1,
-          boxShadow: 1,
-        }}
-      >
-        <Box
-          sx={{
-            backgroundColor: "rgba(232, 245, 233)",
-            padding: 2,
-            borderRadius: "4px 4px 0 0",
-          }}
-        >
-          <Typography
-            variant="h5"
-            component="h1"
-            sx={{ fontWeight: 600, color: "#333" }}
-          >
-            Interview Schedule
-            {data.length > 0 && (
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ display: "inline", ml: 1 }}
-              >
-                [scheduled interviews {filteredData.length}{" "}
-                {filterLevel !== "all" ? filterLevel : ""}]
-              </Typography>
-            )}
-          </Typography>
-        </Box>
+    <Container
+      maxWidth={false} // 1) No fixed max width
+      disableGutters // 2) Remove horizontal padding
+      sx={{
+        width: "100%", // Fill entire viewport width
+        height: "calc(100vh - 20px)", // Fill entire viewport height
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+      }}
+    >
+      
+        <SectionHeader
+          title="Interview Schedule"
+          totalCount={filteredData.length}
+          onRefresh={fetchInterviewDetails}
+          isRefreshing={loading}
+          icon={<ListIcon sx={{ color: "#FFF" }} />} // Optional: Custom icon
+        />
 
-        <Box sx={{ p: 2 }}>
-          <ButtonGroup
-            variant="outlined"
-            sx={{
-              mb: 3,
-              "& .MuiButton-root": {
-                minWidth: "110px",
-                textTransform: "none",
-                borderColor: "#004d40",
-                color: "#004d40",
-                "&.active": {
-                  backgroundColor: "#004d40",
-                  color: "#fff",
-                },
-              },
-            }}
-          >
-            {Object.entries(INTERVIEW_LEVELS).map(([key, value]) => (
-              <Button
-                key={key}
-                className={filterLevel === value ? "active" : ""}
-                onClick={() => handleFilterChange(value)}
-              >
-                {key === "ALL" ? "All" : value}
-              </Button>
-            ))}
-          </ButtonGroup>
-
+        
           <DataTable data={filteredData} columns={columns} pageLimit={5} />
-        </Box>
-      </Box>
+       
+     
 
       {/* Edit Dialog */}
       <Dialog
@@ -373,17 +370,44 @@ const Interview = () => {
         onClose={() => setEditDialogOpen(false)}
         maxWidth="md"
         fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            borderRadius: 3, // Rounded corners for modern look
+            padding: 2,
+            minWidth: "500px",
+          },
+        }}
       >
-        <DialogTitle>
-          Edit Interview
+        <DialogTitle
+          sx={{
+            borderRadius: 2,
+            fontWeight: "bold",
+            fontSize: "1.25rem",
+            bgcolor: "#00796b", // Background color
+            color: "#FFF", // White text for contrast
+            p: 2, // Padding for a clean look
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between", // Ensures proper spacing
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: "bold", flexGrow: 1 }}>
+            Edit Interview
+          </Typography>
+
           <IconButton
             onClick={() => setEditDialogOpen(false)}
-            sx={{ position: "absolute", right: 8, top: 8 }}
+            sx={{
+              color: "#FFF", // White close button
+              "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.2)" }, // Subtle hover effect
+              p: 1, // Adjust padding for better alignment
+            }}
           >
-            <CloseIcon />
+            <CloseIcon fontSize="medium" />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+
+        <DialogContent sx={{ pb: 2 }}>
           {editingInterview && (
             <Box sx={{ flexGrow: 1, mt: 2 }}>
               <Grid container spacing={2}>
@@ -411,9 +435,10 @@ const Interview = () => {
                               })
                             }
                             fullWidth
+                            sx={{ bgcolor: "white", borderRadius: 1 }}
                           >
-                            <MenuItem value="INTERNAL">INTERNAL</MenuItem>
-                            <MenuItem value="EXTERNAL">EXTERNAL</MenuItem>
+                            <MenuItem value="INTERNAL">Internal</MenuItem>
+                            <MenuItem value="EXTERNAL">External</MenuItem>
                           </TextField>
                         ) : (
                           <TextField
@@ -426,11 +451,14 @@ const Interview = () => {
                               })
                             }
                             fullWidth
+                            sx={{ bgcolor: "white", borderRadius: 1 }}
                             disabled={[
                               "jobId",
                               "candidateId",
                               "userId",
                               "interviewScheduledTimestamp",
+                              "userEmail",
+                              "interviewStatus",
                             ].includes(key)}
                           />
                         )}
@@ -456,46 +484,13 @@ const Interview = () => {
                       }
                       onChange={(e) => {
                         const selectedDate = new Date(e.target.value);
-
-                        // Get dynamic timezone offset
-                        const timezoneOffset = selectedDate.getTimezoneOffset();
-                        const offsetHours = Math.abs(
-                          Math.floor(timezoneOffset / 60)
-                        )
-                          .toString()
-                          .padStart(2, "0");
-                        const offsetMinutes = Math.abs(timezoneOffset % 60)
-                          .toString()
-                          .padStart(2, "0");
-                        const offsetSign = timezoneOffset > 0 ? "-" : "+";
-
-                        const formattedDateTime = `${selectedDate.getFullYear()}-${(
-                          selectedDate.getMonth() + 1
-                        )
-                          .toString()
-                          .padStart(2, "0")}-${selectedDate
-                          .getDate()
-                          .toString()
-                          .padStart(2, "0")}T${selectedDate
-                          .getHours()
-                          .toString()
-                          .padStart(2, "0")}:${selectedDate
-                          .getMinutes()
-                          .toString()
-                          .padStart(2, "0")}:${selectedDate
-                          .getSeconds()
-                          .toString()
-                          .padStart(
-                            2,
-                            "0"
-                          )}${offsetSign}${offsetHours}:${offsetMinutes}`;
-
                         setEditingInterview({
                           ...editingInterview,
-                          interviewDateTime: formattedDateTime,
+                          interviewDateTime: selectedDate.toISOString(),
                         });
                       }}
                       fullWidth
+                      sx={{ bgcolor: "white", borderRadius: 1 }}
                     />
                   </Grid>
                 )}
@@ -516,6 +511,7 @@ const Interview = () => {
                         })
                       }
                       fullWidth
+                      sx={{ bgcolor: "white", borderRadius: 1 }}
                     />
                   </Grid>
                 )}
@@ -524,10 +520,31 @@ const Interview = () => {
           )}
         </DialogContent>
 
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button onClick={updateInterview} variant="contained" color="primary">
-          Reschedule Interview
+        <DialogActions
+          sx={{ justifyContent: "flex-end", alignItems: "center", p: 2 }}
+        >
+          <Button
+            onClick={() => setEditDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderColor: "#4CAF50",
+              color: "primary",
+              "&:hover": { backgroundColor: "rgba(76, 175, 80, 0.1)" },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={updateInterview}
+            color="primary"
+            variant="contained"
+            sx={{
+              backgroundColor: "primary",
+              "&:hover": { backgroundColor: "#005f56" },
+              ml: 2, // Adds spacing between buttons
+            }}
+          >
+            Reschedule Interview
           </Button>
         </DialogActions>
       </Dialog>
@@ -538,38 +555,84 @@ const Interview = () => {
         onClose={() => setDeleteDialogOpen(false)}
         maxWidth="xs"
         fullWidth
+        sx={{
+          "& .MuiDialog-paper": {
+            borderRadius: 3, // Rounded corners for modern look
+            padding: 2,
+            minWidth: "350px",
+          },
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold", fontSize: "1.25rem" }}>
           Confirm Delete
           <IconButton
             onClick={() => setDeleteDialogOpen(false)}
-            sx={{ position: "absolute", right: 8, top: 8 }}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: "grey.600",
+              "&:hover": { backgroundColor: "rgba(0,0,0,0.1)" },
+            }}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mt: 2 }}>
-            Are you sure you want to delete this interview? This action cannot
-            be undone.
+
+        <DialogContent sx={{ pb: 2 }}>
+          <Typography variant="body1" color="text.primary" sx={{ mb: 2 }}>
+            Are you sure you want to delete this interview? <br />
+            <b>This action cannot be undone.</b>
           </Typography>
+
           {interviewToDelete && (
             <Box
-              sx={{ mt: 2, backgroundColor: "grey.100", p: 2, borderRadius: 1 }}
+              sx={{
+                mt: 2,
+                p: 2,
+                backgroundColor: "#f9f9f9",
+                borderRadius: 2,
+                border: "1px solid #e0e0e0",
+              }}
             >
+              <Typography variant="subtitle2" color="text.primary">
+                Candidate Details:
+              </Typography>
               <Typography variant="body2" color="text.secondary">
-                Candidate: {interviewToDelete.candidateName}
+                <b>Candidate:</b> {interviewToDelete.candidateFullName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <b>Email:</b> {interviewToDelete.candidateEmailId}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <b>Interview Date:</b>{" "}
+                {interviewToDelete.interviewDateTime || "Not Scheduled"}
               </Typography>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+
+        <DialogActions sx={{ justifyContent: "space-between", p: 2 }}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderColor: "#4CAF50",
+              color: "primary",
+              "&:hover": { backgroundColor: "rgba(76, 175, 80, 0.1)" },
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={deleteInterview}
             color="error"
             variant="contained"
             startIcon={<DeleteIcon />}
+            sx={{
+              backgroundColor: "#D32F2F",
+              "&:hover": { backgroundColor: "#B71C1C" },
+            }}
           >
             Delete Interview
           </Button>

@@ -42,8 +42,9 @@ const initialState = {
 // Helper function to validate file type
 const isValidFileType = (file) => {
   const validTypes = [
-    "application/pdf",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/pdf", // PDF
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
+    "application/msword", // DOC
   ];
   return file && validTypes.includes(file.type);
 };
@@ -55,7 +56,7 @@ export const submitFormData = createAsyncThunk(
     try {
       // Validate file type before submission
       if (formData.resumeFile && !isValidFileType(formData.resumeFile)) {
-        return rejectWithValue("Invalid file type. Only PDF and DOCX are allowed.");
+        return rejectWithValue("Invalid file type. Only PDF , DOC and DOCX are allowed.");
       }
 
       // Create FormData for file upload

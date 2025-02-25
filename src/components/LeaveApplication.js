@@ -366,7 +366,7 @@ const LeaveApplication = () => {
               </Grid>
 
               {/* Manager Selection */}
-              <Grid item xs={12} sm={6} sx={{ height: 120 }}>
+              <Grid item xs={12} sm={6} sx={{ height: 100 }}>
                 <FormControl
                   fullWidth
                   sx={{

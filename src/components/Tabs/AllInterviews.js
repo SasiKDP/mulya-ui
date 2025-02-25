@@ -58,6 +58,24 @@ const AllInterviews = () => {
     "interviewStatus",
   ];
 
+  const columnsAll = [
+    { key: "candidateFullName", label: "Candidate FullName", type: "text" },
+    { key: "candidateContactNo", label: "Candidate ContactNumber", type: "text" },
+    { key: "candidateEmailId", label: "Candidate EmailID", type: "text" },
+    { key: "userEmail", label: "User Email", type: "text" },
+    { key: "userId", label: "User ID", type: "text" },
+    { key: "interviewDateTime", label: "Interview Date-Time", type: "datetime" },
+    { key: "duration", label: "Duration", type: "text" },
+    { key: "zoomLink", label: "Zoom Link", type: "link" },
+    { key: "jobId", label: "Job ID", type: "text" },
+    { key: "candidateId", label: "Candidate ID", type: "text" },
+    { key: "interviewScheduledTimestamp", label: "Interview Scheduled Timestamp", type: "datetime" },
+    { key: "clientEmail", label: "Client Email", type: "text" },
+    { key: "clientName", label: "Client Name", type: "text" },
+    { key: "interviewLevel", label: "Interview Level", type: "select" },
+    { key: "interviewStatus", label: "Interview Status", type: "select" }
+  ];
+
   // Generate columns dynamically with manual order
   const generateColumns = (data, order) => {
     if (!data.length) return [];
@@ -97,7 +115,17 @@ const AllInterviews = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+     <Container
+          maxWidth={false}        // 1) No fixed max width
+          disableGutters         // 2) Remove horizontal padding
+          sx={{
+            width: "100%",       // Fill entire viewport width
+            height: "calc(100vh - 20px)",  // Fill entire viewport height
+            display: "flex",
+            flexDirection: "column",
+            p: 2,
+          }}
+        >
       {/* Reusable SectionHeader */}
       <Box sx={{mb:1}}> 
         <SectionHeader
@@ -109,7 +137,7 @@ const AllInterviews = () => {
       </Box>
 
       {/* Reusing DataTable component */}
-      <DataTable data={submissions} columns={columns} pageLimit={10} />
+      <DataTable data={submissions} columns={columnsAll} pageLimit={10} />
     </Container>
   );
 };
