@@ -39,13 +39,12 @@ const validationSchema = Yup.object().shape({
     .required("User email is required"),
   clientName: Yup.string().required("Client name is required"),
   clientEmail: Yup.string()
-  .nullable() // Allows null or empty values
-  .trim()
-  .matches(
-    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-    "Invalid email format (e.g., clientname@something.com)"
-  ),
-
+    .nullable()
+    .trim()
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "Invalid email format (e.g., clientname@something.com)"
+    ),
   interviewDateTime: Yup.date()
     .required("Interview date and time is required")
     .min(new Date(), "Interview date and time must be in the future"),
@@ -53,23 +52,22 @@ const validationSchema = Yup.object().shape({
     .required("Duration is required")
     .min(15, "Duration must be at least 15 minutes")
     .max(60, "Duration cannot exceed 60 minutes"),
-    zoomLink: Yup.string()
-    .nullable() // Allows null or empty values
+  zoomLink: Yup.string()
+    .nullable()
     .trim()
-    .matches(
-      /^(https?:\/\/[^\s$.?#].[^\s]*)?$/,
-      "Must be a valid URL"
-    ),
+    .matches(/^(https?:\/\/[^\s$.?#].[^\s]*)?$/, "Must be a valid URL"),
   interviewLevel: Yup.string()
     .required("Interview level is required")
     .oneOf(["Internal", "External"]),
-  externalInterviewDetails: Yup.string().when("interviewLevel", (interviewLevel, schema) => {
-    return interviewLevel === "External"
-      ? schema.required("External interview details are required")
-      : schema;
-  }),
+  externalInterviewDetails: Yup.string().when(
+    "interviewLevel",
+    (interviewLevel, schema) => {
+      return interviewLevel === "External"
+        ? schema.required("External interview details are required")
+        : schema;
+    }
+  ),
 });
-
 
 const InterviewForm = ({
   jobId,
@@ -83,9 +81,8 @@ const InterviewForm = ({
   handleCloseInterviewDialog,
 }) => {
   const dispatch = useDispatch();
-  const { isSubmitting, submissionSuccess, error, interviewResponse } = useSelector(
-    (state) => state.interviewForm
-  );
+  const { isSubmitting, submissionSuccess, error, interviewResponse } =
+    useSelector((state) => state.interviewForm);
 
   // Initial form values
   const initialValues = {
@@ -140,7 +137,12 @@ const InterviewForm = ({
       error={touched[field.name] && Boolean(errors[field.name])}
       helperText={touched[field.name] && errors[field.name]}
       fullWidth
-      variant="filled"
+      sx={{
+        mb: 0.5,
+        "& .MuiOutlinedInput-root": {
+          borderRadius: 1.5,
+        },
+      }}
     />
   );
 
@@ -174,7 +176,6 @@ const InterviewForm = ({
         gap: 2,
         maxWidth: "100%",
         maxHeight: "80vh",
-        overflowY: "auto",
       }}
     >
       <SuccessMessage />
@@ -190,143 +191,167 @@ const InterviewForm = ({
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
-        {({ values, touched, errors, handleChange }) => (
+        {({ values }) => (
           <Form>
-            <Grid container spacing={2}>
-              {/* Read-only Fields */}
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="jobId"
-                  component={FormikTextField}
-                  label="Job ID"
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="candidateId"
-                  component={FormikTextField}
-                  label="Candidate ID"
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="candidateFullName"
-                  component={FormikTextField}
-                  label="Candidate Name"
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="candidateContactNo"
-                  component={FormikTextField}
-                  label="Contact Number"
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="candidateEmailId"
-                  component={FormikTextField}
-                  label="Candidate Email"
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="userEmail"
-                  component={FormikTextField}
-                  label="User Email"
-                  disabled
-                />
-              </Grid>
-
-              {/* Editable Fields */}
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="clientName"
-                  component={FormikTextField}
-                  label="Client Name"
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="clientEmail"
-                  component={FormikTextField}
-                  label="Client Email"
-                  type="email"
-                  // required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="interviewDateTime"
-                  component={FormikTextField}
-                  label="Interview Date & Time"
-                  type="datetime-local"
-                  required
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="duration"
-                  component={FormikTextField}
-                  label="Duration (Minutes)"
-                  type="number"
-                  required
-                  inputProps={{ min: 15, max: 60 }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Field
-                  name="zoomLink"
-                  component={FormikTextField}
-                  label="Interview Link"
-                  // required
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <FormControl component="fieldset" required>
-                  <FormLabel component="legend">Interview Level</FormLabel>
-                  <Field name="interviewLevel">
-                    {({ field }) => (
-                      <RadioGroup {...field} row>
-                        <FormControlLabel
-                          value="Internal"
-                          control={<Radio />}
-                          label="Internal"
-                        />
-                        <FormControlLabel
-                          value="External"
-                          control={<Radio />}
-                          label="External"
-                        />
-                      </RadioGroup>
-                    )}
-                  </Field>
-                </FormControl>
-              </Grid>
-
-              {values.interviewLevel === "External" && (
-                <Grid item xs={12}>
+            {/* Candidate Details Section (Read-Only Fields) */}
+            <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Candidate Details
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Field
-                    name="externalInterviewDetails"
+                    name="jobId"
                     component={FormikTextField}
-                    label="External Interview Details"
-                    multiline
-                    rows={3}
+                    label="Job ID"
+                    disabled
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="candidateId"
+                    component={FormikTextField}
+                    label="Candidate ID"
+                    disabled
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="candidateFullName"
+                    component={FormikTextField}
+                    label="Candidate Name"
+                    disabled
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="candidateContactNo"
+                    component={FormikTextField}
+                    label="Contact Number"
+                    disabled
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="candidateEmailId"
+                    component={FormikTextField}
+                    label="Candidate Email"
+                    disabled
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="userEmail"
+                    component={FormikTextField}
+                    label="User Email"
+                    disabled
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
+
+            {/* Interview Details Section (Editable Fields) */}
+            <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Interview Details
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="clientName"
+                    component={FormikTextField}
+                    label="Client Name"
                     required
                   />
                 </Grid>
-              )}
-            </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="clientEmail"
+                    component={FormikTextField}
+                    label="Client Email"
+                    type="email"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="interviewDateTime"
+                    component={FormikTextField}
+                    label="Interview Date & Time"
+                    type="datetime-local"
+                    required
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="duration"
+                    component={FormikTextField}
+                    label="Duration (Minutes)"
+                    type="number"
+                    required
+                    inputProps={{ min: 15, max: 60 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Field
+                    name="zoomLink"
+                    component={FormikTextField}
+                    label="Interview Link"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl component="fieldset" required>
+                    <FormLabel component="legend">Interview Level</FormLabel>
+                    <Field name="interviewLevel">
+                      {({ field }) => (
+                        <RadioGroup {...field} row>
+                          <FormControlLabel
+                            value="Internal"
+                            control={<Radio />}
+                            label="Internal"
+                          />
+                          <FormControlLabel
+                            value="External"
+                            control={<Radio />}
+                            label="External"
+                          />
+                        </RadioGroup>
+                      )}
+                    </Field>
+                  </FormControl>
+                </Grid>
+                {values.interviewLevel === "External" && (
+                  <Grid item xs={12}>
+                    <Field
+                      name="externalInterviewDetails"
+                      component={FormikTextField}
+                      label="External Interview Details"
+                      multiline
+                      rows={3}
+                      required
+                    />
+                  </Grid>
+                )}
+              </Grid>
+            </Paper>
 
-            <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 3 }}>
+            {/* Form Action Buttons */}
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                justifyContent: "flex-end",
+                mt: 3,
+              }}
+            >
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleDialogClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
               <Button
                 type="submit"
                 variant="contained"
@@ -335,14 +360,6 @@ const InterviewForm = ({
                 startIcon={isSubmitting ? <CircularProgress size={20} /> : null}
               >
                 {isSubmitting ? "Scheduling..." : "Schedule Interview"}
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={handleDialogClose}
-                disabled={isSubmitting}
-              >
-                Cancel
               </Button>
             </Box>
           </Form>

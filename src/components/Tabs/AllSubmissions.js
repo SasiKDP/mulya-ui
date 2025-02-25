@@ -7,9 +7,9 @@ import {
   Alert,
   AlertTitle,
 } from "@mui/material";
+import DataTable from "../MuiComponents/DataTable";
+import SectionHeader from "../MuiComponents/SectionHeader";
 import BASE_URL from "../../redux/config";
-import DataTable from "../MuiComponents/DataTable"; // Reusable DataTable component
-import SectionHeader from "../MuiComponents/SectionHeader"; // Import the reusable SectionHeader
 
 const AllSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
@@ -18,12 +18,14 @@ const AllSubmissions = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const columns = [
-   
-    { key: "fullName", label: "Candidate Name", type: "text" },
-    { key: "emailId", label: "Candidate Email", type: "text" },
-    { key: "contactNumber", label: "Candidate Contact", type: "text" },
+    { key: "candidateId", label: "Candidate ID", type: "text" },
+    { key: "jobId", label: "Job ID", type: "text" },
+    { key: "userId", label: "User ID", type: "text" },
+    { key: "fullName", label: "Full Name", type: "text" },
+    { key: "emailId", label: "Email", type: "text" },
+    { key: "contactNumber", label: "Contact Number", type: "text" },
     { key: "currentOrganization", label: "Organization", type: "text" },
-    { key: "qualification", label: "Qualification", type: "select" },
+    { key: "qualification", label: "Qualification", type: "text" },
     { key: "totalExperience", label: "Total Exp", type: "text" },
     { key: "relevantExperience", label: "Relevant Exp", type: "text" },
     { key: "currentCTC", label: "Current CTC", type: "text" },
@@ -32,15 +34,13 @@ const AllSubmissions = () => {
     { key: "currentLocation", label: "Current Location", type: "text" },
     { key: "preferredLocation", label: "Preferred Location", type: "text" },
     { key: "skills", label: "Skills", type: "text" },
-    { key: "communicationSkills", label: "Communication", type: "select" },
+    { key: "communicationSkills", label: "Communication Skills", type: "select" },
     { key: "requiredTechnologiesRating", label: "Tech Rating", type: "text" },
-    { key: "overallFeedback", label: "Feedback", type: "text" },
+    { key: "overallFeedback", label: "Overall Feedback", type: "text" },
     { key: "userEmail", label: "User Email", type: "text" },
-    { key: "interviewStatus", label: "Status", type: "select" },
-    { key: "candidateId", label: "Candidate ID", type: "select" },
-    { key: "jobId", label: "Job ID", type: "text" },
-    { key: "userId", label: "User ID", type: "text" },
+    { key: "interviewStatus", label: "Interview Status", type: "select" },
   ];
+  
 
   const fetchSubmissions = async () => {
     setIsRefreshing(true);
@@ -64,7 +64,12 @@ const AllSubmissions = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 100px)">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+      >
         <CircularProgress />
       </Box>
     );
@@ -82,16 +87,18 @@ const AllSubmissions = () => {
   }
 
   return (
-    <Container 
-      maxWidth="lg" 
+    <Container
+      maxWidth={false}        // 1) No fixed max width
+      disableGutters         // 2) Remove horizontal padding
       sx={{
-        height: "calc(100vh - 20px)", 
+        width: "100%",       // Fill entire viewport width
+        height: "calc(100vh - 20px)",  // Fill entire viewport height
         display: "flex",
         flexDirection: "column",
         p: 2,
       }}
     >
-      {/* Section Header with Fixed Height */}
+      {/* Section Header */}
       <Box sx={{ flexShrink: 0, mb: 2 }}>
         <SectionHeader
           title="Submitted Candidates"
@@ -101,19 +108,9 @@ const AllSubmissions = () => {
         />
       </Box>
 
-      {/* DataTable should take the remaining space */}
-      <Box
-        sx={{
-          flexGrow: 1, 
-          overflow: "hidden",
-          height: "calc(100vh - 20vh)", // Subtract header & padding
-        }}
-      >
-        <DataTable 
-          data={submissions} 
-          columns={columns} 
-          pageLimit={10} 
-        />
+      {/* DataTable fills the remaining vertical space */}
+      <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+        <DataTable data={submissions} columns={columns} pageLimit={10} />
       </Box>
     </Container>
   );

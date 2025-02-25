@@ -56,7 +56,7 @@ const UsersList = () => {
     message: "",
     severity: "success",
   });
-    const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -403,11 +403,21 @@ const UsersList = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 12 }}>
+    <Container
+      maxWidth={false} // 1) No fixed max width
+      disableGutters // 2) Remove horizontal padding
+      sx={{
+        width: "100%", // Fill entire viewport width
+        height: "calc(100vh - 20px)", // Fill entire viewport height
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+      }}
+    >
       <SectionHeader
         title="Employees List"
-        totalCount={employeesList.length} 
-        onRefresh={fetchEmployees} 
+        totalCount={employeesList.length}
+        onRefresh={fetchEmployees}
         isRefreshing={isRefreshing}
         icon={<ListAltIcon sx={{ color: "#FFF" }} />}
         sx={{

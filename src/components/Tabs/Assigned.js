@@ -13,6 +13,7 @@ import {
   Grid,
   Card,
   CardContent,
+  Container,
   Fade,
   Alert,
   AlertTitle,
@@ -20,6 +21,7 @@ import {
   Paper,
   Tooltip,
   useTheme,
+  Link,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -27,12 +29,14 @@ import {
   Description as DescriptionIcon,
   Error as ErrorIcon,
   Refresh as RefreshIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 import CandidateSubmissionForm from "../CandidateSubmissionFrom";
 import CustomDialog from "../MuiComponents/CustomDialog";
 import DataTable from "../MuiComponents/DataTable";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import SectionHeader from "../MuiComponents/SectionHeader";
+
 import BASE_URL from "../../redux/config";
 
 
@@ -60,7 +64,7 @@ const Assigned = () => {
     if (data.length === 0) return [];
   
     return [
-      { key: "submitCandidate", label: "Actions",  },      
+      { key: "submitCandidate", label: "Actions" },      
       { key: "jobTitle", label: "Job Title", type: "text" },
       { key: "jobId", label: "Job ID", type: "select" },
       { key: "clientName", label: "Client Name", type: "text" },
@@ -76,7 +80,6 @@ const Assigned = () => {
       { key: "status", label: "Status", type: "select" },
       { key: "salaryPackage", label: "Salary Package", type: "text" },
       { key: "noOfPositions", label: "No. of Positions", type: "text" },
-      
     ];
   };
 
@@ -96,21 +99,52 @@ const Assigned = () => {
       const processedData = sortedData.map((item) => ({
         ...item,
         jobDescription: (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography noWrap sx={{ maxWidth: 250 }}>
-              {item.jobDescription ? item.jobDescription.slice(0, 15) : "No Description"}
-              {item.jobDescription && item.jobDescription.length > 15 && "..."}
-            </Typography>
-            {item.jobDescription && item.jobDescription.length > 15 && (
-              <Tooltip title="View Full Description">
-                <Button
-                  onClick={() => handleOpenDescriptionDialog(item.jobDescription, item.jobTitle)}
-                  size="small"
-                  startIcon={<DescriptionIcon />}
-                  sx={{ minWidth: 0 }}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1}}>
+            {item.jobDescription ? (
+              // If text job description is available
+              <>
+                <Typography noWrap sx={{ maxWidth: 250 }}>
+                  {item.jobDescription.slice(0, 15)}
+                  {item.jobDescription.length > 15 && "..."}
+                </Typography>
+                {item.jobDescription.length > 15 && (
+                  <Tooltip title="View Full Description">
+                    <Button
+                      onClick={() => handleOpenDescriptionDialog(item.jobDescription, item.jobTitle)}
+                      size="small"
+                      startIcon={<DescriptionIcon />}
+                      sx={{ minWidth: 0 }}
+                    >
+                      more
+                    </Button>
+                  </Tooltip>
+                )}
+              </>
+            ) : (
+              // If JD is a file/image, show download button
+              <Tooltip title="Download Job Description">
+                <Link 
+                  href={`${BASE_URL}/requirements/download-job-description/${item.jobId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="none"
                 >
-                  View
-                </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<DownloadIcon />}
+                    color="primary"
+                    sx={{ 
+                      borderRadius: 2,
+                      '&:hover': {
+                        backgroundColor: theme.palette.primary.light,
+                        color: theme.palette.primary.contrastText,
+                      }
+                    }}
+                  >
+                    Download JD
+                  </Button>
+                </Link>
               </Tooltip>
             )}
           </Box>
@@ -243,33 +277,20 @@ const Assigned = () => {
     );
   }
 
-  if (fetchStatus === "failed") {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <Alert
-          severity="error"
-          sx={{ width: "400px" }}
-          action={
-            <Button color="inherit" size="small" onClick={handleRefresh}>
-              RETRY
-            </Button>
-          }
-        >
-          <AlertTitle>Error</AlertTitle>
-          {fetchError || "Failed to load data. Please try again."}
-        </Alert>
-      </Box>
-    );
-  }
+  
 
   return (
+    <Container
+    maxWidth={false}        // 1) No fixed max width
+    disableGutters         // 2) Remove horizontal padding
+    sx={{
+      width: "100%",       // Fill entire viewport width
+      height: "calc(100vh - 20px)",  // Fill entire viewport height
+      display: "flex",
+      flexDirection: "column",
+      p: 2,
+    }}
+  >
     <Fade in timeout={500}>
       <Box sx={{ p: 1 }}>
         <SectionHeader
@@ -280,7 +301,7 @@ const Assigned = () => {
           icon={<ListAltIcon sx={{ color: "#FFF" }} />}
         />
 
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p:1 }}>
           <Box sx={{ position: "relative" }}>
             {isRefreshing && (
               <Box
@@ -371,6 +392,7 @@ const Assigned = () => {
         />
       </Box>
     </Fade>
+    </Container>
   );
 };
 

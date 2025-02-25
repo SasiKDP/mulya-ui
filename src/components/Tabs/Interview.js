@@ -339,14 +339,18 @@ const Interview = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Box
-        sx={{
-          backgroundColor: "background.paper",
-          borderRadius: 1,
-          boxShadow: 1,
-        }}
-      >
+    <Container
+      maxWidth={false} // 1) No fixed max width
+      disableGutters // 2) Remove horizontal padding
+      sx={{
+        width: "100%", // Fill entire viewport width
+        height: "calc(100vh - 20px)", // Fill entire viewport height
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+      }}
+    >
+      
         <SectionHeader
           title="Interview Schedule"
           totalCount={filteredData.length}
@@ -355,10 +359,10 @@ const Interview = () => {
           icon={<ListIcon sx={{ color: "#FFF" }} />} // Optional: Custom icon
         />
 
-        <Box sx={{ p: 1 }}>
+        
           <DataTable data={filteredData} columns={columns} pageLimit={5} />
-        </Box>
-      </Box>
+       
+     
 
       {/* Edit Dialog */}
       <Dialog
@@ -376,7 +380,7 @@ const Interview = () => {
       >
         <DialogTitle
           sx={{
-            borderRadius:2,
+            borderRadius: 2,
             fontWeight: "bold",
             fontSize: "1.25rem",
             bgcolor: "#00796b", // Background color
@@ -454,7 +458,7 @@ const Interview = () => {
                               "userId",
                               "interviewScheduledTimestamp",
                               "userEmail",
-                               "interviewStatus",
+                              "interviewStatus",
                             ].includes(key)}
                           />
                         )}

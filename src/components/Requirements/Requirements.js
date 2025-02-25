@@ -30,8 +30,10 @@ import BASE_URL from "../../redux/config";
 import CloseIcon from "@mui/icons-material/Close";
 import SectionHeader from "../MuiComponents/SectionHeader";
 import ListAltIcon from "@mui/icons-material/ListAlt";
+import CustomDialog from "../MuiComponents/CustomDialog";
 
 // const BASE_URL = "http://192.168.0.246:8111"
+
 
 const Requirements = () => {
   const dispatch = useDispatch();
@@ -43,6 +45,10 @@ const Requirements = () => {
   const [editFormData, setEditFormData] = useState({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState(null);
+
+  const [openDescriptionDialog, setOpenDescriptionDialog] = useState(false);
+  const [dialogTitle, setDialogTitle] = useState("");
+  const [dialogContent, setDialogContent] = useState("");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -57,6 +63,19 @@ const Requirements = () => {
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchRequirements().finally(() => setIsRefreshing(false));
+  };
+
+   // Function to open the description dialog
+   const handleOpenDescriptionDialog = (description, jobTitle) => {
+    setDialogTitle(jobTitle);
+    setDialogContent(description);
+    setOpenDescriptionDialog(true);
+  };
+
+  const handleCloseDescriptionDialog = () => {
+    setOpenDescriptionDialog(false);
+    setDialogTitle("");
+    setDialogContent("");
   };
 
   useEffect(() => {
@@ -193,7 +212,17 @@ const Requirements = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4 }}>
+     <Container
+          maxWidth={false}        // 1) No fixed max width
+          disableGutters         // 2) Remove horizontal padding
+          sx={{
+            width: "100%",       // Fill entire viewport width
+            height: "calc(100vh - 20px)",  // Fill entire viewport height
+            display: "flex",
+            flexDirection: "column",
+            p: 2,
+          }}
+        >
      
         <SectionHeader
           title="Requirements List"
@@ -220,12 +249,13 @@ const Requirements = () => {
           </Alert>
         ) : (
           <>
-            <RequirementsTable
-              requirementsList={requirementsList}
-              handleEdit={handleEdit}
-              handleDeleteClick={handleDeleteClick}
-              recruiters={recruiters}
-            />
+           <RequirementsTable
+            requirementsList={requirementsList}
+            handleEdit={handleEdit}
+            handleDeleteClick={handleDeleteClick}
+            handleOpenDescriptionDialog={handleOpenDescriptionDialog}  // Pass the dialog handler
+            recruiters={recruiters}
+          />
 
             {/* Edit Dialog */}
             <Dialog
@@ -417,6 +447,14 @@ const Requirements = () => {
                 </Button>
               </DialogActions>
             </Dialog>
+
+
+            <CustomDialog
+            open={openDescriptionDialog}
+            onClose={handleCloseDescriptionDialog}
+            title={dialogTitle}
+            content={dialogContent}
+          />
 
             {/* Snackbar */}
             <Snackbar
