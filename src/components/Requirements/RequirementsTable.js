@@ -1,20 +1,33 @@
 import React, { useMemo } from "react";
-import { Box, Tooltip, IconButton, Stack } from "@mui/material";
+import {
+  Box,
+  Tooltip,
+  IconButton,
+  Stack,
+  Button,
+  Typography,
+  Link,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  FilterListOff as FilterListOffIcon,
+  Description as DescriptionIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
-import DataTable from "../MuiComponents/DataTable"; // Import the DataTable component
-import CellContent from "./CellContent";
-
-
+import DataTable from "../MuiComponents/DataTable";
+import BASE_URL from "../../redux/config";
 
 const RequirementsTable = ({
   requirementsList,
   handleEdit,
   handleDeleteClick,
+  handleOpenDescriptionDialog,
 }) => {
+  const theme = useTheme();
+
+  // const BASE_URL = "http://192.168.0.246:8111";
+
   // Sort requirementsList by requirementAddedTimeStamp in descending order
   const sortedRequirementsList = useMemo(() => {
     return [...requirementsList].sort(
@@ -24,62 +37,102 @@ const RequirementsTable = ({
     );
   }, [requirementsList]);
 
-  // Define pre-configured columns with specific ordering and filtering types
+  // Define columns with the job description logic
   const generateColumns = () => {
     return [
-      
-      { 
-        key: "recruiterName", 
-        label: "Recruiter Name", 
+      {
+        key: "recruiterName",
+        label: "Recruiter Name",
         type: "text",
-       
+        render: (row) =>
+          Array.isArray(row.recruiterName)
+            ? row.recruiterName.join(", ")
+            : "N/A",
       },
-  
-      { 
-        key: "recruiterIds", 
-        label: "Recruiter ID", 
-        type: "text",
-        
-      },
-  
-      { key: "jobTitle", label: "Job Title", type: "text" },
-      { key: "jobId", label: "Job ID", type: "select" },
-      { key: "clientName", label: "Client Name", type: "text" },
-  
-      { 
-        key: "jobDescription", 
-        label: "Job Description",
-        render: (row) => (
-          <CellContent 
-            content={row.jobDescription}
-            title="Job Description"
-          />
-        ),
-      },
-  
-      { key: "jobType", label: "Job Type", type: "select" },
-      { key: "jobMode", label: "Job Mode", type: "select" },
-      { key: "location", label: "Location", type: "text" },
-      { key: "experienceRequired", label: "Experience Required", type: "text" },
-      { key: "noticePeriod", label: "Notice Period", type: "select" },
-      { key: "relevantExperience", label: "Relevant Experience", type: "text" },
-      { key: "qualification", label: "Qualification", type: "text" },
-  
-      { 
-        key: "requirementAddedTimeStamp", 
-        label: "Posted Date", 
+      {
+        key: "requirementAddedTimeStamp",
+        label: "Posted Date",
         type: "select",
         render: (row) => {
           const date = new Date(row.requirementAddedTimeStamp);
-          return date.toISOString().split("T")[0]; 
-        }
+          return date.toISOString().split("T")[0];
+        },
       },
-  
-      { key: "status", label: "Status", type: "select" },
-      { key: "salaryPackage", label: "Salary Package", type: "text" },
+
+      { key: "jobTitle", label: "Job Title", type: "text" },
+
+      { key: "clientName", label: "Client Name", type: "text" },
+      {
+        key: "jobDescription",
+        label: "Job Description",
+        render: (row) => (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {row.jobDescription ? (
+              // If a text job description is available
+              <>
+                <Typography noWrap sx={{ maxWidth: 80 }}>
+                  {row.jobDescription.slice(0, 15)}
+                  {row.jobDescription.length > 15 && "..."}
+                </Typography>
+                {row.jobDescription.length > 15 && (
+                  <Tooltip title="View Full Description">
+                    <Button
+                      onClick={() =>
+                        handleOpenDescriptionDialog(
+                          row.jobDescription,
+                          row.jobTitle
+                        )
+                      }
+                      size="small"
+                      startIcon={<DescriptionIcon />}
+                      sx={{ minWidth: 0 }}
+                    >
+                      more
+                    </Button>
+                  </Tooltip>
+                )}
+              </>
+            ) : (
+              // If JD is a file/image, show download button
+              <Tooltip title="Download Job Description">
+                <Link
+                  href={`${BASE_URL}/requirements/download-job-description/${row.jobId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="none"
+                >
+                  <a
+                    href={`${BASE_URL}/requirements/download-job-description/${row.jobId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    color="blue"
+                  >
+                    Download JD
+                  </a>
+                </Link>
+              </Tooltip>
+            )}
+          </Box>
+        ),
+      },
+      { key: "jobType", label: "Job Type", type: "select" },
       { key: "noOfPositions", label: "No. of Positions", type: "text" },
-      { 
-        key: "actions", 
+      { key: "salaryPackage", label: "Salary Package", type: "text" },
+      { key: "jobMode", label: "Job Mode", type: "select" },
+      { key: "location", label: "Location", type: "text" },
+      { key: "experienceRequired", label: "Experience Required", type: "text" },
+      { key: "relevantExperience", label: "Relevant Experience", type: "text" },
+      { key: "noticePeriod", label: "Notice Period", type: "select" },
+      { key: "qualification", label: "Qualification", type: "text" },
+      {
+        key: "recruiterIds",
+        label: "Recruiter ID",
+        type: "text",
+      },
+      { key: "status", label: "Status", type: "select" },
+      { key: "jobId", label: "Job ID", type: "select" },
+      {
+        key: "actions",
         label: "Actions",
         render: (row) => (
           <Stack direction="row" spacing={1}>
@@ -103,17 +156,19 @@ const RequirementsTable = ({
             </Tooltip>
           </Stack>
         ),
-      }, 
+      },
     ];
   };
-    
-
-  
 
   const columns = useMemo(() => {
     if (sortedRequirementsList.length === 0) return [];
     return generateColumns();
-  }, [sortedRequirementsList, handleEdit, handleDeleteClick]);
+  }, [
+    sortedRequirementsList,
+    handleEdit,
+    handleDeleteClick,
+    handleOpenDescriptionDialog,
+  ]);
 
   return (
     <Box sx={{ width: "100%", height: "100%", p: 2 }}>

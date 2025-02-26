@@ -65,7 +65,7 @@ import AllSubmissions from "../components/Tabs/AllSubmissions";
 import AllInterviews from "../components/Tabs/AllInterviews";
 import Profile from "../components/Profile";
 import LeaveApplication from "../components/LeaveApplication";
-import logoOrg from "../assets/logo-01.png";
+import logoOrg from "../assets/Mulyafinalwithoutcaption.svg";
 import SubmissionsMain from "../components/Submissions/SubmissionsMain";
 import InterviewMain from "../components/Interviews/InterviewMain";
 import UserAvatar from "../utils/UserAvatar";

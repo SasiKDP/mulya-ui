@@ -21,6 +21,7 @@ import {
   Select,
   MenuItem,
   Paper,
+  Container,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
@@ -477,8 +478,26 @@ const Submissions = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
-    <>
+    <Container
+      maxWidth={false} // 1) No fixed max width
+      disableGutters // 2) Remove horizontal padding
+      sx={{
+        width: "100%", // Fill entire viewport width
+        height: "calc(100vh - 20px)", // Fill entire viewport height
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+      }}
+    >
       <SectionHeader
         title="Candidate Submissions"
         totalCount={data.length}
@@ -487,21 +506,9 @@ const Submissions = () => {
         icon={<GroupsIcon sx={{ color: "#1B5E20" }} />}
       />
 
-      <Box
-        sx={{
-          width: "100%",
-
-          maxHeight: 600,
-        }}
-      >
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <DataTable data={data} columns={columns} pageLimit={5} />
-        )}
-      </Box>
+      
+        <DataTable data={data} columns={columns} pageLimit={5} />
+     
 
       {/* Edit Dialog */}
       <Dialog
@@ -800,14 +807,22 @@ const Submissions = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
-          <Typography variant="h5" color="primary" gutterBottom>
+        <DialogTitle
+          sx={{
+            bgcolor: "#00796b",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderRadius: 1,
+          }}
+        >
+          <Typography variant="h6" sx={{ color: "#FFF", fontWeight: 600 }}>
             Schedule Interview
           </Typography>
           <IconButton
-            aria-label="close"
             onClick={handleCloseInterviewDialog}
-            sx={{ position: "absolute", right: 8, top: 8 }}
+            size="small"
+            sx={{ color: "#FFF" }}
           >
             <CloseIcon />
           </IconButton>
@@ -873,7 +888,7 @@ const Submissions = () => {
       >
         <CircularProgress />
       </Dialog>
-    </>
+    </Container>
   );
 };
 

@@ -21,7 +21,8 @@ import {
   CardContent,
   Divider,
   Alert,
-  Stack
+  Stack,
+  Container,
 } from "@mui/material";
 import {
   Visibility,
@@ -405,7 +406,17 @@ const AddUser = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: 1200, margin: '0 auto', p: 3 }}>
+    <Container
+    maxWidth={false}        // 1) No fixed max width
+    disableGutters         // 2) Remove horizontal padding
+    sx={{
+      width: "100%",       // Fill entire viewport width
+      height: "calc(100vh - 20px)",  // Fill entire viewport height
+      display: "flex",
+      flexDirection: "column",
+      p: 2,
+    }}
+  >
       <ToastContainer />
       <Card elevation={3}>
         <CardContent>
@@ -564,7 +575,7 @@ const AddUser = () => {
           </Stack>
         </CardContent>
       </Card>
-    </Box>
+    </Container>
   );
 };
 

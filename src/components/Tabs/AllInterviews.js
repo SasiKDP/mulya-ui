@@ -115,7 +115,17 @@ const AllInterviews = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+     <Container
+          maxWidth={false}        // 1) No fixed max width
+          disableGutters         // 2) Remove horizontal padding
+          sx={{
+            width: "100%",       // Fill entire viewport width
+            height: "calc(100vh - 20px)",  // Fill entire viewport height
+            display: "flex",
+            flexDirection: "column",
+            p: 2,
+          }}
+        >
       {/* Reusable SectionHeader */}
       <Box sx={{mb:1}}> 
         <SectionHeader

@@ -30,7 +30,7 @@ const RecruiterMultiSelect = ({ values, setFieldValue, errors, touched }) => {
   }, [dispatch]);
 
   return (
-    <Grid item xs={12} md={5}>
+    <Grid item xs={12} md={8}>
       <FormControl fullWidth error={touched.recruiterName && Boolean(errors.recruiterName)}>
         <InputLabel>Select Recruiters</InputLabel>
         <Select

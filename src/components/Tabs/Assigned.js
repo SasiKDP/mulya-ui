@@ -13,6 +13,7 @@ import {
   Grid,
   Card,
   CardContent,
+  Container,
   Fade,
   Alert,
   AlertTitle,
@@ -20,6 +21,7 @@ import {
   Paper,
   Tooltip,
   useTheme,
+  Link,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -27,14 +29,15 @@ import {
   Description as DescriptionIcon,
   Error as ErrorIcon,
   Refresh as RefreshIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 import CandidateSubmissionForm from "../CandidateSubmissionFrom";
 import CustomDialog from "../MuiComponents/CustomDialog";
 import DataTable from "../MuiComponents/DataTable";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import SectionHeader from "../MuiComponents/SectionHeader";
-import BASE_URL from "../../redux/config";
 
+import BASE_URL from "../../redux/config";
 
 // const BASE_URL = "http://192.168.0.246:8111"
 
@@ -58,9 +61,9 @@ const Assigned = () => {
 
   const generateColumns = (data) => {
     if (data.length === 0) return [];
-  
+
     return [
-      { key: "submitCandidate", label: "Actions",  },      
+      { key: "submitCandidate", label: "Actions" },
       { key: "jobTitle", label: "Job Title", type: "text" },
       { key: "jobId", label: "Job ID", type: "select" },
       { key: "clientName", label: "Client Name", type: "text" },
@@ -72,11 +75,14 @@ const Assigned = () => {
       { key: "noticePeriod", label: "Notice Period", type: "select" },
       { key: "relevantExperience", label: "Relevant Experience", type: "text" },
       { key: "qualification", label: "Qualification", type: "text" },
-      { key: "requirementAddedTimeStamp", label: "Posted Date", type: "select" },
+      {
+        key: "requirementAddedTimeStamp",
+        label: "Posted Date",
+        type: "select",
+      },
       { key: "status", label: "Status", type: "select" },
       { key: "salaryPackage", label: "Salary Package", type: "text" },
       { key: "noOfPositions", label: "No. of Positions", type: "text" },
-      
     ];
   };
 
@@ -84,33 +90,66 @@ const Assigned = () => {
     setIsRefreshing(true);
     setFetchStatus("loading");
     try {
-      const response = await axios.get(`${BASE_URL}/requirements/recruiter/${userId}`);
+      const response = await axios.get(
+        `${BASE_URL}/requirements/recruiter/${userId}`
+      );
       const userData = response.data || [];
       setTotalCount(response.data.totalCount || userData.length || 0);
-  
+
       // Sort data by latest date first (Descending Order)
-      const sortedData = userData.sort((a, b) =>
-        new Date(b.requirementAddedTimeStamp) - new Date(a.requirementAddedTimeStamp)
+      const sortedData = userData.sort(
+        (a, b) =>
+          new Date(b.requirementAddedTimeStamp) -
+          new Date(a.requirementAddedTimeStamp)
       );
-  
+
       const processedData = sortedData.map((item) => ({
         ...item,
         jobDescription: (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography noWrap sx={{ maxWidth: 250 }}>
-              {item.jobDescription ? item.jobDescription.slice(0, 15) : "No Description"}
-              {item.jobDescription && item.jobDescription.length > 15 && "..."}
-            </Typography>
-            {item.jobDescription && item.jobDescription.length > 15 && (
-              <Tooltip title="View Full Description">
-                <Button
-                  onClick={() => handleOpenDescriptionDialog(item.jobDescription, item.jobTitle)}
-                  size="small"
-                  startIcon={<DescriptionIcon />}
-                  sx={{ minWidth: 0 }}
+            {item.jobDescription ? (
+              // If text job description is available
+              <>
+                <Typography noWrap sx={{ maxWidth: 250 }}>
+                  {item.jobDescription.slice(0, 15)}
+                  {item.jobDescription.length > 15 && "..."}
+                </Typography>
+                {item.jobDescription.length > 15 && (
+                  <Tooltip title="View Full Description">
+                    <Button
+                      onClick={() =>
+                        handleOpenDescriptionDialog(
+                          item.jobDescription,
+                          item.jobTitle
+                        )
+                      }
+                      size="small"
+                      startIcon={<DescriptionIcon />}
+                      sx={{ minWidth: 0 }}
+                    >
+                      more
+                    </Button>
+                  </Tooltip>
+                )}
+              </>
+            ) : (
+              // If JD is a file/image, show download button
+              <Tooltip title="Download Job Description">
+                <Link
+                  href={`${BASE_URL}/requirements/download-job-description/${item.jobId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="none"
                 >
-                  View
-                </Button>
+                  <a
+                    href={`${BASE_URL}/requirements/download-job-description/${item.jobId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    color="blue"
+                  >
+                    Download JD
+                  </a>
+                </Link>
               </Tooltip>
             )}
           </Box>
@@ -133,7 +172,7 @@ const Assigned = () => {
           </Tooltip>
         ),
       }));
-  
+
       setData(processedData);
       setColumns(generateColumns(processedData)); // Set columns in the new format
       setFetchStatus("succeeded");
@@ -144,8 +183,6 @@ const Assigned = () => {
       setIsRefreshing(false);
     }
   };
-  
-  
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -243,134 +280,147 @@ const Assigned = () => {
     );
   }
 
-  if (fetchStatus === "failed") {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <Alert
-          severity="error"
-          sx={{ width: "400px" }}
-          action={
-            <Button color="inherit" size="small" onClick={handleRefresh}>
-              RETRY
-            </Button>
-          }
-        >
-          <AlertTitle>Error</AlertTitle>
-          {fetchError || "Failed to load data. Please try again."}
-        </Alert>
-      </Box>
-    );
-  }
-
   return (
-    <Fade in timeout={500}>
-      <Box sx={{ p: 1 }}>
-        <SectionHeader
-          title="Assigned Requirements"
-          totalCount={totalCount}
-          onRefresh={handleRefresh}
-          isRefreshing={isRefreshing}
-          icon={<ListAltIcon sx={{ color: "#FFF" }} />}
-        />
-
-        <Box sx={{ p: 2 }}>
-          <Box sx={{ position: "relative" }}>
-            {isRefreshing && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  bgcolor: "rgba(255, 255, 255, 0.7)",
-                  zIndex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <CircularProgress />
-              </Box>
-            )}
-            <DataTable
-              data={data}
-              columns={columns}
-              pageLimit={5}
-              noDataMessage={
-                <Box sx={{ py: 4, textAlign: "center" }}>
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    No Records Found
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    No requirements have been assigned yet.
-                  </Typography>
-                </Box>
-              }
-              sx={{
-                "& .MuiDataGrid-root": {
-                  border: "none",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                },
-              }}
-            />
-          </Box>
-        </Box>
-
-        <Dialog
-          open={openSubmitDialog}
-          onClose={handleCloseSubmitDialog}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: 2 },
+    <Container
+      maxWidth={false}
+      disableGutters
+      sx={{
+        width: "100%", // Full viewport width
+        height: "calc(100vh - 10px)", // Full viewport height
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        p: 2,
+      }}
+    >
+      <Fade in timeout={500}>
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            height: "calc(100% - 0px)", // Take remaining height
+            p: 1,
           }}
         >
-          <DialogTitle
+          <SectionHeader
+            title="Assigned Requirements"
+            totalCount={totalCount}
+            onRefresh={handleRefresh}
+            isRefreshing={isRefreshing}
+            icon={<ListAltIcon sx={{ color: "#FFF" }} />}
+          />
+
+          <Box
             sx={{
-              bgcolor: "#00796b",
+              flex: 1,
+              p: 1,
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              borderRadius:1,
+              flexDirection: "column",
+              height: "calc(100% - 0px)", // Adjusts dynamically
+              overflow: "auto",
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{ color: '#FFF', fontWeight: 600 }}
-            >
-              Submit Candidate
-            </Typography>
-            <IconButton onClick={handleCloseSubmitDialog} size="small" sx={{color:'#FFF'}} >
-              <CloseIcon  />
-            </IconButton>
-          </DialogTitle>
-          <DialogContent sx={{ mt: 2 }}>
-            <CandidateSubmissionForm
-              jobId={selectedJobForSubmit}
-              userId={user}
-              userEmail={employeeEmail}
-              closeDialog={handleCloseSubmitDialog}
-            />
-          </DialogContent>
-        </Dialog>
+            <Box sx={{ position: "relative", flex: 1, overflow: "auto" }}>
+              {isRefreshing && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    bgcolor: "rgba(255, 255, 255, 0.7)",
+                    zIndex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <CircularProgress />
+                </Box>
+              )}
 
-        <CustomDialog
-          open={openDescriptionDialog}
-          onClose={handleCloseDescriptionDialog}
-          title={currentJobTitle}
-          content={selectedJobDescription}
-        />
-      </Box>
-    </Fade>
+              <DataTable
+                data={data}
+                columns={columns}
+                pageLimit={10}
+                noDataMessage={
+                  <Box sx={{ py: 4, textAlign: "center" }}>
+                    <Typography
+                      variant="h6"
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      No Records Found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      No requirements have been assigned yet.
+                    </Typography>
+                  </Box>
+                }
+                sx={{
+                  "& .MuiDataGrid-root": {
+                    border: "none",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+
+          {/* Submit Dialog */}
+          <Dialog
+            open={openSubmitDialog}
+            onClose={handleCloseSubmitDialog}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: { borderRadius: 2 },
+            }}
+          >
+            <DialogTitle
+              sx={{
+                bgcolor: "#00796b",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderRadius: 1,
+              }}
+            >
+              <Typography variant="h6" sx={{ color: "#FFF", fontWeight: 600 }}>
+                Submit Candidate
+              </Typography>
+              <IconButton
+                onClick={handleCloseSubmitDialog}
+                size="small"
+                sx={{ color: "#FFF" }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ mt: 2 }}>
+              <CandidateSubmissionForm
+                jobId={selectedJobForSubmit}
+                userId={user}
+                userEmail={employeeEmail}
+                closeDialog={handleCloseSubmitDialog}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* Description Dialog */}
+          <CustomDialog
+            open={openDescriptionDialog}
+            onClose={handleCloseDescriptionDialog}
+            title={currentJobTitle}
+            content={selectedJobDescription}
+          />
+        </Box>
+      </Fade>
+    </Container>
   );
 };
 

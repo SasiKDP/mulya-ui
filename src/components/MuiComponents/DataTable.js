@@ -284,50 +284,75 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
     }
 
     if (column.type === "text") {
-      return (
-        <Box sx={{ p: 2, minWidth: 250 }}>
-          <Typography variant="subtitle2" gutterBottom>
-            Filter by {column.label}
-          </Typography>
-          <TextField
-            fullWidth
-            size="small"
-            variant="outlined"
-            placeholder="Type to filter..."
-            value={filters[column.key] || ""}
-            onChange={(e) => handleFilterChange(column, e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" />
-                </InputAdornment>
-              ),
-              endAdornment: filters[column.key] && (
-                <InputAdornment position="end">
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    onClick={() => handleClearFilter(column.key)}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-            <Button
-              size="small"
-              variant="contained"
-              onClick={handleFilterClose}
-              sx={{ bgcolor: "#00796b", "&:hover": { bgcolor: "#00695c" } }}
-            >
-              Apply
-            </Button>
-          </Box>
-        </Box>
-      );
-    }
+  return (
+    <Paper
+      sx={{
+        p: 2,
+        minWidth: 250,
+        borderRadius: 2,
+        boxShadow: 3,
+        mb: 2,
+      }}
+    >
+      <Typography variant="subtitle2" gutterBottom>
+        Filter by {column.label}
+      </Typography>
+      <TextField
+        fullWidth
+        size="small"
+        variant="outlined"
+        placeholder={`Search ${column.label}...`}
+        value={filters[column.key] || ""}
+        onChange={(e) => handleFilterChange(column, e.target.value)}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon fontSize="small" color="action" />
+            </InputAdornment>
+          ),
+          endAdornment: filters[column.key] ? (
+            <InputAdornment position="end">
+              <IconButton
+                edge="end"
+                size="small"
+                onClick={() => handleClearFilter(column.key)}
+                sx={{
+                  transition: "transform 0.3s ease",
+                  "&:hover": { transform: "scale(1.1)" },
+                }}
+              >
+                <CloseIcon fontSize="small" color="action" />
+              </IconButton>
+            </InputAdornment>
+          ) : null,
+        }}
+      />
+      <Box
+        sx={{
+          mt: 2,
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Button
+          size="small"
+          variant="contained"
+          onClick={handleFilterClose}
+          sx={{
+            bgcolor: "#00796b",
+            color: "white",
+            textTransform: "none",
+            borderRadius: 2,
+            "&:hover": { bgcolor: "#00695c" },
+          }}
+        >
+          Apply Filter
+        </Button>
+      </Box>
+    </Paper>
+  );
+}
+
 
     return null; // If column type is not defined, do not render any filter
   };
@@ -341,7 +366,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
         flexDirection: "column",
       }}
     >
-      <Grid container spacing={2} sx={{ m: 1, mb: 2 }}>
+      <Grid container spacing={2} sx={{mb:1}}>
         <Grid item xs={12} sm={6} md={4} lg={3}>
           <TextField
             fullWidth
@@ -458,7 +483,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                       padding: 2,
                       whiteSpace: "normal",
                       wordWrap: "break-word",
-                      maxWidth: "150px",
+                      maxWidth: "130px",
                       overflow: "hidden",
                     }}
                   >
@@ -635,7 +660,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[10, 20, 30, 40, 50, { label: "All", value: -1 }]}
+          rowsPerPageOptions={[10, 20, 30, 40, 50]}
           sx={{
             borderTop: "1px solid #ccc",
             backgroundColor: "#fff",
