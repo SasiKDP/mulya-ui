@@ -26,7 +26,6 @@ const RequirementsTable = ({
 }) => {
   const theme = useTheme();
 
-  
   // const BASE_URL = "http://192.168.0.246:8111";
 
   // Sort requirementsList by requirementAddedTimeStamp in descending order
@@ -45,6 +44,10 @@ const RequirementsTable = ({
         key: "recruiterName",
         label: "Recruiter Name",
         type: "text",
+        render: (row) =>
+          Array.isArray(row.recruiterName)
+            ? row.recruiterName.join(", ")
+            : "N/A",
       },
       {
         key: "requirementAddedTimeStamp",
@@ -98,21 +101,14 @@ const RequirementsTable = ({
                   rel="noopener noreferrer"
                   underline="none"
                 >
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<DownloadIcon />}
-                    color="primary"
-                    sx={{
-                      borderRadius: 2,
-                      "&:hover": {
-                        backgroundColor: theme.palette.primary.light,
-                        color: theme.palette.primary.contrastText,
-                      },
-                    }}
+                  <a
+                    href={`${BASE_URL}/requirements/download-job-description/${row.jobId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    color="blue"
                   >
                     Download JD
-                  </Button>
+                  </a>
                 </Link>
               </Tooltip>
             )}

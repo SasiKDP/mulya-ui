@@ -2,9 +2,9 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import BASE_URL from "../config";
 
+         
 
-
-export const submitFormData = createAsyncThunk(
+export const submitFormData =createAsyncThunk(
   "form/submit",
   async (formData, { rejectWithValue }) => {
     try {
