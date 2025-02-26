@@ -31,6 +31,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import axios from "axios";
 import RecruiterMultiSelect from "../MuiComponents/RecruiterMultiSelect";
 import BASE_URL from "../../redux/config";
+import QualificationField from "../../utils/QualificationDropdown";
 
 
 
@@ -139,42 +140,7 @@ const CustomSelect = ({
   </FormControl>
 );
 
-// QualificationField Component
-const QualificationField = ({ form, field, ...props }) => {
-  const qualifications = [
-    "High School",
-    "Associate Degree",
-    "Bachelor's Degree",
-    "Master's Degree",
-    "Ph.D",
-    "MBA",
-    "MCA",
-    "B.Tech/B.E.",
-    "M.Tech/M.E.",
-    "BCA",
-    "Diploma",
-    "Other",
-  ];
 
-  return (
-    <FormControl
-      fullWidth
-      error={form.touched[field.name] && Boolean(form.errors[field.name])}
-    >
-      <InputLabel>Qualification</InputLabel>
-      <Select {...field} label="Qualification">
-        {qualifications.map((qual) => (
-          <MenuItem key={qual} value={qual}>
-            {qual}
-          </MenuItem>
-        ))}
-      </Select>
-      {form.touched[field.name] && form.errors[field.name] && (
-        <FormHelperText>{form.errors[field.name]}</FormHelperText>
-      )}
-    </FormControl>
-  );
-};
 
 const JobForm = () => {
   // Local state instead of Redux
@@ -446,10 +412,7 @@ const JobForm = () => {
                       />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
-                      <Field
-                        name="qualification"
-                        component={QualificationField}
-                      />
+                     <QualificationField />
                     </Grid>
                     <Grid item xs={12} sm={6} md={4}>
                       <Field
