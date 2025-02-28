@@ -7,6 +7,9 @@ import {
   Container,
   Alert,
   AlertTitle,
+  ButtonGroup,
+  Button,
+  Typography,
 } from "@mui/material";
 import BASE_URL from "../../redux/config";
 import DataTable from "../MuiComponents/DataTable"; // Reusable DataTable component
@@ -14,9 +17,11 @@ import SectionHeader from "../MuiComponents/SectionHeader"; // Import the reusab
 
 const AllInterviews = () => {
   const [submissions, setSubmissions] = useState([]);
+  const [filteredSubmissions, setFilteredSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("All");
 
   useEffect(() => {
     fetchSubmissions();
@@ -31,11 +36,29 @@ const AllInterviews = () => {
         `${BASE_URL}/candidate/allscheduledinterviews`
       );
       setSubmissions(response.data);
+      setFilteredSubmissions(response.data);
     } catch (err) {
       setError(err.message || "Failed to load submissions");
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  // Get unique interview levels
+  const getInterviewLevels = () => {
+    if (!submissions.length) return [];
+    const levels = [...new Set(submissions.map(item => item.interviewLevel))].filter(Boolean);
+    return ["All", ...levels];
+  };
+
+  // Handle filter change
+  const handleFilterChange = (level) => {
+    setActiveFilter(level);
+    if (level === "All") {
+      setFilteredSubmissions(submissions);
+    } else {
+      setFilteredSubmissions(submissions.filter(item => item.interviewLevel === level));
     }
   };
 
@@ -115,29 +138,54 @@ const AllInterviews = () => {
   }
 
   return (
-     <Container
-          maxWidth={false}        // 1) No fixed max width
-          disableGutters         // 2) Remove horizontal padding
-          sx={{
-            width: "100%",       // Fill entire viewport width
-            height: "calc(100vh - 20px)",  // Fill entire viewport height
-            display: "flex",
-            flexDirection: "column",
-            p: 2,
-          }}
-        >
+    <Container
+      maxWidth={false}        // 1) No fixed max width
+      disableGutters         // 2) Remove horizontal padding
+      sx={{
+        width: "100%",       // Fill entire viewport width
+        height: "calc(100vh - 20px)",  // Fill entire viewport height
+        display: "flex",
+        flexDirection: "column",
+        p: 2,
+      }}
+    >
       {/* Reusable SectionHeader */}
-      <Box sx={{mb:1}}> 
+      <Box sx={{ mb: 1 }}> 
         <SectionHeader
           title="Scheduled Interviews"
-          totalCount={submissions.length}
+          totalCount={filteredSubmissions.length}
           onRefresh={fetchSubmissions}
           isRefreshing={isRefreshing}
         />
       </Box>
 
+      {/* Filter ButtonGroup */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          Filter by Interview Level:
+        </Typography>
+        <Paper elevation={0} sx={{ p: 1, backgroundColor: "#f5f5f5" }}>
+          <ButtonGroup variant="outlined" size="small" aria-label="interview level filter">
+            {getInterviewLevels().map((level) => (
+              <Button 
+                key={level}
+                onClick={() => handleFilterChange(level)}
+                variant={activeFilter === level ? "contained" : "outlined"}
+                color="primary"
+              >
+                {level}
+              </Button>
+            ))}
+          </ButtonGroup>
+        </Paper>
+      </Box>
+
       {/* Reusing DataTable component */}
-      <DataTable data={submissions} columns={columnsAll} pageLimit={10} />
+      <DataTable 
+        data={filteredSubmissions} 
+        columns={columnsAll} 
+        pageLimit={10} 
+      />
     </Container>
   );
 };

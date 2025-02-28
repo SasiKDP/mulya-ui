@@ -31,158 +31,20 @@ import { logoutAsync } from "../redux/features/authSlice";
 
 // Icons
 import MenuIcon from "@mui/icons-material/Menu";
-import HomeIcon from "@mui/icons-material/Home";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import WorkIcon from "@mui/icons-material/Work";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import PeopleIcon from "@mui/icons-material/People";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import GroupIcon from "@mui/icons-material/Group";
-import AddIcon from "@mui/icons-material/Add";
-import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
-import InterpreterModeIcon from "@mui/icons-material/InterpreterMode";
-import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import CloseIcon from "@mui/icons-material/Close";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 // Components
-import Requirements from "../components/Requirements/Requirements";
-import Submissions from "../components/Tabs/Submissions";
-import Planned from "../components/Tabs/Planned";
-import Bench from "../components/Tabs/Bench";
-import Assigned from "../components/Tabs/Assigned";
-import AddUser from "../components/Tabs/AddUser";
-import JobForm from "../components/Requirements/JobForm";
-import Interview from "../components/Tabs/Interview";
-import AdminDashboard from "../components/AdminDashboard";
-import AttendanceTracker from "../components/AttendanceTracker";
-import EmployeeTimesheet from "../components/EmployeeTimesheet";
-import UsersList from "../components/Tabs/UsersList";
-import AllSubmissions from "../components/Tabs/AllSubmissions";
-import AllInterviews from "../components/Tabs/AllInterviews";
+
 import Profile from "../components/Profile";
 import LeaveApplication from "../components/LeaveApplication";
-import logoOrg from "../assets/Mulyafinalwithoutcaption.svg";
-import SubmissionsMain from "../components/Submissions/SubmissionsMain";
-import InterviewMain from "../components/Interviews/InterviewMain";
+import logoOrg from "../assets/dashbaordLogo.svg";
 import UserAvatar from "../utils/UserAvatar";
-import JobFormMain from "../components/JobForm/JobFormMain";
+import TABS_BY_ROLE from "../utils/tabsConfig";
 
 const DRAWER_WIDTH = 240;
-
-const TABS_BY_ROLE = {
-  EMPLOYEE: [
-    {
-      label: "Assigned",
-      value: "ASSIGNED",
-      component: <Assigned />,
-      icon: <WorkIcon />,
-    },
-    {
-      label: "Submissions",
-      value: "SUBMISSIONS",
-      component: <Submissions />,
-      icon: <AssignmentIcon />,
-    },
-    {
-      label: "Interview",
-      value: "INTERVIEW",
-      component: <Interview />,
-      icon: <GroupIcon />,
-    },
-    {
-      label: "Timesheet",
-      value: "TIMESHEET",
-      component: <AttendanceTracker />,
-      icon: <AccessTimeIcon />,
-    },
-  ],
-  ADMIN: [
-    {
-      label: "Timesheet",
-      value: "TIMESHEET",
-      component: <AttendanceTracker />,
-      icon: <AccessTimeIcon />,
-    },
-    {
-      label: "Planned",
-      value: "PLANNED",
-      component: <Planned />,
-      icon: <HomeIcon />,
-    },
-    {
-      label: "Bench",
-      value: "BENCH",
-      component: <Bench />,
-      icon: <PeopleIcon />,
-    },
-    {
-      label: "Add User",
-      value: "ADDUSER",
-      component: <AddUser />,
-      icon: <AddIcon />,
-    },
-  ],
-  SUPERADMIN: [
-    {
-      label: "Dashboard",
-      value: "DASHBOARD",
-      component: <AdminDashboard />,
-      icon: <DashboardIcon />,
-    },
-    {
-      label: "Requirements",
-      value: "REQUIREMENTS",
-      component: <Requirements />,
-      icon: <AssignmentIcon />,
-    },
-    {
-      label: "Job Form",
-      value: "JOB_FORM",
-      component: <JobForm />,
-      icon: <WorkIcon />,
-    },
-    {
-      label: "Users",
-      value: "USERS",
-      component: <UsersList />,
-      icon: <PeopleIcon />,
-    },
-    {
-      label: "Add User",
-      value: "ADDUSER",
-      component: <AddUser />,
-      icon: <AddIcon />,
-    },
-    {
-      label: "Submissions",
-      value: "SUBMISSIONS",
-      component: <AllSubmissions />,
-      icon: <PersonSearchIcon />,
-    },
-    {
-      label: "Interviews",
-      value: "ALLINTERVIEWS",
-      component: <AllInterviews />,
-      icon: <InterpreterModeIcon />,
-    },
-    {
-      label: "Bench",
-      value: "BENCH",
-      component: <Bench />,
-      icon: <HourglassEmptyIcon />,
-    },
-    {
-      label: "Timesheet",
-      value: "TIMESHEET",
-      component: <EmployeeTimesheet />,
-      icon: <AccessTimeIcon />,
-    },
-  ],
-};
 
 // import logoOrg from "../assets/logo-01.png";
 
@@ -291,6 +153,7 @@ const DashboardPage = () => {
         backgroundColor: theme.palette.background.default,
         display: "flex",
         flexDirection: "column",
+       
       }}
     >
       {/* Fixed Header */}
@@ -301,7 +164,7 @@ const DashboardPage = () => {
           alignItems: "center",
           justifyContent: "space-between",
           borderBottom: `1px solid ${theme.palette.divider}`,
-          flexShrink: 0, // Prevents header from shrinking
+          flexShrink: 0, 
         }}
       >
         <Typography variant="h6" color="primary" fontWeight="600" sx={{ p: 1 }}>
@@ -408,7 +271,11 @@ const DashboardPage = () => {
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 2, height: 60 }}
+          >
+            {" "}
+            {/* Adjust height as needed */}
             <IconButton
               color="black"
               edge="start"
@@ -506,6 +373,7 @@ const DashboardPage = () => {
         open={drawerOpen}
         onClose={handleDrawerToggle}
         sx={{
+          
           width: DRAWER_WIDTH,
           flexShrink: 0,
           "& .MuiDrawer-paper": {

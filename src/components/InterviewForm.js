@@ -25,6 +25,10 @@ import {
 import { Check } from "lucide-react";
 import dayjs from "dayjs";
 
+
+const oneMonthAgo = new Date();
+oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
 // Validation Schema
 const validationSchema = Yup.object().shape({
   jobId: Yup.string().required("Job ID is required"),
@@ -45,9 +49,9 @@ const validationSchema = Yup.object().shape({
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
       "Invalid email format (e.g., clientname@something.com)"
     ),
-  interviewDateTime: Yup.date()
+    interviewDateTime: Yup.date()
     .required("Interview date and time is required")
-    .min(new Date(), "Interview date and time must be in the future"),
+    .min(oneMonthAgo, "Interview date and time must be within the last month or in the future"),
   duration: Yup.number()
     .required("Duration is required")
     .min(15, "Duration must be at least 15 minutes")

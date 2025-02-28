@@ -8,7 +8,7 @@ import BASE_URL from "../config";
 export const fetchEmployees = createAsyncThunk(
   "employee/fetchEmployees",
   async () => {
-    const response = await axios.get(`${BASE_URL}/users/employee`);
+    const response = await axios.get(`/users/employee`);
     return response.data;
   }
 );

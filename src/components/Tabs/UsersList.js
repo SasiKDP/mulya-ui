@@ -60,7 +60,7 @@ const UsersList = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  const VALID_ROLES = ["SUPERADMIN", "EMPLOYEE", "ADMIN"];
+  const VALID_ROLES = ["SUPERADMIN", "EMPLOYEE", "ADMIN","TEAMLEAD"];
 
   // Validation regex patterns
   const personalEmailRegex = /^[a-z0-9._%+-]+@gmail\.com$/;
@@ -429,11 +429,7 @@ const UsersList = () => {
         }}
       />
 
-      {fetchStatus === "loading" && (
-        <Box display="flex" justifyContent="center" p={3}>
-          <CircularProgress />
-        </Box>
-      )}
+     
 
       {fetchStatus === "failed" && (
         <Alert severity="error" sx={{ mt: 2 }}>

@@ -49,7 +49,7 @@ const AddUser = () => {
   const { status, error, response } = useSelector((state) => state.form || {});
 
   const steps = ['Personal Details', 'Contact Information', 'Account Setup'];
-  const availableRoles = ["ADMIN", "EMPLOYEE", "SUPERADMIN"];
+  const availableRoles = ["ADMIN", "EMPLOYEE", "SUPERADMIN","TEAMLEAD"];
 
   const SignUpSchema = Yup.object().shape({
     userId: Yup.string()
@@ -410,7 +410,7 @@ const AddUser = () => {
     maxWidth={false}        // 1) No fixed max width
     disableGutters         // 2) Remove horizontal padding
     sx={{
-      width: "100%",       // Fill entire viewport width
+      width: "75%",       // Fill entire viewport width
       height: "calc(100vh - 20px)",  // Fill entire viewport height
       display: "flex",
       flexDirection: "column",
@@ -525,23 +525,7 @@ const AddUser = () => {
                     </Box>
                   </Box>
 
-                  {/* Password requirements hint */}
-                  {activeStep === 2 && (
-                    <Box sx={{ mt: 3 }}>
-                      <Alert severity="info" sx={{ mb: 2 }}>
-                        <Typography variant="body2">
-                          Password must contain:
-                        </Typography>
-                        <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                          <li>At least 8 characters</li>
-                          <li>One uppercase letter</li>
-                          <li>One lowercase letter</li>
-                          <li>One number</li>
-                          <li>One special character (@$!%*?&)</li>
-                        </ul>
-                      </Alert>
-                    </Box>
-                  )}
+                  
 
                   {/* Form status messages */}
                   {status === "failed" && error && (
@@ -551,24 +535,7 @@ const AddUser = () => {
                   )}
 
                   {/* Form validation summary */}
-                  {Object.keys(formikProps.errors).length > 0 && formikProps.touched && (
-                    <Box sx={{ mt: 3 }}>
-                      <Alert severity="warning">
-                        <Typography variant="body2">
-                          Please correct the following errors:
-                        </Typography>
-                        <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                          {Object.entries(formikProps.errors).map(([field, error]) => (
-                            formikProps.touched[field] && (
-                              <li key={field}>
-                                {field}: {error}
-                              </li>
-                            )
-                          ))}
-                        </ul>
-                      </Alert>
-                    </Box>
-                  )}
+                  
                 </Form>
               )}
             </Formik>

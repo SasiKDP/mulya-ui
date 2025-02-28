@@ -39,7 +39,7 @@ import SectionHeader from "../MuiComponents/SectionHeader";
 
 import BASE_URL from "../../redux/config";
 
-// const BASE_URL = "http://192.168.0.246:8111"
+
 
 const Assigned = () => {
   const theme = useTheme();
@@ -82,7 +82,7 @@ const Assigned = () => {
       },
       { key: "status", label: "Status", type: "select" },
       { key: "salaryPackage", label: "Salary Package", type: "text" },
-      { key: "noOfPositions", label: "No. of Positions", type: "text" },
+      { key: "noOfPositions", label: "Positions", type: "text" },
     ];
   };
 
@@ -136,7 +136,7 @@ const Assigned = () => {
               // If JD is a file/image, show download button
               <Tooltip title="Download Job Description">
                 <Link
-                  href={`${BASE_URL}/requirements/download-job-description/${item.jobId}`}
+                  href={`/requirements/download-job-description/${item.jobId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   underline="none"

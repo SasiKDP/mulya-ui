@@ -61,14 +61,15 @@ const Interview = () => {
       candidateName: "Candidate Name",
       candidateEmailId: "Candidate Email",
       candidateContactNo: "Contact Number",
+      clientName: "Client Name",
       interviewLevel: "Interview Level",
       interviewDateTime: "Interview Time",
       duration: "Duration",
-      zoomLink: "Meeting Link",
+      zoomLink: "Interview Link",
       interviewScheduledTimestamp: "Scheduled On",
       userEmail: "Recruiter Email",
       clientEmail: "Client Email",
-      clientName: "Client Name",
+
       interviewStatus: "Interview Status",
       scheduleInterview: "Schedule Interview",
       actions: "Actions",
@@ -92,6 +93,7 @@ const Interview = () => {
       "candidateId",
       "candidateEmailId",
       "candidateContactNo",
+      "clientName",
       "interviewLevel",
       "interviewDateTime",
       "duration",
@@ -99,7 +101,7 @@ const Interview = () => {
       "interviewScheduledTimestamp",
       "userEmail",
       "clientEmail",
-      "clientName",
+
       "interviewStatus",
       "scheduleInterview",
       "actions", // Ensuring Actions is always included
@@ -350,19 +352,15 @@ const Interview = () => {
         p: 2,
       }}
     >
-      
-        <SectionHeader
-          title="Interview Schedule"
-          totalCount={filteredData.length}
-          onRefresh={fetchInterviewDetails}
-          isRefreshing={loading}
-          icon={<ListIcon sx={{ color: "#FFF" }} />} // Optional: Custom icon
-        />
+      <SectionHeader
+        title="Interview Schedule"
+        totalCount={filteredData.length}
+        onRefresh={fetchInterviewDetails}
+        isRefreshing={loading}
+        icon={<ListIcon sx={{ color: "#FFF" }} />} // Optional: Custom icon
+      />
 
-        
-          <DataTable data={filteredData} columns={columns} pageLimit={5} />
-       
-     
+      <DataTable data={filteredData} columns={columns} pageLimit={5} />
 
       {/* Edit Dialog */}
       <Dialog

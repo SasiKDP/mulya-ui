@@ -33,7 +33,7 @@ import ListAltIcon from "@mui/icons-material/ListAlt";
 import CustomDialog from "../MuiComponents/CustomDialog";
 import JobEditDialog from "./JobEditDialog";
 
-// const BASE_URL = "http://192.168.0.246:8111";
+
 
 const Requirements = () => {
   const dispatch = useDispatch();
