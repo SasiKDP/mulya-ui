@@ -285,15 +285,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
 
     if (column.type === "text") {
   return (
-    <Paper
-      sx={{
-        p: 2,
-        minWidth: 250,
-        borderRadius: 2,
-        boxShadow: 3,
-        mb: 2,
-      }}
-    >
+    <>
       <Typography variant="subtitle2" gutterBottom>
         Filter by {column.label}
       </Typography>
@@ -349,7 +341,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
           Apply Filter
         </Button>
       </Box>
-    </Paper>
+    </>
   );
 }
 
@@ -360,8 +352,8 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
   return (
     <Box
       sx={{
-        width: "100%",
-        height: "100%",
+        width: "100%",       
+        height: "calc(100vh - 14vh)", 
         display: "flex",
         flexDirection: "column",
       }}
@@ -459,7 +451,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
             <TableHead>
               <TableRow>
                 {/* Serial Number Column */}
-                <TableCell
+                {/* <TableCell
                   sx={{
                     backgroundColor: "#00796b",
                     color: "#fff",
@@ -470,7 +462,7 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                   }}
                 >
                   S.No
-                </TableCell>
+                </TableCell> */}
 
                 {columns.map((column) => (
                   <TableCell
@@ -563,11 +555,11 @@ const DataTable = ({ data: initialData, columns, pageLimit = 10 }) => {
                         },
                       }}
                     >
-                      <TableCell
+                      {/* <TableCell
                         sx={{ textAlign: "center", fontWeight: "bold" }}
                       >
                         {page * rowsPerPage + index + 1}
-                      </TableCell>
+                      </TableCell> */}
 
                       {columns.map((column) => {
                         if (column.render) {

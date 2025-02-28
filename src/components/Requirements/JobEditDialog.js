@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import RecruiterMultiSelect from "../MuiComponents/RecruiterMultiSelect";
 
 const JobEditDialog = ({
   editDialogOpen,
@@ -433,8 +434,8 @@ const JobEditDialog = ({
               item
               xs={12}
               sm={12}
-              md={12}
-              lg={12}
+              md={6}
+              lg={6}
               sx={{ overflowY: "auto", maxHeight: 400 }}
             >
               <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -469,6 +470,24 @@ const JobEditDialog = ({
                 ))}
               </Select>
             </Grid>
+            {/* <Grid
+              item
+              xs={12}
+              sm={12}
+              md={12}
+              lg={12}
+              sx={{ overflowY: "auto", maxHeight: 400 }}
+            >
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                Select Recruiters
+              </Typography>
+              <RecruiterMultiSelect
+                values={values}
+                setFieldValue={setFieldValue}
+                errors={errors}
+                touched={touched}
+              />
+            </Grid> */}
           </Grid>
         </Box>
       </DialogContent>
