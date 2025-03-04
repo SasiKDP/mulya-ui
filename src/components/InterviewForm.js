@@ -62,11 +62,11 @@ const validationSchema = Yup.object().shape({
     .matches(/^(https?:\/\/[^\s$.?#].[^\s]*)?$/, "Must be a valid URL"),
   interviewLevel: Yup.string()
     .required("Interview level is required")
-    .oneOf(["Internal", "External"]),
+    .oneOf(["INTERNAL", "EXTERNAL"]),
   externalInterviewDetails: Yup.string().when(
     "interviewLevel",
     (interviewLevel, schema) => {
-      return interviewLevel === "External"
+      return interviewLevel === "EXTERNAL"
         ? schema.required("External interview details are required")
         : schema;
     }
@@ -102,7 +102,7 @@ const InterviewForm = ({
     interviewDateTime: "",
     duration: "",
     zoomLink: "",
-    interviewLevel: "Internal",
+    interviewLevel: "INTERNAL",
     externalInterviewDetails: "",
     interviewScheduledTimestamp: null,
   };
@@ -310,12 +310,12 @@ const InterviewForm = ({
                       {({ field }) => (
                         <RadioGroup {...field} row>
                           <FormControlLabel
-                            value="Internal"
+                            value="INTERNAL"
                             control={<Radio />}
                             label="Internal"
                           />
                           <FormControlLabel
-                            value="External"
+                            value="EXTERNAL"
                             control={<Radio />}
                             label="External"
                           />
@@ -324,7 +324,7 @@ const InterviewForm = ({
                     </Field>
                   </FormControl>
                 </Grid>
-                {values.interviewLevel === "External" && (
+                {values.interviewLevel === "EXTERNAL" && (
                   <Grid item xs={12}>
                     <Field
                       name="externalInterviewDetails"

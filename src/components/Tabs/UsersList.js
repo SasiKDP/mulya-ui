@@ -76,17 +76,21 @@ const UsersList = () => {
   });
 
   const renderActionsColumn = (employee) => {
-    const currentUser = user; // Logged-in user
-
-    // Check if the logged-in user is a Super Admin
+    const currentUser = user;
     const isSuperAdmin = roles.includes("SUPERADMIN");
-
-    // Disable Edit and Delete if the target user is a Super Admin but not the logged-in user
-    const isSameSuperAdmin =
-      isSuperAdmin &&
-      employee.roles === "SUPERADMIN" &&
-      employee.employeeId !== currentUser;
-
+    const isTeamLead = roles.includes("TEAMLEAD");
+  
+    // Prevent editing/deleting SUPERADMIN unless logged-in user is also SUPERADMIN
+    const cannotEditSuperAdmin =
+      employee.roles.includes("SUPERADMIN") && isSuperAdmin;
+  
+    // TEAMLEAD should not be able to edit or delete anyone
+    const isTeamLeadRestricted =
+      isTeamLead && employee.employeeId !== currentUser;
+  
+    // Disable if user is another SUPERADMIN or TEAMLEAD trying to edit others
+    const isDisabled = cannotEditSuperAdmin || isTeamLeadRestricted;
+  
     return (
       <Box display="flex" alignItems="center">
         <Tooltip title="Edit">
@@ -94,20 +98,20 @@ const UsersList = () => {
             <IconButton
               color="primary"
               onClick={() => handleOpenEditDialog(employee)}
-              disabled={isSameSuperAdmin} // Disable if conditions are met
+              disabled={isDisabled}
               sx={{ ml: 1 }}
             >
               <EditIcon />
             </IconButton>
           </span>
         </Tooltip>
-
+  
         <Tooltip title="Delete">
           <span>
             <IconButton
               color="error"
               onClick={() => handleDeleteEmployee(employee.employeeId)}
-              disabled={isSameSuperAdmin} // Disable if conditions are met
+              disabled={isDisabled}
               sx={{ ml: 1 }}
             >
               <DeleteIcon />
@@ -117,28 +121,28 @@ const UsersList = () => {
       </Box>
     );
   };
-
-  // Check if current user can edit specific employee
+  
+  
+  // ✅ Optimized canEditUser function
   const canEditUser = (employeeToEdit) => {
     const currentUser = user;
-    if (!roles.includes("SUPERADMIN")) {
+    const isSuperAdmin = roles.includes("SUPERADMIN");
+    const isTeamLead = roles.includes("TEAMLEAD");
+  
+    // SUPERADMIN can edit any user except another SUPERADMIN
+    if (isSuperAdmin) {
+      return !employeeToEdit.roles.includes("SUPERADMIN");
+    }
+  
+    // TEAMLEAD cannot edit anyone except themselves
+    if (isTeamLead && employeeToEdit.employeeId !== currentUser) {
       return false;
     }
-    if (employeeToEdit.employeeId === currentUser) {
-      return true;
-    }
-    if (employeeToEdit.roles.includes("SUPERADMIN")) {
-      return false;
-    }
-
-    if (
-      employeeToEdit.roles.includes("SUPERADMIN") &&
-      employeeToEdit.employeeId !== currentUser
-    ) {
-      return false;
-    }
-    return true;
+  
+    // Users can always edit their own details
+    return employeeToEdit.employeeId === currentUser;
   };
+  
 
   useEffect(() => {
     dispatch(fetchEmployees());

@@ -158,6 +158,8 @@ const Requirements = () => {
       updatedFormData.append("relevantExperience", editFormData.relevantExperience);
       updatedFormData.append("requirementAddedTimeStamp", editFormData.requirementAddedTimeStamp);
       updatedFormData.append("salaryPackage", `${editFormData.salaryPackage}`);
+    
+      updatedFormData.append("assignedBy", editFormData.assignedBy);
       updatedFormData.append("status", editFormData.status);
   
       // ✅ Ensure recruiterIds and recruiterName are formatted as JSON strings

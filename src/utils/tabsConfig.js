@@ -45,7 +45,7 @@ const TABS_BY_ROLE = {
     { label: "Job Form", value: "JOB_FORM", component: <JobForm />, icon: <WorkIcon /> },
     { label: "Users", value: "USERS", component: <UsersList />, icon: <PeopleIcon /> },
     { label: "Add User", value: "ADDUSER", component: <AddUser />, icon: <AddIcon /> },
-    { label: "Submissions", value: "SUBMISSIONS", component: <AllSubmissions />, icon: <PersonSearchIcon /> },
+    { label: "Submissions", value: "ALLSUBMISSIONS", component: <AllSubmissions />, icon: <PersonSearchIcon /> },
     { label: "Interviews", value: "ALLINTERVIEWS", component: <AllInterviews />, icon: <InterpreterModeIcon /> },
     { label: "Bench", value: "BENCH", component: <Bench />, icon: <HourglassEmptyIcon /> },
     { label: "Timesheet", value: "TIMESHEET", component: <EmployeeTimesheet />, icon: <AccessTimeIcon /> },
@@ -58,7 +58,7 @@ const TABS_BY_ROLE = {
     { label: "MyInterview", value: "INTERVIEW", component: <Interview />, icon: <GroupIcon /> },
     { label: "Users", value: "USERS", component: <UsersList />, icon: <PeopleIcon /> },
     { label: "Add User", value: "ADDUSER", component: <AddUser />, icon: <AddIcon /> },
-    { label: "Submissions", value: "SUBMISSIONS", component: <AllSubmissions />, icon: <PersonSearchIcon /> },
+    { label: "Submissions", value: "ALLSUBMISSIONS", component: <AllSubmissions />, icon: <PersonSearchIcon /> },
     { label: "Interviews", value: "ALLINTERVIEWS", component: <AllInterviews />, icon: <InterpreterModeIcon /> },
   ],
 };
