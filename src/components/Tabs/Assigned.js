@@ -67,6 +67,12 @@ const Assigned = () => {
       { key: "jobTitle", label: "Job Title", type: "text" },
       { key: "jobId", label: "Job ID", type: "select" },
       { key: "clientName", label: "Client Name", type: "text" },
+      {
+        key: "assignedBy",
+        label: "Assigned By",
+        type: "text",
+        render: (row) => (row.assignedBy ? row.assignedBy : " Not_found "),
+      },
       { key: "jobDescription", label: "Job Description" },
       { key: "jobType", label: "Job Type", type: "select" },
       { key: "jobMode", label: "Job Mode", type: "select" },
@@ -159,16 +165,23 @@ const Assigned = () => {
           : "N/A", // Handle missing timestamps
         salaryPackage: item.salaryPackage ? `${item.salaryPackage} LPA` : "N/A",
         submitCandidate: (
-          <Tooltip title="Submit Candidate">
-            <Button
-              onClick={() => handleOpenSubmitDialog(item.jobId)}
-              startIcon={<UploadIcon />}
-              variant="contained"
-              size="small"
-              sx={{ borderRadius: 2 }}
-            >
-              Submit
-            </Button>
+          <Tooltip title={
+            item.status === "Closed" || item.status === "Hold" 
+              ? "Submissions disabled for closed/hold jobs" 
+              : "Submit Candidate"
+          }>
+            <span> {/* Wrapping with span to allow disabled tooltip */}
+              <Button
+                onClick={() => handleOpenSubmitDialog(item.jobId)}
+                startIcon={<UploadIcon />}
+                variant="contained"
+                size="small"
+                sx={{ borderRadius: 2 }}
+                disabled={item.status === "Closed" || item.status === "Closed"}
+              >
+                Submit
+              </Button>
+            </span>
           </Tooltip>
         ),
       }));
@@ -219,6 +232,12 @@ const Assigned = () => {
   };
 
   const handleOpenSubmitDialog = (job) => {
+    // Additional safety check to prevent submissions for CLOSED/HOLD jobs
+    const selectedJob = data.find(item => item.jobId === job);
+    if (selectedJob && (selectedJob.status === "Closed" || selectedJob.status === "Hold")) {
+      return; 
+    }
+    
     setSelectedJobForSubmit(job);
     setOpenSubmitDialog(true);
   };

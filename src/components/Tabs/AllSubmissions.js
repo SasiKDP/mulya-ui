@@ -18,9 +18,7 @@ const AllSubmissions = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const columns = [
-    { key: "candidateId", label: "Candidate ID", type: "text" },
-    { key: "jobId", label: "Job ID", type: "text" },
-    { key: "userId", label: "User ID", type: "text" },
+   
     { key: "fullName", label: "Full Name", type: "text" },
     { key: "emailId", label: "Email", type: "text" },
     { key: "contactNumber", label: "Contact Number", type: "text" },
@@ -39,6 +37,9 @@ const AllSubmissions = () => {
     { key: "overallFeedback", label: "Overall Feedback", type: "text" },
     { key: "userEmail", label: "User Email", type: "text" },
     { key: "interviewStatus", label: "Interview Status", type: "select" },
+    { key: "candidateId", label: "Candidate ID", type: "text" },
+    { key: "jobId", label: "Job ID", type: "text" },
+    { key: "userId", label: "User ID", type: "text" },
   ];
   
 

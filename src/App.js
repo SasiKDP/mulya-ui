@@ -15,6 +15,7 @@ import PreventNavigation from "./components/common/PreventNavigation";
 import SignUpFormMain from "./components/Registration/SignUpFormMain";
 import UseLogoutOnUnload from "./utils/useLogoutOnUnload";
 import SignInMain from "./components/Registration/SignInMain";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 function App() {
   return (

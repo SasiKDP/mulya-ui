@@ -4,7 +4,7 @@ import { Field } from "formik";
 
 const qualifications = [
     "High School",
-    "Dicloma",
+    "Diploma",
     "Bachelor's Degree",
     "Master's Degree",
     "Doctorate (PhD)",

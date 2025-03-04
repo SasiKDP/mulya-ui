@@ -38,17 +38,9 @@ import {
   PersonOutline,
   WorkOutline,
   InfoOutlined,
-  GroupAdd,
-  DoneAll,
-  ArrowBack,
-  ArrowForward,
-  Refresh,
-  Send,
-  CloudUpload,
   LocationOn,
 } from "@mui/icons-material";
-
-
+import { useSelector } from "react-redux";
 
 // Validation Schema
 const JobFormSchema = Yup.object().shape({
@@ -174,6 +166,8 @@ const CustomSelectField = ({
   </FormControl>
 );
 
+
+
 const JobForm = () => {
   // Local state instead of Redux
   const [loading, setLoading] = useState(false);
@@ -181,18 +175,40 @@ const JobForm = () => {
   const [fetchingEmployees, setFetchingEmployees] = useState(false);
   const [successResponse, setSuccessResponse] = useState(null);
   const [jobDescriptionType, setJobDescriptionType] = useState("text");
+  const [assignedByName, setAssignedByName] = useState("Loading...");
+
+  // Get current user ID from Redux store
+  const { roles, user } = useSelector((state) => state.auth);
+  
+  // Fetch employees when component mounts
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+  
+  // Update assignedBy when employees data is loaded and user ID is available
+  useEffect(() => {
+    if (employees.length > 0 && user) {
+      const assignedUser = employees.find((emp) => emp.employeeId === user);
+      if (assignedUser) {
+        setAssignedByName(assignedUser.userName);
+      } else {
+        setAssignedByName("Unknown");
+        console.warn("Could not find user with ID:", user);
+      }
+    }
+  }, [employees, user]);
 
   // Filter recruiters
   const recruiters = employees.filter(
-    (emp) => (emp.roles === "EMPLOYEE" || emp.roles === "TEAMLEAD") && emp.status === "ACTIVE"
+    (emp) =>
+      (emp.roles === "EMPLOYEE" || emp.roles === "TEAMLEAD") &&
+      emp.status === "ACTIVE"
   );
-  
 
-  // Function to fetch employees
   const fetchEmployees = async () => {
     setFetchingEmployees(true);
     try {
-      const response = await axios.get(`${BASE_URL}/users/employees`);
+      const response = await axios.get(`/users/employee`);
       setEmployees(response.data);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -263,6 +279,7 @@ const JobForm = () => {
     noOfPositions: "",
     status: "In Progress",
     jobDescriptionFile: null,
+    assignedBy: assignedByName,
   };
 
   const textFieldStyle = {
@@ -312,6 +329,9 @@ const JobForm = () => {
         formData.append("jobDescriptionFile", values.jobDescriptionFile);
       }
 
+      // Use the updated assignedBy value from state
+      formData.append("assignedBy", assignedByName);
+
       const success = await postJobRequirement(formData);
 
       if (success) {
@@ -334,13 +354,14 @@ const JobForm = () => {
         width: "90%",
         margin: "auto",
         mt: 3,
-        mb: 3,  
+        mb: 3,
       }}
     >
       <Formik
         initialValues={initialValues}
         validationSchema={JobFormSchema}
         onSubmit={handleSubmit}
+        enableReinitialize={true} // Important: re-initialize form when assignedByName changes
       >
         {({ values, resetForm, setFieldValue, errors, touched }) => (
           <Form>
@@ -457,6 +478,15 @@ const JobForm = () => {
                         label="Salary Package (LPA)"
                         icon={<InfoOutlined fontSize="small" />}
                         fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
+                      <Field
+                        name="assignedBy"
+                        component={CustomTextField}
+                        label="Assigned By"
+                        fullWidth
+                        disabled // Prevent editing
                       />
                     </Grid>
                   </Grid>
