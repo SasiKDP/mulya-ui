@@ -53,7 +53,11 @@ const SignInMain = () => {
             navigate("/dashboard");
           } else if (roles.includes("ADMIN")) {
             navigate("/dashboard");
-          } else if (roles.includes("TEAMLEAD")) {  // ✅ Added TEAMLEAD Role
+          }
+          else if (roles.includes("BDM")) {
+            navigate("/dashboard");
+          }
+          else if (roles.includes("TEAMLEAD")) {  // ✅ Added TEAMLEAD Role
             navigate("/dashboard");
           } else if (roles.includes("EMPLOYEE")) {
             navigate("/dashboard");

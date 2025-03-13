@@ -123,18 +123,18 @@ const AllInterviews = () => {
 
   const columns = generateColumns(submissions, columnOrder);
 
-  if (loading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <Box
+  //       display="flex"
+  //       justifyContent="center"
+  //       alignItems="center"
+  //       minHeight="400px"
+  //     >
+  //       <CircularProgress />
+  //     </Box>
+  //   );
+  // }
 
   if (error) {
     return (
@@ -159,14 +159,14 @@ const AllInterviews = () => {
         p: 2,
       }}
     >
-      <Box sx={{ mb: 1 }}>
+      {/* <Box sx={{ mb: 1 }}>
         <SectionHeader
           title="Scheduled Interviews"
           totalCount={filteredSubmissions.length}
           onRefresh={fetchSubmissions}
           isRefreshing={isRefreshing}
         />
-      </Box>
+      </Box> */}
 
       <Box sx={{ mb: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -196,6 +196,9 @@ const AllInterviews = () => {
         data={filteredSubmissions}
         columns={columnsAll}
         pageLimit={10}
+        title="Interviews"
+        onRefresh={fetchSubmissions}
+        isRefreshing={isRefreshing}
       />
     </Container>
   );

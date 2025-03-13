@@ -277,27 +277,27 @@ const Assigned = () => {
     );
   }
 
-  if (fetchStatus === "loading" && !isRefreshing) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Skeleton
-          variant="rectangular"
-          height={48}
-          sx={{ mb: 2, borderRadius: 1 }}
-        />
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {[...Array(5)].map((_, i) => (
-            <Skeleton
-              key={i}
-              variant="rectangular"
-              height={60}
-              sx={{ borderRadius: 1 }}
-            />
-          ))}
-        </Box>
-      </Box>
-    );
-  }
+  // if (fetchStatus === "loading" && !isRefreshing) {
+  //   return (
+  //     <Box sx={{ p: 3 }}>
+  //       <Skeleton
+  //         variant="rectangular"
+  //         height={48}
+  //         sx={{ mb: 2, borderRadius: 1 }}
+  //       />
+  //       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+  //         {[...Array(5)].map((_, i) => (
+  //           <Skeleton
+  //             key={i}
+  //             variant="rectangular"
+  //             height={60}
+  //             sx={{ borderRadius: 1 }}
+  //           />
+  //         ))}
+  //       </Box>
+  //     </Box>
+  //   );
+  // }
 
   return (
     <Container
@@ -323,13 +323,13 @@ const Assigned = () => {
             p: 1,
           }}
         >
-          <SectionHeader
+          {/* <SectionHeader
             title="Assigned Requirements"
             totalCount={totalCount}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
             icon={<ListAltIcon sx={{ color: "#FFF" }} />}
-          />
+          /> */}
 
           <Box
             sx={{
@@ -365,6 +365,9 @@ const Assigned = () => {
                 data={data}
                 columns={columns}
                 pageLimit={10}
+                title="Assigned Profiles"
+                onRefresh={fetchUserSpecificData}
+                isRefreshing={isRefreshing}
                 noDataMessage={
                   <Box sx={{ py: 4, textAlign: "center" }}>
                     <Typography

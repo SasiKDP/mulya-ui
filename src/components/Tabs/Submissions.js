@@ -482,13 +482,13 @@ const Submissions = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+  //       <CircularProgress />
+  //     </Box>
+  //   );
+  // }
 
   return (
     <Container
@@ -502,16 +502,17 @@ const Submissions = () => {
         p: 2,
       }}
     >
-      <SectionHeader
+      {/* <SectionHeader
         title="Candidate Submissions"
         totalCount={data.length}
         onRefresh={fetchSubmissionData}
         isRefreshing={loading}
         icon={<GroupsIcon sx={{ color: "#1B5E20" }} />}
-      />
+      /> */}
 
       
-        <DataTable data={data} columns={columns} pageLimit={5} />
+        <DataTable data={data} columns={columns} pageLimit={10} title="Submissions" onRefresh={fetchSubmissionData}
+                isRefreshing={loading}/>
      
 
       {/* Edit Dialog */}

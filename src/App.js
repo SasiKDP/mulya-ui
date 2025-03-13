@@ -43,7 +43,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute roles={["ADMIN", "EMPLOYEE", "SUPERADMIN","TEAMLEAD"]}>
+            <ProtectedRoute roles={["ADMIN", "EMPLOYEE", "SUPERADMIN","TEAMLEAD","BDM"]}>
               <DashboardPage />
             </ProtectedRoute>
           }
