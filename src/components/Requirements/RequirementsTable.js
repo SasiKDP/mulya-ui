@@ -47,6 +47,8 @@ const RequirementsTable = ({
   handleEdit,
   handleDeleteClick,
   handleOpenDescriptionDialog,
+  reloadData,
+  isLoad
 }) => {
   const theme = useTheme();
 
@@ -131,7 +133,7 @@ const RequirementsTable = ({
     );
   }, [requirementsList]);
 
-  // Define columns with the job description logic
+  
   const generateColumns = () => {
     return [
       {
@@ -359,7 +361,7 @@ const RequirementsTable = ({
     handleOpenDescriptionDialog,
   ]);
 
-  // Helper to filter out array-type keys that should have special handling
+ 
   const shouldExcludeFromDetailsList = (key) => {
     return [
       "recruiters",
@@ -393,6 +395,14 @@ const RequirementsTable = ({
           </Box>
         </Box>
       );
+    }
+
+    if(isLoading){
+      return(
+        <Box>
+          <CircularProgress />
+        </Box>
+      )
     }
 
     if (dataError) {
@@ -635,6 +645,8 @@ const RequirementsTable = ({
       columns={columns}
       title="Requirements List"
       emptyMessage="No requirements found. Add new requirements to get started."
+      onRefresh={reloadData}
+      isRefreshing={isLoad}
     />
   );
 };

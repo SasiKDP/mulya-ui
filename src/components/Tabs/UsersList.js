@@ -60,7 +60,7 @@ const UsersList = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  const VALID_ROLES = ["SUPERADMIN", "EMPLOYEE", "ADMIN","TEAMLEAD"];
+  const VALID_ROLES = ["SUPERADMIN", "EMPLOYEE", "ADMIN", "TEAMLEAD",'BDM'];
 
   // Validation regex patterns
   const personalEmailRegex = /^[a-z0-9._%+-]+@gmail\.com$/;
@@ -79,18 +79,18 @@ const UsersList = () => {
     const currentUser = user;
     const isSuperAdmin = roles.includes("SUPERADMIN");
     const isTeamLead = roles.includes("TEAMLEAD");
-  
+
     // Prevent editing/deleting SUPERADMIN unless logged-in user is also SUPERADMIN
     const cannotEditSuperAdmin =
       employee.roles.includes("SUPERADMIN") && isSuperAdmin;
-  
+
     // TEAMLEAD should not be able to edit or delete anyone
     const isTeamLeadRestricted =
       isTeamLead && employee.employeeId !== currentUser;
-  
+
     // Disable if user is another SUPERADMIN or TEAMLEAD trying to edit others
     const isDisabled = cannotEditSuperAdmin || isTeamLeadRestricted;
-  
+
     return (
       <Box display="flex" alignItems="center">
         <Tooltip title="Edit">
@@ -105,7 +105,7 @@ const UsersList = () => {
             </IconButton>
           </span>
         </Tooltip>
-  
+
         <Tooltip title="Delete">
           <span>
             <IconButton
@@ -121,28 +121,30 @@ const UsersList = () => {
       </Box>
     );
   };
-  
-  
+
+  const fetchEmp = () => {
+    dispatch(fetchEmployees());
+  };
+
   // ✅ Optimized canEditUser function
   const canEditUser = (employeeToEdit) => {
     const currentUser = user;
     const isSuperAdmin = roles.includes("SUPERADMIN");
     const isTeamLead = roles.includes("TEAMLEAD");
-  
+
     // SUPERADMIN can edit any user except another SUPERADMIN
     if (isSuperAdmin) {
       return !employeeToEdit.roles.includes("SUPERADMIN");
     }
-  
+
     // TEAMLEAD cannot edit anyone except themselves
     if (isTeamLead && employeeToEdit.employeeId !== currentUser) {
       return false;
     }
-  
+
     // Users can always edit their own details
     return employeeToEdit.employeeId === currentUser;
   };
-  
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -418,7 +420,7 @@ const UsersList = () => {
         p: 2,
       }}
     >
-      <SectionHeader
+      {/* <SectionHeader
         title="Employees List"
         totalCount={employeesList.length}
         onRefresh={fetchEmployees}
@@ -431,9 +433,7 @@ const UsersList = () => {
           borderRadius: 1,
           fontWeight: 600,
         }}
-      />
-
-     
+      /> */}
 
       {fetchStatus === "failed" && (
         <Alert severity="error" sx={{ mt: 2 }}>
@@ -454,6 +454,9 @@ const UsersList = () => {
           data={employeesList}
           columns={columns}
           searchQuery={searchQuery}
+          title="User List"
+          onRefresh={fetchEmp}
+          isRefreshing={isRefreshing}
         />
       )}
 
@@ -514,7 +517,22 @@ const UsersList = () => {
                     if (key === "roles") {
                       return (
                         <Grid item xs={12} sm={6} key={key}>
-                          {renderRolesField(key)}
+                          <FormControl fullWidth>
+                            <InputLabel>Role</InputLabel>
+                            <Select
+                              name="roles"
+                              value={editFormData.roles || ""}
+                              onChange={handleInputChange}
+                              renderValue={(selected) => selected || ""}
+                              displayEmpty
+                            >
+                              <MenuItem value="ADMIN">ADMIN</MenuItem>
+                              <MenuItem value="EMPLOYEE">EMPLOYEE</MenuItem>
+                              <MenuItem value="BDM">BDM</MenuItem>
+                              <MenuItem value="SUPERADMIN">SUPERADMIN</MenuItem>
+                              <MenuItem value="TEAMLEAD">TEAMLEAD</MenuItem>
+                            </Select>
+                          </FormControl>
                         </Grid>
                       );
                     } else if (key === "status") {

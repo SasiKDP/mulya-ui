@@ -40,7 +40,10 @@ import {
   InfoOutlined,
   LocationOn,
 } from "@mui/icons-material";
-import { useSelector } from "react-redux";
+import { useSelector ,useDispatch} from "react-redux";
+import { fetchEmployees } from "../../redux/features/employeesSlice";
+
+
 
 // Validation Schema
 const JobFormSchema = Yup.object().shape({
@@ -176,19 +179,23 @@ const JobForm = () => {
   const [successResponse, setSuccessResponse] = useState(null);
   const [jobDescriptionType, setJobDescriptionType] = useState("text");
   const [assignedByName, setAssignedByName] = useState("Loading...");
-
+const { employeesList, fetchStatus, fetchError, updateStatus, updateError } =
+    useSelector((state) => state.employees);
   // Get current user ID from Redux store
   const { roles, user } = useSelector((state) => state.auth);
+
+  const dispatch = useDispatch();
+ 
   
   // Fetch employees when component mounts
   useEffect(() => {
-    fetchEmployees();
+    dispatch(fetchEmployees());
   }, []);
   
   // Update assignedBy when employees data is loaded and user ID is available
   useEffect(() => {
-    if (employees.length > 0 && user) {
-      const assignedUser = employees.find((emp) => emp.employeeId === user);
+    if (employeesList.length > 0 && user) {
+      const assignedUser = employeesList.find((emp) => emp.employeeId === user);
       if (assignedUser) {
         setAssignedByName(assignedUser.userName);
       } else {
@@ -196,27 +203,27 @@ const JobForm = () => {
         console.warn("Could not find user with ID:", user);
       }
     }
-  }, [employees, user]);
+  }, [employeesList, user]);
 
   // Filter recruiters
-  const recruiters = employees.filter(
+  const recruiters = employeesList.filter(
     (emp) =>
       (emp.roles === "EMPLOYEE" || emp.roles === "TEAMLEAD") &&
       emp.status === "ACTIVE"
   );
 
-  const fetchEmployees = async () => {
-    setFetchingEmployees(true);
-    try {
-      const response = await axios.get(`/users/employee`);
-      setEmployees(response.data);
-    } catch (error) {
-      console.error("Error fetching employees:", error);
-      toast.error("Failed to fetch employees");
-    } finally {
-      setFetchingEmployees(false);
-    }
-  };
+  // const fetchEmployees = async () => {
+  //   setFetchingEmployees(true);
+  //   try {
+  //     const response = await axios.get(`/users/employee`);
+  //     setEmployees(response.data);
+  //   } catch (error) {
+  //     console.error("Error fetching employees:", error);
+  //     toast.error("Failed to fetch employees");
+  //   } finally {
+  //     setFetchingEmployees(false);
+  //   }
+  // };
 
   // Post job requirement function
   const postJobRequirement = async (formData) => {
