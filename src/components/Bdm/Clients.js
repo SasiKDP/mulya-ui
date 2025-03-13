@@ -32,7 +32,7 @@ import * as Yup from "yup";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const BASE_URL = 'http://192.168.0.246:8111';
+import BASE_URL from "../../redux/config";
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
