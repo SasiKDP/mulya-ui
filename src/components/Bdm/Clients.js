@@ -34,6 +34,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 import BASE_URL from "../../redux/config";
 
+// const BASE_URL  = 'http://192.168.0.194:8111'
+
 const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ const Clients = () => {
 
   const fetchClients = async () => {
     try {
-      const response = await axios.get(`${BASE_URL}/BDM/getAll`);
+      const response = await axios.get(`${BASE_URL}/requirements/bdm/getAll`);
 
       if (response.data && response.data.data && Array.isArray(response.data.data)) {
         setClients(response.data.data);
@@ -70,7 +72,7 @@ const Clients = () => {
     try {
       setLoading(true);
       
-      const response = await axios.get(`${BASE_URL}/BDM/${clientId}/download`, {
+      const response = await axios.get(`${BASE_URL}/requirements/bdm/${clientId}/download`, {
         responseType: "blob", 
       });
 
@@ -144,7 +146,7 @@ const Clients = () => {
           formData.append('supportingDocuments', new Blob([byteArray]), file.name);
 
           try {
-            const response = await axios.put(`${BASE_URL}/BDM/${currentClient.id}`, formData, {
+            const response = await axios.put(`${BASE_URL}/requirements/bdm/${currentClient.id}`, formData, {
               headers: {
                 'Content-Type': 'multipart/form-data',
               },
@@ -186,7 +188,7 @@ const Clients = () => {
         reader.readAsArrayBuffer(file);
       } else {
         try {
-          const response = await axios.put(`${BASE_URL}/BDM/${currentClient.id}`, formData, {
+          const response = await axios.put(`${BASE_URL}/requirements/bdm/${currentClient.id}`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
@@ -235,7 +237,7 @@ const Clients = () => {
 
     try {
       setLoading(true);
-      await axios.delete(`${BASE_URL}/BDM/${clientToDelete.id}`);
+      await axios.delete(`${BASE_URL}/bdm/${clientToDelete.id}`);
       setClients(clients.filter(client => client.id !== clientToDelete.id));
       toast.success("Client deleted successfully!");
     } catch (error) {
@@ -458,7 +460,7 @@ const Clients = () => {
     >
       <DataTable
         data={clients}
-        columns={generateColumns()}
+        columns={generateColumns(handleFileDownload, handleEditClick, handleDeleteClick)}
         title="Clients"
         pageLimit={10}
         onRefresh={fetchClients}
@@ -594,7 +596,7 @@ const Clients = () => {
                         variant="outlined"
                       />
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    {/* <Grid item xs={12} md={4}>
                       <FormControl fullWidth margin="normal" variant="outlined">
                         <InputLabel id="paymentType-label">Payment Type</InputLabel>
                         <Select
@@ -612,7 +614,7 @@ const Clients = () => {
                           <MenuItem value="One-Time">One-Time</MenuItem>
                         </Select>
                       </FormControl>
-                    </Grid>
+                    </Grid> */}
                     <Grid item xs={12}>
                       <TextField
                         fullWidth

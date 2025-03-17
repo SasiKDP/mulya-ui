@@ -56,6 +56,8 @@ import {
 } from "@mui/icons-material";
 import BASE_URL from "../../redux/config";
 
+// const BASE_URL = 'http://192.168.0.194:8111'
+
 // Create a custom theme with improved colors
 const theme = createTheme({
   palette: {
@@ -248,7 +250,7 @@ const ClientForm = () => {
           );
 
           const response = await axios.post(
-            `${BASE_URL}/BDM/addClient`,
+            `${BASE_URL}/requirements/bdm/addClient`,
             formData,
             {
               headers: {
