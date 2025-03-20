@@ -23,7 +23,7 @@ import {
   OutlinedInput,
   InputAdornment,
 } from "@mui/material";
-
+import { fetchClients } from "../../redux/features/clientSlice";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -40,10 +40,9 @@ import {
   InfoOutlined,
   LocationOn,
 } from "@mui/icons-material";
-import { useSelector ,useDispatch} from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "../../redux/features/employeesSlice";
-
-
+import ClientSelect from "../../utils/ClientSelect";
 
 // Validation Schema
 const JobFormSchema = Yup.object().shape({
@@ -139,7 +138,7 @@ const CustomTextField = ({
 );
 
 // Select for jobType, jobMode, noticePeriod, etc.
-const CustomSelectField = ({
+export const CustomSelectField = ({
   field,
   form: { touched, errors },
   label,
@@ -159,6 +158,15 @@ const CustomSelectField = ({
       startAdornment={
         icon && <InputAdornment position="start">{icon}</InputAdornment>
       }
+      MenuProps={{
+        PaperProps: {
+          style: {
+            maxHeight: 300,
+            overflowY: "auto",
+            maxWidth: 280,
+          },
+        },
+      }}
       {...props}
     >
       {children}
@@ -169,8 +177,6 @@ const CustomSelectField = ({
   </FormControl>
 );
 
-
-
 const JobForm = () => {
   // Local state instead of Redux
   const [loading, setLoading] = useState(false);
@@ -179,19 +185,23 @@ const JobForm = () => {
   const [successResponse, setSuccessResponse] = useState(null);
   const [jobDescriptionType, setJobDescriptionType] = useState("text");
   const [assignedByName, setAssignedByName] = useState("Loading...");
-const { employeesList, fetchStatus, fetchError, updateStatus, updateError } =
+  const { employeesList, fetchStatus, fetchError, updateStatus, updateError } =
     useSelector((state) => state.employees);
   // Get current user ID from Redux store
   const { roles, user } = useSelector((state) => state.auth);
 
+  const { clientsList, isLoading, error } = useSelector(
+    (state) => state.clients
+  );
+
   const dispatch = useDispatch();
- 
-  
+
   // Fetch employees when component mounts
   useEffect(() => {
+    dispatch(fetchClients());
     dispatch(fetchEmployees());
   }, []);
-  
+
   // Update assignedBy when employees data is loaded and user ID is available
   useEffect(() => {
     if (employeesList.length > 0 && user) {
@@ -211,19 +221,6 @@ const { employeesList, fetchStatus, fetchError, updateStatus, updateError } =
       (emp.roles === "EMPLOYEE" || emp.roles === "TEAMLEAD") &&
       emp.status === "ACTIVE"
   );
-
-  // const fetchEmployees = async () => {
-  //   setFetchingEmployees(true);
-  //   try {
-  //     const response = await axios.get(`/users/employee`);
-  //     setEmployees(response.data);
-  //   } catch (error) {
-  //     console.error("Error fetching employees:", error);
-  //     toast.error("Failed to fetch employees");
-  //   } finally {
-  //     setFetchingEmployees(false);
-  //   }
-  // };
 
   // Post job requirement function
   const postJobRequirement = async (formData) => {
@@ -403,6 +400,9 @@ const { employeesList, fetchStatus, fetchError, updateStatus, updateError } =
                   <Divider sx={{ mb: 2 }} />
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6} md={4}>
+                      <ClientSelect name="clientName" />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={4}>
                       <Field
                         name="jobTitle"
                         component={CustomTextField}
@@ -411,15 +411,7 @@ const { employeesList, fetchStatus, fetchError, updateStatus, updateError } =
                         fullWidth
                       />
                     </Grid>
-                    <Grid item xs={12} sm={6} md={4}>
-                      <Field
-                        name="clientName"
-                        component={CustomTextField}
-                        label="Client Name"
-                        icon={<PersonOutline fontSize="small" />}
-                        fullWidth
-                      />
-                    </Grid>
+
                     <Grid item xs={12} sm={6} md={4}>
                       <Field
                         name="location"

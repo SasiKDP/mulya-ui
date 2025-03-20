@@ -195,7 +195,7 @@ const AllInterviews = () => {
       <DataTable
         data={filteredSubmissions}
         columns={columnsAll}
-        pageLimit={10}
+        pageLimit={20}
         title="Interviews"
         onRefresh={fetchSubmissions}
         isRefreshing={isRefreshing}

@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Formik, Form, Field, FieldArray } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-
 
 // Material-UI imports
 import {
@@ -21,12 +19,10 @@ import {
   InputAdornment,
   Stack,
   Divider,
-  Alert,
   Card,
   CardHeader,
   CardContent,
   CircularProgress,
-  useTheme,
   ThemeProvider,
   createTheme,
   MenuItem,
@@ -52,33 +48,23 @@ import {
   Save,
   RestartAlt,
   Phone,
-  CalendarToday,
 } from "@mui/icons-material";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchEmployees } from "../../redux/features/employeesSlice";
 import BASE_URL from "../../redux/config";
 
-// const BASE_URL = 'http://192.168.0.194:8111'
 
-// Create a custom theme with improved colors
+// Create a custom theme
 const theme = createTheme({
   palette: {
-    primary: {
-      main: "#1a237e", // Deep blue
-    },
-    secondary: {
-      main: "#0d47a1",
-    },
-    background: {
-      default: "#f8f9fa",
-    },
+    primary: { main: "#1a237e" },
+    secondary: { main: "#0d47a1" },
+    background: { default: "#f8f9fa" },
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h5: {
-      fontWeight: 600,
-    },
-    subtitle1: {
-      fontWeight: 500,
-    },
+    h5: { fontWeight: 600 },
+    subtitle1: { fontWeight: 500 },
   },
   components: {
     MuiCard: {
@@ -91,9 +77,7 @@ const theme = createTheme({
     },
     MuiCardHeader: {
       styleOverrides: {
-        root: {
-          borderBottom: "1px solid #e0e0e0",
-        },
+        root: { borderBottom: "1px solid #e0e0e0" },
       },
     },
     MuiButton: {
@@ -108,23 +92,158 @@ const theme = createTheme({
     MuiTextField: {
       styleOverrides: {
         root: {
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 8,
-          },
+          "& .MuiOutlinedInput-root": { borderRadius: 8 },
         },
       },
     },
   },
 });
 
-
-
 const ClientForm = () => {
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currency, setCurrency] = useState("INR");
+  const [onBoardedByName, setOnBoardedBy] = useState("");
+  const dispatch = useDispatch();
 
-  // Configure toast styles
+  const { employeesList, fetchStatus } = useSelector(
+    (state) => state.employees
+  );
+  const { user } = useSelector((state) => state.auth);
+
+  // Form field definitions
+  const formFields = [
+    {
+      section: "Basic Information",
+      fields: [
+        {
+          name: "clientName",
+          label: "Client Name",
+          required: true,
+          type: "text",
+          grid: { xs: 12, sm: 6, md: 4 },
+          icon: <Business color="primary" />,
+        },
+        {
+          name: "positionType",
+          label: "Position Type",
+          type: "select",
+          grid: { xs: 12, sm: 6, md: 4 },
+          icon: <WorkOutline color="primary" />,
+          options: [
+            { value: "Full-Time", label: "Full-Time" },
+            { value: "Part-Time", label: "Part-Time" },
+            { value: "Contract", label: "Contract" },
+            { value: "Internship", label: "Internship" },
+          ],
+        },
+        {
+          name: "clientWebsiteUrl",
+          label: "Client Website URL",
+          type: "url",
+          placeholder: "https://",
+          grid: { xs: 12, sm: 6, md: 4 },
+          icon: <Language color="primary" />,
+        },
+        {
+          name: "clientLinkedInUrl",
+          label: "Client LinkedIn URL",
+          type: "url",
+          placeholder: "https://linkedin.com/company/",
+          grid: { xs: 12, sm: 6, md: 4 },
+          icon: <LinkedIn color="primary" />,
+        },
+        {
+          name: "clientAddress",
+          label: "Client Address",
+          type: "text",
+          placeholder: "Enter complete address",
+          grid: { xs: 12, md: 8 },
+          icon: <LocationOn color="primary" />,
+        },
+      ],
+    },
+    {
+      section: "Payment Information",
+      fields: [
+        {
+          name: "currency",
+          label: "Currency",
+          type: "select",
+          grid: { xs: 12, sm: 6, md: 3 },
+          icon: <AttachMoney color="primary" />,
+          options: [
+            { value: "INR", label: "Rupee (INR)" },
+            { value: "USD", label: "Dollar (USD)" },
+          ],
+          customHandler: (e, setFieldValue) => {
+            setCurrency(e.target.value);
+            setFieldValue("currency", e.target.value);
+          },
+        },
+        {
+          name: "netPayment",
+          label: "Net Payment",
+          type: "number",
+          placeholder: "0",
+          grid: { xs: 12, sm: 6, md: 3 },
+          endAdornment: <InputAdornment position="end">Days</InputAdornment>,
+        },
+        {
+          name: "gst",
+          label: "GST",
+          type: "number",
+          placeholder: "0",
+          grid: { xs: 12, sm: 6, md: 3 },
+          icon: <Percent color="primary" />,
+          conditional: () => currency === "INR",
+        },
+      ],
+    },
+  ];
+
+  // Contact person fields
+  const contactFields = [
+    {
+      name: "clientSpocName",
+      label: "Contact Name",
+      icon: <Person color="primary" />,
+    },
+    {
+      name: "clientSpocEmailid",
+      label: "Contact Email",
+      icon: <Email color="primary" />,
+    },
+    {
+      name: "clientSpocMobileNumber",
+      label: "Contact Mobile",
+      placeholder: "10-digit number",
+      icon: <Phone color="primary" />,
+    },
+    {
+      name: "clientSpocLinkedin",
+      label: "Contact LinkedIn",
+      placeholder: "https://linkedin.com/in/",
+      icon: <LinkedIn color="primary" />,
+    },
+  ];
+
+  // Fetch employees data
+  useEffect(() => {
+    if (fetchStatus === "idle") {
+      dispatch(fetchEmployees());
+    }
+  }, [dispatch, fetchStatus]);
+
+  // Set onboarded by name
+  useEffect(() => {
+    if (employeesList.length > 0 && user) {
+      const assignedUser = employeesList.find((emp) => emp.employeeId === user);
+      setOnBoardedBy(assignedUser ? assignedUser.userName : "Unknown");
+    }
+  }, [employeesList, user]);
+
+  // Toast configuration
   const toastConfig = {
     position: "top-right",
     autoClose: 3000,
@@ -132,28 +251,32 @@ const ClientForm = () => {
     closeOnClick: true,
     pauseOnHover: true,
     draggable: true,
-    progress: undefined,
   };
 
-  // Validation schema using Yup
+  // Validation schema
   const validationSchema = Yup.object().shape({
-    clientName: Yup.string().required("Client name is required"),
-    clientAddress: Yup.string().nullable(), // Not required
-    positionType: Yup.string().nullable(), // Not required
-    paymentType: Yup.string().nullable(), // Not required
+    clientName: Yup.string()
+      .required("Client name is required")
+      .max(35, "Client name must be at most 35 characters"),
+
+    clientAddress: Yup.string()
+      .nullable()
+      .max(100, "Client address must be at most 100 characters"),
+    positionType: Yup.string().nullable(),
+    paymentType: Yup.string().nullable(),
     netPayment: Yup.number()
       .positive("Must be a positive number")
       .nullable()
       .transform((value, originalValue) =>
         originalValue === "" ? null : value
-      ), // Not required
+      ),
     gst: Yup.number()
       .min(0, "GST cannot be negative")
       .nullable()
       .transform((value, originalValue) =>
         originalValue === "" ? null : value
-      ), // Not required
-    supportingCustomers: Yup.array().of(Yup.string().nullable()), // Not required
+      ),
+    supportingCustomers: Yup.array().of(Yup.string().nullable()),
     clientWebsiteUrl: Yup.string()
       .url("Must be a valid URL")
       .nullable()
@@ -162,9 +285,9 @@ const ClientForm = () => {
       .url("Must be a valid URL")
       .nullable()
       .transform((value) => (value === "" ? null : value)),
-    clientSpocName: Yup.array().of(Yup.string().nullable()), // Not required
+    clientSpocName: Yup.array().of(Yup.string().nullable()),
     clientSpocEmailid: Yup.array().of(
-      Yup.string().email("Invalid email format").nullable() // Not required
+      Yup.string().email("Invalid email format").nullable()
     ),
     clientSpocMobileNumber: Yup.array().of(
       Yup.string()
@@ -177,13 +300,17 @@ const ClientForm = () => {
         .nullable()
         .transform((value) => (value === "" ? null : value))
     ),
+    supportingDocuments: Yup.array().of(Yup.string().nullable()).nullable(),
+    onBoardedBy: Yup.string().nullable(),
   });
 
+  // Initial form values
   const initialValues = {
     clientName: "",
     clientAddress: "",
     positionType: "",
     netPayment: "",
+    onBoardedBy: onBoardedByName, // Set initial value here
     gst: "",
     supportingCustomers: [],
     clientWebsiteUrl: "",
@@ -192,21 +319,25 @@ const ClientForm = () => {
     clientSpocEmailid: [""],
     clientSpocMobileNumber: [""],
     clientSpocLinkedin: [""],
-    supportingDocuments: "", // This will store file name
-    currency: "INR", // Added currency to initialValues
+    supportingDocuments: [],
+    currency: "INR",
   };
 
+  // Handle file change
   const handleFileChange = (event) => {
-    const selectedFiles = event.currentTarget.files;
+    const selectedFiles = Array.from(event.target.files);
     if (selectedFiles.length === 0) {
       toast.warning("No file selected", toastConfig);
       return;
     }
-
-    setFiles(Array.from(selectedFiles));
-    toast.success("Files selected successfully!", toastConfig);
+    setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+    toast.success(
+      `${selectedFiles.length} file(s) selected successfully!`,
+      toastConfig
+    );
   };
 
+  // Remove file
   const removeFile = (indexToRemove) => {
     setFiles((prevFiles) =>
       prevFiles.filter((_, index) => index !== indexToRemove)
@@ -214,150 +345,154 @@ const ClientForm = () => {
     toast.info("File removed", toastConfig);
   };
 
+  // Form submission
   const handleSubmit = async (values, { resetForm }) => {
-    if (files.length === 0) {
-      toast.warning(
-        "Please upload at least one supporting document",
-        toastConfig
-      );
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
-      const file = files[0];
-      const reader = new FileReader();
-
-      reader.onload = async (event) => {
-        try {
-          const arrayBuffer = event.target.result;
-          const byteArray = new Uint8Array(arrayBuffer);
-
-          // Prepare submission values
-          const submissionValues = {
-            ...values,
-            currency, // Ensure currency is included
-            supportingDocuments: file.name,
-          };
-
-          const formData = new FormData();
-          formData.append("dto", JSON.stringify(submissionValues));
-          formData.append(
-            "supportingDocuments",
-            new Blob([byteArray]),
-            file.name
-          );
-
-          const response = await axios.post(
-            `${BASE_URL}/requirements/bdm/addClient`,
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
-          // Handle success response
-          if (response.data && response.data.success) {
-            const clientInfo = response.data.data
-              ? `Client ${response.data.data.clientName} (ID: ${response.data.data.id}) added successfully!`
-              : "Client added successfully!";
-            toast.success(clientInfo, toastConfig);
-          } else {
-            toast.success(
-              response.data.message || "Client added successfully!",
-              toastConfig
-            );
-          }
-
-          resetForm();
-          setFiles([]);
-          setIsSubmitting(false);
-        } catch (error) {
-          handleErrorResponse(error);
-        }
+      const formData = new FormData();
+      const submissionValues = {
+        ...values,
+        currency,
+        supportingDocuments: files.map((file) => file.name),
+        onBoardedBy: onBoardedByName, // Use the state variable here
       };
 
-      reader.onerror = () => {
-        toast.error("Failed to read file", toastConfig);
-        setIsSubmitting(false);
-      };
+      formData.append("dto", JSON.stringify(submissionValues));
+      files.forEach((file, index) => {
+        formData.append(`supportingDocuments[${index}]`, file);
+      });
 
-      reader.readAsArrayBuffer(file);
+      const response = await axios.post(
+        `${BASE_URL}/requirements/bdm/addClient`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      // Handle success
+      if (response.data && response.data.success) {
+        const clientInfo = response.data.data
+          ? `Client ${response.data.data.clientName} (ID: ${response.data.data.id}) added successfully!`
+          : response.data.message || "Client added successfully!";
+        toast.success(clientInfo, toastConfig);
+      } else {
+        toast.success(
+          response.data.message || "Client added successfully!",
+          toastConfig
+        );
+      }
+
+      resetForm();
+      setFiles([]);
     } catch (error) {
-      console.error("Error submitting form:", error);
-      toast.error("Failed to process your request", toastConfig);
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to submit form. Please try again.";
+      toast.error(errorMessage, toastConfig);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSuccessResponse = (response, resetForm) => {
-    // Display success toast with client ID
-    if (response.data && response.data.success) {
-      const clientInfo = response.data.data
-        ? `Client ${response.data.data.clientName} (ID: ${response.data.data.id}) added successfully!`
-        : response.data.message || "Client added successfully!";
-
-      toast.success(clientInfo, toastConfig);
-    } else {
-      toast.success(
-        response.data.message || "Client added successfully!",
-        toastConfig
-      );
-    }
-
-    resetForm();
-    setFiles([]);
-    setIsSubmitting(false);
-  };
-
-  const handleErrorResponse = (error) => {
-    const errorMessage =
-      error.response?.data?.message ||
-      "Failed to submit form. Please try again.";
-    toast.error(errorMessage, toastConfig);
-    setIsSubmitting(false);
-  };
-
+  // Manage contact persons
   const addContactPerson = (values, setFieldValue) => {
-    setFieldValue("clientSpocName", [...values.clientSpocName, ""]);
-    setFieldValue("clientSpocEmailid", [...values.clientSpocEmailid, ""]);
-    setFieldValue("clientSpocMobileNumber", [
-      ...values.clientSpocMobileNumber,
-      "",
-    ]);
-    setFieldValue("clientSpocLinkedin", [...values.clientSpocLinkedin, ""]);
+    contactFields.forEach((field) => {
+      setFieldValue(field.name, [...values[field.name], ""]);
+    });
     toast.info("New contact person added", toastConfig);
   };
 
   const removeContactPerson = (index, values, setFieldValue) => {
     if (values.clientSpocName.length > 1) {
-      const newSpocNames = [...values.clientSpocName];
-      newSpocNames.splice(index, 1);
-
-      const newSpocEmails = [...values.clientSpocEmailid];
-      newSpocEmails.splice(index, 1);
-
-      const newSpocMobiles = [...values.clientSpocMobileNumber];
-      newSpocMobiles.splice(index, 1);
-
-      const newSpocLinkedIns = [...values.clientSpocLinkedin];
-      newSpocLinkedIns.splice(index, 1);
-
-      setFieldValue("clientSpocName", newSpocNames);
-      setFieldValue("clientSpocEmailid", newSpocEmails);
-      setFieldValue("clientSpocMobileNumber", newSpocMobiles);
-      setFieldValue("clientSpocLinkedin", newSpocLinkedIns);
-
+      contactFields.forEach((field) => {
+        const newArray = [...values[field.name]];
+        newArray.splice(index, 1);
+        setFieldValue(field.name, newArray);
+      });
       toast.info("Contact person removed", toastConfig);
     }
   };
 
+  // Render form fields
+  const renderFormField = (field, values, errors, touched, setFieldValue) => {
+    // Check if field should be conditionally rendered
+    if (field.conditional && !field.conditional()) {
+      return null;
+    }
+
+    if (field.type === "select") {
+      return (
+        <Grid item {...field.grid} key={field.name}>
+          <FormControl
+            fullWidth
+            error={touched[field.name] && Boolean(errors[field.name])}
+          >
+            <InputLabel id={`${field.name}-label`}>{field.label}</InputLabel>
+            <Select
+              labelId={`${field.name}-label`}
+              id={field.name}
+              name={field.name}
+              value={values[field.name] || ""}
+              onChange={(e) => {
+                if (field.customHandler) {
+                  field.customHandler(e, setFieldValue);
+                } else {
+                  setFieldValue(field.name, e.target.value);
+                }
+              }}
+              startAdornment={
+                field.icon && (
+                  <InputAdornment position="start">{field.icon}</InputAdornment>
+                )
+              }
+            >
+              <MenuItem value="" disabled>
+                Select {field.label}
+              </MenuItem>
+              {field.options.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+            {touched[field.name] && errors[field.name] && (
+              <Typography variant="caption" color="error">
+                {errors[field.name]}
+              </Typography>
+            )}
+          </FormControl>
+        </Grid>
+      );
+    }
+
+    return (
+      <Grid item {...field.grid} key={field.name}>
+        <Field name={field.name}>
+          {({ field: formikField, meta }) => (
+            <TextField
+              {...formikField}
+              fullWidth
+              label={field.label}
+              placeholder={field.placeholder || ""}
+              required={field.required}
+              type={field.type || "text"}
+              error={meta.touched && Boolean(meta.error)}
+              helperText={meta.touched && meta.error}
+              InputProps={{
+                startAdornment: field.icon && (
+                  <InputAdornment position="start">{field.icon}</InputAdornment>
+                ),
+                endAdornment: field.endAdornment,
+              }}
+            />
+          )}
+        </Field>
+      </Grid>
+    );
+  };
+
   return (
     <ThemeProvider theme={theme}>
-      {/* Toast container for notifications */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -392,352 +527,145 @@ const ClientForm = () => {
               {({ values, errors, touched, resetForm, setFieldValue }) => (
                 <Form>
                   <Grid container spacing={3}>
-                    {/* Basic Information */}
-                    <Grid item xs={12}>
-                      <Typography
-                        variant="h6"
-                        color="primary"
-                        sx={{ mb: 1, fontWeight: 500 }}
-                      >
-                        Basic Information
-                      </Typography>
-                      <Divider sx={{ mb: 3 }} />
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} md={4}>
-                      <Field name="clientName">
-                        {({ field, meta }) => (
-                          <TextField
-                            {...field}
-                            fullWidth
-                            label="Client Name"
-                            placeholder="Enter client name"
-                            required
-                            error={meta.touched && Boolean(meta.error)}
-                            helperText={meta.touched && meta.error}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <Business color="primary" />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        )}
-                      </Field>
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} md={4}>
-                      <Field name="positionType">
-                        {({ field, form, meta }) => (
-                          <FormControl
-                            fullWidth
-                            error={meta.touched && Boolean(meta.error)}
-                          >
-                            <InputLabel id="position-type-label">
-                              Position Type
-                            </InputLabel>
-                            <Select
-                              {...field}
-                              labelId="position-type-label"
-                              id="position-type"
-                              value={field.value || ""}
-                              onChange={(event) =>
-                                form.setFieldValue(
-                                  "positionType",
-                                  event.target.value
-                                )
-                              }
-                              displayEmpty
-                              startAdornment={
-                                <InputAdornment position="start">
-                                  <WorkOutline color="primary" />
-                                </InputAdornment>
-                              }
-                            >
-                              <MenuItem value="" disabled>
-                                Select Position Type
-                              </MenuItem>
-                              <MenuItem value="Full-Time">Full-Time</MenuItem>
-                              <MenuItem value="Part-Time">Part-Time</MenuItem>
-                              <MenuItem value="Contract">Contract</MenuItem>
-                              <MenuItem value="Internship">Internship</MenuItem>
-                            </Select>
-                            {meta.touched && meta.error && (
-                              <Typography variant="caption" color="error">
-                                {meta.error}
-                              </Typography>
-                            )}
-                          </FormControl>
-                        )}
-                      </Field>
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} md={4}>
-                      <Field name="clientWebsiteUrl">
-                        {({ field, meta }) => (
-                          <TextField
-                            {...field}
-                            fullWidth
-                            label="Client Website URL"
-                            placeholder="https://"
-                            error={meta.touched && Boolean(meta.error)}
-                            helperText={meta.touched && meta.error}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <Language color="primary" />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        )}
-                      </Field>
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} md={4}>
-                      <Field name="clientLinkedInUrl">
-                        {({ field, meta }) => (
-                          <TextField
-                            {...field}
-                            fullWidth
-                            label="Client LinkedIn URL"
-                            placeholder="https://linkedin.com/company/"
-                            error={meta.touched && Boolean(meta.error)}
-                            helperText={meta.touched && meta.error}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <LinkedIn color="primary" />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        )}
-                      </Field>
-                    </Grid>
-
-                    <Grid item xs={12} md={8}>
-                      <Field name="clientAddress">
-                        {({ field, meta }) => (
-                          <TextField
-                            {...field}
-                            fullWidth
-                            label="Client Address"
-                            placeholder="Enter complete address"
-                            error={meta.touched && Boolean(meta.error)}
-                            helperText={meta.touched && meta.error}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <LocationOn color="primary" />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        )}
-                      </Field>
-                    </Grid>
-
-                    {/* Payment Information */}
-                    <Grid item xs={12}>
-                      <Typography
-                        variant="h6"
-                        color="primary"
-                        sx={{ mt: 1, mb: 1, fontWeight: 500 }}
-                      >
-                        Payment Information
-                      </Typography>
-                      <Divider sx={{ mb: 3 }} />
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} md={3}>
-                      <TextField
-                        fullWidth
-                        select
-                        label="Currency"
-                        value={currency}
-                        onChange={(e) => {
-                          setCurrency(e.target.value);
-                          setFieldValue("currency", e.target.value);
-                        }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <AttachMoney color="primary" />
-                            </InputAdornment>
-                          ),
-                        }}
-                      >
-                        <MenuItem value="INR">Rupee (INR)</MenuItem>
-                        <MenuItem value="USD">Dollar (USD)</MenuItem>
-                      </TextField>
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Field name="netPayment">
-                        {({ field, meta }) => (
-                          <TextField
-                            {...field}
-                            fullWidth
-                            label="Net Payment"
-                            placeholder="0"
-                            type="number"
-                            error={meta.touched && Boolean(meta.error)}
-                            helperText={meta.touched && meta.error}
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  Days
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        )}
-                      </Field>
-                    </Grid>
-
-                    {currency === "INR" && (
-                      <>
-                        <Grid item xs={12} sm={6} md={3}>
-                          <Field name="gst">
-                            {({ field, meta }) => (
-                              <TextField
-                                {...field}
-                                fullWidth
-                                label="GST"
-                                placeholder="0"
-                                type="number"
-                                error={meta.touched && Boolean(meta.error)}
-                                helperText={meta.touched && meta.error}
-                                InputProps={{
-                                  startAdornment: (
-                                    <InputAdornment position="start">
-                                      <Percent color="primary" />
-                                    </InputAdornment>
-                                  ),
-                                }}
-                              />
-                            )}
-                          </Field>
-                        </Grid>
-
+                    {/* Render form sections */}
+                    {formFields.map((section, sectionIndex) => (
+                      <React.Fragment key={`section-${sectionIndex}`}>
                         <Grid item xs={12}>
                           <Typography
                             variant="h6"
                             color="primary"
-                            sx={{
-                              mt: 1,
-                              mb: 1,
-                              fontWeight: 500,
-                              display: "flex",
-                              alignItems: "center",
-                            }}
+                            sx={{ mb: 1, fontWeight: 500 }}
                           >
-                            <People sx={{ mr: 1 }} />
-                            Supporting Customers
+                            {section.section}
                           </Typography>
                           <Divider sx={{ mb: 3 }} />
                         </Grid>
+                        {section.fields.map((field) =>
+                          renderFormField(
+                            field,
+                            values,
+                            errors,
+                            touched,
+                            setFieldValue
+                          )
+                        )}
+                      </React.Fragment>
+                    ))}
 
-                        <Grid item xs={12}>
-                          <FieldArray name="supportingCustomers">
-                            {({ push, remove }) => (
-                              <Box>
-                                {values.supportingCustomers &&
-                                values.supportingCustomers.length > 0 ? (
-                                  <Paper
-                                    variant="outlined"
-                                    sx={{ p: 2, mb: 2, borderRadius: 2 }}
-                                  >
-                                    <Grid container spacing={2}>
-                                      {values.supportingCustomers.map(
-                                        (customer, index) => (
-                                          <Grid
-                                            item
-                                            xs={12}
-                                            sm={6}
-                                            md={3}
-                                            key={index}
+                    {/* Supporting Customers - MOVED OUTSIDE THE CURRENCY CONDITION */}
+                    <Grid item xs={12}>
+                      <Typography
+                        variant="h6"
+                        color="primary"
+                        sx={{
+                          mt: 1,
+                          mb: 1,
+                          fontWeight: 500,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <People sx={{ mr: 1 }} />
+                        Supporting Customers
+                      </Typography>
+                      <Divider sx={{ mb: 3 }} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FieldArray name="supportingCustomers">
+                        {({ push, remove }) => (
+                          <Box>
+                            {values.supportingCustomers &&
+                            values.supportingCustomers.length > 0 ? (
+                              <Paper
+                                variant="outlined"
+                                sx={{ p: 2, mb: 2, borderRadius: 2 }}
+                              >
+                                <Grid container spacing={2}>
+                                  {values.supportingCustomers.map(
+                                    (customer, index) => (
+                                      <Grid
+                                        item
+                                        xs={12}
+                                        sm={6}
+                                        md={3}
+                                        key={index}
+                                      >
+                                        <Box
+                                          sx={{ display: "flex", gap: 1 }}
+                                        >
+                                          <Field
+                                            name={`supportingCustomers.${index}`}
                                           >
-                                            <Box
-                                              sx={{ display: "flex", gap: 1 }}
-                                            >
-                                              <Field
-                                                name={`supportingCustomers.${index}`}
-                                              >
-                                                {({ field, meta }) => (
-                                                  <TextField
-                                                    {...field}
-                                                    fullWidth
-                                                    placeholder={`Customer ${
-                                                      index + 1
-                                                    }`}
-                                                    error={
-                                                      meta.touched &&
-                                                      Boolean(meta.error)
-                                                    }
-                                                    helperText={
-                                                      meta.touched && meta.error
-                                                    }
-                                                    variant="outlined"
-                                                    size="medium"
-                                                  />
-                                                )}
-                                              </Field>
-                                              <IconButton
-                                                color="error"
-                                                onClick={() => {
-                                                  remove(index);
-                                                  toast.info(
-                                                    "Customer removed",
-                                                    toastConfig
-                                                  );
-                                                }}
-                                                sx={{
-                                                  border: "1px solid",
-                                                  borderColor: "divider",
-                                                  borderRadius: 2,
-                                                }}
-                                              >
-                                                <RemoveCircleOutline />
-                                              </IconButton>
-                                            </Box>
-                                          </Grid>
-                                        )
-                                      )}
-                                    </Grid>
-                                  </Paper>
-                                ) : (
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{ mb: 2, fontStyle: "italic" }}
-                                  >
-                                    No supporting customers added
-                                  </Typography>
-                                )}
-                                <Button
-                                  startIcon={<AddCircleOutline />}
-                                  variant="outlined"
-                                  color="primary"
-                                  onClick={() => {
-                                    push("");
-                                    toast.info(
-                                      "New customer field added",
-                                      toastConfig
-                                    );
-                                  }}
-                                  sx={{ mt: 1 }}
-                                >
-                                  Add Customer
-                                </Button>
-                              </Box>
+                                            {({ field, meta }) => (
+                                              <TextField
+                                                {...field}
+                                                fullWidth
+                                                placeholder={`Customer ${
+                                                  index + 1
+                                                }`}
+                                                error={
+                                                  meta.touched &&
+                                                  Boolean(meta.error)
+                                                }
+                                                helperText={
+                                                  meta.touched && meta.error
+                                                }
+                                                variant="outlined"
+                                                size="medium"
+                                              />
+                                            )}
+                                          </Field>
+                                          <IconButton
+                                            color="error"
+                                            onClick={() => {
+                                              remove(index);
+                                              toast.info(
+                                                "Customer removed",
+                                                toastConfig
+                                              );
+                                            }}
+                                            sx={{
+                                              border: "1px solid",
+                                              borderColor: "divider",
+                                              borderRadius: 2,
+                                            }}
+                                          >
+                                            <RemoveCircleOutline />
+                                          </IconButton>
+                                        </Box>
+                                      </Grid>
+                                    )
+                                  )}
+                                </Grid>
+                              </Paper>
+                            ) : (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ mb: 2, fontStyle: "italic" }}
+                              >
+                                No supporting customers added
+                              </Typography>
                             )}
-                          </FieldArray>
-                        </Grid>
-                      </>
-                    )}
+                            <Button
+                              startIcon={<AddCircleOutline />}
+                              variant="outlined"
+                              color="primary"
+                              onClick={() => {
+                                push("");
+                                toast.info(
+                                  "New customer field added",
+                                  toastConfig
+                                );
+                              }}
+                              sx={{ mt: 1 }}
+                            >
+                              Add Customer
+                            </Button>
+                          </Box>
+                        )}
+                      </FieldArray>
+                    </Grid>
 
                     {/* Contact Persons */}
                     <Grid item xs={12}>
@@ -756,7 +684,6 @@ const ClientForm = () => {
                         Contact Information
                       </Typography>
                       <Divider sx={{ mb: 3 }} />
-                      {/* Add Contact Person button moved outside the box */}
                       <Box
                         sx={{
                           display: "flex",
@@ -779,95 +706,40 @@ const ClientForm = () => {
                     </Grid>
 
                     <Grid item xs={12}>
-                      {values.clientSpocName.map((name, index) => (
+                      {values.clientSpocName.map((_, index) => (
                         <Paper
                           variant="outlined"
                           sx={{ p: 2, borderRadius: 2, mb: 2 }}
                           key={index}
                         >
                           <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6} md={3}>
-                              <Field name={`clientSpocName.${index}`}>
-                                {({ field, meta }) => (
-                                  <TextField
-                                    {...field}
-                                    fullWidth
-                                    label="Contact Name"
-                                    error={meta.touched && Boolean(meta.error)}
-                                    helperText={meta.touched && meta.error}
-                                    InputProps={{
-                                      startAdornment: (
-                                        <InputAdornment position="start">
-                                          <Person color="primary" />
-                                        </InputAdornment>
-                                      ),
-                                    }}
-                                  />
-                                )}
-                              </Field>
-                            </Grid>
-                            <Grid item xs={12} sm={6} md={3}>
-                              <Field name={`clientSpocEmailid.${index}`}>
-                                {({ field, meta }) => (
-                                  <TextField
-                                    {...field}
-                                    fullWidth
-                                    label="Contact Email"
-                                    error={meta.touched && Boolean(meta.error)}
-                                    helperText={meta.touched && meta.error}
-                                    InputProps={{
-                                      startAdornment: (
-                                        <InputAdornment position="start">
-                                          <Email color="primary" />
-                                        </InputAdornment>
-                                      ),
-                                    }}
-                                  />
-                                )}
-                              </Field>
-                            </Grid>
-                            <Grid item xs={12} sm={6} md={3}>
-                              <Field name={`clientSpocMobileNumber.${index}`}>
-                                {({ field, meta }) => (
-                                  <TextField
-                                    {...field}
-                                    fullWidth
-                                    label="Contact Mobile"
-                                    placeholder="10-digit number"
-                                    error={meta.touched && Boolean(meta.error)}
-                                    helperText={meta.touched && meta.error}
-                                    InputProps={{
-                                      startAdornment: (
-                                        <InputAdornment position="start">
-                                          <Phone color="primary" />
-                                        </InputAdornment>
-                                      ),
-                                    }}
-                                  />
-                                )}
-                              </Field>
-                            </Grid>
-                            <Grid item xs={12} sm={6} md={3}>
-                              <Field name={`clientSpocLinkedin.${index}`}>
-                                {({ field, meta }) => (
-                                  <TextField
-                                    {...field}
-                                    fullWidth
-                                    label="Contact LinkedIn"
-                                    placeholder="https://linkedin.com/in/"
-                                    error={meta.touched && Boolean(meta.error)}
-                                    helperText={meta.touched && meta.error}
-                                    InputProps={{
-                                      startAdornment: (
-                                        <InputAdornment position="start">
-                                          <LinkedIn color="primary" />
-                                        </InputAdornment>
-                                      ),
-                                    }}
-                                  />
-                                )}
-                              </Field>
-                            </Grid>
+                            {contactFields.map((field) => (
+                              <Grid item xs={12} sm={6} md={3} key={field.name}>
+                                <Field
+                                  name={`${field.name}.${index}`}
+                                >
+                                  {({ field: formikField, meta }) => (
+                                    <TextField
+                                      {...formikField}
+                                      fullWidth
+                                      label={field.label}
+                                      placeholder={field.placeholder || ""}
+                                      error={
+                                        meta.touched && Boolean(meta.error)
+                                      }
+                                      helperText={meta.touched && meta.error}
+                                      InputProps={{
+                                        startAdornment: field.icon && (
+                                          <InputAdornment position="start">
+                                            {field.icon}
+                                          </InputAdornment>
+                                        ),
+                                      }}
+                                    />
+                                  )}
+                                </Field>
+                              </Grid>
+                            ))}
                             <Grid
                               item
                               xs={12}
@@ -939,6 +811,7 @@ const ClientForm = () => {
                           <input
                             type="file"
                             hidden
+                            multiple
                             onChange={handleFileChange}
                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                           />

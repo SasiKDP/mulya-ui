@@ -36,8 +36,8 @@ import CustomDialog from "../MuiComponents/CustomDialog";
 import DataTable from "../MuiComponents/DataTable";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import SectionHeader from "../MuiComponents/SectionHeader";
-
 import BASE_URL from "../../redux/config";
+import httpService from "../../redux/httpService";
 
 
 
@@ -92,29 +92,29 @@ const Assigned = () => {
     ];
   };
 
+  
+
   const fetchUserSpecificData = async () => {
     setIsRefreshing(true);
     setFetchStatus("loading");
+  
     try {
-      const response = await axios.get(
-        `${BASE_URL}/requirements/recruiter/${userId}`
-      );
-      const userData = response.data || [];
-      setTotalCount(response.data.totalCount || userData.length || 0);
-
+      const response = await httpService.get(`/requirements/recruiter/${userId}`);
+      const userData = response || [];
+      setTotalCount(response.totalCount || userData.length || 0);
+  
       // Sort data by latest date first (Descending Order)
       const sortedData = userData.sort(
         (a, b) =>
           new Date(b.requirementAddedTimeStamp) -
           new Date(a.requirementAddedTimeStamp)
       );
-
+  
       const processedData = sortedData.map((item) => ({
         ...item,
         jobDescription: (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {item.jobDescription ? (
-              // If text job description is available
               <>
                 <Typography noWrap sx={{ maxWidth: 250 }}>
                   {item.jobDescription.slice(0, 15)}
@@ -139,7 +139,6 @@ const Assigned = () => {
                 )}
               </>
             ) : (
-              // If JD is a file/image, show download button
               <Tooltip title="Download Job Description">
                 <Link
                   href={`/requirements/download-job-description/${item.jobId}`}
@@ -161,23 +160,25 @@ const Assigned = () => {
           </Box>
         ),
         requirementAddedTimeStamp: item.requirementAddedTimeStamp
-          ? new Date(item.requirementAddedTimeStamp).toISOString().split("T")[0] // Extract only YYYY-MM-DD
-          : "N/A", // Handle missing timestamps
+          ? new Date(item.requirementAddedTimeStamp).toISOString().split("T")[0]
+          : "N/A",
         salaryPackage: item.salaryPackage ? `${item.salaryPackage} LPA` : "N/A",
         submitCandidate: (
-          <Tooltip title={
-            item.status === "Closed" || item.status === "Hold" 
-              ? "Submissions disabled for closed/hold jobs" 
-              : "Submit Candidate"
-          }>
-            <span> {/* Wrapping with span to allow disabled tooltip */}
+          <Tooltip
+            title={
+              item.status === "Closed" || item.status === "Hold"
+                ? "Submissions disabled for closed/hold jobs"
+                : "Submit Candidate"
+            }
+          >
+            <span>
               <Button
                 onClick={() => handleOpenSubmitDialog(item.jobId)}
                 startIcon={<UploadIcon />}
                 variant="contained"
                 size="small"
                 sx={{ borderRadius: 2 }}
-                disabled={item.status === "Closed" || item.status === "Closed"}
+                disabled={item.status === "Closed" || item.status === "Hold"}
               >
                 Submit
               </Button>
@@ -185,7 +186,7 @@ const Assigned = () => {
           </Tooltip>
         ),
       }));
-
+  
       setData(processedData);
       setColumns(generateColumns(processedData)); // Set columns in the new format
       setFetchStatus("succeeded");
@@ -196,6 +197,7 @@ const Assigned = () => {
       setIsRefreshing(false);
     }
   };
+  
 
   useEffect(() => {
     const fetchEmployees = async () => {

@@ -116,7 +116,7 @@ const AllSubmissions = () => {
         <DataTable
           data={submissions}
           columns={columns}
-          pageLimit={10}
+          pageLimit={20}
           title="Submitted Candidates"
           onRefresh={fetchSubmissions}
           isRefreshing={isRefreshing}

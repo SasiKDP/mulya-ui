@@ -9,32 +9,28 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
-  Avatar,
-  Menu,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
   Button,
   IconButton,
   useMediaQuery,
   useTheme,
   Divider,
-  Badge,
-  Tooltip,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogTitle,
+  DialogContent,
   Paper,
   Fade,
   Collapse,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Routes, Route, Navigate } from "react-router-dom";
 import { logoutAsync } from "../redux/features/authSlice";
 
 // Icons
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import CloseIcon from "@mui/icons-material/Close";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -52,6 +48,7 @@ const DashboardPage = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [drawerOpen, setDrawerOpen] = useState(!isMobile);
@@ -60,7 +57,6 @@ const DashboardPage = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [openProfileDialog, setOpenProfileDialog] = useState(false);
   const [openLeaveDialog, setOpenLeaveDialog] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
 
   const { roles, logInTimeStamp, user, isAuthenticated } = useSelector(
     (state) => state.auth
@@ -69,16 +65,19 @@ const DashboardPage = () => {
   const userRole = roles?.[0] || "SUPERADMIN";
   const activeTabs = useMemo(() => TABS_BY_ROLE[userRole] || [], [userRole]);
 
-  // Flatten active tabs for finding component to render
+  // Function to flatten tabs and include parent info for nested navigation
   const flattenedTabs = useMemo(() => {
     const flattened = [];
 
-    const flatten = (tabs) => {
+    const flatten = (tabs, parent = null) => {
       tabs.forEach((tab) => {
         if (tab.children) {
-          flatten(tab.children);
+          // Save parent tab
+          flattened.push({ ...tab, isParent: true, parent });
+          // Process children
+          flatten(tab.children, tab);
         } else if (tab.component) {
-          flattened.push(tab);
+          flattened.push({ ...tab, parent });
         }
       });
     };
@@ -87,17 +86,38 @@ const DashboardPage = () => {
     return flattened;
   }, [activeTabs]);
 
+  // Find the current tab based on URL path
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/");
+      return;
     }
-  }, [isAuthenticated, navigate]);
 
-  useEffect(() => {
-    if (flattenedTabs.length > 0 && !selectedTab) {
-      setSelectedTab(flattenedTabs[0].value);
+    // Extract the tab value from the URL path
+    const path = location.pathname.split("/");
+    const currentTabValue = path[path.length - 1].toUpperCase();
+    
+    // Find tab that matches the URL
+    const matchingTab = flattenedTabs.find(tab => tab.value === currentTabValue);
+    
+    if (matchingTab) {
+      setSelectedTab(matchingTab.value);
+      
+      // If this tab has a parent, expand the parent
+      if (matchingTab.parent) {
+        setExpandedParents(prev => ({
+          ...prev,
+          [matchingTab.parent.value]: true
+        }));
+      }
+    } else if (flattenedTabs.length > 0 && !currentTabValue) {
+      // If no specific tab is selected, navigate to the first available tab
+      const defaultTab = flattenedTabs.find(tab => !tab.isParent);
+      if (defaultTab) {
+        navigate(`/dashboard/${defaultTab.value.toLowerCase()}`, { replace: true });
+      }
     }
-  }, [flattenedTabs, selectedTab]);
+  }, [location.pathname, flattenedTabs, isAuthenticated, navigate]);
 
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
@@ -119,11 +139,14 @@ const DashboardPage = () => {
     }));
   };
 
-  const getSelectedComponent = () => {
-    const selectedTabObj = flattenedTabs.find(
-      (tab) => tab.value === selectedTab
-    );
-    return selectedTabObj?.component || null;
+  const handleTabClick = (tab) => {
+    if (tab.isParent) {
+      toggleParentTab(tab.value);
+    } else {
+      setSelectedTab(tab.value);
+      navigate(`/dashboard/${tab.value.toLowerCase()}`);
+      if (isMobile) setDrawerOpen(false);
+    }
   };
 
   const CustomDialog = ({ open, onClose, title, children }) => (
@@ -167,14 +190,7 @@ const DashboardPage = () => {
         <ListItem
           button
           selected={!tab.isParent && selectedTab === tab.value}
-          onClick={() => {
-            if (tab.isParent) {
-              toggleParentTab(tab.value);
-            } else {
-              setSelectedTab(tab.value);
-              if (isMobile) setDrawerOpen(false);
-            }
-          }}
+          onClick={() => handleTabClick(tab)}
           sx={{
             borderRadius: 2,
             mb: 0.5,
@@ -452,13 +468,38 @@ const DashboardPage = () => {
               backgroundColor: "background.paper",
             }}
           >
-            {getSelectedComponent() || (
-              <Box sx={{ p: 1 }}>
-                <Typography color="text.secondary">
-                  No content available for the selected tab.
-                </Typography>
-              </Box>
-            )}
+            {/* Routes for all components */}
+            <Routes>
+              {/* Generate routes from flattened tabs */}
+              {flattenedTabs
+                .filter(tab => !tab.isParent && tab.component)
+                .map(tab => (
+                  <Route 
+                    key={tab.value}
+                    path={`${tab.value.toLowerCase()}`}
+                    element={tab.component}
+                  />
+                ))}
+              
+              {/* Default route - redirect to first tab */}
+              <Route 
+                path="*" 
+                element={
+                  flattenedTabs.find(tab => !tab.isParent) ? (
+                    <Navigate 
+                      to={`/dashboard/${flattenedTabs.find(tab => !tab.isParent).value.toLowerCase()}`} 
+                      replace 
+                    />
+                  ) : (
+                    <Box sx={{ p: 1 }}>
+                      <Typography color="text.secondary">
+                        No content available for your role.
+                      </Typography>
+                    </Box>
+                  )
+                } 
+              />
+            </Routes>
           </Paper>
         </Fade>
       </Box>
