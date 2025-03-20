@@ -1,21 +1,17 @@
-// App.js - Updated version
 import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import ProtectedRoute from "./components/ProtectedRoute";
-import DashboardPage from "./pages/DashboardPage";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ToastContainer } from "react-toastify";
-import JobForm from "./components/Requirements/JobForm";
-import LeaveApplication from "./components/LeaveApplication";
-import InterviewForm from "./components/InterviewForm";
-import CandidateSubmissionForm from "./components/CandidateSubmissionFrom";
-import AttendanceTracker from "./components/AttendanceTracker";
-import AdminDashboard from "./components/AdminDashboard";
-import PreventNavigation from "./components/common/PreventNavigation";
-import SignUpFormMain from "./components/Registration/SignUpFormMain";
-import UseLogoutOnUnload from "./utils/useLogoutOnUnload";
-import SignInMain from "./components/Registration/SignInMain";
+import "react-toastify/dist/ReactToastify.css";
 import "bootstrap/dist/css/bootstrap.min.css";
+
+// Components
+import ProtectedRoute from "./components/ProtectedRoute";
+import DashboardPage from "./pages/DashboardPage";
+import SignInMain from "./components/Registration/SignInMain";
+import SignUpFormMain from "./components/Registration/SignUpFormMain";
+import PreventNavigation from "./components/common/PreventNavigation";
+import UseLogoutOnUnload from "./utils/useLogoutOnUnload";
 
 function App() {
   return (
@@ -38,16 +34,20 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<SignInMain />} />
-
-        {/* Protected Routes */}
+        <Route path="/signup" element={<SignUpFormMain />} />
+        
+        {/* Protected Routes - Dashboard with all tabs */}
         <Route
-          path="/dashboard"
+          path="/dashboard/*"
           element={
-            <ProtectedRoute roles={["ADMIN", "EMPLOYEE", "SUPERADMIN","TEAMLEAD","BDM"]}>
+            <ProtectedRoute roles={["ADMIN", "EMPLOYEE", "SUPERADMIN", "TEAMLEAD", "BDM"]}>
               <DashboardPage />
             </ProtectedRoute>
           }
         />
+
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

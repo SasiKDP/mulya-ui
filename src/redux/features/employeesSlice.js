@@ -5,7 +5,6 @@ import BASE_URL from "../config";
 
 
 
-
 // Fetch employees thunk
 export const fetchEmployees = createAsyncThunk(
   "employee/fetchEmployees",

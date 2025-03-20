@@ -1,23 +1,29 @@
-// ProtectedRoute.js - Updated version
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 const ProtectedRoute = ({ children, roles }) => {
   const { isAuthenticated, roles: userRoles } = useSelector((state) => state.auth);
-
-  console.log('User Roles:', userRoles);
-  console.log('Required Roles:', roles);
-  console.log('Is Authenticated:', isAuthenticated);
+  const location = useLocation();
 
   // Convert roles to array if it's a string
   const requiredRoles = Array.isArray(roles) ? roles : [roles];
   
   // Check if the user is authenticated and has at least one of the required roles
   const hasAccess = isAuthenticated && 
-    requiredRoles.some(role => userRoles.includes(role));
+    userRoles && requiredRoles.some(role => userRoles.includes(role));
 
-  return hasAccess ? children : <Navigate to="/" />;
+  if (!isAuthenticated) {
+    // Redirect to login page with the return url
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
+
+  if (!hasAccess) {
+    // User is authenticated but doesn't have the required role
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

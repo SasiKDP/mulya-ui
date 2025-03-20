@@ -44,12 +44,24 @@ const validationSchema = Yup.object().shape({
   clientName: Yup.string().required("Client name is required"),
   clientEmail: Yup.string()
     .nullable()
-    .trim()
-    .matches(
-      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Invalid email format (e.g., clientname@something.com)"
-    ),
-    interviewDateTime: Yup.date()
+    .transform((value, originalValue) => originalValue === '' ? null : value)
+    .when('interviewLevel', {
+      is: 'EXTERNAL',
+      then: Yup.string()
+        .nullable()
+        .trim()
+        .matches(
+          /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+          "Invalid email format (e.g., clientname@something.com)"
+        ),
+      otherwise: Yup.string()
+        .trim()
+        .matches(
+          /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+          "Invalid email format (e.g., clientname@something.com)"
+        ).required("Client email is required")
+    }),
+  interviewDateTime: Yup.date()
     .required("Interview date and time is required")
     .min(oneMonthAgo, "Interview date and time must be within the last month or in the future"),
   duration: Yup.number()
@@ -58,8 +70,18 @@ const validationSchema = Yup.object().shape({
     .max(60, "Duration cannot exceed 60 minutes"),
   zoomLink: Yup.string()
     .nullable()
-    .trim()
-    .matches(/^(https?:\/\/[^\s$.?#].[^\s]*)?$/, "Must be a valid URL"),
+    .transform((value, originalValue) => originalValue === '' ? null : value)
+    .when('interviewLevel', {
+      is: 'EXTERNAL',
+      then: Yup.string()
+        .nullable()
+        .trim()
+        .matches(/^(https?:\/\/[^\s$.?#].[^\s]*)?$/, "Must be a valid URL"),
+      otherwise: Yup.string()
+        .trim()
+        .matches(/^(https?:\/\/[^\s$.?#].[^\s]*)?$/, "Must be a valid URL")
+        .required("Zoom link is required"),
+    }),
   interviewLevel: Yup.string()
     .required("Interview level is required")
     .oneOf(["INTERNAL", "EXTERNAL"]),

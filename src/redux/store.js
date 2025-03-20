@@ -10,13 +10,13 @@ import interviewFormReducer from '../redux/features/interviewSheduleSlice'
 import employeesReducer from "../redux/features/employeesSlice";
 import dialogReducer from './features/dialogSlice'
 import attendanceReducer from './features/attendanceSlice';
-
+import clientReducer from "./features/clientSlice";
 
 export const store = configureStore({
   reducer: {
     form:formReducer,
     auth: authReducer,
-    
+    clients: clientReducer,
     dialog: dialogReducer,
     employees: employeesReducer,
     jobForm: jobFormReducer,

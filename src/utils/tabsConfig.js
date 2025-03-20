@@ -169,8 +169,8 @@ const TABS_BY_ROLE = {
       isParent: true,
       children: [
         {
-          label: "OnBoard Client",
-          value: "BOARDCLIENT",
+          label: "OnBoardClient",
+          value: "ONBOARDCLIENT",
           component: <ClientForm />,
           icon: <BusinessIcon />,
         },
@@ -283,8 +283,8 @@ const TABS_BY_ROLE = {
       isParent: true,
       children: [
         {
-          label: "OnBoard Client",
-          value: "BOARDCLIENT",
+          label: "OnBoardClient",
+          value: "ONBOARDCLIENT",
           component: <ClientForm />,
           icon: <BusinessIcon />,
         },
@@ -389,8 +389,8 @@ const TABS_BY_ROLE = {
       isParent: true,
       children: [
         {
-          label: "OnBoard Client",
-          value: "BOARDCLIENT",
+          label: "OnBoardClient",
+          value: "ONBOARDCLIENT",
           component: <ClientForm />,
           icon: <BusinessIcon />,
         },

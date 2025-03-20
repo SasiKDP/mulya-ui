@@ -468,7 +468,7 @@ const DataTable = ({
                           color: "#fff",
                           fontWeight: "bold",
                           textAlign: "center",
-                          padding: 2,
+                         
                           whiteSpace: "normal",
                           wordWrap: "break-word",
                           maxWidth: "130px",
@@ -642,7 +642,7 @@ const DataTable = ({
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 20, 30, 40, 50]}
+              rowsPerPageOptions={[15, 20, 30, 40, 50]}
               sx={{
                 borderTop: "1px solid #ccc",
                 backgroundColor: "#fff",
