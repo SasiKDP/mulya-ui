@@ -119,7 +119,7 @@ const ClientEditDialog = ({
       clientLinkedInUrl: currentClient.clientLinkedInUrl || "",
       spocContacts: prepareSpocData(currentClient),
       paymentType: currentClient.paymentType || "",
-      onboardedBy: currentClient.onboardedBy || "",
+      onBoardedBy: currentClient.onBoardedBy || "",
     };
   };
 
@@ -243,8 +243,8 @@ const ClientEditDialog = ({
           placeholder: "Customer A, Customer B, Customer C",
         },
         {
-          id: "onboardedBy",
-          name: "onboardedBy",
+          id: "onBoardedBy",
+          name: "onBoardedBy",
           label: "BDM User",
           type: "select",
           gridSize: { xs: 12, md: 6 },
