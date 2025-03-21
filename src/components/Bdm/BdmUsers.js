@@ -1,13 +1,7 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  fetchEmployees,
-  updateEmployee,
-  deleteEmployee,
-  resetUpdateStatus,
-} from "../../redux/features/employeesSlice";
+import { fetchEmployees } from "../../redux/features/employeesSlice";
 import DataTable from "../MuiComponents/DataTable";
-
 
 const BdmUsers = () => {
   const dispatch = useDispatch();
@@ -37,7 +31,6 @@ const BdmUsers = () => {
     { key: "phoneNumber", label: "Phone Number", type: "text" },
     { key: "personalemail", label: "Personal Email", type: "text" },
     { key: "status", label: "Status", type: "select" },
-   
   ];
 
   return (
@@ -45,7 +38,7 @@ const BdmUsers = () => {
       <DataTable
         data={bdmUsers} // Pass the filtered list
         columns={columns}
-        title="BDM Users List"
+        title="BDM USERS LIST"
       />
     </div>
   );

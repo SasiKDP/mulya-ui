@@ -21,11 +21,11 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-
-import BASE_URL from "../../redux/config";
 import CustomDialog from "../MuiComponents/CustomDialog";
 import ClientEditDialog from "./ClientEditDialog";
-import httpService from "../../redux/httpService";
+import BASE_URL from "../../redux/config";
+
+// const BASE_URL = 'http://192.168.0.194:8111';
 
 
 
@@ -53,30 +53,28 @@ const Clients = () => {
     const fetchClients = async () => {
         try {
             setLoading(true);
-            
-            // Fetch data directly using Axios
             const response = await axios.get(`${BASE_URL}/requirements/bdm/getAll`);
-            
-            // Ensure the response structure is properly handled
             setClients(Array.isArray(response.data?.data) ? response.data.data : Array.isArray(response.data) ? response.data : []);
-    
         } catch (error) {
             console.error("Error fetching clients:", error);
             toast.error(error.response?.data?.message || "Failed to load clients. Please refresh the page.");
-            setClients([]); // Ensure state reset on error
+            setClients([]);
         } finally {
             setLoading(false);
         }
     };
-    
 
     const handleFileDownload = async (clientId) => {
         try {
             setLoading(true);
             const response = await axios.get(`${BASE_URL}/requirements/bdm/${clientId}/downloadAll`, {
-                responseType: "blob",
+                responseType: "arraybuffer", // Change responseType to arraybuffer
             });
-            const url = window.URL.createObjectURL(new Blob([response.data]));
+    
+            // Create a Blob from the ArrayBuffer
+            const blob = new Blob([response.data], { type: "application/zip" }); // Assuming it's a ZIP file
+    
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
             link.setAttribute("download", `documents_${clientId}.zip`);
@@ -122,9 +120,18 @@ const Clients = () => {
 
         try {
             setLoading(true);
-            await axios.delete(`${BASE_URL}/requirements/bdm/delete/${clientToDelete.id}`);
-            setClients(clients.filter((client) => client.id !== clientToDelete.id));
-            toast.success("Client deleted successfully!");
+            const response = await axios.delete(`${BASE_URL}/requirements/bdm/delete/${clientToDelete.id}`);
+
+            if (response.data.success) {
+                setClients((prevClients) =>
+                    prevClients.filter((client) => client.id !== clientToDelete.id)
+                );
+                toast.success("Client deleted successfully!");
+            } else {
+                toast.error(response.data.message || "Failed to delete client. Please try again.");
+                console.error("Server error deleting client:", response.data.error);
+            }
+
         } catch (error) {
             console.error("Error deleting client:", error);
             toast.error("Failed to delete client. Please try again.");
@@ -145,28 +152,27 @@ const Clients = () => {
     }, []);
 
     const handleCellUpdate = async (rowId, columnKey, newValue) => {
-      try {
-          setLoading(true);
-          await axios.put(`${BASE_URL}/requirements/bdm/${rowId}`, {
-              [columnKey]: newValue,
-          });
-  
-          // Update local state
-          const updatedClients = clients.map((client) => {
-              if (client.id === rowId) {
-                  return { ...client, [columnKey]: newValue };
-              }
-              return client;
-          });
-          setClients(updatedClients);
-          toast.success("Client updated successfully!");
-      } catch (error) {
-          console.error("Error updating client:", error);
-          toast.error("Failed to update client. Please try again.");
-      } finally {
-          setLoading(false);
-      }
-  };
+        try {
+            setLoading(true);
+            await axios.put(`${BASE_URL}/requirements/bdm/${rowId}`, {
+                [columnKey]: newValue,
+            });
+
+            const updatedClients = clients.map((client) => {
+                if (client.id === rowId) {
+                    return { ...client, [columnKey]: newValue };
+                }
+                return client;
+            });
+            setClients(updatedClients);
+            toast.success("Client updated successfully!");
+        } catch (error) {
+            console.error("Error updating client:", error);
+            toast.error("Failed to update client. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const generateColumns = (
         handleFileDownload,
@@ -175,7 +181,7 @@ const Clients = () => {
     ) => {
         return [
             { key: "id", label: "Client ID", type: "text", editable: false, render: (row) => row.id || "--" },
-            { key: "onBoardedBy", label: "On BoardedBy", type: "text", editable: true, width: "200px", render: (row) => row.onBoardedBy || "--" },
+            { key: "onBoardedBy", label: "BDM", type: "text", editable: true, width: "200px", render: (row) => row.onBoardedBy || "--" },
             {
                 key: "clientName", label: "Client Name", type: "text", editable: true, render: (row) => (
                     <Typography sx={{ wordBreak: "break-word", whiteSpace: "pre-line", maxWidth: 120, overflowWrap: "break-word", color: "black" }}>
@@ -205,85 +211,85 @@ const Clients = () => {
             },
             {
                 key: "clientWebsiteUrl", label: "Website", type: "text", editable: true, render: (row) => row.clientWebsiteUrl ? (
-                    <Link href={row.clientWebsiteUrl} target="_blank" rel="noopener noreferrer">Go to Website</Link>
+                    <Link href={row.clientclientWebsiteUrl} target="_blank" rel="noopener noreferrer">Go to Website</Link>
                 ) : ("--"),
             },
             {
-                key: "clientLinkedInUrl", label: "LinkedIn", type: "text", editableeditable: true, render: (row) => row.clientLinkedInUrl ? (
-                  <Link href={row.clientLinkedInUrl} target="_blank" rel="noopener noreferrer">Go to LinkedIn</Link>
-              ) : ("--"),
-          },
-          {
-              key: "clientSpocName", label: "SPOC Name", type: "text", editable: true, render: (row) => (
-                  <Box sx={{ whiteSpace: "normal", wordBreak: "break-word" }}>{row.clientSpocName?.length > 0 ? row.clientSpocName.join(", ") : "--"}</Box>
-              ),
-          },
-          {
-              key: "clientSpocEmailid", label: "SPOC Email", type: "text", editable: true, render: (row) => (
-                  <Box sx={{ whiteSpace: "normal", wordBreak: "break-word" }}>{row.clientSpocEmailid?.length > 0 ? row.clientSpocEmailid.join(", ") : "--"}</Box>
-              ),
-          },
-          {
-              key: "clientSpocMobileNumber", label: "SPOC Mobile", type: "text", editable: true, render: (row) => (
-                  <Box sx={{ whiteSpace: "normal", wordBreak: "break-word" }}>{row.clientSpocMobileNumber?.length > 0 ? row.clientSpocMobileNumber.join(", ") : "--"}</Box>
-              ),
-          },
-          {
-              key: "clientSpocLinkedin", label: "SPOC LinkedIn", type: "text", editable: true, render: (row) => row.clientSpocLinkedin ? (
-                  <Link href={row.clientSpocLinkedin} target="_blank" rel="noopener noreferrer">View LinkedIn</Link>
-              ) : ("--"),
-          },
-          {
-              key: "supportingDocuments", label: "Documents", render: (row) => row.supportingDocuments && row.supportingDocuments.length > 0 ? (
-                  <Link onClick={() => handleFileDownload(row.id)} sx={{ cursor: "pointer", color: "#2A4DBD", fontWeight: 500, textDecoration: "none", "&:hover": { color: "#0F1C46", textDecoration: "underline", }, }}>Download</Link>
-              ) : ("--"),
-          },
-          {
-              key: "actions", label: "Actions", render: (row) => (
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                      <Tooltip title="Edit Client">
-                          <IconButton size="small" color="primary" onClick={() => handleEditClick(row.id)} aria-label="edit">
-                              <EditIcon fontSize="small" />
-                          </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete Client">
-                          <IconButton size="small" color="error" onClick={() => handleDeleteClick(row)} aria-label="delete">
-                              <DeleteIcon fontSize="small" />
-                          </IconButton>
-                      </Tooltip>
-                  </Box>
-              ),
-          },
-      ];
-  };
+                key: "clientLinkedInUrl", label: "LinkedIn", type: "text", editable: true, render: (row) => row.clientLinkedInUrl ? (
+                    <Link href={row.clientLinkedInUrl} target="_blank" rel="noopener noreferrer">Go to LinkedIn</Link>
+                ) : ("--"),
+            },
+            {
+                key: "clientSpocName", label: "SPOC Name", type: "text", editable: true, render: (row) => (
+                    <Box sx={{ whiteSpace: "normal", wordBreak: "break-word" }}>{row.clientSpocName?.length > 0 ? row.clientSpocName.join(", ") : "--"}</Box>
+                ),
+            },
+            {
+                key: "clientSpocEmailid", label: "SPOC Email", type: "text", editable: true, render: (row) => (
+                    <Box sx={{ whiteSpace: "normal", wordBreak: "break-word" }}>{row.clientSpocEmailid?.length > 0 ? row.clientSpocEmailid.join(", ") : "--"}</Box>
+                ),
+            },
+            {
+                key: "clientSpocMobileNumber", label: "SPOC Mobile", type: "text", editable: true, render: (row) => (
+                    <Box sx={{ whiteSpace: "normal", wordBreak: "break-word" }}>{row.clientSpocMobileNumber?.length > 0 ? row.clientSpocMobileNumber.join(", ") : "--"}</Box>
+                ),
+            },
+            {
+                key: "clientSpocLinkedin", label: "SPOC LinkedIn", type: "text", editable: true, render: (row) => row.clientSpocLinkedin ? (
+                    <Link href={row.clientSpocLinkedin} target="_blank" rel="noopener noreferrer">View LinkedIn</Link>
+                ) : ("--"),
+            },
+            {
+                key: "supportingDocuments", label: "Documents", render: (row) => row.supportingDocuments && row.supportingDocuments.length > 0 ? (
+                    <Link onClick={() => handleFileDownload(row.id)} sx={{ cursor: "pointer", color: "#2A4DBD", fontWeight: 500, textDecoration: "none", "&:hover": { color: "#0F1C46", textDecoration: "underline", }, }}>Download</Link>
+                ) : ("--"),
+            },
+            {
+                key: "actions", label: "Actions", render: (row) => (
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                        <Tooltip title="Edit Client">
+                            <IconButton size="small" color="primary" onClick={() => handleEditClick(row.id)} aria-label="edit">
+                                <EditIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Client">
+                            <IconButton size="small" color="error" onClick={() => handleDeleteClick(row)} aria-label="delete">
+                                <DeleteIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                ),
+            },
+        ];
+    };
 
-  if (loading && !editDialogOpen && !deleteDialogOpen) {
-      return (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh", }}>
-              <CircularProgress />
-          </Box>
-      );
-  }
+    if (loading && !editDialogOpen && !deleteDialogOpen) {
+        return (
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh", }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
 
-  return (
-      <Container maxWidth={false} disableGutters sx={{ width: "100%", height: "calc(100vh - 20px)", display: "flex", flexDirection: "column", }}>
-          <DataTable data={clients} columns={generateColumns(handleFileDownload, handleEditClick, handleDeleteClick)} title="Clients" pageLimit={20} onRefresh={fetchClients} isRefreshing={loading} onCellUpdate={handleCellUpdate} />
-          <ClientEditDialog open={editDialogOpen} onClose={handleEditClose} currentClient={currentClient} onClientUpdated={handleClientUpdated} baseUrl={BASE_URL} />
-          <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel} aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description">
-              <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
-              <DialogContent>
-                  <DialogContentText id="delete-dialog-description">
-                      Are you sure you want to delete client "{clientToDelete?.clientName}"? This action cannot be undone.
-                  </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                  <Button onClick={handleDeleteCancel} color="primary">Cancel</Button>
-                  <Button onClick={handleDeleteConfirm} color="error" autoFocus>Delete</Button>
-              </DialogActions>
-          </Dialog>
-          <CustomDialog open={dialogOpen} onClose={handleCloseDialog} title={dialogTitle} content={dialogContent} />
-      </Container>
-  );
+    return (
+        <Container maxWidth={false} disableGutters sx={{ width: "100%", height: "calc(100vh - 20px)", display: "flex", flexDirection: "column", }}>
+            <DataTable data={clients} columns={generateColumns(handleFileDownload, handleEditClick, handleDeleteClick)} title="Clients" pageLimit={20} onRefresh={fetchClients} isRefreshing={loading} onCellUpdate={handleCellUpdate} />
+            <ClientEditDialog open={editDialogOpen} onClose={handleEditClose} currentClient={currentClient} onClientUpdated={handleClientUpdated} baseUrl={BASE_URL} />
+            <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel} aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description">
+                <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="delete-dialog-description">
+                        Are you sure you want to delete client "{clientToDelete?.clientName}"? This action cannot be undone.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteCancel} color="primary">Cancel</Button>
+                    <Button onClick={handleDeleteConfirm} color="error" autoFocus>Delete</Button>
+                </DialogActions>
+            </Dialog>
+            <CustomDialog open={dialogOpen} onClose={handleCloseDialog} title={dialogTitle} content={dialogContent} />
+        </Container>
+    );
 };
 
 export default Clients;

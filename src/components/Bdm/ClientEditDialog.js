@@ -1,3 +1,5 @@
+import { fetchEmployees } from "../../redux/features/employeesSlice";
+import { useDispatch, useSelector } from "react-redux";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import CloseIcon from "@mui/icons-material/Close";
@@ -24,9 +26,7 @@ import * as Yup from "yup";
 import { toast } from "react-toastify";
 import BASE_URL from "../../redux/config";
 
-
-
-
+// const BASE_URL = 'http://192.168.0.194:8111'
 
 const ClientEditDialog = ({
   open,
@@ -37,30 +37,43 @@ const ClientEditDialog = ({
   const [files, setFiles] = useState([]);
   const [prepopulatedFileName, setPrepopulatedFileName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const dispatch = useDispatch();
+  const { employeesList, fetchStatus, fetchError } = useSelector(
+    (state) => state.employees
+  );
 
-  // Convert array to array of objects for SPOC fields
+  useEffect(() => {
+    console.log("Fetching employees...");
+    dispatch(fetchEmployees());
+  }, [dispatch]);
+
+
+
+  const bdmUsers = employeesList.filter(
+    (employee) => employee.roles?.includes("BDM")
+  );
+
   const prepareSpocData = (client) => {
     if (!client) return [{ name: "", email: "", phone: "", linkedin: "" }];
 
-    // If data exists in old format (arrays), convert to new format
     if (
       Array.isArray(client.clientSpocName) ||
       typeof client.clientSpocName === "string"
     ) {
       const names = Array.isArray(client.clientSpocName)
         ? client.clientSpocName
-        : client.clientSpocName?.split(",").map(item => item.trim()) || [];
+        : client.clientSpocName?.split(",").map((item) => item.trim()) || [];
       const emails = Array.isArray(client.clientSpocEmailid)
         ? client.clientSpocEmailid
-        : client.clientSpocEmailid?.split(",").map(item => item.trim()) || [];
+        : client.clientSpocEmailid?.split(",").map((item) => item.trim()) || [];
       const phones = Array.isArray(client.clientSpocMobileNumber)
         ? client.clientSpocMobileNumber
-        : client.clientSpocMobileNumber?.split(",").map(item => item.trim()) || [];
+        : client.clientSpocMobileNumber?.split(",").map((item) => item.trim()) ||
+          [];
       const linkedins = Array.isArray(client.clientSpocLinkedin)
         ? client.clientSpocLinkedin
-        : client.clientSpocLinkedin?.split(",").map(item => item.trim()) || [];
+        : client.clientSpocLinkedin?.split(",").map((item) => item.trim()) || [];
 
-      // Create array of objects from separate arrays
       const maxLength = Math.max(
         names.length,
         emails.length,
@@ -78,10 +91,11 @@ const ClientEditDialog = ({
         });
       }
 
-      return spocContacts.length ? spocContacts : [{ name: "", email: "", phone: "", linkedin: "" }];
+      return spocContacts.length
+        ? spocContacts
+        : [{ name: "", email: "", phone: "", linkedin: "" }];
     }
 
-    // If data already exists in new format
     if (client.spocContacts && client.spocContacts.length) {
       return client.spocContacts;
     }
@@ -89,7 +103,6 @@ const ClientEditDialog = ({
     return [{ name: "", email: "", phone: "", linkedin: "" }];
   };
 
-  // Prepare initial values
   const getInitialValues = () => {
     if (!currentClient) return {};
 
@@ -106,6 +119,7 @@ const ClientEditDialog = ({
       clientLinkedInUrl: currentClient.clientLinkedInUrl || "",
       spocContacts: prepareSpocData(currentClient),
       paymentType: currentClient.paymentType || "",
+      onBoardedBy: currentClient.onBoardedBy || "",
     };
   };
 
@@ -128,7 +142,121 @@ const ClientEditDialog = ({
     onClose();
   };
 
-  // Validation schema
+  // Define field configurations for basic form fields
+  const formFields = [
+    {
+      section: "Basic Information",
+      fields: [
+        {
+          id: "clientName",
+          name: "clientName",
+          label: "Client Name *",
+          type: "text",
+          gridSize: { xs: 12, md: 6 },
+          validation: Yup.string().required("Client name is required"),
+          autoFocus: true,
+        },
+        {
+          id: "clientAddress",
+          name: "clientAddress",
+          label: "Client Address *",
+          type: "text",
+          gridSize: { xs: 12, md: 6 },
+          validation: Yup.string().nullable().max(100, "Max 100 characters"),
+          multiline: true,
+          maxRows: 3,
+        },
+        {
+          id: "positionType",
+          name: "positionType",
+          label: "Position Type *",
+          type: "select",
+          gridSize: { xs: 12, md: 4 },
+          validation: Yup.string().nullable().required("Position type is required"),
+          options: [
+            { value: "Permanent", label: "Permanent" },
+            { value: "Contract", label: "Contract" },
+            { value: "Freelance", label: "Freelance" },
+            { value: "Full-Time", label: "Full-Time" },
+            { value: "Part-Time", label: "Part-Time" },
+          ],
+        },
+        {
+          id: "netPayment",
+          name: "netPayment",
+          label: "Net Payment *",
+          type: "number",
+          gridSize: { xs: 12, md: 4 },
+          validation: Yup.number()
+            .nullable()
+            .required("Net payment is required")
+            .positive("Must be positive"),
+          inputProps: { min: 0 },
+        },
+        {
+          id: "gst",
+          name: "gst",
+          label: "GST (%) *",
+          type: "number",
+          gridSize: { xs: 12, md: 4 },
+          validation: Yup.number()
+            .nullable()
+            .required("GST is required")
+            .min(0, "Cannot be negative")
+            .max(100, "Cannot exceed 100%"),
+          inputProps: { min: 0, max: 100, step: 0.01 },
+        },
+      ],
+    },
+    {
+      section: "Web Presence",
+      fields: [
+        {
+          id: "clientWebsiteUrl",
+          name: "clientWebsiteUrl",
+          label: "Website URL *",
+          type: "text",
+          gridSize: { xs: 12, md: 6 },
+          validation: Yup.string().nullable().url("Enter a valid URL"),
+          placeholder: "https://example.com",
+        },
+        {
+          id: "clientLinkedInUrl",
+          name: "clientLinkedInUrl",
+          label: "LinkedIn URL",
+          type: "text",
+          gridSize: { xs: 12, md: 6 },
+          validation: Yup.string().nullable().url("Enter a valid LinkedIn URL"),
+          placeholder: "https://linkedin.com/company/example",
+        },
+      ],
+    },
+    {
+      section: "Additional Information",
+      fields: [
+        {
+          id: "supportingCustomers",
+          name: "supportingCustomers",
+          label: "Supporting Customers (commaseparated)",
+          type: "text",
+          gridSize: { xs: 12 },
+          placeholder: "Customer A, Customer B, Customer C",
+        },
+        {
+          id: "onBoardedBy",
+          name: "onBoardedBy",
+          label: "BDM User",
+          type: "select",
+          gridSize: { xs: 12, md: 6 },
+          options: bdmUsers.map((user) => ({
+            value: user.userName,
+            label: user.userName,
+          })),
+        },
+      ],
+    },
+  ];
+
   const validationSchema = Yup.object().shape({
     clientName: Yup.string().required("Client name is required"),
     clientAddress: Yup.string().nullable().max(100, "Max 100 characters"),
@@ -149,9 +277,7 @@ const ClientEditDialog = ({
         name: Yup.string()
           .required("Name is required")
           .matches(/^[A-Za-z\s]+$/, "Only letters allowed"),
-        email: Yup.string()
-          .required("Email is required")
-          .email("Invalid email"),
+        email: Yup.string().required("Email is required").email("Invalid email"),
         phone: Yup.string()
           .required("Phone is required")
           .matches(/^[0-9]{10}$/, "Must be 10 digits"),
@@ -162,38 +288,33 @@ const ClientEditDialog = ({
 
   const handleSubmit = async (values, { setSubmitting }) => {
     if (!currentClient) return;
-
+  
     setIsSubmitting(true);
-
+  
     try {
-      // Convert spocContacts array of objects to separate arrays for the API
       const formattedValues = {
         ...values,
         supportingCustomers: values.supportingCustomers
           .split(",")
-          .map(item => item.trim())
-          .filter(item => item !== ""),
-        clientSpocName: values.spocContacts.map(contact => contact.name),
-        clientSpocEmailid: values.spocContacts.map(contact => contact.email),
-        clientSpocMobileNumber: values.spocContacts.map(contact => contact.phone),
-        clientSpocLinkedin: values.spocContacts.map(contact => contact.linkedin),
+          .map((item) => item.trim())
+          .filter((item) => item !== ""),
+        clientSpocName: values.spocContacts.map((contact) => contact.name),
+        clientSpocEmailid: values.spocContacts.map((contact) => contact.email),
+        clientSpocMobileNumber: values.spocContacts.map((contact) => contact.phone),
+        clientSpocLinkedin: values.spocContacts.map((contact) => contact.linkedin),
       };
-
-      // Remove spocContacts to avoid sending extra data
+  
       delete formattedValues.spocContacts;
-
-      if (currentClient.id) {
-        formattedValues.id = currentClient.id;
-      }
-
+      delete formattedValues.id;
+      delete formattedValues.paymentType; // Remove paymentType from the payload
+  
       const formData = new FormData();
       formData.append("dto", JSON.stringify(formattedValues));
-
-      // Append multiple files
+  
       files.forEach((file) => {
         formData.append("supportingDocuments", file);
       });
-
+  
       const response = await axios.put(
         `${BASE_URL}/requirements/bdm/${currentClient.id}`,
         formData,
@@ -203,7 +324,7 @@ const ClientEditDialog = ({
           },
         }
       );
-
+  
       toast.success("Client updated successfully!");
       setTimeout(() => {
         handleClose();
@@ -218,6 +339,60 @@ const ClientEditDialog = ({
     } finally {
       setIsSubmitting(false);
       setSubmitting(false);
+    }
+  };
+
+  // Render form field based on its type
+  const renderField = (field, values, errors, touched, handleChange) => {
+    const { id, name, label, type, gridSize, placeholder, options, autoFocus, multiline, maxRows, inputProps } = field;
+
+    switch (type) {
+      case "select":
+        return (
+          <Grid item {...gridSize} key={id}>
+            <FormControl fullWidth margin="normal" variant="outlined">
+              <InputLabel id={`${id}-label`}>{label}</InputLabel>
+              <Select
+                labelId={`${id}-label`}
+                id={id}
+                name={name}
+                value={values[name] || ""}
+                onChange={handleChange}
+                label={label}
+                error={touched[name] && Boolean(errors[name])}
+              >
+                {options.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        );
+      default:
+        return (
+          <Grid item {...gridSize} key={id}>
+            <TextField
+              fullWidth
+              id={id}
+              name={name}
+              label={label}
+              type={type}
+              value={values[name]}
+              onChange={handleChange}
+              error={touched[name] && Boolean(errors[name])}
+              helperText={touched[name] && errors[name]}
+              margin="normal"
+              variant="outlined"
+              placeholder={placeholder}
+              autoFocus={autoFocus}
+              multiline={multiline}
+              maxRows={maxRows}
+              InputProps={inputProps ? { inputProps } : undefined}
+            />
+          </Grid>
+        );
     }
   };
 
@@ -260,161 +435,19 @@ const ClientEditDialog = ({
           {({ errors, touched, values, handleChange, setFieldValue }) => (
             <Form>
               <Grid container spacing={2}>
-                {/* Client Basic Info Section */}
-                <Grid item xs={12}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    Basic Information
-                  </Typography>
-                </Grid>
+                {formFields.map((section) => (
+                  <React.Fragment key={section.section}>
+                    <Grid item xs={12} sx={{ mt: 2 }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                        {section.section}
+                      </Typography>
+                    </Grid>
+                    {section.fields.map((field) =>
+                      renderField(field, values, errors, touched, handleChange)
+                    )}
+                  </React.Fragment>
+                ))}
 
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    id="clientName"
-                    name="clientName"
-                    label="Client Name *"
-                    value={values.clientName}
-                    onChange={handleChange}
-                    error={touched.clientName && Boolean(errors.clientName)}
-                    helperText={touched.clientName && errors.clientName}
-                    margin="normal"
-                    variant="outlined"
-                    autoFocus
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    id="clientAddress"
-                    name="clientAddress"
-                    label="Client Address *"
-                    value={values.clientAddress}
-                    onChange={handleChange}
-                    error={touched.clientAddress && Boolean(errors.clientAddress)}
-                    helperText={touched.clientAddress && errors.clientAddress}
-                    margin="normal"
-                    variant="outlined"
-                    multiline
-                    maxRows={3}
-                  />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <FormControl fullWidth margin="normal" variant="outlined">
-                    <InputLabel id="positionType-label">Position Type *</InputLabel>
-                    <Select
-                      labelId="positionType-label"
-                      id="positionType"
-                      name="positionType"
-                      value={values.positionType}
-                      onChange={handleChange}
-                      label="Position Type *"
-                      error={touched.positionType && Boolean(errors.positionType)}
-                    >
-                      <MenuItem value="Permanent">Permanent</MenuItem>
-                      <MenuItem value="Contract">Contract</MenuItem>
-                      <MenuItem value="Freelance">Freelance</MenuItem>
-                      <MenuItem value="Full-Time">Full-Time</MenuItem>
-                      <MenuItem value="Part-Time">Part-Time</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    id="netPayment"
-                    name="netPayment"
-                    label="Net Payment *"
-                    type="number"
-                    value={values.netPayment}
-                    onChange={handleChange}
-                    error={touched.netPayment && Boolean(errors.netPayment)}
-                    helperText={touched.netPayment && errors.netPayment}
-                    margin="normal"
-                    variant="outlined"
-                    InputProps={{ inputProps: { min: 0 } }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={4}>
-                  <TextField
-                    fullWidth
-                    id="gst"
-                    name="gst"
-                    label="GST (%) *"
-                    type="number"
-                    value={values.gst}
-                    onChange={handleChange}
-                    error={touched.gst && Boolean(errors.gst)}
-                    helperText={touched.gst && errors.gst}
-                    margin="normal"
-                    variant="outlined"
-                    InputProps={{ inputProps: { min: 0, max: 100, step: 0.01 } }}
-                  />
-                </Grid>
-
-                {/* Web Presence Section */}
-                <Grid item xs={12} sx={{ mt: 2 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    Web Presence
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    id="clientWebsiteUrl"
-                    name="clientWebsiteUrl"
-                    label="Website URL *"
-                    value={values.clientWebsiteUrl}
-                    onChange={handleChange}
-                    error={touched.clientWebsiteUrl && Boolean(errors.clientWebsiteUrl)}
-                    helperText={touched.clientWebsiteUrl && errors.clientWebsiteUrl}
-                    margin="normal"
-                    variant="outlined"
-                    placeholder="https://example.com"
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    fullWidth
-                    id="clientLinkedInUrl"
-                    name="clientLinkedInUrl"
-                    label="LinkedIn URL"
-                    value={values.clientLinkedInUrl}
-                    onChange={handleChange}
-                    error={touched.clientLinkedInUrl && Boolean(errors.clientLinkedInUrl)}
-                    helperText={touched.clientLinkedInUrl && errors.clientLinkedInUrl}
-                    margin="normal"
-                    variant="outlined"
-                    placeholder="https://linkedin.com/company/example"
-                  />
-                </Grid>
-
-                {/* Supporting Customers Section */}
-                <Grid item xs={12} sx={{ mt: 2 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    Supporting Customers
-                  </Typography>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    id="supportingCustomers"
-                    name="supportingCustomers"
-                    label="Supporting Customers (comma separated)"
-                    value={values.supportingCustomers}
-                    onChange={handleChange}
-                    margin="normal"
-                    variant="outlined"
-                    placeholder="Customer A, Customer B, Customer C"
-                  />
-                </Grid>
-
-                {/* Contact Information Section - Now using FieldArray */}
                 <Grid item xs={12} sx={{ mt: 2 }}>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                     Single Point of Contact (SPOC) Information
@@ -439,14 +472,13 @@ const ClientEditDialog = ({
                                   Boolean(errors.spocContacts?.[index]?.name)
                                 }
                                 helperText={
-                                  touched.spocContacts?.[index]?.name &&
-                                  errors.spocContacts?.[index]?.name
+                                  touched.spocContacts?.[index]?.name &&errors.spocContacts?.[index]?.name
                                 }
                                 margin="normal"
                                 variant="outlined"
                               />
                             </Grid>
-                            
+
                             <Grid item xs={12} md={3}>
                               <TextField
                                 fullWidth
@@ -466,7 +498,7 @@ const ClientEditDialog = ({
                                 variant="outlined"
                               />
                             </Grid>
-                            
+
                             <Grid item xs={12} md={3}>
                               <TextField
                                 fullWidth
@@ -486,7 +518,7 @@ const ClientEditDialog = ({
                                 variant="outlined"
                               />
                             </Grid>
-                            
+
                             <Grid item xs={12} md={3}>
                               <TextField
                                 fullWidth
@@ -506,7 +538,7 @@ const ClientEditDialog = ({
                                 variant="outlined"
                               />
                             </Grid>
-                            
+
                             {index > 0 && (
                               <Grid item xs={12} sx={{ mt: -1 }}>
                                 <Button
@@ -521,11 +553,13 @@ const ClientEditDialog = ({
                             )}
                           </Grid>
                         ))}
-                        
+
                         <Button
                           type="button"
                           variant="outlined"
-                          onClick={() => push({ name: "", email: "", phone: "", linkedin: "" })}
+                          onClick={() =>
+                            push({ name: "", email: "", phone: "", linkedin: "" })
+                          }
                           sx={{ mt: 1 }}
                         >
                           Add Contact
@@ -535,7 +569,6 @@ const ClientEditDialog = ({
                   </FieldArray>
                 </Grid>
 
-                {/* Document Upload Section */}
                 <Grid item xs={12} sx={{ mt: 2 }}>
                   <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                     Supporting Documents

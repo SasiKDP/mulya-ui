@@ -3,7 +3,7 @@ import axios from "axios";
 import BASE_URL from "../config";
 // import httpService from "../httpService";
 
-
+// const BASE_URL = 'http://192.168.0.194:8111'
 
 
 
@@ -12,11 +12,7 @@ export const fetchClients = createAsyncThunk(
   "clients/fetchClients",
   async (_, { rejectWithValue }) => {
     try {
-      // Check if local data exists
-      const localData = localStorage.getItem("clientsData");
-      if (localData) {
-        return JSON.parse(localData);
-      }
+      
 
       // Fetch data directly using Axios
       const response = await axios.get(`${BASE_URL}/requirements/bdm/getAll`);
