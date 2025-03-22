@@ -29,6 +29,7 @@ import SectionHeader from "../MuiComponents/SectionHeader";
 import { ListIcon } from "lucide-react";
 
 
+// const BASE_URL = 'http://192.168.0.246:8085'
 
 const INTERVIEW_LEVELS = {
   ALL: "all",
@@ -454,6 +455,27 @@ const Interview = () => {
                             <MenuItem value="INTERNAL">Internal</MenuItem>
                             <MenuItem value="EXTERNAL">External</MenuItem>
                           </TextField>
+                        ) : key === "interviewStatus" ? (
+                          <TextField
+                            select
+                            label="Interview Status"
+                            value={value || editingInterview.interviewStatus}
+                            onChange={(e) =>
+                              setEditingInterview({
+                                ...editingInterview,
+                                [key]: e.target.value,
+                              })
+                            }
+                            fullWidth
+                            sx={{ bgcolor: "white", borderRadius: 1 }}
+                          >
+                            <MenuItem value="Scheduled">Scheduled</MenuItem>
+                            <MenuItem value="Rescheduled">Rescheduled</MenuItem>
+                            <MenuItem value="Rejected">Rejected</MenuItem>
+                            <MenuItem value="Cancelled">Cancelled</MenuItem>
+                            <MenuItem value="Selected">Selected</MenuItem>
+                            <MenuItem value="Placed">Placed</MenuItem>
+                          </TextField>
                         ) : (
                           <TextField
                             label={key.replace(/([A-Z])/g, " $1").trim()}
@@ -472,7 +494,6 @@ const Interview = () => {
                               "userId",
                               "interviewScheduledTimestamp",
                               "userEmail",
-                              "interviewStatus",
                             ].includes(key)}
                           />
                         )}
