@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Formik, Form, Field } from "formik";
+import { Formik, Form, Field, FieldArray } from "formik";
 import * as Yup from "yup";
 import {
   resetForm,
@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { Check } from "lucide-react";
 import dayjs from "dayjs";
-
+import ClientSelect from "../utils/ClientSelect"; 
 
 const oneMonthAgo = new Date();
 oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -42,25 +42,7 @@ const validationSchema = Yup.object().shape({
     .email("Invalid email format")
     .required("User email is required"),
   clientName: Yup.string().required("Client name is required"),
-  clientEmail: Yup.string()
-    .nullable()
-    .transform((value, originalValue) => originalValue === '' ? null : value)
-    .when('interviewLevel', {
-      is: 'EXTERNAL',
-      then: Yup.string()
-        .nullable()
-        .trim()
-        .matches(
-          /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-          "Invalid email format (e.g., clientname@something.com)"
-        ),
-      otherwise: Yup.string()
-        .trim()
-        .matches(
-          /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-          "Invalid email format (e.g., clientname@something.com)"
-        ).required("Client email is required")
-    }),
+  clientEmail: Yup.string().email("Invalid email format").nullable(),
   interviewDateTime: Yup.date()
     .required("Interview date and time is required")
     .min(oneMonthAgo, "Interview date and time must be within the last month or in the future"),
@@ -68,31 +50,11 @@ const validationSchema = Yup.object().shape({
     .required("Duration is required")
     .min(15, "Duration must be at least 15 minutes")
     .max(60, "Duration cannot exceed 60 minutes"),
-  zoomLink: Yup.string()
-    .nullable()
-    .transform((value, originalValue) => originalValue === '' ? null : value)
-    .when('interviewLevel', {
-      is: 'EXTERNAL',
-      then: Yup.string()
-        .nullable()
-        .trim()
-        .matches(/^(https?:\/\/[^\s$.?#].[^\s]*)?$/, "Must be a valid URL"),
-      otherwise: Yup.string()
-        .trim()
-        .matches(/^(https?:\/\/[^\s$.?#].[^\s]*)?$/, "Must be a valid URL")
-        .required("Zoom link is required"),
-    }),
+  zoomLink: Yup.string().nullable(),
   interviewLevel: Yup.string()
     .required("Interview level is required")
-    .oneOf(["INTERNAL", "EXTERNAL"]),
-  externalInterviewDetails: Yup.string().when(
-    "interviewLevel",
-    (interviewLevel, schema) => {
-      return interviewLevel === "EXTERNAL"
-        ? schema.required("External interview details are required")
-        : schema;
-    }
-  ),
+    .oneOf(["INTERNAL", "EXTERNAL"], "Invalid interview level"),
+  externalInterviewDetails: Yup.string().nullable(), // Make it optional
 });
 
 const InterviewForm = ({
@@ -139,6 +101,7 @@ const InterviewForm = ({
     }
   }, [submissionSuccess, dispatch, handleCloseInterviewDialog]);
 
+  // Handle form submission
   const handleSubmit = async (values, { setSubmitting }) => {
     const formattedValues = {
       ...values,
@@ -154,23 +117,6 @@ const InterviewForm = ({
     dispatch(clearError());
     handleCloseInterviewDialog();
   };
-
-  // Custom TextField component for Formik
-  const FormikTextField = ({ field, form: { touched, errors }, ...props }) => (
-    <TextField
-      {...field}
-      {...props}
-      error={touched[field.name] && Boolean(errors[field.name])}
-      helperText={touched[field.name] && errors[field.name]}
-      fullWidth
-      sx={{
-        mb: 0.5,
-        "& .MuiOutlinedInput-root": {
-          borderRadius: 1.5,
-        },
-      }}
-    />
-  );
 
   // Success Message Component
   const SuccessMessage = () => {
@@ -217,7 +163,7 @@ const InterviewForm = ({
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
-        {({ values }) => (
+        {({ values, errors, touched, setFieldValue, isSubmitting }) => (
           <Form>
             {/* Candidate Details Section (Read-Only Fields) */}
             <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
@@ -228,48 +174,54 @@ const InterviewForm = ({
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="jobId"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Job ID"
+                    fullWidth
                     disabled
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="candidateId"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Candidate ID"
+                    fullWidth
                     disabled
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="candidateFullName"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Candidate Name"
+                    fullWidth
                     disabled
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="candidateContactNo"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Contact Number"
+                    fullWidth
                     disabled
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="candidateEmailId"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Candidate Email"
+                    fullWidth
                     disabled
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="userEmail"
-                    component={FormikTextField}
+                    as={TextField}
                     label="User Email"
+                    fullWidth
                     disabled
                   />
                 </Grid>
@@ -282,47 +234,63 @@ const InterviewForm = ({
                 Interview Details
               </Typography>
               <Grid container spacing={2}>
+                {/* Client Name Dropdown */}
                 <Grid item xs={12} sm={6} md={4}>
-                  <Field
+                  <ClientSelect
                     name="clientName"
-                    component={FormikTextField}
-                    label="Client Name"
-                    required
+                    value={values.clientName}
+                    onChange={(value) => setFieldValue("clientName", value)}
                   />
+                  {touched.clientName && errors.clientName && (
+                    <Typography variant="caption" color="error">
+                      {errors.clientName}
+                    </Typography>
+                  )}
                 </Grid>
+
+                {/* Other Fields */}
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="clientEmail"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Client Email"
-                    type="email"
+                    fullWidth
+                    error={touched.clientEmail && Boolean(errors.clientEmail)}
+                    helperText={touched.clientEmail && errors.clientEmail}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="interviewDateTime"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Interview Date & Time"
                     type="datetime-local"
-                    required
+                    fullWidth
                     InputLabelProps={{ shrink: true }}
+                    error={touched.interviewDateTime && Boolean(errors.interviewDateTime)}
+                    helperText={touched.interviewDateTime && errors.interviewDateTime}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="duration"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Duration (Minutes)"
                     type="number"
-                    required
+                    fullWidth
                     inputProps={{ min: 15, max: 60 }}
+                    error={touched.duration && Boolean(errors.duration)}
+                    helperText={touched.duration && errors.duration}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                   <Field
                     name="zoomLink"
-                    component={FormikTextField}
+                    as={TextField}
                     label="Interview Link"
+                    fullWidth
+                    error={touched.zoomLink && Boolean(errors.zoomLink)}
+                    helperText={touched.zoomLink && errors.zoomLink}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -350,11 +318,13 @@ const InterviewForm = ({
                   <Grid item xs={12}>
                     <Field
                       name="externalInterviewDetails"
-                      component={FormikTextField}
+                      as={TextField}
                       label="External Interview Details"
                       multiline
                       rows={3}
-                      required
+                      fullWidth
+                      error={touched.externalInterviewDetails && Boolean(errors.externalInterviewDetails)}
+                      helperText={touched.externalInterviewDetails && errors.externalInterviewDetails}
                     />
                   </Grid>
                 )}

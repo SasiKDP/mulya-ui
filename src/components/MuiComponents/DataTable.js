@@ -562,7 +562,7 @@ const DataTable = ({
                                 <TableCell
                                   key={column.key}
                                   sx={{
-                                    padding: 2,
+                                    padding: 1,
                                     textAlign: "left",
                                     borderRight: colIndex === columns.length - 1 ? "none" : "1px solid #ccc",
                                   }}
@@ -642,7 +642,7 @@ const DataTable = ({
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[15, 20, 30, 40, 50]}
+              rowsPerPageOptions={[25, 50, 75, 100]}
               sx={{
                 borderTop: "1px solid #ccc",
                 backgroundColor: "#fff",

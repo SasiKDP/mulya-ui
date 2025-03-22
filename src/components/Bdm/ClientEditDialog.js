@@ -256,35 +256,28 @@ const ClientEditDialog = ({
       ],
     },
   ];
-
   const validationSchema = Yup.object().shape({
-    clientName: Yup.string().required("Client name is required"),
-    clientAddress: Yup.string().nullable().max(100, "Max 100 characters"),
-    positionType: Yup.string().nullable().required("Position type is required"),
-    netPayment: Yup.number()
+    clientName: Yup.string().nullable().notRequired(),
+    clientAddress: Yup.string().nullable().max(100, "Max 100 characters").notRequired(),
+    positionType: Yup.string().nullable().notRequired(),
+    netPayment: Yup.number().nullable().positive("Must be positive").notRequired(),
+    gst: Yup.number().nullable().min(0, "Cannot be negative").max(100, "Cannot exceed 100%").notRequired(),
+    clientWebsiteUrl: Yup.string().nullable().url("Enter a valid URL").notRequired(),
+    clientLinkedInUrl: Yup.string().nullable().url("Enter a valid LinkedIn URL").notRequired(),
+    spocContacts: Yup.array()
       .nullable()
-      .required("Net payment is required")
-      .positive("Must be positive"),
-    gst: Yup.number()
-      .nullable()
-      .required("GST is required")
-      .min(0, "Cannot be negative")
-      .max(100, "Cannot exceed 100%"),
-    clientWebsiteUrl: Yup.string().nullable().url("Enter a valid URL"),
-    clientLinkedInUrl: Yup.string().nullable().url("Enter a valid LinkedIn URL"),
-    spocContacts: Yup.array().of(
-      Yup.object().shape({
-        name: Yup.string()
-          .required("Name is required")
-          .matches(/^[A-Za-z\s]+$/, "Only letters allowed"),
-        email: Yup.string().required("Email is required").email("Invalid email"),
-        phone: Yup.string()
-          .required("Phone is required")
-          .matches(/^[0-9]{10}$/, "Must be 10 digits"),
-        linkedin: Yup.string().nullable().url("Enter a valid LinkedIn URL"),
-      })
-    ),
+      .notRequired()
+      .of(
+        Yup.object().shape({
+          name: Yup.string().nullable().matches(/^[A-Za-z\s]+$/, "Only letters allowed").notRequired(),
+          email: Yup.string().nullable().email("Invalid email").notRequired(),
+          phone: Yup.string().nullable().matches(/^[0-9]{10}$/, "Must be 10 digits").notRequired(),
+          linkedin: Yup.string().nullable().url("Enter a valid LinkedIn URL").notRequired(),
+        })
+      ),
   });
+  
+  
 
   const handleSubmit = async (values, { setSubmitting }) => {
     if (!currentClient) return;

@@ -12,7 +12,6 @@ import {
   CardContent,
   Divider,
   useTheme,
-  Link,
   Tooltip,
   Button,
 } from "@mui/material";
@@ -33,7 +32,7 @@ const JobDetailsLayout = ({ jobDetails, BASE_URL }) => {
     "assignedBy",
     "requirementAddedTimeStamp",
     "recruiterName",
-   "status",
+    "status",
     "jobTitle",
     "clientName",
     "location",
@@ -47,27 +46,24 @@ const JobDetailsLayout = ({ jobDetails, BASE_URL }) => {
     "noticePeriod",
     "recruiterIds",
     "jobId",
-    
   ];
 
   const orderedDetails = detailOrder.map((key) => {
     if (jobDetails && jobDetails.hasOwnProperty(key)) {
       let value = jobDetails[key];
-  
-      // ✅ Convert `requirementAddedTimeStamp` to YYYY-MM-DD format
+
       if (key === "requirementAddedTimeStamp" && value) {
-        value = new Date(value).toISOString().split("T")[0]; // Extract YYYY-MM-DD
+        value = new Date(value).toISOString().split("T")[0];
       }
-  
+
       return [key, value];
     }
     return [key, "N/A"];
   });
 
-  // ✅ Function to Download jobDescriptionBlob as a File
   const handleDownloadBlob = () => {
     if (jobDetails?.jobDescriptionBlob) {
-      const blobData = atob(jobDetails.jobDescriptionBlob); // Decode Base64
+      const blobData = atob(jobDetails.jobDescriptionBlob);
       const byteArray = new Uint8Array(blobData.length);
       for (let i = 0; i < blobData.length; i++) {
         byteArray[i] = blobData.charCodeAt(i);
@@ -75,9 +71,10 @@ const JobDetailsLayout = ({ jobDetails, BASE_URL }) => {
       const blob = new Blob([byteArray], { type: "application/pdf" });
       const blobUrl = URL.createObjectURL(blob);
 
-      // ✅ Set filename using Job Title (fallback to "Job_Description.pdf" if jobTitle is missing)
       const fileName = jobDetails?.jobTitle
-        ? jobDetails.jobTitle.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "_") + ".pdf"
+        ? jobDetails.jobTitle
+            .replace(/[^a-zA-Z0-9 ]/g, "")
+            .replace(/\s+/g, "_") + ".pdf"
         : "Job_Description.pdf";
 
       const link = document.createElement("a");
@@ -90,22 +87,36 @@ const JobDetailsLayout = ({ jobDetails, BASE_URL }) => {
   };
 
   return (
-    <Grid container spacing={2} sx={{ height: "60vh", overflow: "auto" }}>
+    <Grid container spacing={3} sx={{ height: "60vh", overflow: "auto" }}>
       {/* Job Details Table */}
       <Grid item xs={12} md={6}>
-        <Card elevation={2} sx={{ borderRadius: "12px 12px 0 0" }}>
-          <CardContent sx={{ p: 0 }}>
+        <Card
+          elevation={3}
+          sx={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            borderRadius: "12px",
+            transition: "box-shadow 0.3s ease-in-out",
+            "&:hover": {
+              boxShadow: theme.shadows[6],
+            },
+          }}
+        >
+          <CardContent
+            sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0 }}
+          >
             <Box sx={{ bgcolor: theme.palette.info.light, p: 2 }}>
               <Typography
-                variant="h5" // ✅ Increased Font Size for Header
+                variant="h5"
                 fontWeight="bold"
                 color={theme.palette.info.contrastText}
               >
                 Job Details
               </Typography>
             </Box>
-            <TableContainer>
-              <Table size="medium"> {/* ✅ Increased Table Size */}
+            <TableContainer sx={{ flex: 1, overflowY: "auto" }}>
+              <Table size="medium">
                 <TableBody>
                   {orderedDetails.map(([key, value]) => (
                     <TableRow
@@ -116,19 +127,12 @@ const JobDetailsLayout = ({ jobDetails, BASE_URL }) => {
                         },
                       }}
                     >
-                      <TableCell
-                        sx={{
-                          fontWeight: "bold",
-                          fontSize: "1rem", // ✅ Increased Font Size
-                        }}
-                      >
+                      <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
                         {formatHeaderText(key)}
                       </TableCell>
                       <TableCell sx={{ fontSize: "1rem" }}>
                         {Array.isArray(value)
                           ? value.join(", ")
-                          : typeof value === "object" && value !== null
-                          ? Object.values(value).join(", ")
                           : value || "N/A"}
                       </TableCell>
                     </TableRow>
@@ -143,17 +147,25 @@ const JobDetailsLayout = ({ jobDetails, BASE_URL }) => {
       {/* Job Description Section */}
       <Grid item xs={12} md={6}>
         <Card
-          elevation={2}
+          elevation={3}
           sx={{
             height: "100%",
             display: "flex",
             flexDirection: "column",
-            borderRadius: "12px 12px 0 0",
+            borderRadius: "12px",
+            transition: "box-shadow 0.3s ease-in-out",
+            "&:hover": {
+              boxShadow: theme.shadows[6],
+            },
           }}
         >
-          <CardContent sx={{ flex: 1 }}>
+          <CardContent
+            sx={{ flex: 1, display: "flex", flexDirection: "column" }}
+          >
             <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <DescriptionIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+              <DescriptionIcon
+                sx={{ mr: 1, color: theme.palette.primary.main }}
+              />
               <Typography variant="h5" fontWeight="bold" color="primary">
                 Job Description
               </Typography>
@@ -163,34 +175,48 @@ const JobDetailsLayout = ({ jobDetails, BASE_URL }) => {
             {/* Job Description Content */}
             <Box
               sx={{
+                flex: 1,
                 overflowY: "auto",
                 padding: 2,
                 bgcolor: "#f9f9f9",
                 borderRadius: "8px",
                 whiteSpace: "pre-line",
                 lineHeight: 1.5,
-                fontSize: "1rem", // ✅ Increased Font Size
+                fontSize: "1rem",
+                "&::-webkit-scrollbar": { width: "8px" },
+                "&::-webkit-scrollbar-thumb": {
+                  backgroundColor: "#ccc",
+                  borderRadius: "4px",
+                },
+                "&::-webkit-scrollbar-thumb:hover": { backgroundColor: "#aaa" },
               }}
             >
               {jobDetails?.jobDescription ? (
-                // ✅ Use jobDescription if it's available
                 <Typography sx={{ fontSize: "1rem" }}>
                   {jobDetails.jobDescription}
                 </Typography>
               ) : jobDetails?.jobDescriptionBlob ? (
-                // ✅ Show "Download JD" button for Blob data
                 <Tooltip title="Download Job Description">
                   <Button
                     variant="contained"
                     color="primary"
                     onClick={handleDownloadBlob}
-                    sx={{ fontSize: "1rem", padding: "10px 20px" }} // ✅ Increased Button Size
+                    sx={{
+                      fontSize: "1rem",
+                      padding: "10px 20px",
+                      borderRadius: "8px",
+                      textTransform: "none",
+                      fontWeight: "bold",
+                      boxShadow: theme.shadows[2],
+                      "&:hover": {
+                        boxShadow: theme.shadows[4],
+                      },
+                    }}
                   >
                     Download JD
                   </Button>
                 </Tooltip>
               ) : (
-               
                 <Typography sx={{ fontSize: "1rem" }}>
                   No job description available.
                 </Typography>
