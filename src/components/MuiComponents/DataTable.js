@@ -27,7 +27,8 @@ import {
   Popover,
   Divider,
   TextField,
-  InputAdornment
+  InputAdornment,
+  Skeleton
 } from "@mui/material";
 import FirstPageRoundedIcon from "@mui/icons-material/FirstPageRounded";
 import LastPageRoundedIcon from "@mui/icons-material/LastPageRounded";
@@ -40,7 +41,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import FilterAltIcon from "@mui/icons-material/FilterAlt";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
-import SectionHeader from "./SectionHeader"; // Import the SectionHeader component
+import SectionHeader from "./SectionHeader";
 import CircularProgress from '@mui/material/CircularProgress';
 
 const DataTable = ({ 
@@ -49,7 +50,8 @@ const DataTable = ({
   pageLimit = 20, 
   title = "section header", 
   onRefresh, 
-  isRefreshing = false
+  isRefreshing = false,
+  isLoading = false // New prop for initial loading state
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(pageLimit);
@@ -60,12 +62,9 @@ const DataTable = ({
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleRefresh = () => {
-    // If onRefresh is provided as a prop, call it
     if (onRefresh && typeof onRefresh === 'function') {
       onRefresh();
     }
-
-    // Reset search and filters
     setSearchQuery("");
     setFilters({});
     setPage(0);
@@ -79,69 +78,74 @@ const DataTable = ({
 
   // Initialize unique values for each column for dropdown filters
   useEffect(() => {
-    const uniqueValuesMap = {};
-
-    columns.forEach((column) => {
-      if (column.type === "select") {
-        const values = new Set();
-        initialData.forEach((row) => {
-          if (row[column.key] !== undefined && row[column.key] !== null) {
-            values.add(String(row[column.key]));
-          }
-        });
-        uniqueValuesMap[column.key] = Array.from(values).sort();
-      }
-    });
-
-    setUniqueValues(uniqueValuesMap);
-  }, [initialData, columns]);
+    if (!isLoading) {
+      const uniqueValuesMap = {};
+      columns.forEach((column) => {
+        if (column.type === "select") {
+          const values = new Set();
+          initialData.forEach((row) => {
+            if (row[column.key] !== undefined && row[column.key] !== null) {
+              values.add(String(row[column.key]));
+            }
+          });
+          uniqueValuesMap[column.key] = Array.from(values).sort();
+        }
+      });
+      setUniqueValues(uniqueValuesMap);
+    }
+  }, [initialData, columns, isLoading]);
 
   // Apply all filters and search
   useEffect(() => {
-    let result = [...initialData];
+    if (!isLoading) {
+      let result = [...initialData];
 
-    // Apply search query
-    if (searchQuery) {
-      result = result.filter((row) =>
-        Object.keys(row).some((key) => {
-          const value = row[key];
-          return (
-            value !== null &&
-            value !== undefined &&
-            String(value).toLowerCase().includes(searchQuery.toLowerCase())
-          );
-        })
-      );
-    }
-
-    // Apply column filters
-    Object.keys(filters).forEach((key) => {
-      const filterValue = filters[key];
-      if (
-        filterValue !== undefined &&
-        filterValue !== null &&
-        filterValue !== ""
-      ) {
-        result = result.filter((row) => {
-          const cellValue = row[key];
-          if (cellValue === null || cellValue === undefined) return false;
-
-          // Handle different filter types
-          const column = columns.find((col) => col.key === key);
-          if (column && column.type === "select") {
-            return String(cellValue) === filterValue;
-          } else {
-            return String(cellValue)
-              .toLowerCase()
-              .includes(filterValue.toLowerCase());
-          }
-        });
+      if (searchQuery) {
+        result = result.filter((row) =>
+          Object.keys(row).some((key) => {
+            const value = row[key];
+            return (
+              value !== null &&
+              value !== undefined &&
+              String(value).toLowerCase().includes(searchQuery.toLowerCase())
+            );
+          })
+        );
       }
-    });
 
-    setFilteredData(result);
-    setPage(0);
-  }, [searchQuery, filters, initialData, columns]);
+      Object.keys(filters).forEach((key) => {
+        const filterValue = filters[key];
+        if (filterValue !== undefined && filterValue !== null && filterValue !== "") {
+          result = result.filter((row) => {
+            const cellValue = row[key];
+            if (cellValue === null || cellValue === undefined) return false;
+            const column = columns.find((col) => col.key === key);
+            if (column && column.type === "select") {
+              return String(cellValue) === filterValue;
+            } else {
+              return String(cellValue)
+                .toLowerCase()
+                .includes(filterValue.toLowerCase());
+            }
+          });
+        }
+      });
+
+      setFilteredData(result);
+      setPage(0);
+    }
+  }, [searchQuery, filters, initialData, columns, isLoading]);
+
+  // Loading skeleton rows
+  const LoadingSkeletonRow = () => (
+    <TableRow>
+      {columns.map((column, index) => (
+        <TableCell key={`skeleton-${index}`}>
+          <Skeleton variant="text" animation="wave" />
+        </TableCell>
+      ))}
+    </TableRow>
+  );
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -201,14 +205,10 @@ const DataTable = ({
 
   const highlightText = (text, highlight) => {
     if (!highlight.trim() || !text) return text;
-
     const parts = String(text).split(new RegExp(`(${highlight})`, "gi"));
     return parts.map((part, index) =>
       part.toLowerCase() === highlight.toLowerCase() ? (
-        <span
-          key={index}
-          style={{ backgroundColor: "#F6C90E", padding: "0.1rem" }}
-        >
+        <span key={index} style={{ backgroundColor: "#F6C90E", padding: "0.1rem" }}>
           {part}
         </span>
       ) : (
@@ -217,9 +217,8 @@ const DataTable = ({
     );
   };
 
-  // Render filter popover content based on column type
   const renderFilterContent = (column) => {
-    if (!column || !column.type) return null; // Only apply filter if column has a type
+    if (!column || !column.type) return null;
 
     if (column.type === "select") {
       const filteredValues = uniqueValues[column.key]
@@ -249,7 +248,6 @@ const DataTable = ({
               }}
               renderValue={(selected) => (selected ? selected : <em>All</em>)}
             >
-              {/* Search Field inside Dropdown */}
               <Box sx={{ p: 1 }}>
                 <TextField
                   fullWidth
@@ -282,7 +280,7 @@ const DataTable = ({
               startIcon={<FilterAltOffIcon />}
               onClick={() => {
                 handleClearFilter(column.key);
-                setSearchTerm(""); // Reset search input
+                setSearchTerm("");
               }}
               disabled={!filters[column.key]}
             >
@@ -337,13 +335,7 @@ const DataTable = ({
               ) : null,
             }}
           />
-          <Box
-            sx={{
-              mt: 2,
-              display: "flex",
-              justifyContent: "flex-end",
-            }}
-          >
+          <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
             <Button
               size="small"
               variant="contained"
@@ -363,19 +355,11 @@ const DataTable = ({
       );
     }
 
-    return null; // If column type is not defined, do not render any filter
+    return null;
   };
 
   return (
-    <Box
-      sx={{
-        width: "100%",       
-        height: "calc(100vh - 1vh)", 
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Section Header with Search Field */}
+    <Box sx={{ width: "100%", height: "calc(100vh - 1vh)", display: "flex", flexDirection: "column" }}>
       <SectionHeader
         title={title}
         totalCount={filteredData.length}
@@ -385,29 +369,18 @@ const DataTable = ({
         onSearchChange={(e) => setSearchQuery(e.target.value)}
       />
   
-      {/* Show Loader Spinner if Refreshing */}
-      {isRefreshing ? (
-        <Box
-          sx={{
-            flexGrow: 1,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+      {isLoading || isRefreshing ? (
+        <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
           <CircularProgress />
         </Box>
       ) : (
         <>
-          {/* Filters and Table */}
           <Grid container spacing={2} sx={{ mb: 1 }}>
             {getActiveFilterCount() > 0 && (
               <Grid item xs="auto" sx={{ display: "flex", alignItems: "center" }}>
                 <Chip
                   icon={<FilterListIcon />}
-                  label={`${getActiveFilterCount()} active filter${
-                    getActiveFilterCount() > 1 ? "s" : ""
-                  }`}
+                  label={`${getActiveFilterCount()} active filter${getActiveFilterCount() > 1 ? "s" : ""}`}
                   onDelete={handleClearAllFilters}
                   deleteIcon={<ClearAllIcon />}
                   sx={{
@@ -423,40 +396,25 @@ const DataTable = ({
             )}
           </Grid>
   
-          <Paper
-            sx={{
+          <Paper sx={{
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+            border: "1px solid #ccc",
+            borderRadius: 2,
+            boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
+            overflow: "hidden",
+            mt: 1.3
+          }}>
+            <TableContainer sx={{
               flexGrow: 1,
-              display: "flex",
-              flexDirection: "column",
-              border: "1px solid #ccc",
-              borderRadius: 2,
-              boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
-              overflow: "hidden",
-              mt: 1.3
-            }}
-          >
-            <TableContainer
-              sx={{
-                flexGrow: 1,
-                height: 500, // Fixed height to ensure pagination is visible
-                overflow: "auto",
-                "&::-webkit-scrollbar": {
-                  width: "8px",
-                  height: "8px",
-                },
-                "&::-webkit-scrollbar-track": {
-                  background: "#f1f1f1",
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  background: "#888",
-                  borderRadius: "4px",
-                },
-                "& .MuiTableCell-root": {
-                  borderBottom: "1px solid #ccc",
-                  borderRight: "1px solid #ccc",
-                },
-              }}
-            >
+              height: 500,
+              overflow: "auto",
+              "&::-webkit-scrollbar": { width: "8px", height: "8px" },
+              "&::-webkit-scrollbar-track": { background: "#f1f1f1" },
+              "&::-webkit-scrollbar-thumb": { background: "#888", borderRadius: "4px" },
+              "& .MuiTableCell-root": { borderBottom: "1px solid #ccc", borderRight: "1px solid #ccc" },
+            }}>
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -468,39 +426,22 @@ const DataTable = ({
                           color: "#fff",
                           fontWeight: "bold",
                           textAlign: "center",
-                         
                           whiteSpace: "normal",
                           wordWrap: "break-word",
                           maxWidth: "130px",
                           overflow: "hidden",
-                          // Fixed border styling - consistent across all header cells
                           borderRight: index === columns.length - 1 ? "none" : "1px solid rgba(255, 255, 255, 0.2)",
-                          "&:last-child": {
-                            borderRight: "none",
-                          },
+                          "&:last-child": { borderRight: "none" },
                         }}
                       >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                           {column.label}
-  
-                          {/* Show filter icon only if column has a type */}
                           {column.type && (
                             <Tooltip title={`Filter ${column.label}`}>
                               <IconButton
                                 size="small"
                                 onClick={(e) => handleFilterClick(e, column)}
-                                sx={{
-                                  ml: 1,
-                                  color: filters[column.key]
-                                    ? "#F6C90E"
-                                    : "inherit",
-                                }}
+                                sx={{ ml: 1, color: filters[column.key] ? "#F6C90E" : "inherit" }}
                               >
                                 {filters[column.key] ? (
                                   <FilterAltIcon fontSize="small" />
@@ -517,7 +458,12 @@ const DataTable = ({
                 </TableHead>
   
                 <TableBody>
-                  {filteredData.length === 0 ? (
+                  {isLoading ? (
+                    // Show skeleton loading rows
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <LoadingSkeletonRow key={`skeleton-row-${index}`} />
+                    ))
+                  ) : filteredData.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={columns.length} align="center">
                         <Box sx={{ py: 3 }}>
@@ -547,13 +493,8 @@ const DataTable = ({
                         <TableRow
                           key={rowIndex}
                           sx={{
-                            backgroundColor:
-                              rowIndex % 2 === 0
-                                ? "#f9f9f9"
-                                : "rgba(192, 238, 211, 0.34)",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 121, 107, 0.04)",
-                            },
+                            backgroundColor: rowIndex % 2 === 0 ? "#f9f9f9" : "rgba(192, 238, 211, 0.34)",
+                            "&:hover": { backgroundColor: "rgba(0, 121, 107, 0.04)" },
                           }}
                         >
                           {columns.map((column, colIndex) => {
@@ -573,7 +514,6 @@ const DataTable = ({
                             }
   
                             const cellData = row[column.key];
-  
                             return (
                               <TableCell
                                 key={column.key}
@@ -588,40 +528,13 @@ const DataTable = ({
                                 }}
                               >
                                 {cellData && String(cellData).length > 15 ? (
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 1,
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, whiteSpace: "nowrap" }}>
                                     <Typography
                                       variant="body2"
-                                      sx={{
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                      }}
+                                      sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                                     >
-                                      {highlightText(
-                                        String(cellData).slice(0, 15),
-                                        searchQuery
-                                      )}
-                                      ...
+                                      {highlightText(String(cellData).slice(0, 15), searchQuery)}...
                                     </Typography>
-                                    {/* <Tooltip title="View full content">
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => handleDialogOpen(cellData)}
-                                        sx={{
-                                          color: "#00796b",
-                                          p: 0.5,
-                                        }}
-                                      >
-                                        <VisibilityIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip> */}
                                   </Box>
                                 ) : (
                                   highlightText(cellData, searchQuery)
@@ -643,14 +556,9 @@ const DataTable = ({
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={handleChangeRowsPerPage}
               rowsPerPageOptions={[25, 50, 75, 100]}
-              sx={{
-                borderTop: "1px solid #ccc",
-                backgroundColor: "#fff",
-              }}
+              sx={{ borderTop: "1px solid #ccc", backgroundColor: "#fff" }}
               slotProps={{
-                select: {
-                  "aria-label": "Rows per page",
-                },
+                select: { "aria-label": "Rows per page" },
                 actions: {
                   showFirstButton: true,
                   showLastButton: true,

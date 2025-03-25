@@ -55,7 +55,7 @@ import BASE_URL from "../../redux/config";
 
 
 
-// const BASE_URL = 'http://192.168.0.194:8111';
+
 
 // Create a custom theme
 const theme = createTheme({

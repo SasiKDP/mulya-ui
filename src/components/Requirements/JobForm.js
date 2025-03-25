@@ -268,7 +268,7 @@ const JobForm = () => {
 
   const initialValues = {
     jobTitle: "",
-    clientName: "",
+    clientName: "", // Ensure this matches the field name in ClientSelect
     jobDescription: "",
     jobType: "",
     location: "",

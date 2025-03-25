@@ -21,6 +21,7 @@ import SendIcon from "@mui/icons-material/Send";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import GroupWorkIcon from "@mui/icons-material/GroupWork";
 import DescriptionIcon from "@mui/icons-material/Description";
+import AlignVerticalBottomIcon from '@mui/icons-material/AlignVerticalBottom';
 
 // Import components
 import BdmUsers from "../components/Bdm/BdmUsers";
@@ -40,6 +41,7 @@ import AllInterviews from "../components/Tabs/AllInterviews";
 import EmployeeTimesheet from "../components/EmployeeTimesheet";
 import ClientForm from "../components/Bdm/ClientForm";
 import Clients from "../components/Bdm/Clients";
+import RecuitersStatus from "../components/Tabs/RecuitersStatus";
 
 
 const TABS_BY_ROLE = {
@@ -132,6 +134,12 @@ const TABS_BY_ROLE = {
           component: <AllInterviews />,
           icon: <InterpreterModeIcon />,
         },
+        {
+          label: "RecuitersStatus",
+          value: "RECUITERS-STATUS",
+          component: <RecuitersStatus />,
+          icon: <AlignVerticalBottomIcon />,
+        },
       ],
     },
     {
@@ -215,6 +223,12 @@ const TABS_BY_ROLE = {
           value: "JOB_FORM",
           component: <JobForm />,
           icon: <AddCircleOutlineIcon />,
+        },
+        {
+          label: "RecuitersStatus",
+          value: "RECUITERS-STATUS",
+          component: <RecuitersStatus />,
+          icon: <InterpreterModeIcon />,
         },
       ],
     },

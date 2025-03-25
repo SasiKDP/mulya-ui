@@ -29,7 +29,7 @@ import SectionHeader from "../MuiComponents/SectionHeader";
 import { ListIcon } from "lucide-react";
 
 
-// const BASE_URL = 'http://192.168.0.246:8085'
+
 
 const INTERVIEW_LEVELS = {
   ALL: "all",
@@ -253,6 +253,7 @@ const Interview = () => {
       userEmail: editingInterview.userEmail,
       interviewLevel: editingInterview.interviewLevel,
       clientEmail: editingInterview.clientEmail,
+      interviewStatus: editingInterview.interviewStatus,
     };
 
     try {
