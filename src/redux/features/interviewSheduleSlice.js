@@ -4,7 +4,6 @@ import BASE_URL from "../config";
 
 
 
-// const BASE_URL = 'http://192.168.0.246:8085'
 
 // AsyncThunk for form submission
 export const submitInterviewForm = createAsyncThunk(

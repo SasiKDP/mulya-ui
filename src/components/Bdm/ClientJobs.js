@@ -23,7 +23,7 @@ import BASE_URL from "../../redux/config";
 
 
 
-// const BASE_URL = "http://192.168.0.246:8111"
+
 
 const ClientJobs = () => {
   const { clientName } = useParams();
