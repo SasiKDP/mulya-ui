@@ -202,7 +202,7 @@ const RecruitersStatus = () => {
     setDetailLoading(true);
     try {
       const response = await axios.get(
-        `http://192.168.0.227:8111/requirements/list/${employeeId}`
+        `${BASE_URL}/requirements/list/${employeeId}`
       );
       setSelectedRecruiter(response.data);
     } catch (error) {
