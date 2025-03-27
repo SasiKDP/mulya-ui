@@ -11,8 +11,8 @@ import {
   CardContent,
   Grid,
   useTheme,
+  Avatar, // Import Avatar component for simple profile icon
 } from "@mui/material";
-import UserAvatar from "../../../utils/UserAvatar"; // Import the UserAvatar component
 
 const BdmDetailsLayout = ({ bdmDetailsData }) => {
   const theme = useTheme();
@@ -56,6 +56,16 @@ const BdmDetailsLayout = ({ bdmDetailsData }) => {
     return value;
   };
 
+  const getInitials = (userName) => {
+    if (!userName) return "";
+    const names = userName.split(" ");
+    let initials = "";
+    for (let i = 0; i < Math.min(2, names.length); i++) {
+      initials += names[i].charAt(0).toUpperCase();
+    }
+    return initials;
+  };
+
   return (
     <Grid item xs={12} md={6}>
       <Card
@@ -69,12 +79,9 @@ const BdmDetailsLayout = ({ bdmDetailsData }) => {
       >
         <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column", p: 0 }}>
           <Box sx={{ bgcolor: theme.palette.info.light, p: 2, display: "flex", alignItems: "center", gap: 2, borderRadius: 1.2 }}>
-            <UserAvatar
-              size={56}
-              border={false}
-              user={bdmData.employeeId}
-              customUser={bdmData}
-            />
+            <Avatar sx={{ width: 56, height: 56, bgcolor: theme.palette.primary.main }}>
+              {getInitials(bdmData.userName)}
+            </Avatar>
             <Box>
               <Typography variant="h5" fontWeight="bold" color={theme.palette.info.contrastText}>
                 {bdmData.userName}

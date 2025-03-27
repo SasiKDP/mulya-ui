@@ -12,7 +12,7 @@ import {
 
 const ReusableTable = ({ columns, data }) => {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   if (!data || data.length === 0) {
     return <p style={{ textAlign: 'center', padding: '10px', color: '#666' }}>No data available</p>;
@@ -91,7 +91,7 @@ const ReusableTable = ({ columns, data }) => {
         </Table>
       </TableContainer>
       <TablePagination
-        rowsPerPageOptions={[5, 10, 15, 20]}
+        rowsPerPageOptions={[ 10, 15, 20]}
         component="div"
         count={data.length}
         rowsPerPage={rowsPerPage}
