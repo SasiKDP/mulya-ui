@@ -22,6 +22,7 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import GroupWorkIcon from "@mui/icons-material/GroupWork";
 import DescriptionIcon from "@mui/icons-material/Description";
 import AlignVerticalBottomIcon from '@mui/icons-material/AlignVerticalBottom';
+import NoteAddIcon from "@mui/icons-material/NoteAdd";
 
 // Import components
 import BdmUsers from "../components/Bdm/BdmUsers";
@@ -42,10 +43,35 @@ import EmployeeTimesheet from "../components/EmployeeTimesheet";
 import ClientForm from "../components/Bdm/ClientForm";
 import Clients from "../components/Bdm/Clients";
 import RecuitersStatus from "../components/Tabs/RecuitersStatus";
+import BenchForm from "../components/Bench/BenchForm";
+import BenchList from "../components/Bench/BenchList";
+import { ListIcon } from "lucide-react";
+
+
 
 
 const TABS_BY_ROLE = {
   EMPLOYEE: [
+    {
+      label: "Bench",
+      value: "BENCH",
+      icon: <HourglassEmptyIcon />,
+      isParent: true,
+      children: [
+        // {
+        //   label: "Bench Form",
+        //   value: "BENCH_FORM",
+        //   component: <BenchForm />,
+        //   icon: <NoteAddIcon />,
+        // },
+        {
+          label: "Bench List",
+          value: "BENCH_LIST",
+          component: <BenchList />,
+          icon: <ListIcon />,
+        },
+      ],
+    },
     {
       label: "Assigned",
       value: "ASSIGNED",
@@ -71,6 +97,7 @@ const TABS_BY_ROLE = {
       icon: <AccessTimeIcon />,
     },
   ],
+  
   ADMIN: [
     {
       label: "Timesheet",
