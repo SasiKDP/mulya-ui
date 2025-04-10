@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL configuration
-const DEV_API_BASE_URL = 'http://182.18.177.16'; // Replace with your actual API URL
+const DEV_API_BASE_URL = 'http://182.18.177.16'; // Replace with your actual 
 // const PROD_API_BASE_URL = 'https://mymulya.com'; // Replace with your actual API URL
 
 const httpService = {
