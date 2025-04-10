@@ -1,0 +1,34 @@
+.notfound-container {
+    background-color: #f8f9fa;
+  }
+  
+  .notfound-card {
+    width: 100%;
+    max-width: 500px;
+    overflow: hidden;
+  }
+  
+  .animated-border {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    border: 3px solid transparent;
+    pointer-events: none;
+    animation: border-rotate 4s linear infinite;
+    border-image: linear-gradient(90deg, #0d6efd, #20c997, #0d6efd) 1;
+  }
+  
+  @keyframes border-rotate {
+    0% {
+      border-image-slice: 1;
+      transform: rotate(0deg);
+    }
+    100% {
+      border-image-slice: 1;
+      transform: rotate(360deg);
+    }
+  }
+  
