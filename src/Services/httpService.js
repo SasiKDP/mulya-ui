@@ -1,8 +1,14 @@
 import axios from 'axios';
 
-// Base URL configuration
+// DEV
 const DEV_API_BASE_URL = 'http://182.18.177.16'; // Replace with your actual 
+const API_BASE_URL = DEV_API_BASE_URL
+
+//Prod
+
 // const PROD_API_BASE_URL = 'https://mymulya.com'; // Replace with your actual API URL
+// const API_BASE_URL = PROD_API_BASE_URL
+
 
 const httpService = {
   get: (url, params = {}) => axios.get(`${API_BASE_URL}${url}`, { params }),
