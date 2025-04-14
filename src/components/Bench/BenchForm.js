@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import * as Yup from "yup";
 import DynamicForm from "../FormContainer/DynamicForm";
-import { skills } from "./skills";
+import { skills } from "../../utils/skills";
 import ComponentTitle from "../../utils/ComponentTitle";
 import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";

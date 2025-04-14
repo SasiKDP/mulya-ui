@@ -33,9 +33,10 @@ import GroupIcon from '@mui/icons-material/Group';             // for Users
 import BusinessIcon from '@mui/icons-material/Business';       // for Clients
 import PersonAddIcon from '@mui/icons-material/PersonAdd';     // for Add New Client
 import { Clock, Hourglass } from 'lucide-react';
+import { navItems as baseNavItems  } from '../routes/navItems';
 
 
-const drawerWidth = 220;
+const drawerWidth = 240;
 const collapsedWidth = 72;
 
 const SideNav = ({ handleDrawerToggle, isCollapsed, isMobile }) => {
@@ -48,86 +49,11 @@ const SideNav = ({ handleDrawerToggle, isCollapsed, isMobile }) => {
     dispatch(logoutAsync(userId));
   };
   
+ 
   const navItems = [
-    {
-      text: 'Assigned',
-      path: 'assigned',
-      icon: <AssignmentIcon />,
-      roles: ['ADMIN', 'EMPLOYEE',  'BDM', 'TEAMLEAD'],
-    },
-    {
-      text: 'Submissions',
-      path: 'submissions',
-      icon: <SendIcon />,
-      roles: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', ],
-    },
-    {
-      text: 'Requirements',
-      path: 'requirements',
-      icon: <ListAltIcon />,
-      roles: ['ADMIN',  'SUPERADMIN', 'BDM', 'TEAMLEAD',],
-    },
-    // {
-    //   text: 'JobForm',
-    //   path: 'jobForm',
-    //   icon: <PostAddIcon />,
-    //   roles: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD'],
-    // },
-    {
-      text: 'Interviews',
-      path: 'interviews',
-      icon: <EventNoteIcon />,
-      roles: ['ADMIN', 'EMPLOYEE',  'BDM', 'TEAMLEAD',],
-    },
-    {
-      text: 'Users',
-      path: 'users',
-      icon: <GroupIcon />,
-      roles: ['ADMIN',  'SUPERADMIN', 'BDM', 'TEAMLEAD', 'PARTNER'],
-    },
-    {
-      text: 'Clients',
-      path: 'clients',
-      icon: <BusinessIcon />,
-      roles: ['ADMIN',  'SUPERADMIN', 'BDM', 'TEAMLEAD', 'PARTNER'],
-    },
-    // {
-    //   text: 'Add Client',
-    //   path: 'addNewClient',
-    //   icon: <PersonAddIcon />,
-    //   roles: [ 'SUPERADMIN', 'BDM'  ],
-    // },
-
-    {
-      text: 'Placements',
-      path: 'placements',
-      icon: <PersonAddIcon />,
-      roles: [ 'SUPERADMIN', 'PARTNER'  ],
-    },
-    {
-      text: 'BenchList',
-      path: 'bench-users',
-      icon: <Hourglass />,
-      roles: [ 'SUPERADMIN', 'EMPLOYEE','ADMIN','TEAMLEAD' ,'BDM'],
-    },
-    {
-      text: 'Submissions',
-      path: 'submissions-all',
-      icon: <EventNoteIcon />,
-      roles: [ 'SUPERADMIN', 'ADMIN'],
-    },
-    {
-      text: 'Interviews',
-      path: 'interviews-all',
-      icon: <EventNoteIcon />,
-      roles: [ 'SUPERADMIN', 'ADMIN'],
-    },
-    
-
-  ];
+    ...baseNavItems
+  ]
   
-  
-
   // Filter navigation items based on user role
   const filteredNavItems = navItems.filter(item => 
     !item.roles || item.roles.includes(role)

@@ -23,6 +23,8 @@ import { fetchEmployees } from "../../../redux/employeesSlice";
 import DynamicForm from "../../FormContainer/DynamicForm";
 import ComponentTitle from "../../../utils/ComponentTitle";
 import WorkIcon from "@mui/icons-material/Work";
+import { qualifications } from "../../../utils/qualifications";
+
 
 const PostRequirement = () => {
   const dispatch = useDispatch();
@@ -115,9 +117,7 @@ const PostRequirement = () => {
       label: "Client Name",
       type: "select",
       required: true,
-      options: clientsLoading
-        ? [{ label: "Loading...", value: "" }]
-        : clientOptions,
+      options: clientOptions,
       validation: Yup.string().required("Client Name is required"),
       gridProps: fieldGridProps,
     },
@@ -196,55 +196,7 @@ const PostRequirement = () => {
       label: "Qualification",
       type: "select",
       options: [
-        { label: "10th Pass", value: "10th Pass" },
-        { label: "12th Pass", value: "12th Pass" },
-        { label: "Diploma", value: "Diploma" },
-        { label: "B.E / B.Tech", value: "B.E / B.Tech" },
-        { label: "B.Sc", value: "B.Sc" },
-        { label: "B.Com", value: "B.Com" },
-        { label: "BCA", value: "BCA" },
-        { label: "BBA", value: "BBA" },
-        { label: "M.E / M.Tech", value: "M.E / M.Tech" },
-        { label: "M.Sc", value: "M.Sc" },
-        { label: "M.Com", value: "M.Com" },
-        { label: "MCA", value: "MCA" },
-        { label: "MBA", value: "MBA" },
-        { label: "Ph.D", value: "Ph.D" },
-        {
-          label: "Chartered Accountant (CA)",
-          value: "Chartered Accountant (CA)",
-        },
-        { label: "Company Secretary (CS)", value: "Company Secretary (CS)" },
-        {
-          label: "Certified Public Accountant (CPA)",
-          value: "Certified Public Accountant (CPA)",
-        },
-        {
-          label: "AWS Certified Solutions Architect",
-          value: "AWS Certified Solutions Architect",
-        },
-        {
-          label: "Microsoft Certified: Azure Fundamentals",
-          value: "Microsoft Certified: Azure Fundamentals",
-        },
-        { label: "Google Cloud Certified", value: "Google Cloud Certified" },
-        {
-          label: "Certified Scrum Master (CSM)",
-          value: "Certified Scrum Master (CSM)",
-        },
-        {
-          label: "PMP (Project Management Professional)",
-          value: "PMP (Project Management Professional)",
-        },
-        { label: "Six Sigma Certification", value: "Six Sigma Certification" },
-        {
-          label: "Oracle Certified Java Programmer",
-          value: "Oracle Certified Java Programmer",
-        },
-        {
-          label: "RHCE (Red Hat Certified Engineer)",
-          value: "RHCE (Red Hat Certified Engineer)",
-        },
+        ...qualifications
       ],
       validation: Yup.string().required("Qualification is required"),
       gridProps: fieldGridProps,

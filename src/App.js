@@ -11,7 +11,18 @@ const App = () => {
   return (
     <Router>
       <AppRoutes />
-      <ToastContainer /> {/* 👈 This is needed for toast to appear */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
     </Router>
   );
 };

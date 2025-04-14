@@ -282,27 +282,12 @@ const Header = ({
               <MenuIcon />
             </IconButton>
 
-            <Typography
-              variant="h5"
-              component="div"
-              sx={{
-                fontWeight: 900,
-                background: "linear-gradient(90deg, #2A4DBD, #00B0FF)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                letterSpacing: 1,
-              }}
-            >
-              <Box
-                component="img"
-                src={logoOrg}
-                alt="Company Logo"
-                sx={{ height: 28 }}
-              />
-            </Typography>
+            <Box
+              component="img"
+              src={logoOrg}
+              alt="Company Logo"
+              sx={{ height: 50, width: 160 }} // Increased dimensions
+            />
           </Box>
 
           {/* User details and actions on the right side */}
@@ -395,9 +380,9 @@ const Header = ({
         onClose={handleCloseLeaveDrawer}
         sx={{
           "& .MuiDrawer-paper": {
-            width: { xs: "100%", md:'40%' },
+            width: { xs: "100%", md: "40%" },
             boxSizing: "border-box",
-            borderRadius:3
+            borderRadius: 3,
           },
         }}
       >

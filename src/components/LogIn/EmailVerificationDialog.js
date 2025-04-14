@@ -115,7 +115,12 @@ const EmailVerificationDialog = ({
   
     setIsVerifying(true);
     try {
-      const response = await httpService.post(`/users/verifyOtp?email=${encodeURIComponent(email)}&otp=${otpString}`);
+      const requestBody = {
+        email: email,
+        otp: otpString
+      };
+      
+      const response = await httpService.post(`/users/verifyOtp`, requestBody);
       
       if (response.data.success) {
         showToast("OTP verified successfully!", "success");
@@ -127,7 +132,12 @@ const EmailVerificationDialog = ({
         throw new Error(response.data.message || "Invalid OTP");
       }
     } catch (err) {
-      showToast(err.response?.data?.message || "Invalid OTP. Please try again.", "error");
+      showToast(
+        err.response?.data?.error?.errorMessage || 
+        err.response?.data?.message || 
+        "Invalid OTP. Please try again.", 
+        "error"
+      );
     } finally {
       setIsVerifying(false);
     }

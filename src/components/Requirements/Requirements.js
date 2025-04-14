@@ -4,7 +4,6 @@ import {
   Box,
   Typography,
   Button,
-  CircularProgress,
   Chip,
   Link,
   Tooltip,
@@ -26,7 +25,6 @@ import {
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import axios from "axios";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ToastService from "../../Services/toastService";
@@ -34,8 +32,8 @@ import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import ComponentTitle from "../../utils/ComponentTitle";
 import PostRequirement from "./PostRequirement/PostRequirement";
 import EditRequirement from "./EditRequirement";
-
-const BASE_URL = "http://182.18.177.16";
+import httpService from "../../Services/httpService"; // Import httpService
+import LoadingSkeleton from "../muiComponents/LoadingSkeleton"; // Import LoadingSkeleton
 
 const Requirements = () => {
   const [data, setData] = useState([]);
@@ -67,14 +65,26 @@ const Requirements = () => {
     const fetchData = async () => {
       const loadingToastId = ToastService.loading("Loading requirements data...");
       setLoading(true);
-      
+  
       try {
-        const response = await axios.get(
-          `${BASE_URL}/requirements/getAssignments`
-        );
+        const response = await httpService.get('/requirements/getAssignments');
+  
         if (Array.isArray(response.data)) {
-          setData(response.data);
-          setColumns(generateColumns(response.data));
+          const priorityStatuses = ["Submitted", "On Hold", "In Progress"];
+  
+          const sortedData = response.data.sort((a, b) => {
+            const aPriority = priorityStatuses.includes(a.status) ? 0 : 1;
+            const bPriority = priorityStatuses.includes(b.status) ? 0 : 1;
+  
+            if (aPriority !== bPriority) {
+              return aPriority - bPriority;
+            }
+  
+            return new Date(b.requirementAddedTimeStamp) - new Date(a.requirementAddedTimeStamp);
+          });
+  
+          setData(sortedData);
+          setColumns(generateColumns(sortedData, loading));
           ToastService.update(loadingToastId, "Requirements data loaded successfully", "success");
         } else {
           setData([]);
@@ -96,12 +106,14 @@ const Requirements = () => {
         setLoading(false);
       }
     };
-
+  
     fetchData();
   }, [refreshTrigger]);
+  
+  
+  
 
   const handleJobIdClick = (jobId) => {
-    // Implement job ID click functionality if needed
     console.log("Job ID clicked:", jobId);
     ToastService.info(`Viewing details for Job ID: ${jobId}`);
   };
@@ -125,13 +137,11 @@ const Requirements = () => {
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
-    // Refresh data when drawer closes to show new requirements
     refreshData();
   };
 
   const handleCloseEditDrawer = () => {
     setEditDrawerOpen(false);
-    // Refresh data when edit drawer closes
     refreshData();
   };
 
@@ -156,9 +166,8 @@ const Requirements = () => {
 
     try {
       setLoading(true);
-      const response = await axios.delete(
-        `${BASE_URL}/requirements/deleteRequirement/${deleteDialog.jobId}`
-      );
+      // Using httpService instead of axios directly
+      const response = await httpService.delete(`/requirements/deleteRequirement/${deleteDialog.jobId}`);
 
       if (response.data.success) {
         ToastService.update(
@@ -189,15 +198,8 @@ const Requirements = () => {
 
   const handleViewDetails = (rowId) => {
     setExpandedRowId(rowId === expandedRowId ? null : rowId);
-    if (rowId !== expandedRowId) {
-      const item = data.find(({ jobId }) => jobId === rowId);
-      // if (item) {
-      //   ToastService.info(`Viewing details for: ${item.jobTitle}`);
-      // }
-    }
   };
   
-
   const handleDownloadJD = (jobId, jobTitle) => {
     ToastService.info(`Downloading job description for: ${jobTitle}`);
   };
@@ -225,7 +227,12 @@ const Requirements = () => {
     return <Chip label={status || "Unknown"} size="small" color={color} />;
   };
 
+  // Use the LoadingSkeleton component for job description loading state
   const renderJobDescription = (row) => {
+    if (loading) {
+      return <LoadingSkeleton rows={2} height={60} spacing={1} />;
+    }
+
     const hasTextDescription =
       row.jobDescription &&
       typeof row.jobDescription === "string" &&
@@ -270,7 +277,7 @@ const Requirements = () => {
             </Box>
             <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
               <Link
-                href={`${BASE_URL}/requirements/download-jd/${row.jobId}`}
+                href={`/requirements/download-jd/${row.jobId}`}
                 target="_blank"
                 download={`JD_${row.jobId}.pdf`}
                 sx={{
@@ -335,7 +342,7 @@ const Requirements = () => {
           </Box>
           <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
             <Link
-              href={`${BASE_URL}/requirements/download-jd/${row.jobId}`}
+              href={`/requirements/download-jd/${row.jobId}`}
               target="_blank"
               download={`JD_${row.jobId}.pdf`}
               sx={{
@@ -377,8 +384,11 @@ const Requirements = () => {
       backgroundColor: "#f5f5f5",
       sections: [
         {
-          title: "Job Details",
+          title: "Basic Information",
           fields: [
+            { label: "Job ID", key: "jobId", fallback: "-" },
+            { label: "Job Title", key: "jobTitle", fallback: "-" },
+            { label: "Client Name", key: "clientName", fallback: "-" },
             { label: "Type", key: "jobType", fallback: "-" },
             { label: "Mode", key: "jobMode", fallback: "-" },
             { label: "Location", key: "location", fallback: "-" },
@@ -387,28 +397,40 @@ const Requirements = () => {
         {
           title: "Requirements",
           fields: [
-            { label: "Experience", key: "experienceRequired", fallback: "-" },
-            {
-              label: "Relevant Experience",
-              key: "relevantExperience",
-              fallback: "-",
-            },
+            { label: "Total Experience", key: "experienceRequired", fallback: "-" },
+            { label: "Relevant Experience", key: "relevantExperience", fallback: "-" },
+            { label: "Notice Period", key: "noticePeriod", fallback: "-" },
             { label: "Qualification", key: "qualification", fallback: "-" },
+            { 
+              label: "Recruiters", 
+              key: "recruiterName", 
+              fallback: "Not assigned",
+              transform: (names) => {
+                if (!names || names.length === 0) return "Not assigned";
+                
+                // Trim whitespace from each name and filter out empty strings
+                const cleanedNames = names
+                  .map(name => name.trim())
+                  .filter(name => name.length > 0);
+                
+                // Join with comma + space
+                return cleanedNames.join(", ");
+              }
+            },
           ],
         },
         {
-          title: "Additional Info",
+          title: "Additional Information",
           fields: [
-            {
-              label: "Posted Date",
-              key: "requirementAddedTimeStamp",
-              fallback: "-",
-              transform: (value) =>
-                value ? new Date(value).toLocaleDateString() : "-",
-            },
-            { label: "Notice Period", key: "noticePeriod", fallback: "-" },
-            { label: "Positions", key: "noOfPositions", fallback: "-" },
             { label: "Salary Package", key: "salaryPackage", fallback: "-" },
+            { label: "Positions Available", key: "noOfPositions", fallback: "-" },
+            { 
+              label: "Posted Date", 
+              key: "requirementAddedTimeStamp", 
+              fallback: "-",
+              transform: (value) => value ? new Date(value).toLocaleDateString() + " " + new Date(value).toLocaleTimeString() : "-"
+            },
+            { label: "Status", key: "status", fallback: "-" },
             { label: "Assigned By", key: "assignedBy", fallback: "-" },
           ],
         },
@@ -439,7 +461,7 @@ const Requirements = () => {
     );
   };
 
-  const generateColumns = (data) => {
+  const generateColumns = (data, loading) => {
     if (data.length === 0) return [];
 
     return [
@@ -447,7 +469,9 @@ const Requirements = () => {
         key: "jobId",
         label: "Job ID",
         type: "select",
-        render: (row) => (
+        render: (row) => loading ? (
+          <LoadingSkeleton rows={1} width={80} height={24} />
+        ) : (
           <Link
             component="button"
             variant="body2"
@@ -466,43 +490,58 @@ const Requirements = () => {
         key: "requirementAddedTimeStamp",
         label: "Posted Date",
         type: "select",
-        render: (row) => {
-          if (!row.requirementAddedTimeStamp) return "N/A";
-          const date = new Date(row.requirementAddedTimeStamp);
-          return isNaN(date)
-            ? "Invalid Date"
-            : date.toISOString().split("T")[0];
-        },
+        render: (row) => loading ? (
+          <LoadingSkeleton rows={1} width={100} height={24} />
+        ) : (
+          !row.requirementAddedTimeStamp ? "N/A" : (
+            isNaN(new Date(row.requirementAddedTimeStamp))
+              ? "Invalid Date"
+              : new Date(row.requirementAddedTimeStamp).toISOString().split("T")[0]
+          )
+        ),
       },
       {
         key: "jobTitle",
         label: "Job Title",
         type: "text",
-        render: (row) => row.jobTitle || "N/A",
+        render: (row) => loading ? (
+          <LoadingSkeleton rows={1} width={120} height={24} />
+        ) : (
+          row.jobTitle || "N/A"
+        ),
       },
       {
         key: "clientName",
         label: "Client Name",
         type: "text",
-        render: (row) => row.clientName || "N/A",
+        render: (row) => loading ? (
+          <LoadingSkeleton rows={1} width={100} height={24} />
+        ) : (
+          row.clientName || "N/A"
+        ),
       },
       {
         key: "assignedBy",
         label: "Assigned By",
         type: "text",
-        render: (row) =>
+        render: (row) => loading ? (
+          <LoadingSkeleton rows={1} width={100} height={24} />
+        ) : (
           row.assignedBy ? (
             <Typography sx={{ fontWeight: 350, color: "#e91e64" }}>
               {row.assignedBy}
             </Typography>
           ) : (
             "Not Assigned"
-          ),
+          )
+        ),
       },
       {
         key: "jobDescription",
         label: "Job Description",
-        render: (row) => (
+        render: (row) => loading ? (
+          <LoadingSkeleton rows={1} width={120} height={24} />
+        ) : (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {row.jobDescription ? (
               <>
@@ -531,7 +570,7 @@ const Requirements = () => {
             ) : (
               <Tooltip title="Download Job Description">
                 <Link
-                  href={`${BASE_URL}/requirements/download-job-description/${row.jobId}`}
+                  href={`/requirements/download-job-description/${row.jobId}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   underline="none"
@@ -549,24 +588,32 @@ const Requirements = () => {
         key: "status",
         label: "Status",
         type: "select",
-        render: (row) => renderStatus(row.status),
+        render: (row) => loading ? (
+          <LoadingSkeleton rows={1} width={80} height={24} />
+        ) : (
+          renderStatus(row.status)
+        ),
       },
       {
         key: "salaryPackage",
         label: "Package",
         type: "text",
-        render: (row) => row.salaryPackage || "N/A",
+        render: (row) => loading ? (
+          <LoadingSkeleton rows={1} width={80} height={24} />
+        ) : (
+          row.salaryPackage || "N/A"
+        ),
       },
-      // {
-      //   key: "jobType",
-      //   label: "Job Type",
-      //   type: "select",
-      //   render: (row) => row.jobType || "N/A",
-      // },
       {
         key: "actions",
         label: "Actions",
-        render: (row) => (
+        render: (row) => loading ? (
+          <Stack direction="row" spacing={1}>
+            <LoadingSkeleton rows={1} width={32} height={32} />
+            <LoadingSkeleton rows={1} width={32} height={32} />
+            <LoadingSkeleton rows={1} width={32} height={32} />
+          </Stack>
+        ) : (
           <Stack direction="row" spacing={1}>
             <Tooltip title="View Details">
               <IconButton
@@ -607,21 +654,6 @@ const Requirements = () => {
     expanded: row.jobId === expandedRowId,
   }));
 
-  if (loading && !data.length) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "50vh",
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   if (error) {
     return (
       <Box sx={{ p: 3, textAlign: "center" }}>
@@ -661,26 +693,33 @@ const Requirements = () => {
           Post New Requirement
         </Button>
       </ComponentTitle>
-      <DataTable
-        data={processedData}
-        columns={columns}
-        title=""
-        loading={loading}
-        enableSelection={false}
-        defaultSortColumn="requirementAddedTimeStamp"
-        defaultSortDirection="desc"
-        defaultRowsPerPage={10}
-        refreshData={refreshData}
-        primaryColor="#1976d2"
-        secondaryColor="#e0f2f1"
-        customStyles={{
-          headerBackground: "#1976d2",
-          rowHover: "#e0f2f1",
-          selectedRow: "#b2dfdb",
-        }}
-        uniqueId="jobId" // Specify that jobId should be used as the unique identifier
-        onRowClick={(row) => handleViewDetails(row.jobId)}
-      />
+      
+      {loading && data.length === 0 ? (
+        <Box sx={{ p: 3 }}>
+          <LoadingSkeleton rows={5} height={60} spacing={2} />
+        </Box>
+      ) : (
+        <DataTable
+          data={processedData}
+          columns={columns}
+          title=""
+          loading={loading}
+          enableSelection={false}
+          defaultSortColumn="requirementAddedTimeStamp"
+          defaultSortDirection="desc"
+          defaultRowsPerPage={10}
+          refreshData={refreshData}
+          primaryColor="#1976d2"
+          secondaryColor="#e0f2f1"
+          customStyles={{
+            headerBackground: "#1976d2",
+            rowHover: "#e0f2f1",
+            selectedRow: "#b2dfdb",
+          }}
+          uniqueId="jobId"
+          onRowClick={(row) => handleViewDetails(row.jobId)}
+        />
+      )}
 
       {/* Job Description Dialog */}
       <Dialog

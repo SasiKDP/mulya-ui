@@ -14,26 +14,24 @@ import {
   InputAdornment,
   Button,
   IconButton,
+  Skeleton,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
 import httpService from "../../Services/httpService";
+import ToastService from "../../Services/toastService";
 import { fetchAllClients } from "../../redux/clientsSlice";
 import { fetchEmployees } from "../../redux/employeesSlice";
 import DynamicForm from "../FormContainer/DynamicForm";
-import ComponentTitle from "../../utils/ComponentTitle";
 import WorkIcon from "@mui/icons-material/Work";
 import EditIcon from "@mui/icons-material/Edit";
-
-const BASE_URL = "http://182.18.177.16";
 
 const EditRequirement = ({ requirementData, onClose }) => {
   const dispatch = useDispatch();
   const [descriptionType, setDescriptionType] = useState("text");
   const [submitting, setSubmitting] = useState(false);
   const [initialValues, setInitialValues] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
 
   // Get client and employee data from Redux store
   const { list: clients, loading: clientsLoading } = useSelector(
@@ -110,6 +108,8 @@ const EditRequirement = ({ requirementData, onClose }) => {
         noticePeriod: requirementData.noticePeriod || "",
         // We don't set jobDescriptionFile as it needs to be a new file upload
       });
+      
+      setIsLoading(false);
     }
   }, [requirementData]);
 
@@ -282,10 +282,10 @@ const EditRequirement = ({ requirementData, onClose }) => {
       type: "select",
       required: true,
       options: [
-        { label: "In Progress", value: "In Progress" },
-        { label: "Submitted", value: "Submitted" },
-        { label: "On Hold", value: "On Hold" },
-        { label: "Closed", value: "Closed" },
+        { label: "In Progress", value: "INPROGRESS" },
+        { label: "Submitted", value: "SUBMITTED" },
+        { label: "On Hold", value: "HOLD" },
+        { label: "Closed", value: "CLOSED" },
       ],
       gridProps: fieldGridProps,
     },
@@ -351,7 +351,9 @@ const EditRequirement = ({ requirementData, onClose }) => {
 
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     setSubmitting(true);
-    setSubmitting(submitting);
+
+    // Show loading toast
+    const toastId = ToastService.loading("Updating requirement...");
 
     try {
       // Create FormData for file upload
@@ -375,10 +377,11 @@ const EditRequirement = ({ requirementData, onClose }) => {
       formData.append("descriptionType", descriptionType);
 
       // Make PUT request to update the requirement
+      const jobId = values.jobId;
       formData.delete("jobId");
 
-      const response = await axios.put(
-        `${BASE_URL}/requirements/updateRequirement/${values.jobId}`,
+      const response = await httpService.put(
+        `/requirements/updateRequirement/${jobId}`,
         formData,
         {
           headers: {
@@ -388,20 +391,53 @@ const EditRequirement = ({ requirementData, onClose }) => {
       );
 
       if (response.data.success) {
-        toast.success("Requirement updated successfully!");
+        // Update loading toast to success
+        ToastService.update(toastId, "Requirement updated successfully!", "success");
         onClose(); // Close the drawer
       } else {
-        toast.error(response.data.message || "Failed to update requirement");
+        // Update loading toast to error
+        ToastService.update(
+          toastId,
+          response.data.message || "Failed to update requirement",
+          "error"
+        );
       }
     } catch (error) {
       console.error("Update error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to update requirement"
+      // Update loading toast to error
+      ToastService.update(
+        toastId,
+        error.response?.data?.message || "Failed to update requirement",
+        "error"
       );
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Loading skeleton when data is being fetched
+  const renderLoadingSkeleton = () => (
+    <Box sx={{ width: "100%" }}>
+      <Skeleton variant="text" height={60} sx={{ mb: 2 }} />
+      <Skeleton variant="rectangular" height={80} sx={{ mb: 3 }} />
+      
+      <Grid container spacing={3}>
+        {Array(9).fill(0).map((_, index) => (
+          <Grid item key={index} xs={12} sm={6} md={4}>
+            <Skeleton variant="rectangular" height={80} />
+          </Grid>
+        ))}
+      </Grid>
+      
+      <Box sx={{ mt: 3 }}>
+        <Skeleton variant="rectangular" height={120} sx={{ mb: 2 }} />
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+          <Skeleton variant="rectangular" width={100} height={40} />
+          <Skeleton variant="rectangular" width={100} height={40} />
+        </Box>
+      </Box>
+    </Box>
+  );
 
   return (
     <Box sx={{ p: 3, height: "100%", overflowY: "auto" }}>
@@ -442,7 +478,9 @@ const EditRequirement = ({ requirementData, onClose }) => {
         </FormControl>
       </Paper>
 
-      {Object.keys(initialValues).length > 0 && (
+      {isLoading  ? (
+        renderLoadingSkeleton()
+      ) : Object.keys(initialValues).length > 0 ? (
         <DynamicForm
           initialValues={initialValues}
           validationSchema={validationSchema}
@@ -455,12 +493,10 @@ const EditRequirement = ({ requirementData, onClose }) => {
           columnSpacing={3}
           gridContainerProps={{ alignItems: "stretch" }}
         />
-      )}
-
-      {Object.keys(initialValues).length === 0 && (
+      ) : (
         <Box sx={{ textAlign: "center", py: 4 }}>
           <Typography color="text.secondary">
-            Loading requirement data...
+            No requirement data available
           </Typography>
         </Box>
       )}

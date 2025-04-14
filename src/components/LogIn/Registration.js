@@ -192,7 +192,7 @@ const Registration = ({ onSwitchView }) => {
         roles: ["EMPLOYEE"],
       };
 
-      const response = await httpService.post("/auth/register", userData);
+      const response = await httpService.post("/users/register", userData);
 
       if (response.data.success) {
         showToast("Employee registered successfully!", "success");

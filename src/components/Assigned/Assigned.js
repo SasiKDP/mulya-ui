@@ -9,6 +9,7 @@ import {
   Tooltip,
   Drawer,
   CircularProgress,
+  Skeleton,
 } from "@mui/material";
 import { Assignment as AssignmentIcon, Refresh, Edit as EditIcon } from "@mui/icons-material";
 import httpService from "../../Services/httpService";
@@ -16,6 +17,8 @@ import CandidateSubmissionDrawer from "./CandidateSubmissionDrawer";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "../../redux/employeesSlice";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent"; 
+import ToastService from "../../Services/toastService";
+import ComponentTitle from "../../utils/ComponentTitle";
 
 const Assigned = () => {
   const [data, setData] = useState([]);
@@ -37,6 +40,8 @@ const Assigned = () => {
   };
 
   useEffect(() => {
+    ToastService.info("Loading assigned jobs...");
+    
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -46,19 +51,23 @@ const Assigned = () => {
         if (Array.isArray(response.data)) {
           setData(response.data);
           setColumns(generateColumns(response.data));
+          ToastService.success(`${response.data.length} jobs loaded successfully`);
         } else {
           setData([]);
           setColumns([]);
           if (response.data && response.data.message) {
             setError(new Error(response.data.message));
+            ToastService.error(response.data.message);
           } else {
             setError(new Error("Data fetched was not an array."));
+            ToastService.error("Data fetched was not in the expected format");
           }
         }
       } catch (err) {
         setError(err);
         setData([]);
         setColumns([]);
+        ToastService.error(`Error loading data: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -68,11 +77,18 @@ const Assigned = () => {
     dispatch(fetchEmployees());
   }, [userId, refreshTrigger, dispatch]);
 
-  const handleSubmit = (jobId) => {
-    setSelectedJob({ userId: userId, jobId });
+  const handleSubmit = (row) => {
+    const status = row.status?.toLowerCase();
+    if (status === 'hold') {
+      ToastService.warning("Submission disabled for jobs with HOLD status");
+      return;
+    }
+    
+    setSelectedJob({ userId: userId, jobId: row.jobId });
     setMode("create");
     setSelectedCandidate(null);
     setOpenDrawer(true);
+    ToastService.info(`Preparing submission for job: ${row.jobTitle}`);
   };
 
   const closeDrawer = () => {
@@ -82,9 +98,12 @@ const Assigned = () => {
   };
 
   const renderStatus = (status) => {
+    if (loading) return <Skeleton variant="rounded" width={80} height={24} />;
+    
+    const statusLower = status?.toLowerCase();
     let color = "default";
 
-    switch (status?.toLowerCase()) {
+    switch (statusLower) {
       case "submitted":
         color = "success";
         break;
@@ -92,6 +111,7 @@ const Assigned = () => {
         color = "error";
         break;
       case "on hold":
+      case "hold":
         color = "warning";
         break;
       case "in progress":
@@ -104,7 +124,6 @@ const Assigned = () => {
     return <Chip label={status || "Unknown"} size="small" color={color} />;
   };
 
-  // Configuration for the expanded content
   const getExpandedContentConfig = () => {
     return {
       title: "Job Description",
@@ -145,22 +164,103 @@ const Assigned = () => {
         {
           label: "Submit Candidate",
           icon: <AssignmentIcon />,
-          onClick: (row) => handleSubmit(row.jobId),
+          onClick: (row) => handleSubmit(row),
           variant: "contained",
           size: "small",
           color: "primary",
-          sx: { mr: 1 }
+          sx: { mr: 1 },
+          disabled: (row) => row.status?.toLowerCase() === 'hold'
         }
       ]
     };
   };
 
-  // Updated renderExpandedContent function that uses the reusable component
   const renderExpandedContent = (row) => {
+    if (loading) {
+      return (
+        <Box sx={{ p: 2 }}>
+          <Skeleton variant="text" width="60%" height={30} sx={{ mb: 2 }} />
+          <Skeleton variant="rectangular" height={100} sx={{ mb: 2 }} />
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Skeleton variant="rectangular" width="30%" height={100} />
+            <Skeleton variant="rectangular" width="30%" height={100} />
+            <Skeleton variant="rectangular" width="30%" height={100} />
+          </Box>
+        </Box>
+      );
+    }
     return <ReusableExpandedContent row={row} config={getExpandedContentConfig()} />;
   };
 
   const generateColumns = (data) => {
+    if (loading) {
+      return [
+        {
+          key: "jobId",
+          label: "Job ID",
+          render: () => <Skeleton variant="text" width={60} />,
+          width: 120,
+        },
+        {
+          key: "jobTitle",
+          label: "Job Title",
+          render: () => <Skeleton variant="text" width={120} />,
+          width: 200,
+        },
+        {
+          key: "clientName",
+          label: "Client",
+          render: () => <Skeleton variant="text" width={100} />,
+        },
+        {
+          key: "assignedBy",
+          label: "Assigned By",
+          render: () => <Skeleton variant="text" width={100} />,
+        },
+        {
+          key: "status",
+          label: "Status",
+          render: () => <Skeleton variant="rounded" width={80} height={24} />,
+          width: 120,
+        },
+        {
+          key: "location",
+          label: "Location",
+          render: () => <Skeleton variant="text" width={80} />,
+        },
+        {
+          key: "experienceRequired",
+          label: "Experience",
+          render: () => <Skeleton variant="text" width={60} />,
+          width: 120,
+        },
+        {
+          key: "requirementAddedTimeStamp",
+          label: "Posted Date",
+          render: () => <Skeleton variant="text" width={80} />,
+          width: 150,
+        },
+        {
+          key: "noOfPositions",
+          label: "Positions",
+          render: () => <Skeleton variant="text" width={40} sx={{ mx: 'auto' }} />,
+          width: 100,
+          align: "center",
+        },
+        {
+          key: "actions",
+          label: "Actions",
+          render: () => (
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <Skeleton variant="circular" width={32} height={32} />
+            </Box>
+          ),
+          width: 160,
+          align: "center",
+        },
+      ];
+    }
+
     if (data.length === 0) return [];
 
     return [
@@ -244,37 +344,40 @@ const Assigned = () => {
         filterable: false,
         width: 160,
         align: "center",
-        render: (row) => (
-          <Box sx={{ display: "flex", justifyContent: "center" }}>
-            <Tooltip title="Submit Candidate">
-              <IconButton
-                aria-label="submit"
-                size="small"
-                color="primary"
-                onClick={() => handleSubmit(row.jobId)}
-                sx={{ mr: 1 }}
-              >
-                <AssignmentIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        ),
+        render: (row) => {
+          const isDisabled = row.status?.toLowerCase() === 'hold';
+          return (
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
+              <Tooltip title={isDisabled ? "Submission disabled for HOLD status" : "Submit Candidate"}>
+                <span>
+                  <IconButton
+                    aria-label="submit"
+                    size="small"
+                    color="primary"
+                    onClick={() => handleSubmit(row)}
+                    sx={{ mr: 1 }}
+                    disabled={isDisabled}
+                  >
+                    <AssignmentIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
+          );
+        },
       },
     ];
   };
 
-  const processedData = data.map((row) => ({
-    ...row,
-    expandContent: renderExpandedContent,
-  }));
-
-  if (loading && !data.length) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "50vh" }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const processedData = loading 
+    ? Array(5).fill({}).map((_, index) => ({
+        jobId: index,
+        expandContent: renderExpandedContent,
+      }))
+    : data.map((row) => ({
+        ...row,
+        expandContent: renderExpandedContent,
+      }));
 
   if (error) {
     return (
@@ -289,9 +392,11 @@ const Assigned = () => {
 
   return (
     <>
+      <ComponentTitle title='Assigned List' />
+
       <DataTable
         data={processedData}
-        columns={columns}
+        columns={generateColumns(data)}  // Always call generateColumns to handle loading state
         title=""
         loading={loading}
         enableSelection={false}
