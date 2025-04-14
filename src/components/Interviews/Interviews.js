@@ -233,7 +233,7 @@ const Interviews = () => {
             data={interviews}
             columns={columns}
             title="Scheduled Interviews"
-            loading={loading}
+            // loading={loading}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="asc"

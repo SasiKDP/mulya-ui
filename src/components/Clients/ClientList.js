@@ -16,6 +16,7 @@ import {
   DialogActions,
   Alert,
   Drawer,
+  Skeleton,
 } from "@mui/material";
 import {
   Refresh,
@@ -36,7 +37,7 @@ import {
 import { showToast } from "../../utils/ToastNotification";
 import ToastNotification from "../../utils/ToastNotification";
 import ComponentTitle from "../../utils/ComponentTitle";
-import OnBoardClient from "./OnBoardClient"; // Import the new reusable component
+import OnBoardClient from "./OnBoardClient";
 
 const ClientList = () => {
   const dispatch = useDispatch();
@@ -51,8 +52,6 @@ const ClientList = () => {
   } = useSelector((state) => state.clients);
   const [selectedClient, setSelectedClient] = useState(null);
   const [openDocsDialog, setOpenDocsDialog] = useState(false);
-
-  // Use drawer instead of dialog for edit/add
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentClient, setCurrentClient] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -114,7 +113,6 @@ const ClientList = () => {
     setOpenDocsDialog(true);
   };
 
-  // Edit functionality with drawer
   const handleEditClick = (clientId) => {
     const clientToEdit = clients.find((client) => client.id === clientId);
     if (clientToEdit) {
@@ -140,7 +138,6 @@ const ClientList = () => {
     }
   };
 
-  // Delete client functionality
   const handleDeleteClick = (clientId) => {
     const client = clients.find((client) => client.id === clientId);
     if (client) {
@@ -176,30 +173,47 @@ const ClientList = () => {
       {
         key: "id",
         label: "Client ID",
-        render: (row) => row.id,
+        render: (row) => loading ? (
+          <Skeleton variant="text" width={80} height={24} />
+        ) : (
+          row.id
+        ),
       },
       {
         key: "clientName",
         label: "Client Name",
-        render: (row) => row.clientName || "N/A",
+        render: (row) => loading ? (
+          <Skeleton variant="text" width={120} height={24} />
+        ) : (
+          row.clientName || "N/A"
+        ),
       },
       {
         key: "onBoardedBy",
         label: "BDM",
-        render: (row) => row.onBoardedBy || "N/A",
+        render: (row) => loading ? (
+          <Skeleton variant="text" width={100} height={24} />
+        ) : (
+          row.onBoardedBy || "N/A"
+        ),
       },
       {
         key: "clientSpocName",
         label: "Contact Person",
-        render: (row) =>
+        render: (row) => loading ? (
+          <Skeleton variant="text" width={150} height={24} />
+        ) : (
           row.clientSpocName && Array.isArray(row.clientSpocName)
             ? row.clientSpocName.filter(Boolean).join(", ") || "N/A"
-            : "N/A",
+            : "N/A"
+        ),
       },
       {
         key: "positionType",
         label: "Position Type",
-        render: (row) => (
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={100} height={32} />
+        ) : (
           <Chip
             label={row.positionType || "Not specified"}
             color={row.positionType ? "primary" : "default"}
@@ -211,15 +225,20 @@ const ClientList = () => {
       {
         key: "netPayment",
         label: "Net Payment",
-        render: (row) =>
+        render: (row) => loading ? (
+          <Skeleton variant="text" width={80} height={24} />
+        ) : (
           row.currency
             ? `${row.currency} ${row.netPayment}`
-            : row.netPayment || "N/A",
+            : row.netPayment || "N/A"
+        ),
       },
       {
         key: "supportingCustomers",
         label: "Supporting Customers",
-        render: (row) =>
+        render: (row) => loading ? (
+          <Skeleton variant="text" width={150} height={24} />
+        ) : (
           row.supportingCustomers && Array.isArray(row.supportingCustomers) ? (
             <Tooltip
               title={row.supportingCustomers.filter(Boolean).join(", ")}
@@ -237,12 +256,19 @@ const ClientList = () => {
             >
               None
             </Typography>
-          ),
+          )
+        ),
       },
       {
         key: "actions",
         label: "Actions",
-        render: (row) => (
+        render: (row) => loading ? (
+          <Box display="flex" gap={1}>
+            <Skeleton variant="circular" width={32} height={32} />
+            <Skeleton variant="circular" width={32} height={32} />
+            <Skeleton variant="circular" width={32} height={32} />
+          </Box>
+        ) : (
           <Box display="flex" gap={1}>
             <Tooltip title="Edit Client">
               <IconButton
@@ -275,15 +301,12 @@ const ClientList = () => {
         ),
       },
     ];
-  }, []);
+  }, [loading]);
 
   const columns = useMemo(
     () => generateColumns(clients),
     [clients, generateColumns]
   );
-
-  console.log("Clients data from Redux:", clients);
-  console.log("Generated Columns:", columns);
 
   return (
     <>
@@ -313,22 +336,20 @@ const ClientList = () => {
         </Alert>
       )}
 
-     
-        <DataTable
-          data={clients}
-          columns={columns}
-          title=""
-          loading={loading}
-          enableSelection={false}
-          defaultSortColumn="clientName"
-          defaultSortDirection="asc"
-          defaultRowsPerPage={10}
-          refreshData={fetchClients}
-          primaryColor="#1976d2"
-          secondaryColor="#f5f5f5"
-          uniqueId="id"
-        />
-      
+      <DataTable
+        data={clients}
+        columns={columns}
+        title=""
+        loading={loading}
+        enableSelection={false}
+        defaultSortColumn="clientName"
+        defaultSortDirection="asc"
+        defaultRowsPerPage={10}
+        refreshData={fetchClients}
+        primaryColor="#1976d2"
+        secondaryColor="#f5f5f5"
+        uniqueId="id"
+      />
 
       {/* Client Form Drawer */}
       <Drawer

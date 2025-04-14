@@ -110,7 +110,7 @@ export const candidateFormFields = [
     }
   }
 ];
-const BASE_URL = "http://182.18.177.16";
+const BASE_URL = "https://mymulya.com";
 
 export const candidateAPI = {
   prepareFormData(values) {

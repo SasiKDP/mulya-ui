@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, Tooltip, Button, Drawer, CircularProgress } from '@mui/material';
-import { MoreVert, Edit, Visibility, Delete, Download, Add, Refresh, Close } from '@mui/icons-material';
+import { MoreVert, Edit, Visibility, Delete, Add, Refresh, Close } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DataTable from '../muiComponents/DataTabel';
 import ComponentTitle from '../../utils/ComponentTitle';
 import PlacementForm from './PlacementForm';
-import axios from 'axios';
+import httpService from '../../Services/httpService';
 
 const PlacementsList = () => {
   const [loading, setLoading] = useState(false);
@@ -62,8 +62,8 @@ const PlacementsList = () => {
   const handleDelete = async (row) => {
     if (window.confirm('Are you sure you want to delete this placement?')) {
       try {
-        const response = await axios.delete(
-          `http://192.168.0.214:8085/candidate/placement/delete-placement/${row.id}`
+        const response = await httpService.delete(
+          `/candidate/placement/delete-placement/${row.id}`
         );
 
         if (response.data.success) {
@@ -130,7 +130,7 @@ const PlacementsList = () => {
   const fetchPlacementDetails = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://192.168.0.214:8085/candidate/placement/placements-list');
+      const response = await httpService.get('/candidate/placement/placements-list');
       const rawData = response.data.data;
   
       const formattedData = rawData.map((item) => ({
@@ -197,8 +197,8 @@ const PlacementsList = () => {
       console.log(submissionValues);
 
       if (editingPlacement) {
-        const response = await axios.put(
-          `http://192.168.0.214:8085/candidate/placement/update-placement/${editingPlacement.id}`,
+        const response = await httpService.put(
+          `/candidate/placement/update-placement/${editingPlacement.id}`,
           submissionValues
         );
         if (response.data.success) {
@@ -207,8 +207,8 @@ const PlacementsList = () => {
           handleCloseDrawer();
         }
       } else {
-        const response = await axios.post(
-          'http://192.168.0.214:8085/candidate/placement/create-placement',
+        const response = await httpService.post(
+          '/candidate/placement/create-placement',
           submissionValues
         );
         if (response.data.success) {
@@ -260,7 +260,7 @@ const PlacementsList = () => {
         title=""
         onRefresh={fetchPlacementDetails}
         isRefreshing={loading}
-        enableSelection={true}
+        enableSelection={false}
         defaultSortColumn="id"
         defaultSortDirection="desc"
         noDataMessage={

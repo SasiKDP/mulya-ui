@@ -59,19 +59,19 @@ const DynamicForm = ({
 
   return (
     <Paper
-      elevation={elevation}
-      sx={{
-        borderRadius: 1,
-        overflow: 'hidden',
-        maxWidth: maxWidth,
-        mx: 'auto',
-        transition: 'all 0.3s ease-in-out',
-        '&:hover': {
-          boxShadow: theme.shadows[elevation + 1],
-        },
-        ...(dense && { padding: theme.spacing(1) }),
-        ...props.sx
-      }}
+    elevation={elevation}
+    sx={{
+      borderRadius: 1,
+      overflow: 'hidden',
+      maxWidth: maxWidth,
+      mx: 'auto',
+      transition: 'all 0.3s ease-in-out',
+      '&:hover': {
+        boxShadow: theme.shadows[elevation + 1],
+      },
+      ...(dense && { padding: theme.spacing(1) }),
+      ...props.sx
+    }}
     >
       {(title || subtitle) && (
         <Box

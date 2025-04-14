@@ -14,7 +14,7 @@ import { useSelector } from 'react-redux';
 import SideNav from './SideNav';
 import Header from './Header';
 
-const drawerWidth = 220;
+const drawerWidth = 240;
 const collapsedWidth = 72;
 
 const Dashboard = () => {

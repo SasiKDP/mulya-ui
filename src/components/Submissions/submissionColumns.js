@@ -63,6 +63,7 @@ export const generateSubmissionColumns = (data = [], handlers = {}) => {
       sortable: true,
       filterable: true,
     },
+    
     {
       key: "noticePeriod",
       label: "Notice Period",

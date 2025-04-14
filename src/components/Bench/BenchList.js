@@ -1,9 +1,36 @@
+// BenchList.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import httpService from '../../Services/httpService';
 import DataTable from '../muiComponents/DataTabel';
-import { Box, Typography, Tooltip, IconButton, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
-import { Edit, Delete, Visibility, Download, Refresh, Add } from '@mui/icons-material';
+import { 
+  Box, 
+  Typography, 
+  Tooltip, 
+  IconButton, 
+  Dialog, 
+  DialogActions, 
+  DialogContent, 
+  DialogContentText, 
+  DialogTitle, 
+  Button, 
+  Skeleton, 
+  Chip
+} from '@mui/material';
+import { 
+  Edit, 
+  Delete, 
+  Visibility, 
+  Download, 
+  Refresh, 
+  Add,
+  FilterList, 
+  Person, 
+  Work, 
+  School, 
+  ContactPhone, 
+  Code
+} from '@mui/icons-material';
 import ToastService from '../../Services/toastService';
 import BenchForm from './BenchForm';
 import CandidateDetails from './CandidateDetails';
@@ -23,8 +50,11 @@ const BenchList = () => {
   const fetchBenchList = async () => {
     try {
       setLoading(true);
+      ToastService.info("Loading bench candidates...");
+  
       const response = await httpService.get('/candidate/bench/getBenchList');
       setBenchData(response.data || []);
+      ToastService.success(`Loaded ${response.data?.length || 0} bench candidates`);
     } catch (error) {
       console.error('Failed to fetch bench list:', error);
       ToastService.error('Failed to load bench candidates');
@@ -32,20 +62,45 @@ const BenchList = () => {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     fetchBenchList();
   }, []);
 
   const handleView = (row) => {
-    setSelectedCandidate(row);
+    setSelectedCandidate({
+      ...row,
+      filterCriteria: {
+        // Default filter settings - all enabled initially
+        showBasicInfo: true,
+        showContact: true,
+        showExperience: true,
+        showSkills: true,
+        showEducation: true,
+        showDocuments: true
+      }
+    });
     setIsViewModalOpen(true);
+    ToastService.info(`Viewing details for ${row.fullName}`);
+  };
+
+  const toggleFilter = (filterKey) => {
+    if (selectedCandidate) {
+      setSelectedCandidate({
+        ...selectedCandidate,
+        filterCriteria: {
+          ...selectedCandidate.filterCriteria,
+          [filterKey]: !selectedCandidate.filterCriteria[filterKey]
+        }
+      });
+    }
   };
 
   const handleEdit = async (row) => {
     try {
+      ToastService.info(`Loading details for ${row.fullName}...`);
       // Get full candidate details including skills
-      const response = await httpService.get(`/candidate/bench/getById/${row.id}`);
+      const response = await httpService.get(`/candidate/bench/${row.id}`);
       const candidateData = response.data;
       
       // Format candidate data for the form
@@ -64,6 +119,7 @@ const BenchList = () => {
       
       setEditData(formData);
       setIsEditModalOpen(true);
+      ToastService.success(`Ready to edit ${row.fullName}`);
     } catch (error) {
       console.error('Failed to fetch candidate details:', error);
       ToastService.error('Failed to load candidate details for editing');
@@ -73,12 +129,13 @@ const BenchList = () => {
   const handleDelete = (row) => {
     setCandidateToDelete(row);
     setDeleteDialogOpen(true);
+    ToastService.warning(`Preparing to delete ${row.fullName}`);
   };
 
   const confirmDelete = async () => {
     try {
       const toastId = ToastService.loading("Deleting candidate...");
-      await httpService.delete(`/candidate/bench/delete/${candidateToDelete.id}`);
+      await httpService.delete(`/candidate/bench/deletebench/${candidateToDelete.id}`);
       ToastService.update(toastId, "Candidate deleted successfully!", "success");
       fetchBenchList(); // Refresh the list
       setDeleteDialogOpen(false);
@@ -90,27 +147,71 @@ const BenchList = () => {
 
   const downloadResume = async (candidateId, candidateName) => {
     try {
-      const toastId = ToastService.loading("Downloading resume...");
-      const response = await httpService.get(`/candidate/bench/download/${candidateId}`, {
-        responseType: "blob"
+      const toastId = ToastService.loading("Preparing resume download...");
+      
+      // Make the request with proper response type for file download
+      const response = await httpService.get(`/candidate/bench/download-resume/${candidateId}`, {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'application/pdf,application/octet-stream'
+        }
       });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
+  
+      // Verify we received valid data
+      if (!(response.data instanceof Blob) || response.data.size === 0) {
+        throw new Error("Invalid or empty file received");
+      }
+  
+      // Create a blob URL for the file
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Get filename from headers if available, otherwise construct one
+      let filename = `${candidateName.replace(/\s+/g, '_')}_Resume.pdf`;
+      const contentDisposition = response.headers['content-disposition'];
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="?([^";\n]*)"/i);
+        if (fileNameMatch && fileNameMatch[1]) {
+          filename = fileNameMatch[1];
+        }
+      }
+      
+      // Create and trigger download link
+      const link = document.createElement('a');
       link.href = url;
-      link.setAttribute("download", `${candidateName.replace(/\s+/g, "_")}_Resume.pdf`);
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
-      link.remove();
-
+      
+      // Clean up resources
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+      }, 100);
+  
       ToastService.update(toastId, "Resume downloaded successfully!", "success");
     } catch (error) {
-      ToastService.error("Failed to download resume");
-      console.error("Error downloading resume:", error);
+      console.error("Download error:", error);
+      
+      // More specific error messages based on the error type
+      if (error.response) {
+        if (error.response.status === 404) {
+          ToastService.error("Resume file not found for this candidate");
+        } else if (error.response.status === 403) {
+          ToastService.error("You don't have permission to download this resume");
+        } else {
+          ToastService.error(`Server error: ${error.response.status}`);
+        }
+      } else if (error.request) {
+        ToastService.error("Network error - please check your connection");
+      } else {
+        ToastService.error(error.message || "Failed to download resume");
+      }
     }
   };
 
-  const handleFormSubmitSuccess = () => {
+  const handleFormSubmitSuccess = (message) => {
+    ToastService.success(message || "Operation completed successfully!");
     fetchBenchList(); // Refresh the list after successful form submission
     setIsEditModalOpen(false);
     setEditData(null);
@@ -119,27 +220,73 @@ const BenchList = () => {
 
   const handleOpenDrawer = () => {
     setIsAddFormOpen(true);
+    ToastService.info("Opening form to add new candidate");
   };
 
-  const generateColumns = () => [
-    { key: 'id', label: 'Bench ID', type: 'text', sortable: true, filterable: true, width: 120 },
-    { key: 'fullName', label: 'Full Name', type: 'text', sortable: true, filterable: true, width: 180 },
-    { key: 'email', label: 'Email', type: 'text', sortable: true, filterable: true, width: 220 },
-    { key: 'contactNumber', label: 'Contact Number', type: 'text', sortable: true, filterable: true, width: 150 },
-    { key: 'referredBy', label: 'Referred By', type: 'text', sortable: true, filterable: true, width: 180 },
-    
-    { key: 'totalExperience', label: 'Total Exp (Yrs)', type: 'text', sortable: true, filterable: true, width: 150 },
-    { key: 'relevantExperience', label: 'Relevant Exp (Yrs)', type: 'text', sortable: true, filterable: true, width: 150 },
-    
-    // { 
-    //   key: 'skills', 
-    //   label: 'Skills', 
-    //   type: 'text', 
-    //   sortable: false, 
-    //   filterable: false, 
-    //   width: 250,
-    //   render: (row) => row.skills?.join(', ') || 'N/A',
-    // },
+  const generateColumns = (loading = false) => [
+    { 
+      key: 'id', 
+      label: 'Bench ID', 
+      type: 'text', 
+      sortable: true, 
+      filterable: true, 
+      width: 120,
+      render: loading ? () => <Skeleton variant="text" width={60} /> : undefined
+    },
+    { 
+      key: 'fullName', 
+      label: 'Full Name', 
+      type: 'text', 
+      sortable: true, 
+      filterable: true, 
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
+    },
+    { 
+      key: 'email', 
+      label: 'Email', 
+      type: 'text', 
+      sortable: true, 
+      filterable: true, 
+      width: 220,
+      render: loading ? () => <Skeleton variant="text" width={180} /> : undefined
+    },
+    { 
+      key: 'contactNumber', 
+      label: 'Contact Number', 
+      type: 'text', 
+      sortable: true, 
+      filterable: true, 
+      width: 150,
+      render: loading ? () => <Skeleton variant="text" width={100} /> : undefined
+    },
+    { 
+      key: 'referredBy', 
+      label: 'Referred By', 
+      type: 'text', 
+      sortable: true, 
+      filterable: true, 
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
+    },
+    { 
+      key: 'totalExperience', 
+      label: 'Total Exp (Yrs)', 
+      type: 'text', 
+      sortable: true, 
+      filterable: true, 
+      width: 150,
+      render: loading ? () => <Skeleton variant="text" width={80} /> : undefined
+    },
+    { 
+      key: 'relevantExperience', 
+      label: 'Rel Exp (Yrs)', 
+      type: 'text', 
+      sortable: true, 
+      filterable: true, 
+      width: 150,
+      render: loading ? () => <Skeleton variant="text" width={80} /> : undefined
+    },
     {
       key: 'actions',
       label: 'Actions',
@@ -147,33 +294,39 @@ const BenchList = () => {
       filterable: false,
       width: 200,
       align: 'center',
-      render: (row) => (
+      render: loading ? () => (
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} variant="circular" width={32} height={32} />
+          ))}
+        </Box>
+      ) : (row) => (
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }} onClick={(e) => e.stopPropagation()}>
           <Tooltip title="View">
             <IconButton color="info" size="small" onClick={() => handleView(row)}>
               <Visibility fontSize="small" />
             </IconButton>
           </Tooltip>
-
+  
           <Tooltip title="Edit">
             <IconButton color="primary" size="small" onClick={() => handleEdit(row)}>
               <Edit fontSize="small" />
             </IconButton>
           </Tooltip>
-
+  
           <Tooltip title="Delete">
             <IconButton color="error" size="small" onClick={() => handleDelete(row)}>
               <Delete fontSize="small" />
             </IconButton>
           </Tooltip>
-
+  
           <Tooltip title={row.resumeAvailable ? "Download Resume" : "Resume not available"}>
             <span>
               <IconButton
                 color="success"
                 size="small"
                 onClick={() => row.resumeAvailable && downloadResume(row.id, row.fullName)}
-                disabled={!row.resumeAvailable}
+              
               >
                 <Download fontSize="small" />
               </IconButton>
@@ -208,11 +361,11 @@ const BenchList = () => {
 
       <DataTable
         data={benchData}
-        columns={generateColumns()}
+        columns={generateColumns(loading)}
         pageLimit={20}
         title="Bench List"
         onRefresh={fetchBenchList}
-        isRefreshing={loading}
+        // isRefreshing={loading}
         enableSelection={false}
         defaultSortColumn="fullName"
         defaultSortDirection="asc"
@@ -239,7 +392,10 @@ const BenchList = () => {
       {/* Edit Modal */}
       <Dialog 
         open={isEditModalOpen} 
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          ToastService.info("Edit cancelled");
+        }}
         maxWidth="md"
         fullWidth
       >
@@ -248,7 +404,10 @@ const BenchList = () => {
           {editData && (
             <BenchForm 
               initialValues={editData} 
-              onCancel={() => setIsEditModalOpen(false)}
+              onCancel={() => {
+                setIsEditModalOpen(false);
+                ToastService.info("Edit cancelled");
+              }}
               onSuccess={handleFormSubmitSuccess}
               isEditMode={true}
             />
@@ -259,42 +418,128 @@ const BenchList = () => {
       {/* Add New Candidate Modal */}
       <Dialog 
         open={isAddFormOpen} 
-        onClose={() => setIsAddFormOpen(false)}
+        onClose={() => {
+          setIsAddFormOpen(false);
+          ToastService.info("Add new candidate cancelled");
+        }}
         maxWidth="md"
         fullWidth
       >
-        
         <DialogContent>
           <BenchForm 
-            onCancel={() => setIsAddFormOpen(false)}
+            onCancel={() => {
+              setIsAddFormOpen(false);
+              ToastService.info("Add new candidate cancelled");
+            }}
             onSuccess={handleFormSubmitSuccess}
             isEditMode={false}
           />
         </DialogContent>
       </Dialog>
 
-      {/* View Modal */}
+      {/* View Modal with Filter Controls */}
       <Dialog 
         open={isViewModalOpen} 
-        onClose={() => setIsViewModalOpen(false)}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          ToastService.info("Closed candidate details view");
+        }}
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Candidate Details</DialogTitle>
-        <DialogContent>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">
+              Candidate Details - {selectedCandidate?.fullName}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Toggle Personal Info">
+                <IconButton 
+                  color={selectedCandidate?.filterCriteria?.showBasicInfo ? "primary" : "default"} 
+                  size="small"
+                  onClick={() => toggleFilter('showBasicInfo')}
+                >
+                  <Person fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Toggle Contact Info">
+                <IconButton 
+                  color={selectedCandidate?.filterCriteria?.showContact ? "primary" : "default"} 
+                  size="small"
+                  onClick={() => toggleFilter('showContact')}
+                >
+                  <ContactPhone fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Toggle Experience">
+                <IconButton 
+                  color={selectedCandidate?.filterCriteria?.showExperience ? "primary" : "default"} 
+                  size="small"
+                  onClick={() => toggleFilter('showExperience')}
+                >
+                  <Work fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Toggle Skills">
+                <IconButton 
+                  color={selectedCandidate?.filterCriteria?.showSkills ? "primary" : "default"} 
+                  size="small"
+                  onClick={() => toggleFilter('showSkills')}
+                >
+                  <Code fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Toggle Education">
+                <IconButton 
+                  color={selectedCandidate?.filterCriteria?.showEducation ? "primary" : "default"} 
+                  size="small"
+                  onClick={() => toggleFilter('showEducation')}
+                >
+                  <School fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Toggle Documents">
+                <IconButton 
+                  color={selectedCandidate?.filterCriteria?.showDocuments ? "primary" : "default"} 
+                  size="small"
+                  onClick={() => toggleFilter('showDocuments')}
+                >
+                  <FilterList fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
           {selectedCandidate && (
             <CandidateDetails 
-              candidateId={selectedCandidate.id} 
-              onClose={() => setIsViewModalOpen(false)}
+              candidateId={selectedCandidate.id}
+              filterCriteria={selectedCandidate.filterCriteria}
+              onClose={() => {
+                setIsViewModalOpen(false);
+                ToastService.info("Closed candidate details view");
+              }}
+              onDownloadResume={() => downloadResume(selectedCandidate.id, selectedCandidate.fullName)}
             />
           )}
         </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setIsViewModalOpen(false);
+            ToastService.info("Closed candidate details view");
+          }}>
+            Close
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          ToastService.info("Delete cancelled");
+        }}
       >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
@@ -303,7 +548,12 @@ const BenchList = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => {
+            setDeleteDialogOpen(false);
+            ToastService.info("Delete cancelled");
+          }}>
+            Cancel
+          </Button>
           <Button onClick={confirmDelete} color="error" autoFocus>
             Delete
           </Button>
