@@ -15,6 +15,7 @@ import {
   DialogActions,
   Drawer,
   DialogContentText,
+  Skeleton,
 } from "@mui/material";
 import {
   Refresh,
@@ -32,14 +33,14 @@ import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import ComponentTitle from "../../utils/ComponentTitle";
 import PostRequirement from "./PostRequirement/PostRequirement";
 import EditRequirement from "./EditRequirement";
-import httpService from "../../Services/httpService"; // Import httpService
-import LoadingSkeleton from "../muiComponents/LoadingSkeleton"; // Import LoadingSkeleton
+import httpService from "../../Services/httpService";
+import LoadingSkeleton from "../muiComponents/LoadingSkeleton";
 
 const Requirements = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState(null);
-  const [columns, setColumns] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
@@ -58,60 +59,59 @@ const Requirements = () => {
 
   const refreshData = () => {
     setRefreshTrigger((prev) => prev + 1);
+    setLoading(true);
     ToastService.info("Refreshing requirements data...");
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      const loadingToastId = ToastService.loading("Loading requirements data...");
-      setLoading(true);
-  
+      const loadingToastId = ToastService.loading(
+        "Loading requirements data..."
+      );
+
       try {
-        const response = await httpService.get('/requirements/getAssignments');
-  
+        const response = await httpService.get("/requirements/getAssignments");
+
         if (Array.isArray(response.data)) {
           const priorityStatuses = ["Submitted", "On Hold", "In Progress"];
-  
           const sortedData = response.data.sort((a, b) => {
             const aPriority = priorityStatuses.includes(a.status) ? 0 : 1;
             const bPriority = priorityStatuses.includes(b.status) ? 0 : 1;
-  
-            if (aPriority !== bPriority) {
-              return aPriority - bPriority;
-            }
-  
-            return new Date(b.requirementAddedTimeStamp) - new Date(a.requirementAddedTimeStamp);
+            return aPriority !== bPriority
+              ? aPriority - bPriority
+              : new Date(b.requirementAddedTimeStamp) -
+                  new Date(a.requirementAddedTimeStamp);
           });
-  
+
           setData(sortedData);
-          setColumns(generateColumns(sortedData, loading));
-          ToastService.update(loadingToastId, "Requirements data loaded successfully", "success");
+          ToastService.update(
+            loadingToastId,
+            "Requirements data loaded successfully",
+            "success"
+          );
         } else {
           setData([]);
-          setColumns([]);
-          if (response.data && response.data.message) {
-            setError(new Error(response.data.message));
-            ToastService.update(loadingToastId, `Error: ${response.data.message}`, "error");
-          } else {
-            setError(new Error("Data fetched was not an array."));
-            ToastService.update(loadingToastId, "Error: Data fetched was not an array", "error");
-          }
+          const errorMsg =
+            response.data?.message || "Data fetched was not an array";
+          setError(new Error(errorMsg));
+          ToastService.update(loadingToastId, `Error: ${errorMsg}`, "error");
         }
       } catch (err) {
         setError(err);
         setData([]);
-        setColumns([]);
-        ToastService.update(loadingToastId, `Error fetching data: ${err.message}`, "error");
+        ToastService.update(
+          loadingToastId,
+          `Error fetching data: ${err.message}`,
+          "error"
+        );
       } finally {
         setLoading(false);
+        setInitialLoad(false);
       }
     };
-  
+
     fetchData();
   }, [refreshTrigger]);
-  
-  
-  
 
   const handleJobIdClick = (jobId) => {
     console.log("Job ID clicked:", jobId);
@@ -162,23 +162,28 @@ const Requirements = () => {
   const handleConfirmDelete = async () => {
     if (!deleteDialog.jobId) return;
 
-    const deleteToastId = ToastService.loading(`Deleting requirement: ${deleteDialog.jobTitle}...`);
+    const deleteToastId = ToastService.loading(
+      `Deleting requirement: ${deleteDialog.jobTitle}...`
+    );
 
     try {
       setLoading(true);
-      // Using httpService instead of axios directly
-      const response = await httpService.delete(`/requirements/deleteRequirement/${deleteDialog.jobId}`);
+      const response = await httpService.delete(
+        `/requirements/deleteRequirement/${deleteDialog.jobId}`
+      );
 
       if (response.data.success) {
         ToastService.update(
-          deleteToastId, 
-          `Requirement "${deleteDialog.jobTitle}" deleted successfully`, 
+          deleteToastId,
+          `Requirement "${deleteDialog.jobTitle}" deleted successfully`,
           "success"
         );
       } else {
         ToastService.update(
           deleteToastId,
-          `Failed to delete requirement: ${response.data.message || "Unknown error"}`,
+          `Failed to delete requirement: ${
+            response.data.message || "Unknown error"
+          }`,
           "error"
         );
       }
@@ -192,14 +197,15 @@ const Requirements = () => {
     } finally {
       setDeleteDialog({ open: false, jobId: null, jobTitle: "" });
       refreshData();
-      setLoading(false);
     }
   };
 
   const handleViewDetails = (rowId) => {
-    setExpandedRowId(rowId === expandedRowId ? null : rowId);
+    if (!loading) {
+      setExpandedRowId(rowId === expandedRowId ? null : rowId);
+    }
   };
-  
+
   const handleDownloadJD = (jobId, jobTitle) => {
     ToastService.info(`Downloading job description for: ${jobTitle}`);
   };
@@ -214,7 +220,7 @@ const Requirements = () => {
       case "closed":
         color = "error";
         break;
-      case "on hold":
+      case "hold":
         color = "warning";
         break;
       case "in progress":
@@ -227,7 +233,6 @@ const Requirements = () => {
     return <Chip label={status || "Unknown"} size="small" color={color} />;
   };
 
-  // Use the LoadingSkeleton component for job description loading state
   const renderJobDescription = (row) => {
     if (loading) {
       return <LoadingSkeleton rows={2} height={60} spacing={1} />;
@@ -237,7 +242,6 @@ const Requirements = () => {
       row.jobDescription &&
       typeof row.jobDescription === "string" &&
       row.jobDescription.trim() !== "";
-
     const hasFileDescription = row.jobDescriptionBlob || row.jobDescriptionFile;
 
     if (hasTextDescription && hasFileDescription) {
@@ -397,25 +401,29 @@ const Requirements = () => {
         {
           title: "Requirements",
           fields: [
-            { label: "Total Experience", key: "experienceRequired", fallback: "-" },
-            { label: "Relevant Experience", key: "relevantExperience", fallback: "-" },
+            {
+              label: "Total Experience",
+              key: "experienceRequired",
+              fallback: "-",
+            },
+            {
+              label: "Relevant Experience",
+              key: "relevantExperience",
+              fallback: "-",
+            },
             { label: "Notice Period", key: "noticePeriod", fallback: "-" },
             { label: "Qualification", key: "qualification", fallback: "-" },
-            { 
-              label: "Recruiters", 
-              key: "recruiterName", 
+            {
+              label: "Recruiters",
+              key: "recruiterName",
               fallback: "Not assigned",
               transform: (names) => {
                 if (!names || names.length === 0) return "Not assigned";
-                
-                // Trim whitespace from each name and filter out empty strings
                 const cleanedNames = names
-                  .map(name => name.trim())
-                  .filter(name => name.length > 0);
-                
-                // Join with comma + space
+                  .map((name) => name.trim())
+                  .filter((name) => name.length > 0);
                 return cleanedNames.join(", ");
-              }
+              },
             },
           ],
         },
@@ -423,12 +431,21 @@ const Requirements = () => {
           title: "Additional Information",
           fields: [
             { label: "Salary Package", key: "salaryPackage", fallback: "-" },
-            { label: "Positions Available", key: "noOfPositions", fallback: "-" },
-            { 
-              label: "Posted Date", 
-              key: "requirementAddedTimeStamp", 
+            {
+              label: "Positions Available",
+              key: "noOfPositions",
               fallback: "-",
-              transform: (value) => value ? new Date(value).toLocaleDateString() + " " + new Date(value).toLocaleTimeString() : "-"
+            },
+            {
+              label: "Posted Date",
+              key: "requirementAddedTimeStamp",
+              fallback: "-",
+              transform: (value) =>
+                value
+                  ? new Date(value).toLocaleDateString() +
+                    " " +
+                    new Date(value).toLocaleTimeString()
+                  : "-",
             },
             { label: "Status", key: "status", fallback: "-" },
             { label: "Assigned By", key: "assignedBy", fallback: "-" },
@@ -461,16 +478,19 @@ const Requirements = () => {
     );
   };
 
-  const generateColumns = (data, loading) => {
-    if (data.length === 0) return [];
-
+  const generateColumns = () => {
+    const skeletonProps = {
+      rows: 1,
+      height: 24,
+      animation: "wave"
+    };
+  
     return [
       {
         key: "jobId",
         label: "Job ID",
-        type: "select",
         render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={80} height={24} />
+          <LoadingSkeleton {...skeletonProps} width={80} />
         ) : (
           <Link
             component="button"
@@ -489,23 +509,19 @@ const Requirements = () => {
       {
         key: "requirementAddedTimeStamp",
         label: "Posted Date",
-        type: "select",
         render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={100} height={24} />
+          <LoadingSkeleton {...skeletonProps} width={100} />
         ) : (
-          !row.requirementAddedTimeStamp ? "N/A" : (
-            isNaN(new Date(row.requirementAddedTimeStamp))
-              ? "Invalid Date"
-              : new Date(row.requirementAddedTimeStamp).toISOString().split("T")[0]
-          )
+          !row.requirementAddedTimeStamp ? "N/A" : 
+          isNaN(new Date(row.requirementAddedTimeStamp)) ? "Invalid Date" : 
+          new Date(row.requirementAddedTimeStamp).toISOString().split("T")[0]
         ),
       },
       {
         key: "jobTitle",
         label: "Job Title",
-        type: "text",
         render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={120} height={24} />
+          <LoadingSkeleton {...skeletonProps} width={120} />
         ) : (
           row.jobTitle || "N/A"
         ),
@@ -513,9 +529,8 @@ const Requirements = () => {
       {
         key: "clientName",
         label: "Client Name",
-        type: "text",
         render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={100} height={24} />
+          <LoadingSkeleton {...skeletonProps} width={100} />
         ) : (
           row.clientName || "N/A"
         ),
@@ -523,9 +538,8 @@ const Requirements = () => {
       {
         key: "assignedBy",
         label: "Assigned By",
-        type: "text",
         render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={100} height={24} />
+          <LoadingSkeleton {...skeletonProps} width={100} />
         ) : (
           row.assignedBy ? (
             <Typography sx={{ fontWeight: 350, color: "#e91e64" }}>
@@ -537,10 +551,46 @@ const Requirements = () => {
         ),
       },
       {
+        key: "numberOfSubmissions",
+        label: "Submissions",
+        render: (row) => loading ? (
+          <LoadingSkeleton {...skeletonProps} width={100} />
+        ) : (
+          <Chip 
+            label={row.numberOfSubmissions || 0}
+            variant="outlined"
+            color={row.numberOfSubmissions > 0 ? "primary" : "default"}
+            sx={{ 
+              fontWeight: 500,
+              borderWidth: row.numberOfSubmissions > 0 ? 2 : 1,
+              borderColor: row.numberOfSubmissions > 0 ? "primary.main" : "divider"
+            }}
+          />
+        ),
+      },
+      {
+        key: "numberOfInterviews",
+        label: "Interviews",
+        render: (row) => loading ? (
+          <LoadingSkeleton {...skeletonProps} width={100} />
+        ) : (
+          <Chip 
+            label={row.numberOfInterviews || 0}
+            variant="outlined"
+            color={row.numberOfInterviews > 0 ? "success" : "default"}
+            sx={{ 
+              fontWeight: 500,
+              borderWidth: row.numberOfInterviews > 0 ? 2 : 1,
+              borderColor: row.numberOfInterviews > 0 ? "success.main" : "divider"
+            }}
+          />
+        ),
+      },
+      {
         key: "jobDescription",
         label: "Job Description",
         render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={120} height={24} />
+          <LoadingSkeleton {...skeletonProps} width={120} />
         ) : (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {row.jobDescription ? (
@@ -552,12 +602,7 @@ const Requirements = () => {
                 {row.jobDescription.length > 15 && (
                   <Tooltip title="View Full Description">
                     <Button
-                      onClick={() =>
-                        handleOpenDescriptionDialog(
-                          row.jobDescription,
-                          row.jobTitle
-                        )
-                      }
+                      onClick={() => handleOpenDescriptionDialog(row.jobDescription, row.jobTitle)}
                       size="small"
                       startIcon={<DescriptionIcon />}
                       sx={{ minWidth: 0 }}
@@ -587,9 +632,8 @@ const Requirements = () => {
       {
         key: "status",
         label: "Status",
-        type: "select",
         render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={80} height={24} />
+          <LoadingSkeleton {...skeletonProps} width={80} />
         ) : (
           renderStatus(row.status)
         ),
@@ -597,9 +641,8 @@ const Requirements = () => {
       {
         key: "salaryPackage",
         label: "Package",
-        type: "text",
         render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={80} height={24} />
+          <LoadingSkeleton {...skeletonProps} width={80} />
         ) : (
           row.salaryPackage || "N/A"
         ),
@@ -685,27 +728,26 @@ const Requirements = () => {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => {
-            setDrawerOpen(true);
-            ToastService.info("Opening new requirement form");
-          }}
+          onClick={() => setDrawerOpen(true)}
+          disabled={loading}
         >
           Post New Requirement
         </Button>
       </ComponentTitle>
-      
-      {loading && data.length === 0 ? (
+
+      {initialLoad ? (
         <Box sx={{ p: 3 }}>
-          <LoadingSkeleton rows={5} height={60} spacing={2} />
+          <LoadingSkeleton rows={6} height={60} spacing={2} />
         </Box>
       ) : (
         <DataTable
           data={processedData}
-          columns={columns}
+          columns={generateColumns()}
           title=""
           loading={loading}
           enableSelection={false}
           defaultSortColumn="requirementAddedTimeStamp"
+          
           defaultSortDirection="desc"
           defaultRowsPerPage={10}
           refreshData={refreshData}
@@ -721,7 +763,6 @@ const Requirements = () => {
         />
       )}
 
-      {/* Job Description Dialog */}
       <Dialog
         open={descriptionDialog.open}
         onClose={handleCloseDescriptionDialog}
@@ -756,7 +797,6 @@ const Requirements = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Post New Requirement Drawer */}
       <Drawer
         anchor="right"
         open={drawerOpen}
@@ -764,14 +804,13 @@ const Requirements = () => {
         sx={{
           "& .MuiDrawer-paper": {
             width: { xs: "100%", sm: "70%", md: "60%", lg: "60%" },
-            mt: 3
+            mt: 3,
           },
         }}
       >
         <PostRequirement onClose={handleCloseDrawer} />
       </Drawer>
 
-      {/* Edit Requirement Drawer */}
       <Drawer
         anchor="right"
         open={editDrawerOpen}
@@ -791,7 +830,6 @@ const Requirements = () => {
         )}
       </Drawer>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialog.open}
         onClose={() =>
