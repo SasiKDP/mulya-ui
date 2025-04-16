@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Box, Container } from "@mui/material";
+import { Box, Container, Stack, Typography } from "@mui/material";
 import DataTable from "../muiComponents/DataTabel";
 import { generateSubmissionColumns } from "./submissionColumns";
 import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { useSelector } from "react-redux";
 
 const AllSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
+  const {filteredSubmissionsList} = useSelector((state) => state.submission);
 
   const fetchSubmissions = async () => {
     try {
@@ -48,10 +53,33 @@ const AllSubmissions = () => {
   const columns = generateSubmissionColumns(submissions, { handleEdit, handleDelete });
 
   return (
+
+
+    <>
+
+<Stack direction="row" alignItems="center" spacing={2}
+              sx={{
+                flexWrap: 'wrap',
+                mb: 3,
+                justifyContent: 'space-between',
+                p: 2,
+                backgroundColor: '#f9f9f9',
+                borderRadius: 2,
+                boxShadow: 1,
+      
+              }}>
+      
+              <Typography variant='h6' color='primary'>Submissions Management</Typography>
+      
+              <DateRangeFilter component="Submissions"/>
+      
+              
+              
+            </Stack>
    
       
         <DataTable
-          data={submissions}
+          data={isFilteredDataRequested ?  filteredSubmissionsList : submissions || []}
           columns={columns}
           title="Candidate Submissions"
           loading={loading}
@@ -71,6 +99,8 @@ const AllSubmissions = () => {
           }}
           uniqueId="submissionId"
         />
+
+</>
       
    
   );
