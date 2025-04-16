@@ -7,6 +7,7 @@ import {
   Chip,
   CircularProgress,
   Drawer,
+  Stack,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -20,6 +21,7 @@ import httpService from "../../Services/httpService";
 import { useSelector } from "react-redux";
 import { useConfirm } from "../../hooks/useConfirm"; // Create this hook or use a dialog component
 import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
 
 const Interviews = () => {
   const { userId } = useSelector((state) => state.auth);
@@ -229,6 +231,7 @@ const Interviews = () => {
         </Box>
       ) : (
         <>
+
           <DataTable
             data={interviews}
             columns={columns}

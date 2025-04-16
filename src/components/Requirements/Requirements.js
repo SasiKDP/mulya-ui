@@ -15,6 +15,7 @@ import {
   DialogActions,
   Drawer,
   DialogContentText,
+  Badge,
 } from "@mui/material";
 import {
   Refresh,
@@ -24,6 +25,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
+  Cancel,
 } from "@mui/icons-material";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -34,6 +36,10 @@ import PostRequirement from "./PostRequirement/PostRequirement";
 import EditRequirement from "./EditRequirement";
 import httpService from "../../Services/httpService"; // Import httpService
 import LoadingSkeleton from "../muiComponents/LoadingSkeleton"; // Import LoadingSkeleton
+import { DateRangeIcon } from "@mui/x-date-pickers";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { useDispatch, useSelector } from "react-redux";
+import { setFilteredReqDataRequested } from "../../redux/requirementSlice";
 
 const Requirements = () => {
   const [data, setData] = useState([]);
@@ -55,6 +61,11 @@ const Requirements = () => {
     jobTitle: "",
   });
   const [expandedRowId, setExpandedRowId] = useState(null);
+
+  const { filteredRequirementList } = useSelector((state) => state.requirement);
+  const {isFilteredDataRequested} = useSelector((state) => state.bench)
+    const dispatch = useDispatch();
+    const [dialogOpen, setDialogOpen] = useState(false);
 
   const refreshData = () => {
     setRefreshTrigger((prev) => prev + 1);
@@ -670,29 +681,58 @@ const Requirements = () => {
     );
   }
 
+
+    const handleCalenderDialog = () => {
+      setDialogOpen(!dialogOpen)
+  
+    }
+  
+    const handleDisableFilter = () => {
+      dispatch(setFilteredReqDataRequested(false));
+      setDialogOpen(false);
+    }
   return (
     <>
       <ToastContainer />
-      <ComponentTitle title="Requirements">
-        <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={refreshData}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => {
-            setDrawerOpen(true);
-            ToastService.info("Opening new requirement form");
-          }}
-        >
-          Post New Requirement
-        </Button>
-      </ComponentTitle>
+
+          <Stack direction="row" alignItems="center" spacing={2}
+              sx={{
+                flexWrap: 'wrap',
+                mb: 3,
+                justifyContent: 'space-between',
+                p: 2,
+                backgroundColor: '#f9f9f9',
+                borderRadius: 2,
+                boxShadow: 1,
+      
+              }}>
+      
+              <Typography variant='h6' color='primary'>Requirements Management</Typography>
+      
+              <DateRangeFilter component="Requirement"/>
+      
+              <Button
+                variant="text"
+                startIcon={<Refresh />}
+                onClick={refreshData}
+                disabled={loading}
+                sx={{ mr: 1 }}
+              >
+                {/* Refresh */}
+              </Button>
+              <Button
+                variant="text"
+                color="primary"
+      
+      
+                onClick={() => {
+                  setDrawerOpen(true);
+                  ToastService.info("Opening new requirement form");
+                }}
+              >
+                 Post New Requirement
+              </Button>
+            </Stack>
       
       {loading && data.length === 0 ? (
         <Box sx={{ p: 3 }}>
@@ -700,7 +740,8 @@ const Requirements = () => {
         </Box>
       ) : (
         <DataTable
-          data={processedData}
+          //data={processedData}
+          data={isFilteredDataRequested ? filteredRequirementList : processedData  || []} 
           columns={columns}
           title=""
           loading={loading}
