@@ -20,7 +20,6 @@ const AllInterviews = () => {
     try {
       setLoading(true);
       const response = await httpService.get("/candidate/allscheduledinterviews");
-      // Add temporary IDs if not present
       const dataWithIds = response.data.map((item, index) => ({
         ...item,
         interviewId: item.interviewId || `temp-${index + 1}`
@@ -28,26 +27,67 @@ const AllInterviews = () => {
       setInterviews(dataWithIds || []);
     } catch (error) {
       console.error("Error fetching interviews:", error);
-      ToastService.error("Failed to load interviews");
+      showSnackbar("Failed to load interviews", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (row) => {
-    ToastService.info(`Editing interview for ${row.candidateFullName}`);
-    // Implement your edit logic here
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity
+    });
   };
 
-  const handleDelete = async (row) => {
+  const handleEditClick = (interview) => {
+    setCurrentInterview(interview);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (interview) => {
+    setInterviewToDelete(interview);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleEditSubmit = async (event) => {
+    console.log(currentInterview);
+    event.preventDefault();
+    try {
+      const toastId = ToastService.loading("Updating interview...");
+      await httpService.put(
+        `/candidate/interview-update/${currentInterview.userId}/${currentInterview.candidateId}`,
+        currentInterview
+      );
+      await fetchInterviews();
+      ToastService.update(toastId, "Interview updated successfully", "success");
+      setEditDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating interview:", error);
+      showSnackbar("Failed to update interview", "error");
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
       const toastId = ToastService.loading("Deleting interview...");
-      await httpService.delete(`/interview/${row.interviewId}`);
+      await httpService.delete(`/interview/${interviewToDelete.interviewId}`);
       await fetchInterviews();
       ToastService.update(toastId, "Interview deleted successfully", "success");
     } catch (error) {
-      ToastService.error("Failed to delete interview");
+      console.error("Error deleting interview:", error);
+      showSnackbar("Failed to delete interview", "error");
+    } finally {
+      setDeleteConfirmOpen(false);
     }
+  };
+
+  const handleInputChange = (field, value) => {
+    setCurrentInterview(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const toggleRowExpansion = (interviewId) => {
@@ -95,7 +135,7 @@ const AllInterviews = () => {
         {
           label: "Edit Interview",
           icon: <Edit fontSize="small" />,
-          onClick: (row) => handleEdit(row),
+          onClick: (row) => handleEditClick(row),
           variant: "outlined",
           size: "small",
           color: "primary",
@@ -104,7 +144,7 @@ const AllInterviews = () => {
         {
           label: "Delete Interview",
           icon: <Delete fontSize="small" />,
-          onClick: (row) => handleDelete(row),
+          onClick: (row) => handleDeleteClick(row),
           variant: "outlined",
           size: "small",
           color: "error"
@@ -279,7 +319,7 @@ const AllInterviews = () => {
               <IconButton
                 size="small"
                 color="primary"
-                onClick={() => handleEdit(row)}
+                onClick={() => handleEditClick(row)}
                 disabled={loading}
               >
                 <Edit fontSize="small" />
@@ -289,7 +329,7 @@ const AllInterviews = () => {
               <IconButton
                 size="small"
                 color="error"
-                onClick={() => handleDelete(row)}
+                onClick={() => handleDeleteClick(row)}
                 disabled={loading}
               >
                 <Delete fontSize="small" />
@@ -351,11 +391,9 @@ const AllInterviews = () => {
         data={isFilteredDataRequested ?  filteredInterviewList : processedData || []}
         columns={generateColumns()}
         title="Scheduled Interviews"
-        //loading={loading}
         enableSelection={false}
         defaultSortColumn="interviewDateTime"
         defaultSortDirection="desc"
-        defaultRowsPerPage={10}
         customTableHeight="calc(100vh - 180px)"
         refreshData={fetchInterviews}
         primaryColor="#1976d2"
@@ -369,9 +407,138 @@ const AllInterviews = () => {
         enableRowExpansion={true}
         onRowExpandToggle={toggleRowExpansion}
       />
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Interview</DialogTitle>
+        <form onSubmit={handleEditSubmit}>
+          <DialogContent>
+            {currentInterview && (
+              <>
+                <TextField
+                  margin="dense"
+                  label="Candidate Name"
+                  fullWidth
+                  variant="outlined"
+                  value={currentInterview.candidateFullName || ''}
+                  onChange={(e) => handleInputChange('candidateFullName', e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Candidate Email"
+                  fullWidth
+                  variant="outlined"
+                  value={currentInterview.candidateEmailId || ''}
+                  onChange={(e) => handleInputChange('candidateEmailId', e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Interview Date & Time"
+                  type="datetime-local"
+                  fullWidth
+                  variant="outlined"
+                  value={currentInterview.interviewDateTime ? 
+                    new Date(currentInterview.interviewDateTime).toISOString().slice(0, 16) : ''}
+                  onChange={(e) => handleInputChange('interviewDateTime', e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  margin="dense"
+                  label="Duration (minutes)"
+                  type="number"
+                  fullWidth
+                  variant="outlined"
+                  value={currentInterview.duration || ''}
+                  onChange={(e) => handleInputChange('duration', e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  select
+                  margin="dense"
+                  label="Interview Level"
+                  fullWidth
+                  variant="outlined"
+                  value={currentInterview.interviewLevel || ''}
+                  onChange={(e) => handleInputChange('interviewLevel', e.target.value)}
+                  sx={{ mb: 2 }}
+                >
+                  {["EXTERNAL", "INTERNAL", "HR", "Managerial", "Final"].map((level) => (
+                    <MenuItem key={level} value={level}>
+                      {level}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  margin="dense"
+                  label="Status"
+                  fullWidth
+                  variant="outlined"
+                  value={currentInterview.interviewStatus || 'Scheduled'}
+                  onChange={(e) => handleInputChange('interviewStatus', e.target.value)}
+                >
+                  {["Scheduled", "Selected", "Cancelled", "Rescheduled",'Placed','Rejected','Non-Attendant'].map((status) => (
+                    <MenuItem key={status} value={status}>
+                      {status}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="contained" color="primary">
+              Save Changes
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          {interviewToDelete && (
+            <Typography>
+              Are you sure you want to delete the interview for {interviewToDelete.candidateFullName}?
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            variant="contained" 
+            color="error"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
 
 export default AllInterviews;
-

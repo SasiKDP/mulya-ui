@@ -26,9 +26,6 @@ import {
   Button,
   Divider,
   Menu,
-  Switch,
-  FormControlLabel,
-  Grid,
   CircularProgress,
   Collapse,
   useTheme,
@@ -39,7 +36,6 @@ import {
   FilterList,
   Clear,
   ViewColumn,
-  SaveAlt,
   MoreVert,
   Refresh,
   DarkMode,
@@ -48,21 +44,24 @@ import {
   ExpandMore,
   ExpandLess,
 } from "@mui/icons-material";
+import * as XLSX from "xlsx";
 
 // CSV Export function
 const exportToCsv = (data, columns) => {
   const headerRow = columns.map((column) => column.label).join(",");
-  const dataRows = data.map((row) => 
+  const dataRows = data.map((row) =>
     columns
       .map((column) => {
         if (column.key === "actions") return "";
         const value = row[column.key];
         // Handle special values that might break CSV format
-        return typeof value === "string" ? `"${value.replace(/"/g, '""')}"` : value;
+        return typeof value === "string"
+          ? `"${value.replace(/"/g, '""')}"`
+          : value;
       })
       .join(",")
   );
-  
+
   const csvContent = [headerRow, ...dataRows].join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -74,6 +73,34 @@ const exportToCsv = (data, columns) => {
   document.body.removeChild(link);
 };
 
+// Excel Export function
+const exportToExcel = (data, columns, fileName = "data_export") => {
+  // Filter visible columns and map to Excel headers
+  const visibleColumns = columns.filter(
+    (col) => col.visible !== false && col.key !== "actions"
+  );
+  const headers = visibleColumns.map((col) => col.label);
+
+  // Prepare data for Excel
+  const excelData = data.map((row) => {
+    const rowData = {};
+    visibleColumns.forEach((col) => {
+      rowData[col.label] = row[col.key];
+    });
+    return rowData;
+  });
+
+  // Create workbook and worksheet
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(excelData, { header: headers });
+
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+  // Generate Excel file and download
+  XLSX.writeFile(wb, `${fileName}.xlsx`);
+};
+
 const DataTable = ({
   data: initialData = [],
   columns: initialColumns = [],
@@ -82,7 +109,7 @@ const DataTable = ({
   enableSelection = true,
   defaultSortColumn,
   defaultSortDirection = "asc",
-  defaultRowsPerPage = 10,
+  defaultRowsPerPage = 15,
   customTableHeight,
   customTableWidth,
   onRowClick,
@@ -91,10 +118,10 @@ const DataTable = ({
   customStyles = {},
   primaryColor = "#1976d2",
   secondaryColor = "#f5f5f5",
-  uniqueId = "id", // Default to 'id' but can be customized via props
+  uniqueId = "id",
 }) => {
   const theme = useTheme();
-  
+
   // Parse initial columns to add additional properties if not present
   const processedColumns = useMemo(() => {
     return initialColumns.map((column) => ({
@@ -112,7 +139,9 @@ const DataTable = ({
   const [columns, setColumns] = useState(processedColumns);
   const [filteredData, setFilteredData] = useState(initialData);
   const [order, setOrder] = useState(defaultSortDirection);
-  const [orderBy, setOrderBy] = useState(defaultSortColumn || (columns[0]?.key || uniqueId));
+  const [orderBy, setOrderBy] = useState(
+    defaultSortColumn || columns[0]?.key || uniqueId
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
@@ -127,15 +156,17 @@ const DataTable = ({
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
 
   // Calculate or use provided dimensions
-  const tableHeight = customTableHeight || 600;
+  const tableHeight = customTableHeight || "100%";
   const tableWidth = customTableWidth || "100%";
-  
+
   // Base styles that can be customized
   const tableStyles = {
     headerBackground: darkMode ? alpha(primaryColor, 0.8) : primaryColor,
     headerText: "#ffffff",
     rowHover: darkMode ? alpha(primaryColor, 0.1) : alpha(primaryColor, 0.1),
-    selectedRow: darkMode ? alpha(primaryColor, 0.2) : alpha(primaryColor, 0.15),
+    selectedRow: darkMode
+      ? alpha(primaryColor, 0.2)
+      : alpha(primaryColor, 0.15),
     paper: {
       backgroundColor: darkMode ? "#333" : "#fff",
       color: darkMode ? "#fff" : "#333",
@@ -167,9 +198,11 @@ const DataTable = ({
   };
 
   const descendingComparator = (a, b, orderBy) => {
-    const aVal = a[orderBy] === null || a[orderBy] === undefined ? "" : a[orderBy];
-    const bVal = b[orderBy] === null || b[orderBy] === undefined ? "" : b[orderBy];
-    
+    const aVal =
+      a[orderBy] === null || a[orderBy] === undefined ? "" : a[orderBy];
+    const bVal =
+      b[orderBy] === null || b[orderBy] === undefined ? "" : b[orderBy];
+
     if (bVal < aVal) return -1;
     if (bVal > aVal) return 1;
     return 0;
@@ -207,7 +240,7 @@ const DataTable = ({
   const toggleFilters = () => {
     setShowFilters(!showFilters);
   };
-  
+
   const toggleAdvancedFilters = () => {
     setAdvancedFiltersOpen(!advancedFiltersOpen);
   };
@@ -223,7 +256,7 @@ const DataTable = ({
 
   const handleCheckboxClick = (event, id) => {
     event.stopPropagation();
-    
+
     const selectedIndex = selectedRows.indexOf(id);
     let newSelected = [];
 
@@ -270,8 +303,18 @@ const DataTable = ({
     setDensePadding(!densePadding);
   };
 
-  const handleExportData = () => {
-    exportToCsv(filteredData, columns.filter(col => col.visible !== false));
+  const handleExportData = (format = "csv") => {
+    if (format === "csv") {
+      exportToCsv(
+        filteredData,
+        columns.filter((col) => col.visible !== false)
+      );
+    } else {
+      exportToExcel(
+        filteredData,
+        columns.filter((col) => col.visible !== false)
+      );
+    }
     handleOptionsMenuClose();
   };
 
@@ -285,7 +328,7 @@ const DataTable = ({
     setSelectedRows([]);
     setColumns(processedColumns);
     setOrder(defaultSortDirection);
-    setOrderBy(defaultSortColumn || (columns[0]?.key || uniqueId));
+    setOrderBy(defaultSortColumn || columns[0]?.key || uniqueId);
     setPage(0);
     setRowsPerPage(defaultRowsPerPage);
     setDarkMode(false);
@@ -314,22 +357,28 @@ const DataTable = ({
 
     // Filter functionality
     Object.keys(filters).forEach((key) => {
-      if (filters[key] !== "" && filters[key] !== null && filters[key] !== undefined) {
+      if (
+        filters[key] !== "" &&
+        filters[key] !== null &&
+        filters[key] !== undefined
+      ) {
         result = result.filter((row) => {
           const rowValue = row[key];
           const filterValue = filters[key];
-          
+
           if (rowValue === null || rowValue === undefined) return false;
-          
+
           if (typeof rowValue === "number") {
             return rowValue === Number(filterValue);
           }
-          
+
           if (Array.isArray(filterValue)) {
             return filterValue.includes(String(rowValue).toLowerCase());
           }
-          
-          return String(rowValue).toLowerCase().includes(String(filterValue).toLowerCase());
+
+          return String(rowValue)
+            .toLowerCase()
+            .includes(String(filterValue).toLowerCase());
         });
       }
     });
@@ -343,17 +392,17 @@ const DataTable = ({
 
   // Find column options for filtering if not explicitly provided
   const getColumnFilterOptions = (columnKey) => {
-    const column = columns.find(col => col.key === columnKey);
-    
+    const column = columns.find((col) => col.key === columnKey);
+
     if (column.options && column.options.length > 0) {
       return column.options;
     }
-    
+
     // Dynamically generate options from data
-    const uniqueValues = [...new Set(data.map(row => row[columnKey]))].filter(
-      val => val !== null && val !== undefined
+    const uniqueValues = [...new Set(data.map((row) => row[columnKey]))].filter(
+      (val) => val !== null && val !== undefined
     );
-    
+
     return uniqueValues.sort();
   };
 
@@ -362,75 +411,88 @@ const DataTable = ({
 
   return (
     <Box sx={{ width: tableWidth }}>
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          width: "100%", 
-          mb: 2, 
+      <Paper
+        elevation={3}
+        sx={{
+          width: "100%",
+          mb: 2,
           backgroundColor: tableStyles.paper.backgroundColor,
           color: tableStyles.paper.color,
-          transition: 'all 0.3s ease',
+          transition: "all 0.3s ease",
         }}
       >
-        <Toolbar 
-          sx={{ 
-            pl: { sm: 2 }, 
+        <Toolbar
+          sx={{
+            pl: { sm: 2 },
             pr: { xs: 1, sm: 1 },
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 1
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
           }}
           variant="dense"
         >
-          <Typography 
-            sx={{ 
-              flex: "1 1 auto", 
-              color: tableStyles.paper.color 
-            }} 
-            variant="h6" 
+          <Typography
+            sx={{
+              flex: "1 1 auto",
+              color: tableStyles.paper.color,
+            }}
+            variant="h6"
             component="div"
           >
-            {title} {selectedRows.length > 0 && (
-              <Chip 
-                label={`${selectedRows.length} selected`} 
-                size="small" 
-                color="primary" 
-                sx={{ ml: 1 }} 
+            {title}{" "}
+            {selectedRows.length > 0 && (
+              <Chip
+                label={`${selectedRows.length} selected`}
+                size="small"
+                color="primary"
+                sx={{ ml: 1 }}
               />
             )}
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
             <TextField
               variant="outlined"
               size="small"
-              placeholder="Search..."
               value={searchQuery}
               onChange={handleSearch}
-              sx={{ 
-                width: { xs: '100%', sm: 200 },
+              sx={{
+                width: { xs: "100%", sm: 200 },
                 "& .MuiOutlinedInput-root": {
                   color: tableStyles.paper.color,
-                  "& fieldset": { borderColor: alpha(tableStyles.paper.color, 0.5) },
-                  "&:hover fieldset": { borderColor: alpha(tableStyles.paper.color, 0.7) },
-                  "&.Mui-focused fieldset": { borderColor: primaryColor }
+                  "& fieldset": {
+                    borderColor: alpha(tableStyles.paper.color, 0.5),
+                  },
+                  "&:hover fieldset": {
+                    borderColor: alpha(tableStyles.paper.color, 0.7),
+                  },
+                  "&.Mui-focused fieldset": { borderColor: primaryColor },
                 },
                 "& .MuiInputLabel-root": {
-                  color: alpha(tableStyles.paper.color, 0.7)
-                }
+                  color: alpha(tableStyles.paper.color, 0.7),
+                },
               }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Search sx={{ color: alpha(tableStyles.paper.color, 0.7) }} />
+                    <Search
+                      sx={{ color: alpha(tableStyles.paper.color, 0.7) }}
+                    />
                   </InputAdornment>
                 ),
                 endAdornment: searchQuery && (
                   <InputAdornment position="end">
-                    <IconButton 
-                      aria-label="clear search" 
-                      onClick={clearSearch} 
-                      edge="end" 
+                    <IconButton
+                      aria-label="clear search"
+                      onClick={clearSearch}
+                      edge="end"
                       size="small"
                       sx={{ color: alpha(tableStyles.paper.color, 0.7) }}
                     >
@@ -442,20 +504,28 @@ const DataTable = ({
             />
 
             <Tooltip title="Show/Hide Filters">
-              <IconButton 
+              <IconButton
                 onClick={toggleFilters}
                 aria-label="filter list"
                 color={showFilters ? "primary" : "default"}
-                sx={{ color: showFilters ? primaryColor : alpha(tableStyles.paper.color, 0.7) }}
+                sx={{
+                  color: showFilters
+                    ? primaryColor
+                    : alpha(tableStyles.paper.color, 0.7),
+                }}
               >
-                <Badge color="primary" variant="dot" invisible={Object.keys(filters).length === 0}>
+                <Badge
+                  color="primary"
+                  variant="dot"
+                  invisible={Object.keys(filters).length === 0}
+                >
                   <FilterList />
                 </Badge>
               </IconButton>
             </Tooltip>
 
             <Tooltip title="Column Visibility">
-              <IconButton 
+              <IconButton
                 onClick={handleColumnVisibilityMenuOpen}
                 aria-label="column visibility"
                 sx={{ color: alpha(tableStyles.paper.color, 0.7) }}
@@ -466,7 +536,7 @@ const DataTable = ({
 
             {refreshData && (
               <Tooltip title="Refresh Data">
-                <IconButton 
+                <IconButton
                   onClick={refreshData}
                   aria-label="refresh data"
                   sx={{ color: alpha(tableStyles.paper.color, 0.7) }}
@@ -477,7 +547,7 @@ const DataTable = ({
             )}
 
             <Tooltip title="Table Options">
-              <IconButton 
+              <IconButton
                 onClick={handleOptionsMenuOpen}
                 aria-label="table options"
                 sx={{ color: alpha(tableStyles.paper.color, 0.7) }}
@@ -497,23 +567,23 @@ const DataTable = ({
                   maxHeight: 300,
                   width: 200,
                   backgroundColor: darkMode ? "#444" : "#fff",
-                  color: darkMode ? "#fff" : "#333"
-                }
+                  color: darkMode ? "#fff" : "#333",
+                },
               }}
             >
               {columns.map((column) => (
-                <MenuItem 
-                  key={column.key} 
+                <MenuItem
+                  key={column.key}
                   onClick={() => toggleColumnVisibility(column.key)}
                   sx={{
                     backgroundColor: darkMode ? "#444" : "#fff",
-                    color: darkMode ? "#fff" : "#333"
+                    color: darkMode ? "#fff" : "#333",
                   }}
                 >
-                  <Checkbox 
-                    checked={column.visible !== false} 
-                    color="primary" 
-                    size="small" 
+                  <Checkbox
+                    checked={column.visible !== false}
+                    color="primary"
+                    size="small"
                   />
                   {column.label}
                 </MenuItem>
@@ -530,16 +600,22 @@ const DataTable = ({
                 sx: {
                   width: 220,
                   backgroundColor: darkMode ? "#444" : "#fff",
-                  color: darkMode ? "#fff" : "#333"
-                }
+                  color: darkMode ? "#fff" : "#333",
+                },
               }}
             >
               <MenuItem onClick={toggleDarkMode}>
                 <ListItemIcon>
                   {darkMode ? (
-                    <LightMode fontSize="small" sx={{ color: darkMode ? "#fff" : "#333" }} />
+                    <LightMode
+                      fontSize="small"
+                      sx={{ color: darkMode ? "#fff" : "#333" }}
+                    />
                   ) : (
-                    <DarkMode fontSize="small" sx={{ color: darkMode ? "#fff" : "#333" }} />
+                    <DarkMode
+                      fontSize="small"
+                      sx={{ color: darkMode ? "#fff" : "#333" }}
+                    />
                   )}
                 </ListItemIcon>
                 {darkMode ? "Light Mode" : "Dark Mode"}
@@ -551,86 +627,112 @@ const DataTable = ({
                 Compact Mode
               </MenuItem>
               <Divider />
-              <MenuItem onClick={handleExportData}>
+              <MenuItem onClick={() => handleExportData("csv")}>
                 <ListItemIcon>
-                  <CloudDownload fontSize="small" sx={{ color: darkMode ? "#fff" : "#333" }} />
+                  <CloudDownload
+                    fontSize="small"
+                    sx={{ color: darkMode ? "#fff" : "#333" }}
+                  />
                 </ListItemIcon>
                 Export to CSV
+              </MenuItem>
+              <MenuItem onClick={() => handleExportData("excel")}>
+                <ListItemIcon>
+                  <CloudDownload
+                    fontSize="small"
+                    sx={{ color: darkMode ? "#fff" : "#333" }}
+                  />
+                </ListItemIcon>
+                Export to Excel
               </MenuItem>
               <Divider />
               <MenuItem onClick={resetAllSettings}>
                 <ListItemIcon>
-                  <Refresh fontSize="small" sx={{ color: darkMode ? "#fff" : "#333" }} />
+                  <Refresh
+                    fontSize="small"
+                    sx={{ color: darkMode ? "#fff" : "#333" }}
+                  />
                 </ListItemIcon>
                 Reset All Settings
               </MenuItem>
             </Menu>
-
           </Box>
         </Toolbar>
 
         {/* Basic Filters */}
         <Collapse in={showFilters}>
-          <Box 
-            sx={{ 
-              p: 2, 
-              display: "flex", 
-              flexWrap: "wrap", 
+          <Box
+            sx={{
+              p: 2,
+              display: "flex",
+              flexWrap: "wrap",
               gap: 2,
               borderBottom: 1,
-              borderColor: 'divider',
-              backgroundColor: darkMode ? alpha(primaryColor, 0.05) : alpha(primaryColor, 0.03),
+              borderColor: "divider",
+              backgroundColor: darkMode
+                ? alpha(primaryColor, 0.05)
+                : alpha(primaryColor, 0.03),
             }}
           >
             {columns
               .filter((col) => col.filterable && col.visible !== false)
               .slice(0, advancedFiltersOpen ? columns.length : 3) // Show limited filters unless advanced is open
               .map((column) => (
-                <FormControl 
-                  key={column.key} 
-                  size="small" 
-                  sx={{ 
+                <FormControl
+                  key={column.key}
+                  size="small"
+                  sx={{
                     minWidth: 150,
                     "& .MuiInputLabel-root": {
-                      color: alpha(tableStyles.paper.color, 0.7)
+                      color: alpha(tableStyles.paper.color, 0.7),
                     },
                     "& .MuiOutlinedInput-root": {
                       color: tableStyles.paper.color,
-                      "& fieldset": { borderColor: alpha(tableStyles.paper.color, 0.5) },
-                      "&:hover fieldset": { borderColor: alpha(tableStyles.paper.color, 0.7) },
-                      "&.Mui-focused fieldset": { borderColor: primaryColor }
+                      "& fieldset": {
+                        borderColor: alpha(tableStyles.paper.color, 0.5),
+                      },
+                      "&:hover fieldset": {
+                        borderColor: alpha(tableStyles.paper.color, 0.7),
+                      },
+                      "&.Mui-focused fieldset": { borderColor: primaryColor },
                     },
                   }}
                 >
-                  <InputLabel id={`filter-${column.key}-label`}>{column.label}</InputLabel>
+                  <InputLabel id={`filter-${column.key}-label`}>
+                    {column.label}
+                  </InputLabel>
                   {column.type === "select" ? (
                     <Select
                       labelId={`filter-${column.key}-label`}
                       id={`filter-${column.key}`}
                       value={filters[column.key] || ""}
                       label={column.label}
-                      onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange(column.key, e.target.value)
+                      }
                       MenuProps={{
                         PaperProps: {
                           sx: {
                             maxHeight: 300,
                             backgroundColor: darkMode ? "#444" : "#fff",
                             color: darkMode ? "#fff" : "#333",
-                          }
-                        }
+                          },
+                        },
                       }}
                     >
-                      <MenuItem value=""><em>None</em></MenuItem>
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
                       {getColumnFilterOptions(column.key).map((option) => (
-                        <MenuItem 
-                          key={option} 
+                        <MenuItem
+                          key={option}
                           value={option}
                           sx={{
                             backgroundColor: darkMode ? "#444" : "#fff",
                             color: darkMode ? "#fff" : "#333",
                             "&:hover": {
-                              backgroundColor: darkMode ? "#555" : "#f5f5f5"
-                            }
+                              backgroundColor: darkMode ? "#555" : "#f5f5f5",
+                            },
                           }}
                         >
                           {option}
@@ -643,7 +745,9 @@ const DataTable = ({
                       label={column.label}
                       type="date"
                       value={filters[column.key] || ""}
-                      onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange(column.key, e.target.value)
+                      }
                       size="small"
                       InputLabelProps={{ shrink: true }}
                     />
@@ -653,40 +757,45 @@ const DataTable = ({
                       label={column.label}
                       type={column.type}
                       value={filters[column.key] || ""}
-                      onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                      onChange={(e) =>
+                        handleFilterChange(column.key, e.target.value)
+                      }
                       size="small"
                     />
                   )}
                 </FormControl>
               ))}
-            
-            <Box sx={{ display: "flex", alignItems: "center", ml: 'auto' }}>
-              <Button 
-                size="small" 
+
+            <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+              <Button
+                size="small"
                 onClick={clearAllFilters}
                 startIcon={<Clear />}
                 variant="outlined"
-                sx={{ 
+                sx={{
                   ml: 1,
                   borderColor: alpha(tableStyles.paper.color, 0.5),
                   color: tableStyles.paper.color,
                   "&:hover": {
                     borderColor: alpha(tableStyles.paper.color, 0.7),
-                    backgroundColor: alpha(tableStyles.paper.color, 0.05)
-                  }
+                    backgroundColor: alpha(tableStyles.paper.color, 0.05),
+                  },
                 }}
               >
                 Clear
               </Button>
-              
-              {columns.filter(col => col.filterable && col.visible !== false).length > 3 && (
+
+              {columns.filter((col) => col.filterable && col.visible !== false)
+                .length > 3 && (
                 <Button
                   size="small"
                   onClick={toggleAdvancedFilters}
-                  endIcon={advancedFiltersOpen ? <ExpandLess /> : <ExpandMore />}
-                  sx={{ 
+                  endIcon={
+                    advancedFiltersOpen ? <ExpandLess /> : <ExpandMore />
+                  }
+                  sx={{
                     ml: 1,
-                    color: tableStyles.paper.color
+                    color: tableStyles.paper.color,
                   }}
                 >
                   {advancedFiltersOpen ? "Less" : "More"}
@@ -697,42 +806,43 @@ const DataTable = ({
         </Collapse>
 
         {/* Main Table */}
-        <TableContainer 
-          sx={{ 
-            height: tableHeight, 
-            width: tableWidth, 
+        <TableContainer
+          sx={{
+            height: tableHeight,
+            width: tableWidth,
             overflow: "auto",
             position: "relative",
+            maxHeight: "calc(100vh - 70px)", // Adjust this value as needed
           }}
         >
           {loading && (
-            <Box 
-              sx={{ 
-                position: "absolute", 
-                top: 0, 
-                left: 0, 
-                right: 0, 
-                bottom: 0, 
-                display: "flex", 
-                alignItems: "center", 
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: alpha(tableStyles.paper.backgroundColor, 0.7),
-                zIndex: 10
+                zIndex: 10,
               }}
             >
               <CircularProgress color="primary" />
             </Box>
           )}
-          
-          <Table 
-            stickyHeader 
-            aria-label="data table" 
+
+          <Table
+            stickyHeader
+            aria-label="data table"
             size={densePadding ? "small" : "medium"}
           >
             <TableHead>
               <TableRow>
                 {enableSelection && (
-                  <TableCell 
+                  <TableCell
                     padding="checkbox"
                     sx={{
                       backgroundColor: tableStyles.headerBackground,
@@ -743,44 +853,54 @@ const DataTable = ({
                   >
                     <Checkbox
                       color="primary"
-                      indeterminate={selectedRows.length > 0 && selectedRows.length < filteredData.length}
-                      checked={filteredData.length > 0 && selectedRows.length === filteredData.length}
+                      indeterminate={
+                        selectedRows.length > 0 &&
+                        selectedRows.length < filteredData.length
+                      }
+                      checked={
+                        filteredData.length > 0 &&
+                        selectedRows.length === filteredData.length
+                      }
                       onChange={handleSelectAllClick}
                       sx={{ color: tableStyles.headerText }}
                     />
                   </TableCell>
                 )}
-                
+
                 {visibleColumns.map((column) => (
                   <TableCell
                     key={column.key}
                     sortDirection={orderBy === column.key ? order : false}
                     align={column.align || "left"}
-                    style={{ 
+                    style={{
                       minWidth: column.width,
                       width: column.width,
-                      position: column.key === "actions" ? "inherit" : "inherit",
-                      right: column.key === "actions" ? "auto": "auto",
-                      zIndex: column.key === "actions" ? 1 : 1,
+                      position: "sticky", // Make all headers sticky
+                      top: 0,
+                      zIndex: 2,
+                      backgroundColor: tableStyles.headerBackground,
                     }}
                     sx={{
-                      backgroundColor: tableStyles.headerBackground,
                       color: tableStyles.headerText,
                       whiteSpace: "nowrap",
-                      "& .MuiTableSortLabel-root": { 
-                        color: `${tableStyles.headerText} !important`, 
-                        "&:hover": { color: "rgba(255, 255, 255, 0.7) !important" }, 
-                        "&.Mui-active": { color: `${tableStyles.headerText} !important` } 
+                      "& .MuiTableSortLabel-root": {
+                        color: `${tableStyles.headerText} !important`,
+                        "&:hover": {
+                          color: "rgba(255, 255, 255, 0.7) !important",
+                        },
+                        "&.Mui-active": {
+                          color: `${tableStyles.headerText} !important`,
+                        },
                       },
-                      "& .MuiTableSortLabel-icon": { 
-                        color: "rgba(255, 255, 255, 0.7) !important" 
+                      "& .MuiTableSortLabel-icon": {
+                        color: "rgba(255, 255, 255, 0.7) !important",
                       },
                     }}
                   >
                     {column.sortable ? (
-                      <TableSortLabel 
-                        active={orderBy === column.key} 
-                        direction={orderBy === column.key ? order : "asc"} 
+                      <TableSortLabel
+                        active={orderBy === column.key}
+                        direction={orderBy === column.key ? order : "asc"}
                         onClick={() => handleSort(column.key)}
                       >
                         {column.label}
@@ -792,6 +912,7 @@ const DataTable = ({
                 ))}
               </TableRow>
             </TableHead>
+
             <TableBody>
               {filteredData
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -799,7 +920,7 @@ const DataTable = ({
                   const rowId = row[uniqueId];
                   const isItemSelected = isRowSelected(rowId);
                   const isExpanded = expandedRow === rowId;
-                  
+
                   return (
                     <React.Fragment key={rowId}>
                       <TableRow
@@ -825,8 +946,9 @@ const DataTable = ({
                         {enableSelection && (
                           <TableCell
                             padding="checkbox"
-                            sx={{ 
-                              backgroundColor: tableStyles.paper.backgroundColor,
+                            sx={{
+                              backgroundColor:
+                                tableStyles.paper.backgroundColor,
                               position: "sticky",
                               left: 0,
                               zIndex: 2,
@@ -835,44 +957,51 @@ const DataTable = ({
                             <Checkbox
                               checked={isItemSelected}
                               color="primary"
-                              onClick={(event) => handleCheckboxClick(event, rowId)}
+                              onClick={(event) =>
+                                handleCheckboxClick(event, rowId)
+                              }
                             />
                           </TableCell>
                         )}
-                        
+
                         {visibleColumns.map((column) => (
-                          <TableCell 
+                          <TableCell
                             key={`${rowId}-${column.key}`}
                             align={column.align || "left"}
                             sx={{
-                              backgroundColor: column.key === "actions" ? tableStyles.paper.backgroundColor : "inherit",
-                              position: column.key === "actions" ? "sticky" : "inherit",
-                              right: column.key === "actions" ? 0 : "auto",
-                              zIndex: column.key === "actions" ? 2 : 0,
+                              backgroundColor: "inherit",
+                              position: "inherit", // Regular positioning for body cells
+                              zIndex: 0,
                             }}
                           >
-                            {column.render ? column.render(row) : (
-                              row[column.key] !== null && row[column.key] !== undefined ? 
-                                row[column.key] : 
-                                "-"
-                            )}
+                            {column.render
+                              ? column.render(row)
+                              : row[column.key] !== null &&
+                                row[column.key] !== undefined
+                              ? row[column.key]
+                              : "-"}
                           </TableCell>
                         ))}
                       </TableRow>
-                      
+
                       {/* Expandable row content */}
                       {row.expandContent && (
                         <TableRow>
-                          <TableCell 
-                            colSpan={visibleColumns.length + (enableSelection ? 1 : 0)}
+                          <TableCell
+                            colSpan={
+                              visibleColumns.length + (enableSelection ? 1 : 0)
+                            }
                             style={{ paddingBottom: 0, paddingTop: 0 }}
                           >
-                            <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                            <Collapse
+                              in={isExpanded}
+                              timeout="auto"
+                              unmountOnExit
+                            >
                               <Box sx={{ p: 2 }}>
-                                {typeof row.expandContent === 'function' ? 
-                                  row.expandContent(row) : 
-                                  row.expandContent
-                                }
+                                {typeof row.expandContent === "function"
+                                  ? row.expandContent(row)
+                                  : row.expandContent}
                               </Box>
                             </Collapse>
                           </TableCell>
@@ -881,26 +1010,12 @@ const DataTable = ({
                     </React.Fragment>
                   );
                 })}
-                
-              {filteredData.length === 0 && (
-                <TableRow>
-                  <TableCell 
-                    align="center" 
-                    colSpan={visibleColumns.length + (enableSelection ? 1 : 0)}
-                    sx={{ py: 6 }}
-                  >
-                    <Typography variant="body1" color="textSecondary">
-                      No data found
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </TableContainer>
 
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50, 100]}
+          rowsPerPageOptions={[20, 40, 60, 80, 100]}
           component="div"
           count={filteredData.length}
           rowsPerPage={rowsPerPage}
@@ -909,13 +1024,14 @@ const DataTable = ({
           onRowsPerPageChange={handleChangeRowsPerPage}
           sx={{
             color: tableStyles.paper.color,
-            "& .MuiTablePagination-selectIcon": {color: tableStyles.paper.color,
+            "& .MuiTablePagination-selectIcon": {
+              color: tableStyles.paper.color,
             },
             "& .MuiTablePagination-actions": {
               "& .MuiIconButton-root": {
                 color: alpha(tableStyles.paper.color, 0.7),
-              }
-            }
+              },
+            },
           }}
         />
       </Paper>
@@ -925,7 +1041,7 @@ const DataTable = ({
 
 // Define a component for ListItemIcon since it wasn't imported
 const ListItemIcon = ({ children, ...props }) => (
-  <Box sx={{ mr: 2, display: 'inline-flex', minWidth: '24px', ...props }}>
+  <Box sx={{ mr: 2, display: "inline-flex", minWidth: "24px", ...props }}>
     {children}
   </Box>
 );
