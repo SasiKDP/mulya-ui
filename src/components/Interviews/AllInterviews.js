@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Box, IconButton, Tooltip, Skeleton, Chip } from "@mui/material";
+import { Box, IconButton, Tooltip, Skeleton, Chip, Typography, Stack } from "@mui/material";
 import { Visibility, Edit, Delete } from "@mui/icons-material";
 import DataTable from "../muiComponents/DataTabel";
 import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent"; // Make sure this component exists
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { useSelector } from "react-redux";
 
 const AllInterviews = () => {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState({});
+
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
+  const {filteredInterviewList} = useSelector((state) => state.interview);
 
   const fetchInterviews = async () => {
     try {
@@ -133,11 +138,11 @@ const AllInterviews = () => {
         type: "text",
         sortable: true,
         width: 80,
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={60} height={24} />
-        ) : (
-          `#${row.interviewId.split('-').pop()}`
-        )
+        // render: (row) => loading ? (
+        //   <Skeleton variant="text" width={60} height={24} />
+        // ) : (
+        //   `#${row.interviewId.split('-').pop()}`
+        // )
       },
       {
         key: "candidateFullName",
@@ -324,8 +329,26 @@ const AllInterviews = () => {
 
   return (
     <>
+    
+            <Stack direction="row" alignItems="center" spacing={2}
+              sx={{
+                flexWrap: 'wrap',
+                mb: 3,
+                justifyContent: 'space-between',
+                p: 2,
+                backgroundColor: '#f9f9f9',
+                borderRadius: 2,
+                boxShadow: 1,
+      
+              }}>
+      
+              <Typography variant='h6' color='primary'>Interviews Management</Typography>
+      
+              <DateRangeFilter component="Interviews"/>
+            </Stack>
       <DataTable
-        data={processedData}
+        // data={processedData}
+        data={isFilteredDataRequested ?  filteredInterviewList : processedData || []}
         columns={generateColumns()}
         title="Scheduled Interviews"
         //loading={loading}

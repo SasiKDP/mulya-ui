@@ -3,38 +3,60 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import httpService from '../../Services/httpService';
 import DataTable from '../muiComponents/DataTabel';
-import { 
-  Box, 
-  Typography, 
-  Tooltip, 
-  IconButton, 
-  Dialog, 
-  DialogActions, 
-  DialogContent, 
-  DialogContentText, 
-  DialogTitle, 
-  Button, 
-  Skeleton, 
-  Chip
+
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+
+import {
+  Box,
+  Typography,
+  Tooltip,
+  IconButton,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
+  Skeleton,
+  Chip,
+  Badge,
+  Stack
 } from '@mui/material';
-import { 
-  Edit, 
-  Delete, 
-  Visibility, 
-  Download, 
-  Refresh, 
+import {
+  Edit,
+  Delete,
+  Visibility,
+  Download,
+  Refresh,
   Add,
-  FilterList, 
-  Person, 
-  Work, 
-  School, 
-  ContactPhone, 
-  Code
+  FilterList,
+  Person,
+  Work,
+  School,
+  ContactPhone,
+  Code,
+  CancelOutlined,
+  Cancel,
+  SyncAlt,
+  FilterAlt,
+  CancelSharp,
+  Search,
+
 } from '@mui/icons-material';
 import ToastService from '../../Services/toastService';
 import BenchForm from './BenchForm';
 import CandidateDetails from './CandidateDetails';
 import ComponentTitle from "../../utils/ComponentTitle";
+import { useDispatch, useSelector } from 'react-redux';
+import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
+import { DatePicker, DateRangeIcon, DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import DateRangeFilter, { } from '../muiComponents/DateRangeFilter';
+import dayjs from 'dayjs';
+import { Minus, User2Icon } from 'lucide-react';
+import { formatDate, validateDateRange } from '../../utils/validateDateRange';
+
 
 const BenchList = () => {
   const [benchData, setBenchData] = useState([]);
@@ -47,11 +69,19 @@ const BenchList = () => {
   const [candidateToDelete, setCandidateToDelete] = useState(null);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
 
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { isFilteredDataRequested, filteredBenchList } = useSelector((state) => state.bench);
+  const dispatch = useDispatch();
+
+
   const fetchBenchList = async () => {
     try {
       setLoading(true);
       ToastService.info("Loading bench candidates...");
-  
+
       const response = await httpService.get('/candidate/bench/getBenchList');
       setBenchData(response.data || []);
       ToastService.success(`Loaded ${response.data?.length || 0} bench candidates`);
@@ -62,7 +92,7 @@ const BenchList = () => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchBenchList();
   }, []);
@@ -102,7 +132,7 @@ const BenchList = () => {
       // Get full candidate details including skills
       const response = await httpService.get(`/candidate/bench/${row.id}`);
       const candidateData = response.data;
-      
+
       // Format candidate data for the form
       const formData = {
         id: candidateData.id,
@@ -116,7 +146,7 @@ const BenchList = () => {
         referredBy: candidateData.referredBy || "",
         resumeAvailable: candidateData.resumeAvailable
       };
-      
+
       setEditData(formData);
       setIsEditModalOpen(true);
       ToastService.success(`Ready to edit ${row.fullName}`);
@@ -148,7 +178,7 @@ const BenchList = () => {
   const downloadResume = async (candidateId, candidateName) => {
     try {
       const toastId = ToastService.loading("Preparing resume download...");
-      
+
       // Make the request with proper response type for file download
       const response = await httpService.get(`/candidate/bench/download-resume/${candidateId}`, {
         responseType: 'blob',
@@ -156,16 +186,16 @@ const BenchList = () => {
           'Accept': 'application/pdf,application/octet-stream'
         }
       });
-  
+
       // Verify we received valid data
       if (!(response.data instanceof Blob) || response.data.size === 0) {
         throw new Error("Invalid or empty file received");
       }
-  
+
       // Create a blob URL for the file
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
-      
+
       // Get filename from headers if available, otherwise construct one
       let filename = `${candidateName.replace(/\s+/g, '_')}_Resume.pdf`;
       const contentDisposition = response.headers['content-disposition'];
@@ -175,24 +205,24 @@ const BenchList = () => {
           filename = fileNameMatch[1];
         }
       }
-      
+
       // Create and trigger download link
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
-      
+
       // Clean up resources
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(link);
       }, 100);
-  
+
       ToastService.update(toastId, "Resume downloaded successfully!", "success");
     } catch (error) {
       console.error("Download error:", error);
-      
+
       // More specific error messages based on the error type
       if (error.response) {
         if (error.response.status === 404) {
@@ -224,66 +254,66 @@ const BenchList = () => {
   };
 
   const generateColumns = (loading = false) => [
-    { 
-      key: 'id', 
-      label: 'Bench ID', 
-      type: 'text', 
-      sortable: true, 
-      filterable: true, 
+    {
+      key: 'id',
+      label: 'Bench ID',
+      type: 'text',
+      sortable: true,
+      filterable: true,
       width: 120,
       render: loading ? () => <Skeleton variant="text" width={60} /> : undefined
     },
-    { 
-      key: 'fullName', 
-      label: 'Full Name', 
-      type: 'text', 
-      sortable: true, 
-      filterable: true, 
+    {
+      key: 'fullName',
+      label: 'Full Name',
+      type: 'text',
+      sortable: true,
+      filterable: true,
       width: 180,
       render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
     },
-    { 
-      key: 'email', 
-      label: 'Email', 
-      type: 'text', 
-      sortable: true, 
-      filterable: true, 
+    {
+      key: 'email',
+      label: 'Email',
+      type: 'text',
+      sortable: true,
+      filterable: true,
       width: 220,
       render: loading ? () => <Skeleton variant="text" width={180} /> : undefined
     },
-    { 
-      key: 'contactNumber', 
-      label: 'Contact Number', 
-      type: 'text', 
-      sortable: true, 
-      filterable: true, 
+    {
+      key: 'contactNumber',
+      label: 'Contact Number',
+      type: 'text',
+      sortable: true,
+      filterable: true,
       width: 150,
       render: loading ? () => <Skeleton variant="text" width={100} /> : undefined
     },
-    { 
-      key: 'referredBy', 
-      label: 'Referred By', 
-      type: 'text', 
-      sortable: true, 
-      filterable: true, 
+    {
+      key: 'referredBy',
+      label: 'Referred By',
+      type: 'text',
+      sortable: true,
+      filterable: true,
       width: 180,
       render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
     },
-    { 
-      key: 'totalExperience', 
-      label: 'Total Exp (Yrs)', 
-      type: 'text', 
-      sortable: true, 
-      filterable: true, 
+    {
+      key: 'totalExperience',
+      label: 'Total Exp (Yrs)',
+      type: 'text',
+      sortable: true,
+      filterable: true,
       width: 150,
       render: loading ? () => <Skeleton variant="text" width={80} /> : undefined
     },
-    { 
-      key: 'relevantExperience', 
-      label: 'Rel Exp (Yrs)', 
-      type: 'text', 
-      sortable: true, 
-      filterable: true, 
+    {
+      key: 'relevantExperience',
+      label: 'Rel Exp (Yrs)',
+      type: 'text',
+      sortable: true,
+      filterable: true,
       width: 150,
       render: loading ? () => <Skeleton variant="text" width={80} /> : undefined
     },
@@ -307,26 +337,26 @@ const BenchList = () => {
               <Visibility fontSize="small" />
             </IconButton>
           </Tooltip>
-  
+
           <Tooltip title="Edit">
             <IconButton color="primary" size="small" onClick={() => handleEdit(row)}>
               <Edit fontSize="small" />
             </IconButton>
           </Tooltip>
-  
+
           <Tooltip title="Delete">
             <IconButton color="error" size="small" onClick={() => handleDelete(row)}>
               <Delete fontSize="small" />
             </IconButton>
           </Tooltip>
-  
+
           <Tooltip title={row.resumeAvailable ? "Download Resume" : "Resume not available"}>
             <span>
               <IconButton
                 color="success"
                 size="small"
                 onClick={() => row.resumeAvailable && downloadResume(row.id, row.fullName)}
-              
+
               >
                 <Download fontSize="small" />
               </IconButton>
@@ -337,30 +367,50 @@ const BenchList = () => {
     },
   ];
 
+
+
+
   return (
     <>
-      <ComponentTitle title="Bench Candidate Management">
+
+      <Stack direction="row" alignItems="center" spacing={2}
+        sx={{
+          flexWrap: 'wrap',
+          mb: 3,
+          justifyContent: 'space-between',
+          p: 2,
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          boxShadow: 1,
+
+        }}>
+
+        <Typography variant='h6' color='primary'>Bench Candidate Management</Typography>
+
+        <DateRangeFilter component="BenchList"/>
+
         <Button
-          variant="outlined"
+          variant="text"
           startIcon={<Refresh />}
           onClick={fetchBenchList}
           disabled={loading}
-          sx={{ mr: 2 }}
+          sx={{ mr: 1 }}
         >
-          Refresh
+          {/* Refresh */}
         </Button>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<Add />}
+        <Button
+          variant="text"
+          color="primary"
+
+
           onClick={() => handleOpenDrawer()}
         >
-          Add Candidate
+          <Add /> <User2Icon />
         </Button>
-      </ComponentTitle>
+      </Stack>
 
       <DataTable
-        data={benchData}
+        data={isFilteredDataRequested ? filteredBenchList : benchData || []}
         columns={generateColumns(loading)}
         pageLimit={20}
         title="Bench List"
@@ -390,8 +440,8 @@ const BenchList = () => {
       />
 
       {/* Edit Modal */}
-      <Dialog 
-        open={isEditModalOpen} 
+      <Dialog
+        open={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           ToastService.info("Edit cancelled");
@@ -402,8 +452,8 @@ const BenchList = () => {
         <DialogTitle>Edit Candidate</DialogTitle>
         <DialogContent>
           {editData && (
-            <BenchForm 
-              initialValues={editData} 
+            <BenchForm
+              initialValues={editData}
               onCancel={() => {
                 setIsEditModalOpen(false);
                 ToastService.info("Edit cancelled");
@@ -416,8 +466,8 @@ const BenchList = () => {
       </Dialog>
 
       {/* Add New Candidate Modal */}
-      <Dialog 
-        open={isAddFormOpen} 
+      <Dialog
+        open={isAddFormOpen}
         onClose={() => {
           setIsAddFormOpen(false);
           ToastService.info("Add new candidate cancelled");
@@ -426,7 +476,7 @@ const BenchList = () => {
         fullWidth
       >
         <DialogContent>
-          <BenchForm 
+          <BenchForm
             onCancel={() => {
               setIsAddFormOpen(false);
               ToastService.info("Add new candidate cancelled");
@@ -438,8 +488,8 @@ const BenchList = () => {
       </Dialog>
 
       {/* View Modal with Filter Controls */}
-      <Dialog 
-        open={isViewModalOpen} 
+      <Dialog
+        open={isViewModalOpen}
         onClose={() => {
           setIsViewModalOpen(false);
           ToastService.info("Closed candidate details view");
@@ -454,8 +504,8 @@ const BenchList = () => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Tooltip title="Toggle Personal Info">
-                <IconButton 
-                  color={selectedCandidate?.filterCriteria?.showBasicInfo ? "primary" : "default"} 
+                <IconButton
+                  color={selectedCandidate?.filterCriteria?.showBasicInfo ? "primary" : "default"}
                   size="small"
                   onClick={() => toggleFilter('showBasicInfo')}
                 >
@@ -463,8 +513,8 @@ const BenchList = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Contact Info">
-                <IconButton 
-                  color={selectedCandidate?.filterCriteria?.showContact ? "primary" : "default"} 
+                <IconButton
+                  color={selectedCandidate?.filterCriteria?.showContact ? "primary" : "default"}
                   size="small"
                   onClick={() => toggleFilter('showContact')}
                 >
@@ -472,8 +522,8 @@ const BenchList = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Experience">
-                <IconButton 
-                  color={selectedCandidate?.filterCriteria?.showExperience ? "primary" : "default"} 
+                <IconButton
+                  color={selectedCandidate?.filterCriteria?.showExperience ? "primary" : "default"}
                   size="small"
                   onClick={() => toggleFilter('showExperience')}
                 >
@@ -481,8 +531,8 @@ const BenchList = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Skills">
-                <IconButton 
-                  color={selectedCandidate?.filterCriteria?.showSkills ? "primary" : "default"} 
+                <IconButton
+                  color={selectedCandidate?.filterCriteria?.showSkills ? "primary" : "default"}
                   size="small"
                   onClick={() => toggleFilter('showSkills')}
                 >
@@ -490,8 +540,8 @@ const BenchList = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Education">
-                <IconButton 
-                  color={selectedCandidate?.filterCriteria?.showEducation ? "primary" : "default"} 
+                <IconButton
+                  color={selectedCandidate?.filterCriteria?.showEducation ? "primary" : "default"}
                   size="small"
                   onClick={() => toggleFilter('showEducation')}
                 >
@@ -499,8 +549,8 @@ const BenchList = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Documents">
-                <IconButton 
-                  color={selectedCandidate?.filterCriteria?.showDocuments ? "primary" : "default"} 
+                <IconButton
+                  color={selectedCandidate?.filterCriteria?.showDocuments ? "primary" : "default"}
                   size="small"
                   onClick={() => toggleFilter('showDocuments')}
                 >
@@ -512,7 +562,7 @@ const BenchList = () => {
         </DialogTitle>
         <DialogContent dividers>
           {selectedCandidate && (
-            <CandidateDetails 
+            <CandidateDetails
               candidateId={selectedCandidate.id}
               filterCriteria={selectedCandidate.filterCriteria}
               onClose={() => {
