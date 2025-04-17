@@ -22,6 +22,7 @@ import { useSelector } from "react-redux";
 import { useConfirm } from "../../hooks/useConfirm"; // Create this hook or use a dialog component
 import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { getStatusChip } from "../../utils/statusUtils";
 
 const Interviews = () => {
   const { userId } = useSelector((state) => state.auth);
@@ -112,30 +113,6 @@ const Interviews = () => {
     });
   };
 
-  // Render status chip
-  const renderStatusChip = (status) => {
-    const statusConfig = {
-      SCHEDULED: { color: "primary", variant: "filled" },
-      COMPLETED: { color: "success", variant: "filled" },
-      CANCELLED: { color: "error", variant: "filled" },
-      RESCHEDULED: { color: "warning", variant: "filled" },
-    };
-
-    const config = statusConfig[status] || {
-      color: "default",
-      variant: "outlined",
-    };
-
-    return (
-      <Chip
-        label={status}
-        size="small"
-        color={config.color}
-        variant={config.variant}
-      />
-    );
-  };
-
   // Table columns
   const columns = [
     { key: "jobId", label: "Job ID", width: 100 },
@@ -153,7 +130,7 @@ const Interviews = () => {
       key: "interviewStatus",
       label: "Status",
       width: 140,
-      render: (row) => renderStatusChip(row.interviewStatus),
+      render: (row) => getStatusChip(row.interviewStatus, row),
     },
     {
       key: "zoomLink",

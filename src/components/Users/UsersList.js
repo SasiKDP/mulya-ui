@@ -457,13 +457,14 @@ const UsersList = () => {
               }}>
       
               <Typography variant='h6' color='primary'>Users Management</Typography>
-      
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
               <DateRangeFilter component="Users"/>
       
               
               <Button variant="contained" color="primary" onClick={handleAddUser}>
           Add User
         </Button>
+        </Stack>
             </Stack>
 
       <DataTable
