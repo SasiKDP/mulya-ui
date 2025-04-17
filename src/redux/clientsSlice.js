@@ -63,15 +63,15 @@ export const updateClient = createAsyncThunk(
 
 export const deleteClient = createAsyncThunk(
   'clients/delete',
-  async (clientId, { rejectWithValue }) => {
+  async (id, { rejectWithValue }) => {
     try {
-      const response = await httpService.delete(`/requirements/bdm/delete/${clientId}`);
+      const response = await httpService.delete(`/requirements/bdm/delete/${id}`);
 
       if (!response.data.success) {
         throw new Error(response.data.message || "Failed to delete client");
       }
 
-      return clientId;
+      return id;
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Failed to delete client";
       return rejectWithValue(errorMessage);
@@ -83,7 +83,7 @@ export const createClient = createAsyncThunk(
   'clients/create',
   async (formData, { rejectWithValue }) => {
     try {
-      const response = await httpService.post('/requirements/bdm/create', formData, {
+      const response = await httpService.post('/requirements/bdm/addClient', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
