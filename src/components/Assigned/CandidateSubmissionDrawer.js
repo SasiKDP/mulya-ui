@@ -13,6 +13,7 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { showToast } from "../../utils/ToastNotification";
+import { useSelector } from "react-redux";
 
 const validationSchema = Yup.object().shape({
   fullName: Yup.string().required("Full Name is required"),
@@ -85,11 +86,13 @@ const validationSchema = Yup.object().shape({
   overallFeedback: Yup.string()
     .max(100, "Feedback cannot be more than 100 characters")
     .required("Overall feedback is required"),
-  resumeFile: Yup.mixed().nullable(), // Allow null for edit
+  resumeFile: Yup.mixed().nullable(),
+  clientName: Yup.string().required("Client name is required"),
 });
 
 const CandidateSubmissionDrawer = ({
   onClose,
+  clientName,
   userId,
   jobId,
   employeeEmail,
@@ -99,12 +102,13 @@ const CandidateSubmissionDrawer = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [errorResponse, setErrorResponse] = useState(null);
+  const { email } = useSelector((state) => state.auth);
 
   const initialValues =
     mode === "edit" && candidateData
       ? {
           fullName: candidateData.fullName || "",
-          candidateEmailId: candidateData.emailId || "",
+          candidateEmailId: candidateData.candidateEmailId || "",
           contactNumber: candidateData.contactNumber || "",
           currentOrganization: candidateData.currentOrganization || "",
           qualification: candidateData.qualification || "",
@@ -116,16 +120,18 @@ const CandidateSubmissionDrawer = ({
           currentLocation: candidateData.currentLocation || "",
           preferredLocation: candidateData.preferredLocation || "",
           skills: candidateData.skills || "",
-          resumeFile: null, // Initial file is null for edit
+          resumeFile: null,
           communicationSkills: candidateData.communicationSkills || "",
           requiredTechnologiesRating:
             candidateData.requiredTechnologiesRating || "",
           overallFeedback: candidateData.overallFeedback || "",
-          userEmail: candidateData.userEmail || "",
+          userEmail: email || "",
+          clientName: candidateData.clientName || "",
         }
       : {
           userId: userId || "",
           jobId: jobId || "",
+          clientName: clientName || "",
           fullName: "",
           candidateEmailId: "",
           contactNumber: "",
@@ -143,7 +149,7 @@ const CandidateSubmissionDrawer = ({
           communicationSkills: "",
           requiredTechnologiesRating: "",
           overallFeedback: "",
-          userEmail:employeeEmail || "",
+          userEmail: email || "",
         };
 
   const formik = useFormik({
@@ -186,8 +192,6 @@ const CandidateSubmissionDrawer = ({
           );
         }
 
-        console.log("Candidate submitted/updated:", response.data);
-
         if (response.data && response.data.status === "Success") {
           showToast(
             response.data.message ||
@@ -227,10 +231,17 @@ const CandidateSubmissionDrawer = ({
     if (mode !== "edit") {
       formik.setFieldValue("userId", userId || "");
       formik.setFieldValue("jobId", jobId || "");
+      formik.setFieldValue("clientName", clientName || "");
     }
-  }, [userId, jobId, mode]);
+  }, [userId, jobId, clientName, mode]);
 
   const fields = [
+    { 
+      name: "clientName", 
+      label: "Client Name", 
+      type: "text",
+      disabled: true 
+    },
     { name: "fullName", label: "Full Name", type: "text" },
     { name: "candidateEmailId", label: "Email", type: "email" },
     { name: "contactNumber", label: "Contact Number", type: "text" },
@@ -263,7 +274,7 @@ const CandidateSubmissionDrawer = ({
       type: "number",
     },
     { name: "overallFeedback", label: "Overall Feedback", type: "text" },
-    { name: "userEmail", label: "User Email", type: "text" },
+    { name: "userEmail", label: "User Email", type: "text", disabled: true },
   ];
 
   return (
@@ -299,6 +310,7 @@ const CandidateSubmissionDrawer = ({
                     formik.touched[field.name] && formik.errors[field.name]
                   }
                   fullWidth
+                  disabled={field.disabled}
                 />
               ) : (
                 <MuiTextField
@@ -316,6 +328,7 @@ const CandidateSubmissionDrawer = ({
                     formik.touched[field.name] && formik.errors[field.name]
                   }
                   fullWidth
+                  disabled={field.disabled}
                 />
               )}
             </Grid>

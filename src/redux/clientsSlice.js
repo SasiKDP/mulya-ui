@@ -83,7 +83,7 @@ export const createClient = createAsyncThunk(
   'clients/create',
   async (formData, { rejectWithValue }) => {
     try {
-      const response = await httpService.post('/requirements/bdm/create', formData, {
+      const response = await httpService.post('/requirements/bdm/addClient', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

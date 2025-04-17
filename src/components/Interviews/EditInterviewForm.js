@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
 
-const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
+const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   const [notification, setNotification] = useState({ 
     open: false, 
     message: "", 
@@ -24,48 +24,30 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
 
   // Prepare initial values for form
   const getInitialValues = () => {
-    if (data) {
-      let dateTimeValue = "";
-      if (data.interviewDateTime) {
-        const date = new Date(data.interviewDateTime);
-        dateTimeValue = date.toISOString().slice(0, 16);
-      }
+    if (!data) return {};
 
-      return {
-        contactNumber: data.contactNumber || data.candidateContactNo || "",
-        candidateEmailId: data.emailId || data.candidateEmailId || "",
-        fullName: data.fullName || data.candidateFullName || "",
-        candidateId: data.candidateId || "",
-        clientEmail: data.clientEmail || "",
-        clientName: data.clientName || "",
-        duration: data.duration || 30,
-        externalInterviewDetails: data.externalInterviewDetails || "",
-        interviewDateTime: dateTimeValue,
-        interviewLevel: data.interviewLevel || "INTERNAL",
-        jobId: data.jobId || "",
-        userEmail: email || "",
-        userId: data.userId || userId || "",
-        zoomLink: data.zoomLink || "",
-        interviewStatus: "SCHEDULED"
-      };
+    let dateTimeValue = "";
+    if (data.interviewDateTime) {
+      const date = new Date(data.interviewDateTime);
+      dateTimeValue = date.toISOString().slice(0, 16);
     }
-    
+
     return {
-      contactNumber: "",
-      candidateEmailId: "",
-      fullName: "",
-      candidateId: "",
-      clientEmail: "",
-      clientName: "",
-      duration: 30,
-      externalInterviewDetails: "",
-      interviewDateTime: "",
-      interviewLevel: "INTERNAL",
-      jobId: "",
+      contactNumber: data.contactNumber || data.candidateContactNo || "",
+      candidateEmailId: data.emailId || data.candidateEmailId || "",
+      fullName: data.fullName || data.candidateFullName || "",
+      candidateId: data.candidateId || "",
+      clientEmail: data.clientEmail || "",
+      clientName: data.clientName || "",
+      duration: data.duration || 30,
+      externalInterviewDetails: data.externalInterviewDetails || "",
+      interviewDateTime: dateTimeValue,
+      interviewLevel: data.interviewLevel || "INTERNAL",
+      jobId: data.jobId || "",
       userEmail: email || "",
-      userId: userId || "",
-      zoomLink: "",
-      interviewStatus: "SCHEDULED"
+      userId: data.userId || userId || "",
+      zoomLink: data.zoomLink || "",
+      interviewStatus: data.interviewStatus || "SCHEDULED"
     };
   };
 
@@ -185,6 +167,22 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         gridProps: { xs: 12 }
       },
       {
+        name: "interviewStatus",
+        label: "Interview Status",
+        type: "select",
+        required: true,
+        options: [
+          { value: "SCHEDULED", label: "Scheduled" },        
+          { value: "RESCHEDULED", label: "Rescheduled" },     
+          { value: "REJECTED", label: "Rejected" },           
+          { value: "CANCELLED", label: "Cancelled" },         
+          { value: "NO_SHOW", label: "No Show / Not Attended" },
+          { value: "SELECTED", label: "Selected" },           
+          { value: "PLACED", label: "Placed" }                
+        ],
+        gridProps: { xs: 6 }
+      },
+      {
         name: "interviewLevel",
         label: "Interview Level",
         type: "select",
@@ -196,7 +194,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
           { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
           { value: "FINAL", label: "FINAL" }
         ],
-        gridProps: { xs: 12 }
+        gridProps: { xs: 6 }
       }
     ];
 
@@ -243,7 +241,18 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       is: (level) => ["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(level),
       then: Yup.string().required("External interview details are required"),
       otherwise: Yup.string().nullable()
-    })
+    }),
+    interviewStatus: Yup.string()
+      .required("Interview status is required")
+      .oneOf([
+        "SCHEDULED", 
+        "RESCHEDULED", 
+        "REJECTED", 
+        "CANCELLED", 
+        "NO_SHOW", 
+        "SELECTED", 
+        "PLACED"
+      ], "Invalid interview status")
   });
 
   const handleCloseNotification = () => {
@@ -265,7 +274,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         duration: values.duration,
         zoomLink: values.zoomLink,
         interviewLevel: values.interviewLevel,
-        interviewStatus: "SCHEDULED", // Always SCHEDULED for new interviews
+        interviewStatus: values.interviewStatus,
         clientEmail: values.clientEmail,
         clientName: values.clientName,
         jobId: values.jobId,
@@ -274,8 +283,8 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         externalInterviewDetails: values.externalInterviewDetails
       };
 
-      const response = await httpService.post(
-        `/candidate/interview-schedule/${values.userId}`,
+      const response = await httpService.put(
+        `/candidate/interview-update/${values.userId}/${values.candidateId}`,
         payload
       );
       
@@ -283,7 +292,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       setSubmissionSuccess(true);
       setNotification({
         open: true, 
-        message: "Interview scheduled successfully", 
+        message: "Interview updated successfully", 
         severity: "success"
       });
       
@@ -293,10 +302,10 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         onClose(true);
       }, 2000);
     } catch (error) {
-      console.error("Error scheduling interview:", error);
+      console.error("Error updating interview:", error);
       setNotification({
         open: true, 
-        message: `Error scheduling interview: ${
+        message: `Error updating interview: ${
           error.response?.data?.message || error.message
         }`, 
         severity: "error"
@@ -316,7 +325,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         sx={{ mb: 3 }}
       >
         <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-          Interview scheduled for <strong>Candidate ID:</strong>{" "}
+          Interview updated for <strong>Candidate ID:</strong>{" "}
           {interviewResponse.candidateId} successfully.
         </Typography>
       </Alert>
@@ -329,7 +338,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
     <Box sx={{ width: "100%", p: { xs: 1, sm: 2 }, maxHeight: "80vh", overflow: "auto" }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h6" color="primary" fontWeight="medium">
-          Schedule Interview
+          Update Interview
         </Typography>
         <IconButton onClick={onClose}>
           <CloseIcon />
@@ -343,7 +352,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
-        submitButtonText="Schedule"
+        submitButtonText="Update"
         cancelButtonText="Cancel"
         onCancel={onClose}
         watchFields={["interviewLevel"]} // Watch this field for conditional rendering
@@ -368,4 +377,4 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   );
 };
 
-export default ScheduleInterviewForm;
+export default EditInterviewForm;

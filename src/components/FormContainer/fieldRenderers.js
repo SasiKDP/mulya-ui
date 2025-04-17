@@ -247,38 +247,27 @@ export const renderField = (field, formik, editMode = false) => {
               </TextField>
             );
 
-          case "datetime":
-            return (
-              <LocalizationProvider dateAdapter={AdapterDateFns}>
-                <DateTimePicker
+            case "datetime":
+              return (
+                <TextField
                   {...commonProps}
-                  value={values[field.name] || null}
-                  onChange={(newValue) => {
-                    setFieldValue(field.name, newValue);
+                  type="datetime-local"
+                  value={values[field.name] || ""}
+                  onChange={(e) => {
+                    setFieldValue(field.name, e.target.value);
                   }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      {...commonProps}
-                      InputProps={{
-                        ...params.InputProps,
-                        ...commonProps.InputProps,
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <CalendarTodayOutlinedIcon
-                              color="action"
-                              fontSize="small"
-                            />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  )}
-                  inputFormat="yyyy-MM-dd HH:mm"
-                  ampm={field.ampm !== false}
+                  InputProps={{
+                    ...commonProps.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <CalendarTodayOutlinedIcon color="action" fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  fullWidth
                 />
-              </LocalizationProvider>
-            );
+              );
+            
 
           case "textarea":
             return (

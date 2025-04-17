@@ -151,7 +151,7 @@ const routeConfig = [
             path: "placements",
             element: (
               <ProtectedRoute
-                allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]}
+                allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD","EMPLOYEE"]}
               />
             ),
             children: [{ index: true, element: <PlacementsList /> }],

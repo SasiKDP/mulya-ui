@@ -5,7 +5,6 @@ import {
   Tooltip,
   CircularProgress,
   Drawer,
-  Link,
   Typography,
   Skeleton,
   Snackbar,
@@ -24,6 +23,7 @@ import CandidateSubmissionDrawer from "../Assigned/CandidateSubmissionDrawer";
 import ScheduleInterviewForm from "./ScheduleInterviewForm";
 import httpService from "../../Services/httpService";
 import { useSelector } from "react-redux";
+import { showToast } from "../../utils/ToastNotification";
 
 const Submission = () => {
   const [data, setData] = useState([]);
@@ -51,7 +51,7 @@ const Submission = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get(`/candidate/submissions/${userId}`);
+      const response = await httpService.get(`/candidate/submissionsByUserId/${userId}`);
       setData(response.data);
     } catch (error) {
       console.error("Error fetching candidate submissions:", error);
@@ -63,6 +63,7 @@ const Submission = () => {
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
+    showToast(message, severity); // Use the imported showToast function
   };
 
   const handleCloseSnackbar = () => {
@@ -79,7 +80,7 @@ const Submission = () => {
         // Create FormData for the bench request
         const formData = new FormData();
         formData.append("fullName", row.fullName);
-        formData.append("email", row.emailId);
+        formData.append("email", row.emailId || row.candidateEmailId);
         formData.append("contactNumber", row.contactNumber);
         formData.append("relevantExperience", row.relevantExperience || "");
         formData.append("totalExperience", row.totalExperience || "");
@@ -99,9 +100,9 @@ const Submission = () => {
         formData.append("linkedin", row.linkedin || "");
         formData.append("referredBy", row.userEmail || "");
         
-        // Fetch resume using the correct endpoint
+        // Fetch resume using the correct endpoint with both jobId and candidateId
         try {
-          const response = await httpService.get(`/candidate/download-resume/${row.candidateId}`, {
+          const response = await httpService.get(`/candidate/download-resume/${row.jobId}/${row.candidateId}`, {
             responseType: "blob",
           });
           
@@ -129,7 +130,7 @@ const Submission = () => {
         });
         
         // Remove from current list
-        setData(data.filter(item => item.candidateId !== row.candidateId));
+        setData(data.filter(item => item.submissionId !== row.submissionId));
         
         showSnackbar(`${row.fullName} has been moved to the bench successfully!`);
       } catch (error) {
@@ -141,15 +142,13 @@ const Submission = () => {
     }
   };
 
-  const downloadResume = async (candidateId, e) => {
+  const downloadResume = async (jobId, candidateId, e) => {
     e.stopPropagation();
   
     try {
       setDownloadLoading(true);
   
-      const response = await httpService.get(`/candidate/download-resume/${candidateId}`, {
-        responseType: "blob",
-      });
+      const response = await httpService.get(`/candidate/download-resume/${candidateId}/${jobId}`);
   
       if (!response || !response.data) {
         throw new Error("No resume file received.");
@@ -193,16 +192,16 @@ const Submission = () => {
     setOpenDrawer(true);
   };
 
-  const handleDelete = async (candidateId, e) => {
+  const handleDelete = async (submissionId, e) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this candidate?")) {
+    if (window.confirm("Are you sure you want to delete this candidate submission?")) {
       try {
-        await httpService.delete(`/candidate/${candidateId}`);
+        await httpService.delete(`/candidate/deletesubmission/${submissionId}`);
         fetchData();
-        showSnackbar("Candidate deleted successfully");
+        showSnackbar("Candidate submission deleted successfully");
       } catch (error) {
-        console.error("Error deleting candidate:", error);
-        showSnackbar("Failed to delete candidate", "error");
+        console.error("Error deleting candidate submission:", error);
+        showSnackbar("Failed to delete candidate submission", "error");
       }
     }
   };
@@ -245,6 +244,26 @@ const Submission = () => {
           }}
         >
           {row.candidateId}
+        </Typography>
+      )
+    },
+    {
+      key: "submissionId",
+      label: "Submission ID",
+      type: "text",
+      sortable: true,
+      filterable: true,
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={120} /> : (row) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontWeight: 500,
+            color: 'text.secondary',
+            fontFamily: 'monospace'
+          }}
+        >
+          {row.submissionId}
         </Typography>
       )
     },
@@ -311,9 +330,9 @@ const Submission = () => {
               cursor: 'pointer',
               '&:hover': { color: 'secondary.dark' }
             }}
-            onClick={() => window.location.href = `mailto:${row.emailId}`}
+            onClick={() => window.location.href = `mailto:${row.emailId || row.candidateEmailId}`}
           >
-            {row.emailId}
+            {row.emailId || row.candidateEmailId}
           </Typography>
         </Box>
       )
@@ -355,47 +374,7 @@ const Submission = () => {
         />
       )
     },
-    {
-      key: "interviewStatus",
-      label: "Status",
-      type: "select",
-      sortable: true,
-      filterable: true,
-      width: 120,
-      options: [
-        "selected",
-        "rejected",
-        "pending",
-        "interviewed",
-        "cancelled",
-        "not scheduled",
-      ],
-      render: loading ? () => <Skeleton variant="text" width={80} /> : (row) => {
-        const statusColors = {
-          selected: { bg: '#e8f5e9', color: '#2e7d32' },
-          rejected: { bg: '#ffebee', color: '#c62828' },
-          pending: { bg: '#fff8e1', color: '#f57f17' },
-          interviewed: { bg: '#e3f2fd', color: '#1565c0' },
-          cancelled: { bg: '#efebe9', color: '#4e342e' },
-          "not scheduled": { bg: '#f5f5f5', color: '#424242' }
-        };
-        
-        return (
-          <Chip
-            label={row.interviewStatus}
-            size="small"
-            sx={{ 
-              backgroundColor: statusColors[row.interviewStatus]?.bg || '#f5f5f5',
-              color: statusColors[row.interviewStatus]?.color || '#424242',
-              fontWeight: 500,
-              textTransform: 'capitalize',
-              width: '100%',
-              maxWidth: '100px'
-            }}
-          />
-        );
-      }
-    },
+    
     {
       key: "moveToBench",
       label: "Move to Bench",
@@ -481,7 +460,7 @@ const Submission = () => {
           <Tooltip title="Download Resume">
             <IconButton
               size="small"
-              onClick={(e) => downloadResume(row.candidateId, e)}
+              onClick={(e) => downloadResume(row.jobId, row.candidateId, e)}
               disabled={downloadLoading}
               sx={{ color: 'success.main' }}
             >
@@ -504,7 +483,7 @@ const Submission = () => {
           <Tooltip title="Delete Candidate">
             <IconButton
               size="small"
-              onClick={(e) => handleDelete(row.candidateId, e)}
+              onClick={(e) => handleDelete(row.submissionId, e)}
               sx={{ color: 'error.main' }}
             >
               <Delete fontSize="small" />
@@ -514,7 +493,7 @@ const Submission = () => {
       ),
     },
   ];
-
+  
   const columns = generateColumns(loading);
 
   return (
@@ -524,10 +503,10 @@ const Submission = () => {
         columns={columns}
         title="Candidate Submissions"
         enableSelection={false}
-        defaultSortColumn="candidateId"
+        defaultSortColumn="submissionId"
         defaultSortDirection="desc"
         defaultRowsPerPage={10}
-        customTableHeight={650}
+        
         refreshData={fetchData}
         primaryColor="#00796b"
         secondaryColor="#e0f2f1"
@@ -537,7 +516,7 @@ const Submission = () => {
           selectedRow: "#b2dfdb",
         }}
         onAddNew={openNewCandidateDrawer}
-        uniqueId="candidateId"
+        uniqueId="submissionId"
       />
 
       <Drawer anchor="right" open={openDrawer} onClose={closeDrawer}>

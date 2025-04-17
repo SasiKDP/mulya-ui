@@ -25,57 +25,57 @@ const Assigned = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [columns, setColumns] = useState([]);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedJob, setSelectedJob] = useState(null);
   const [openDrawer, setOpenDrawer] = useState(false);
   const [mode, setMode] = useState("create");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
-  const { userId } = useSelector((state) => state.auth);
+  const { userId, email } = useSelector((state) => state.auth);
   const employeeList = useSelector((state) => state.employee.employeesList);
   const dispatch = useDispatch();
 
-  const refreshData = () => {
-    setRefreshTrigger((prev) => prev + 1);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await httpService.get(
+        `/requirements/recruiter/${userId}`
+      );
+      if (Array.isArray(response.data)) {
+        setData(response.data);
+        setColumns(generateColumns(response.data));
+        ToastService.success(`${response.data.length} jobs loaded successfully`);
+      } else {
+        setData([]);
+        setColumns([]);
+        if (response.data && response.data.message) {
+          setError(new Error(response.data.message));
+          ToastService.error(response.data.message);
+        } else {
+          setError(new Error("Data fetched was not an array."));
+          ToastService.error("Data fetched was not in the expected format");
+        }
+      }
+    } catch (err) {
+      setError(err);
+      setData([]);
+      setColumns([]);
+      ToastService.error(`Error loading data: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // const refreshData = () => {
+  //   ToastService.info("Refreshing data...");
+    
+  //   dispatch(fetchEmployees());
+  // };
 
   useEffect(() => {
     ToastService.info("Loading assigned jobs...");
     
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await httpService.get(
-          `/requirements/recruiter/${userId}`
-        );
-        if (Array.isArray(response.data)) {
-          setData(response.data);
-          setColumns(generateColumns(response.data));
-          ToastService.success(`${response.data.length} jobs loaded successfully`);
-        } else {
-          setData([]);
-          setColumns([]);
-          if (response.data && response.data.message) {
-            setError(new Error(response.data.message));
-            ToastService.error(response.data.message);
-          } else {
-            setError(new Error("Data fetched was not an array."));
-            ToastService.error("Data fetched was not in the expected format");
-          }
-        }
-      } catch (err) {
-        setError(err);
-        setData([]);
-        setColumns([]);
-        ToastService.error(`Error loading data: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-    dispatch(fetchEmployees());
-  }, [userId, refreshTrigger, dispatch]);
+  }, [userId]);
 
   const handleSubmit = (row) => {
     const status = row.status?.toLowerCase();
@@ -84,7 +84,12 @@ const Assigned = () => {
       return;
     }
     
-    setSelectedJob({ userId: userId, jobId: row.jobId });
+    setSelectedJob({ 
+      userId: userId, 
+      jobId: row.jobId,
+      clientName: row.clientName 
+    });
+    
     setMode("create");
     setSelectedCandidate(null);
     setOpenDrawer(true);
@@ -383,7 +388,7 @@ const Assigned = () => {
     return (
       <Box sx={{ p: 3, textAlign: "center" }}>
         <Typography color="error">Error: {error.message}</Typography>
-        <Button variant="outlined" onClick={refreshData} startIcon={<Refresh />} sx={{ mt: 2 }}>
+        <Button variant="outlined" onClick={fetchData} startIcon={<Refresh />} sx={{ mt: 2 }}>
           Retry
         </Button>
       </Box>
@@ -396,15 +401,14 @@ const Assigned = () => {
 
       <DataTable
         data={processedData}
-        columns={generateColumns(data)}  // Always call generateColumns to handle loading state
+        columns={generateColumns(data)}
         title=""
         loading={loading}
         enableSelection={false}
         defaultSortColumn="requirementAddedTimeStamp"
         defaultSortDirection="desc"
         defaultRowsPerPage={10}
-        customTableHeight={650}
-        refreshData={refreshData}
+        refreshData={fetchData}
         primaryColor="#00796b"
         secondaryColor="#e0f2f1"
         customStyles={{
@@ -419,14 +423,13 @@ const Assigned = () => {
         {selectedJob && (
           <CandidateSubmissionDrawer
             userId={selectedJob?.userId}
+            clientName={selectedJob.clientName}
             jobId={selectedJob?.jobId}
             candidateData={selectedCandidate}
             mode={mode}
             onClose={closeDrawer}
-            refreshData={refreshData}
-            employeeEmail={employeeList
-              .filter((employee) => employee.employeeId === userId)
-              .map((employee) => employee.email)}
+            refreshData={fetchData}
+            employeeEmail={email}
           />
         )}
       </Drawer>

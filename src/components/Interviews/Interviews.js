@@ -14,34 +14,65 @@ import {
   VideoCall as VideoCallIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
-import DataTable from "../muiComponents/DataTabel"; // Adjust path as needed
+import DataTable from "../muiComponents/DataTabel";
 
 import httpService from "../../Services/httpService";
 import { useSelector } from "react-redux";
-import { useConfirm } from "../../hooks/useConfirm"; // Create this hook or use a dialog component
-import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
+import { useConfirm } from "../../hooks/useConfirm";
+import EditInterviewForm from "./EditInterviewForm";
+import ConfirmDialog from "../muiComponents/ConfirmDialog";
 
 const Interviews = () => {
   const { userId } = useSelector((state) => state.auth);
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    interview: null,
+  });
 
-  // Edit drawer state
   const [editDrawer, setEditDrawer] = useState({
     open: false,
     data: null,
   });
 
-  // Confirmation dialog hook (implement this or use a dialog component)
   const { confirm } = useConfirm();
 
-  // Fetch interviews
+  // Process interview data from API
+  const processInterviewData = (data) => {
+    return data.map((interview) => {
+      // Parse interview status (which is a stringified JSON array)
+      let status = "SCHEDULED";
+      try {
+        const statusArray = JSON.parse(interview.interviewStatus);
+        if (statusArray && statusArray.length > 0) {
+          status = statusArray[0].status || "SCHEDULED";
+        }
+      } catch (e) {
+        console.error("Error parsing interview status", e);
+      }
+
+      // Handle candidate full name (can be null)
+      const candidateName =
+        interview.candidateFullName ||
+        interview.candidateEmailId.split("@")[0] ||
+        "Unknown Candidate";
+
+      return {
+        ...interview,
+        candidateFullName: candidateName,
+        interviewStatus: status,
+      };
+    });
+  };
+
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get(`/candidate/interviews/${userId}`);
-      setInterviews(response.data);
+      const response = await httpService.get(`/candidate/allInterviews`);
+      const processedData = processInterviewData(response.data.payload || []);
+      setInterviews(processedData);
       setError(null);
     } catch (err) {
       setError("Failed to fetch interview data");
@@ -55,7 +86,6 @@ const Interviews = () => {
     fetchInterviews();
   }, [userId]);
 
-  // Handle edit interview
   const handleEdit = (interview) => {
     setEditDrawer({
       open: true,
@@ -63,28 +93,23 @@ const Interviews = () => {
     });
   };
 
-  // Handle delete interview
-  const handleDelete = async (interview) => {
-    const confirmed = await confirm({
-      title: "Delete Interview",
-      message: `Are you sure you want to delete the interview for ${interview.candidateFullName}?`,
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
-    });
+  const handleConfirmDelete = async () => {
+    const interview = confirmDialog.interview;
+    console.log(interview);
+    if (!interview) return;
 
-    if (confirmed) {
-      try {
-        await httpService.delete(
-          `/candidate/deleteinterview/${interview.candidateId}`
-        );
-        fetchInterviews();
-      } catch (err) {
-        console.error("Error deleting interview:", err);
-      }
+    try {
+      await httpService.delete(
+        `/candidate/deleteinterview/${interview.candidateId}/${interview.jobId}`
+      );
+      fetchInterviews();
+    } catch (err) {
+      console.error("Error deleting interview:", err);
+    } finally {
+      setConfirmDialog({ open: false, interview: null });
     }
   };
 
-  // Close edit drawer
   const handleCloseEditDrawer = () => {
     setEditDrawer({
       open: false,
@@ -92,26 +117,35 @@ const Interviews = () => {
     });
   };
 
-  // Handle successful interview update
   const handleInterviewUpdated = () => {
     fetchInterviews();
     handleCloseEditDrawer();
   };
 
-  // Format date/time for display
+  // Improved date formatting that handles UTC and displays local time
   const formatDateTime = (dateTimeString) => {
-    const date = new Date(dateTimeString);
-    return date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (!dateTimeString) return "N/A";
+
+    try {
+      const date = new Date(dateTimeString);
+      return date.toLocaleString("en-US", {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (e) {
+      console.error("Error formatting date", e);
+      return "Invalid Date";
+    }
   };
 
-  // Render status chip
   const renderStatusChip = (status) => {
+    if (!status) return null;
+
+    const upperStatus = status.toUpperCase();
     const statusConfig = {
       SCHEDULED: { color: "primary", variant: "filled" },
       COMPLETED: { color: "success", variant: "filled" },
@@ -119,14 +153,14 @@ const Interviews = () => {
       RESCHEDULED: { color: "warning", variant: "filled" },
     };
 
-    const config = statusConfig[status] || {
+    const config = statusConfig[upperStatus] || {
       color: "default",
       variant: "outlined",
     };
 
     return (
       <Chip
-        label={status}
+        label={upperStatus}
         size="small"
         color={config.color}
         variant={config.variant}
@@ -134,10 +168,21 @@ const Interviews = () => {
     );
   };
 
-  // Table columns
   const columns = [
     { key: "jobId", label: "Job ID", width: 100 },
-    { key: "candidateFullName", label: "Candidate", width: 180 },
+    {
+      key: "candidateFullName",
+      label: "Candidate",
+      width: 180,
+      render: (row) => (
+        <Box>
+          <Typography>{row.candidateFullName}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {row.candidateEmailId}
+          </Typography>
+        </Box>
+      ),
+    },
     { key: "clientName", label: "Client", width: 150 },
     { key: "interviewLevel", label: "Level", width: 100 },
     {
@@ -192,7 +237,7 @@ const Interviews = () => {
             <EditIcon fontSize="small" />
           </IconButton>
           <IconButton
-            onClick={() => handleDelete(row)}
+            onClick={() => setConfirmDialog({ open: true, interview: row })}
             color="error"
             size="small"
             title="Delete Interview"
@@ -233,42 +278,46 @@ const Interviews = () => {
             data={interviews}
             columns={columns}
             title="Scheduled Interviews"
-            // loading={loading}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="asc"
-            defaultRowsPerPage={10}
-            customTableHeight={650}
+            defaultRowsPerPage={20}
             refreshData={fetchInterviews}
-            // primaryColor="#00796b"
-            secondaryColor="#e0f2f1"
             customStyles={{
-              // headerBackground: "#00796b",
               rowHover: "#e0f2f1",
               selectedRow: "#b2dfdb",
             }}
           />
 
-          {/* Edit Interview Drawer */}
           <Drawer
             anchor="right"
             open={editDrawer.open}
             onClose={handleCloseEditDrawer}
             PaperProps={{
-              sx: { width: { xs: "60%", sm: "40%", md: "35%" } },
+              sx: { width: { xs: "60%", sm: "50%", md: "50%" } },
             }}
           >
             {editDrawer.data && (
-              <ScheduleInterviewForm
+              <EditInterviewForm
                 data={editDrawer.data}
                 onClose={handleCloseEditDrawer}
-                mode="edit"
                 onSuccess={handleInterviewUpdated}
               />
             )}
           </Drawer>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title="Delete Interview?"
+        content={`Do you really want to delete the interview for ${
+          confirmDialog.interview?.candidateFullName ||
+          confirmDialog.interview?.candidateEmailId
+        }? This action cannot be undone.`}
+        onClose={() => setConfirmDialog({ open: false, interview: null })}
+        onConfirm={handleConfirmDelete}
+      />
     </Box>
   );
 };

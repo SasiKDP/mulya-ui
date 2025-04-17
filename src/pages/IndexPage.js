@@ -29,6 +29,7 @@ export default function HomePage() {
     interviews: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD'],
     clients: ['ADMIN', 'SUPERADMIN', 'BDM', 'PARTNER'],
     placements: ['ADMIN', 'SUPERADMIN', 'PARTNER'],
+    users: ['ADMIN', 'SUPERADMIN', 'PARTNER'],
     bench: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD', 'PARTNER', 'EMPLOYEE'],
   };
 
@@ -41,6 +42,7 @@ export default function HomePage() {
     interviews: 0,
     clients: 0,
     placements: 0,
+    users: 0,
     bench: 0,
   });
 
@@ -61,6 +63,7 @@ export default function HomePage() {
           interviews: response.data.interviews || 0,
           clients: response.data.clients || 0,
           placements: response.data.placements || 0,
+          users: response.data.users || 0,
           bench: response.data.bench || 0,
         });
         
@@ -78,6 +81,7 @@ export default function HomePage() {
           interviews: 0,
           clients: 0,
           placements: 0,
+          users: 0,
           bench: 0,
         });
       }
@@ -91,8 +95,8 @@ export default function HomePage() {
       title: 'Requirements',
       key: 'requirements',
       subtitle: 'Active',
-      color: '#2563eb',
-      bg: '#eff6ff',
+      color: '#3B82F6', // Blue-500
+      bg: '#EFF6FF',   // Blue-50
       icon: <FileText size={24} />,
       buttonText: 'View Requirements',
       path: '/dashboard/requirements',
@@ -101,8 +105,8 @@ export default function HomePage() {
       title: 'Candidates',
       key: 'candidates',
       subtitle: 'Total',
-      color: '#16a34a',
-      bg: '#f0fdf4',
+      color: '#10B981', // Emerald-500
+      bg: '#ECFDF5',   // Emerald-50
       icon: <Users size={24} />,
       buttonText: 'View Candidates',
       path: '/dashboard/submissions',
@@ -111,8 +115,8 @@ export default function HomePage() {
       title: 'Assigned',
       key: 'assigned',
       subtitle: 'Candidates',
-      color: '#9333ea',
-      bg: '#faf5ff',
+      color: '#8B5CF6', // Violet-500
+      bg: '#F5F3FF',   // Violet-50
       icon: <ClipboardCheck size={24} />,
       buttonText: 'View Assignments',
       path: '/dashboard/assigned',
@@ -121,8 +125,8 @@ export default function HomePage() {
       title: 'Interviews',
       key: 'interviews',
       subtitle: 'Scheduled',
-      color: '#eab308',
-      bg: '#fefce8',
+      color: '#F59E0B', // Amber-500
+      bg: '#FFFBEB',   // Amber-50
       icon: <Calendar size={24} />,
       buttonText: 'View Interviews',
       path: '/dashboard/interviews',
@@ -131,17 +135,27 @@ export default function HomePage() {
       title: 'Clients',
       key: 'clients',
       subtitle: 'Active',
-      color: '#dc2626',
-      bg: '#fef2f2',
+      color: '#EF4444', // Red-500
+      bg: '#FEF2F2',   // Red-50
       icon: <Briefcase size={24} />,
       buttonText: 'View Clients',
       path: '/dashboard/clients',
     },
     {
+      title: 'Employees',
+      key: 'users',
+      subtitle: 'Available',
+      color: '#06B6D4', // Cyan-500
+      bg: '#ECFEFF',   // Cyan-50
+      icon: <UserCheck size={24} />,
+      buttonText: 'View Employees',
+      path: '/dashboard/users',
+    },
+    {
       title: 'Placements',
       key: 'placements',
-      subtitle: 'This Month',
-      color: '#2563eb',
+      color: '#6366F1', // Indigo-500
+      bg: '#EEF2FF',   // Indigo-50
       bg: '#eff6ff',
       icon: <Award size={24} />,
       buttonText: 'View Placements',
@@ -151,8 +165,8 @@ export default function HomePage() {
       title: 'Bench',
       key: 'bench',
       subtitle: 'Available',
-      color: '#0d9488',
-      bg: '#f0fdfa',
+      color: '#14B8A6', // Teal-500
+      bg: '#F0FDFA',   // Teal-50
       icon: <UserCheck size={24} />,
       buttonText: 'View Bench',
       path: '/dashboard/bench-users',
