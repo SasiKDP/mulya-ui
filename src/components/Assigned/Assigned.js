@@ -35,8 +35,10 @@ const Assigned = () => {
 
   const { userId } = useSelector((state) => state.auth);
   const employeeList = useSelector((state) => state.employee.employeesList);
-    const { filterAssignedRequirements } = useSelector((state) => state.requirement);
+    const { filterAssignedRequirements, filteredTeamLeadRequirements } = useSelector((state) => state.requirement);
     const { isFilteredDataRequested } = useSelector((state) => state.bench);
+
+    const {role} = useSelector((state) => state.auth);
 
   const dispatch = useDispatch();
 
@@ -410,13 +412,13 @@ const Assigned = () => {
         }}>
 
         <Typography variant='h6' color='primary'>Assigned List</Typography>
-
-        <DateRangeFilter component="AssignedList" />
+        {role == "TEAMLEAD" ? <DateRangeFilter component="RequirementTeamLead"/> : <DateRangeFilter component="AssignedList" />}
+        
       </Stack>
 
       <DataTable
         // data={processedData}
-        data={isFilteredDataRequested ? filterAssignedRequirements : processedData || []} 
+        data={isFilteredDataRequested ? role == "TEAMLEAD" ? filteredTeamLeadRequirements : filterAssignedRequirements : processedData || []} 
         columns={generateColumns(data)}  // Always call generateColumns to handle loading state
         title=""
         loading={loading}
