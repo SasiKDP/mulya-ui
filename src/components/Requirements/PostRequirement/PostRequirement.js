@@ -26,7 +26,7 @@ import WorkIcon from "@mui/icons-material/Work";
 import { qualifications } from "../../../utils/qualifications";
 
 
-const PostRequirement = () => {
+const PostRequirement = ({onClose}) => {
   const dispatch = useDispatch();
   const [descriptionType, setDescriptionType] = useState("text");
   const [submitting, setSubmitting] = useState(false);
@@ -457,6 +457,7 @@ const PostRequirement = () => {
               initialValues={initialValues}
               fields={[...baseFields, descriptionField]}
               onSubmit={handleSubmit}
+              onCancel={onClose}
               submitButtonText="Post Job"
               enableReinitialize={true}
               buttonConfig={{

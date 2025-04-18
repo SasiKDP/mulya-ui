@@ -1,187 +1,241 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as Yup from "yup";
-import DynamicForm from "../FormContainer/DynamicForm";
-import { skills } from "../../utils/skills";
-import ComponentTitle from "../../utils/ComponentTitle";
+import {
+  TextField,
+  Button,
+  Grid,
+  Box,
+  Typography,
+  FormHelperText,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+} from "@mui/material";
+import { Close } from "@mui/icons-material";
 import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
 
-const candidateFormFields = [
-  {
-    name: "fullName",
-    label: "Full Name",
-    type: "text",
-    required: true,
-    gridProps: { xs: 12, sm: 6 },
-    sx: { mb: 2 },
-  },
-  {
-    name: "email",
-    label: "Email",
-    type: "email",
-    required: true,
-    gridProps: { xs: 12, sm: 6 },
-    sx: { mb: 2 },
-  },
-  {
-    name: "contactNumber",
-    label: "Contact Number",
-    type: "tel",
-    required: true,
-    inputProps: { maxLength: 10 },
-    gridProps: { xs: 12, sm: 6 },
-    sx: { mb: 2 },
-  },
-  {
-    name: "relevantExperience",
-    label: "Relevant Experience (Years)",
-    type: "number",
-    required: true,
-    inputProps: { step: "0.5", min: "0" },
-    gridProps: { xs: 12, sm: 6 },
-    sx: { mb: 2 },
-  },
-  {
-    name: "totalExperience",
-    label: "Total Experience (Years)",
-    type: "number",
-    required: true,
-    inputProps: { step: "0.5", min: "0" },
-    gridProps: { xs: 12, sm: 6 },
-    sx: { mb: 2 },
-  },
-  {
-    name: "skills",
-    label: "Skills",
-    type: "search-select",
-    required: true,
-    options: [...skills],
-    gridProps: { xs: 12,md:6},
-    sx: { mb: 2 },
-  },
-  {
-    name: "linkedin",
-    label: "LinkedIn Username",
-    type: "text",
-    required: false,
-    gridProps: { xs: 12, sm: 6 },
-    sx: { mb: 2 },
-  },
-  {
-    name: "referredBy",
-    label: "Referred By",
-    type: "text",
-    required: false,
-    gridProps: { xs: 12, sm: 6 },
-    sx: { mb: 2 },
-  },
-  {
-    name: "resumeFile",
-    label: "Resume",
-    type: "file",
-    required: (values) => !values.id, // Only required for new candidates
-    gridProps: { xs: 12 },
-    sx: { mb: 2 },
-    helperText: "Upload resume (PDF or DOC format)",
-    inputProps: {
-      accept: ".pdf,.doc,.docx",
-    },
-  },
-];
-
-const getValidationSchema = (isEditMode) => {
-  const baseSchema = {
-    fullName: Yup.string().required("Full Name is required"),
-    email: Yup.string().email("Invalid email format").required("Email is required"),
-    relevantExperience: Yup.number().positive("Must be positive").required("Relevant experience is required"),
-    totalExperience: Yup.number()
-      .positive("Must be positive")
-      .required("Total experience is required")
-      .test("is-greater", "Total experience must be >= relevant experience", function (totalExp) {
-        return totalExp >= this.parent.relevantExperience;
-      }),
-    contactNumber: Yup.string()
-      .matches(/^\+?\d{10}$/, "Invalid phone number format")
-      .required("Contact number is required"),
-    skills: Yup.array().min(1, "At least one skill is required"),
+const BenchCandidateForm = ({
+  open,
+  onClose,
+  onSuccess,
+  id = null,
+  initialData = null,
+}) => {
+  const isEditMode = !!id;
+  const [loading, setLoading] = useState(isEditMode && !initialData);
+  const [submitting, setSubmitting] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [resumeFileName, setResumeFileName] = useState("");
+  const [errors, setErrors] = useState({});
+  
+  const formInitialValues = {
+    id: "",
+    fullName: "",
+    email: "",
+    contactNumber: "",
+    relevantExperience: "",
+    totalExperience: "",
+    skills: [],
+    linkedin: "",
+    referredBy: "",
+    resumeFile: null,
+    resumeAvailable: false
   };
 
-  // For edit mode, resume is optional
-  if (isEditMode) {
-    baseSchema.resumeFile = Yup.mixed()
-      .test("fileType", "Only PDF, DOC, and DOCX files allowed", (value) => {
-        if (!value) return true;
-        return ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(value.type);
-      })
-      .test("fileSize", "File size must be less than 5MB", (value) => {
-        if (!value) return true;
-        return value.size <= 5 * 1024 * 1024;
+  const [formValues, setFormValues] = useState(formInitialValues);
+
+  // File validation schema
+  const fileValidation = Yup.mixed()
+    .test("fileSize", "File size is too large (max 5MB)", (value) => {
+      if (!value) return true; // Skip validation if no file
+      return value.size <= 5 * 1024 * 1024;
+    })
+    .test("fileType", "Only PDF and Word documents are allowed", (value) => {
+      if (!value) return true; // Skip validation if no file
+      return (
+        value.type === "application/pdf" ||
+        value.type === "application/msword" ||
+        value.type ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      );
+    });
+
+  // Initialize form values when edit mode or initial data changes
+  useEffect(() => {
+    if (isEditMode && initialData) {
+      // If we already have the data, use it directly
+      setFormValues({
+        id: initialData.id,
+        fullName: initialData.fullName || "",
+        email: initialData.email || "",
+        contactNumber: initialData.contactNumber || "",
+        relevantExperience: initialData.relevantExperience || "",
+        totalExperience: initialData.totalExperience || "",
+        skills: initialData.skills || [],
+        linkedin: initialData.linkedin || "",
+        referredBy: initialData.referredBy || "",
+        resumeFile: null,
+        resumeAvailable: initialData.resumeAvailable || false
       });
-  } else {
-    // For create mode, resume is required
-    baseSchema.resumeFile = Yup.mixed()
-      .required("Resume is required")
-      .test("fileType", "Only PDF, DOC, and DOCX files allowed", (value) => {
-        if (!value) return true;
-        return ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(value.type);
-      })
-      .test("fileSize", "File size must be less than 5MB", (value) => {
-        if (!value) return true;
-        return value.size <= 5 * 1024 * 1024;
+      setLoading(false);
+    } else if (!isEditMode) {
+      // For new entry, reset to initial values
+      setFormValues(formInitialValues);
+    }
+  }, [initialData, isEditMode]);
+
+  // Load candidate data when editing and no initial data provided
+  useEffect(() => {
+    const fetchCandidateData = async () => {
+      if (isEditMode && !initialData && open) {
+        try {
+          setLoading(true);
+          ToastService.info(`Loading candidate details...`);
+          const response = await httpService.get(`/candidate/bench/${id}`);
+          const candidateData = response.data;
+          
+          setFormValues({
+            id: candidateData.id,
+            fullName: candidateData.fullName || "",
+            email: candidateData.email || "",
+            contactNumber: candidateData.contactNumber || "",
+            relevantExperience: candidateData.relevantExperience || "",
+            totalExperience: candidateData.totalExperience || "",
+            skills: candidateData.skills || [],
+            linkedin: candidateData.linkedin || "",
+            referredBy: candidateData.referredBy || "",
+            resumeFile: null,
+            resumeAvailable: candidateData.resumeAvailable || false
+          });
+          
+          ToastService.success(`Ready to edit ${candidateData.fullName}`);
+        } catch (error) {
+          console.error('Failed to fetch candidate details:', error);
+          ToastService.error('Failed to load candidate details for editing');
+          handleClose();
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCandidateData();
+  }, [id, initialData, isEditMode, open]);
+
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      // Don't reset immediately to avoid visual glitches when closing
+      return;
+    }
+    
+    // Form is already initialized in other useEffects based on initialData and isEditMode
+    setInputValue("");
+    setResumeFileName("");
+    setErrors({});
+  }, [open]);
+
+  const validationSchema = Yup.object().shape({
+    fullName: Yup.string().required("Full Name is required"),
+    email: Yup.string()
+      .email("Invalid email format")
+      .required("Email is required"),
+    contactNumber: Yup.string()
+      .matches(/^\+?\d{10,15}$/, "Invalid phone number format")
+      .required("Contact number is required"),
+    relevantExperience: Yup.number()
+      .typeError("Relevant experience must be a number")
+      .positive("Must be positive")
+      .required("Relevant experience is required"),
+    totalExperience: Yup.number()
+      .typeError("Total experience must be a number")
+      .positive("Must be positive")
+      .required("Total experience is required")
+      .test(
+        "is-greater",
+        "Total experience must be greater than or equal to relevant experience",
+        function (totalExp) {
+          return totalExp >= this.parent.relevantExperience;
+        }
+      ),
+    skills: Yup.array()
+      .min(1, "At least one skill is required")
+      .of(Yup.string().required("Skill cannot be empty")),
+   
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormValues((prev) => ({ ...prev, resumeFile: file }));
+      setResumeFileName(file.name);
+    }
+  };
+
+  const validateForm = async () => {
+    try {
+      await validationSchema.validate(formValues, { abortEarly: false });
+      setErrors({});
+      return true;
+    } catch (validationErrors) {
+      const newErrors = {};
+      validationErrors.inner.forEach((error) => {
+        newErrors[error.path] = error.message;
       });
-  }
+      setErrors(newErrors);
+      return false;
+    }
+  };
 
-  return Yup.object().shape(baseSchema);
-};
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const isValid = await validateForm();
+    if (!isValid) return;
 
-const formInitialValues = {
-  fullName: "",
-  email: "",
-  contactNumber: "",
-  relevantExperience: "",
-  totalExperience: "",
-  skills: [],
-  linkedin: "",
-  referredBy: "",
-  resumeFile: null,
-};
-
-const BenchForm = ({ initialValues = formInitialValues, onCancel, onSuccess, isEditMode = false }) => {
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (values) => {
     try {
       setSubmitting(true);
-      const toastId = ToastService.loading(isEditMode ? "Updating candidate..." : "Adding candidate...");
-      
+      const toastId = ToastService.loading(
+        isEditMode ? "Updating candidate..." : "Adding candidate..."
+      );
+
       const formData = new FormData();
-  
-      // Append form fields
-      formData.append("fullName", values.fullName);
-      formData.append("email", values.email);
-      formData.append("contactNumber", values.contactNumber);
-      formData.append("relevantExperience", values.relevantExperience);
-      formData.append("totalExperience", values.totalExperience);
-      formData.append("linkedin", values.linkedin || "");
-      formData.append("referredBy", values.referredBy || "");
-  
-      // Append skills as JSON array string
-      formData.append("skills", JSON.stringify(values.skills));
-  
-      // Append resume file if provided
-      if (values.resumeFile) {
-        formData.append("resumeFiles", values.resumeFile); // Key must be "resumeFiles"
+      formData.append("fullName", formValues.fullName);
+      formData.append("email", formValues.email);
+      formData.append("contactNumber", formValues.contactNumber);
+      formData.append("relevantExperience", formValues.relevantExperience);
+      formData.append("totalExperience", formValues.totalExperience);
+      formData.append("linkedin", formValues.linkedin || "");
+      formData.append("referredBy", formValues.referredBy || "");
+      formData.append("skills", JSON.stringify(formValues.skills));
+
+      if (formValues.resumeFile) {
+        formData.append("resumeFiles", formValues.resumeFile);
+      } else if (isEditMode) {
+        // In edit mode, if no new file is provided, we'll keep the existing one
+        formData.append("keepExistingResume", "true");
       }
-      
-      // If in edit mode, append the ID
+
       let response;
       if (isEditMode) {
-        formData.append("id", values.id);
-        response = await httpService.put(`/candidate/bench/updatebench/${values.id}`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        formData.append("id", formValues.id);
+        response = await httpService.put(
+          `/candidate/bench/updatebench/${formValues.id}`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
       } else {
         response = await httpService.post("/candidate/bench/save", formData, {
           headers: {
@@ -189,40 +243,276 @@ const BenchForm = ({ initialValues = formInitialValues, onCancel, onSuccess, isE
           },
         });
       }
-  
+
       ToastService.update(
-        toastId, 
-        isEditMode ? "Candidate updated successfully!" : "Candidate added successfully!",
+        toastId,
+        isEditMode
+          ? "Candidate updated successfully!"
+          : "Candidate added successfully!",
         "success"
       );
-      
+
       if (onSuccess) {
         onSuccess(response.data);
       }
+      
+      handleClose();
     } catch (error) {
       console.error("Submission error:", error);
-      ToastService.error(isEditMode ? "Failed to update candidate" : "Failed to add candidate");
+      ToastService.error(
+        error.response?.data?.message || 
+        (isEditMode ? "Failed to update candidate" : "Failed to add candidate")
+      );
     } finally {
       setSubmitting(false);
     }
   };
-  
+
+  const handleSkillAdd = (e) => {
+    if ((e.key === "Enter" || e.key === ",") && inputValue.trim()) {
+      e.preventDefault();
+      const newSkill = inputValue.trim();
+      if (!formValues.skills.includes(newSkill)) {
+        setFormValues((prev) => ({
+          ...prev,
+          skills: [...prev.skills, newSkill],
+        }));
+      }
+      setInputValue("");
+    }
+  };
+
+  const handleSkillDelete = (skillToDelete) => {
+    setFormValues((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((s) => s !== skillToDelete),
+    }));
+  };
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  const renderFormContent = () => {
+    if (loading) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+
+    return (
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 2 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="fullName"
+              label="Full Name"
+              value={formValues.fullName}
+              onChange={handleChange}
+              required
+              fullWidth
+              error={!!errors.fullName}
+              helperText={errors.fullName}
+              disabled={submitting}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="email"
+              label="Email"
+              type="email"
+              value={formValues.email}
+              onChange={handleChange}
+              required
+              fullWidth
+              error={!!errors.email}
+              helperText={errors.email}
+              disabled={submitting}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="contactNumber"
+              label="Contact Number"
+              type="tel"
+              value={formValues.contactNumber}
+              onChange={handleChange}
+              required
+              fullWidth
+              error={!!errors.contactNumber}
+              helperText={errors.contactNumber}
+              disabled={submitting}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="relevantExperience"
+              label="Relevant Experience (Years)"
+              type="number"
+              value={formValues.relevantExperience}
+              onChange={handleChange}
+              required
+              fullWidth
+              inputProps={{ step: "0.5", min: "0" }}
+              error={!!errors.relevantExperience}
+              helperText={errors.relevantExperience}
+              disabled={submitting}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="totalExperience"
+              label="Total Experience (Years)"
+              type="number"
+              value={formValues.totalExperience}
+              onChange={handleChange}
+              required
+              fullWidth
+              inputProps={{ step: "0.5", min: "0" }}
+              error={!!errors.totalExperience}
+              helperText={errors.totalExperience}
+              disabled={submitting}
+            />
+          </Grid>
+
+          {/* SKILLS */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Skills (Press Enter to add)"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleSkillAdd}
+              error={!!errors.skills}
+              helperText={errors.skills || "Press Enter after typing each skill"}
+              disabled={submitting}
+            />
+            <Box mt={1} display="flex" flexWrap="wrap" gap={1}>
+              {formValues.skills.map((skill, index) => (
+                <Chip
+                  key={index}
+                  label={skill}
+                  onDelete={() => handleSkillDelete(skill)}
+                  disabled={submitting}
+                />
+              ))}
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="linkedin"
+              label="LinkedIn Profile URL"
+              value={formValues.linkedin}
+              onChange={handleChange}
+              fullWidth
+              disabled={submitting}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="referredBy"
+              label="Referred By"
+              value={formValues.referredBy}
+              onChange={handleChange}
+              fullWidth
+              disabled={submitting}
+            />
+          </Grid>
+
+          {/* RESUME UPLOAD */}
+          <Grid item xs={12} sm={6}>
+            <Button
+              variant="outlined"
+              component="label"
+              fullWidth
+              disabled={submitting}
+            >
+              {resumeFileName || (isEditMode ? "Update Resume (Optional)" : "Upload Resume (Required)")}
+              <input
+                type="file"
+                hidden
+                accept=".pdf,.doc,.docx"
+                onChange={handleFileChange}
+              />
+            </Button>
+            {errors.resumeFile && (
+              <FormHelperText error>{errors.resumeFile}</FormHelperText>
+            )}
+            {isEditMode && !resumeFileName && (
+              <FormHelperText>Leave empty to keep existing resume</FormHelperText>
+            )}
+          </Grid>
+
+          {/* RESUME DOWNLOAD IF AVAILABLE */}
+          {isEditMode && formValues.resumeAvailable && (
+            <Grid item xs={12} sm={6}>
+              <Button
+                variant="outlined"
+                color="secondary"
+                fullWidth
+                href={`/candidate/bench/download-resume/${formValues.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Download Existing Resume
+              </Button>
+            </Grid>
+          )}
+        </Grid>
+
+        <Box mt={3} display="flex" justifyContent="flex-end">
+          <Button
+            onClick={handleClose}
+            color="inherit"
+            disabled={submitting}
+            sx={{ mr: 2 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={submitting}
+          >
+            {submitting ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : isEditMode ? (
+              "Update"
+            ) : (
+              "Add"
+            )}
+          </Button>
+        </Box>
+      </Box>
+    );
+  };
 
   return (
-    <>
-      {!isEditMode && <ComponentTitle title="Add Candidate to bench" />}
-      <DynamicForm
-        fields={candidateFormFields}
-        onSubmit={handleSubmit}
-        initialValues={initialValues}
-        validationSchema={getValidationSchema(isEditMode)}
-        submitButtonText={isEditMode ? "Update Candidate" : "Add Candidate"}
-        cancelButtonText="Cancel"
-        onCancel={onCancel}
-        isSubmitting={submitting}
-      />
-    </>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ m: 0, p: 2 }}>
+        {isEditMode ? "Edit Bench Candidate" : "Add Bench Candidate"}
+        <IconButton
+          aria-label="close"
+          onClick={handleClose}
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            color: (theme) => theme.palette.grey[500],
+          }}
+        >
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>{renderFormContent()}</DialogContent>
+    </Dialog>
   );
 };
 
-export default BenchForm;
+export default BenchCandidateForm;

@@ -1,11 +1,7 @@
-// BenchList.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import httpService from '../../Services/httpService';
 import DataTable from '../muiComponents/DataTabel';
-
-import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 import {
   Box,
@@ -20,7 +16,6 @@ import {
   Button,
   Skeleton,
   Chip,
-  Badge,
   Stack
 } from '@mui/material';
 import {
@@ -28,7 +23,6 @@ import {
   Delete,
   Visibility,
   Download,
-  Refresh,
   Add,
   FilterList,
   Person,
@@ -36,42 +30,27 @@ import {
   School,
   ContactPhone,
   Code,
-  CancelOutlined,
-  Cancel,
-  SyncAlt,
-  FilterAlt,
-  CancelSharp,
-  Search,
-
 } from '@mui/icons-material';
 import ToastService from '../../Services/toastService';
-import BenchForm from './BenchForm';
+import BenchCandidateForm from './BenchForm';
 import CandidateDetails from './CandidateDetails';
-import ComponentTitle from "../../utils/ComponentTitle";
 import { useDispatch, useSelector } from 'react-redux';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
-import { DatePicker, DateRangeIcon, DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import DateRangeFilter from '../muiComponents/DateRangeFilter';
-import dayjs from 'dayjs';
-import { Minus, User2Icon } from 'lucide-react';
-import { formatDate, validateDateRange } from '../../utils/validateDateRange';
-
+import { User2Icon } from 'lucide-react';
 
 const BenchList = () => {
   const [benchData, setBenchData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [editData, setEditData] = useState(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
-  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+  
+  // Form handling states
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editCandidateId, setEditCandidateId] = useState(null);
 
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  const [dialogOpen, setDialogOpen] = useState(false);
   const { isFilteredDataRequested, filteredBenchList } = useSelector((state) => state.bench);
   const dispatch = useDispatch();
 
@@ -81,7 +60,7 @@ const BenchList = () => {
       ToastService.info("Loading bench candidates...");
 
       const response = await httpService.get('/candidate/bench/getBenchList');
-      setBenchData(response.data || []);
+      setBenchData(response.data);
       ToastService.success(`Loaded ${response.data?.length || 0} bench candidates`);
     } catch (error) {
       console.error('Failed to fetch bench list:', error);
@@ -123,32 +102,23 @@ const BenchList = () => {
     }
   };
 
-  const handleEdit = async (row) => {
-    try {
-      ToastService.info(`Loading details for ${row.fullName}...`);
-      const response = await httpService.get(`/candidate/bench/${row.id}`);
-      const candidateData = response.data;
+  const handleAdd = () => {
+    setEditCandidateId(null);
+    setIsFormOpen(true);
+  };
 
-      const formData = {
-        id: candidateData.id,
-        fullName: candidateData.fullName,
-        email: candidateData.email,
-        contactNumber: candidateData.contactNumber,
-        relevantExperience: candidateData.relevantExperience,
-        totalExperience: candidateData.totalExperience,
-        skills: candidateData.skills || [],
-        linkedin: candidateData.linkedin || "",
-        referredBy: candidateData.referredBy || "",
-        resumeAvailable: candidateData.resumeAvailable
-      };
+  const handleEdit = (row) => {
+    setEditCandidateId(row.id);
+    setIsFormOpen(true);
+  };
 
-      setEditData(formData);
-      setIsEditModalOpen(true);
-      ToastService.success(`Ready to edit ${row.fullName}`);
-    } catch (error) {
-      console.error('Failed to fetch candidate details:', error);
-      ToastService.error('Failed to load candidate details for editing');
-    }
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditCandidateId(null);
+  };
+
+  const handleFormSuccess = () => {
+    fetchBenchList();
   };
 
   const handleDelete = (row) => {
@@ -228,19 +198,6 @@ const BenchList = () => {
     }
   };
 
-  const handleFormSubmitSuccess = (message) => {
-    ToastService.success(message || "Operation completed successfully!");
-    fetchBenchList();
-    setIsEditModalOpen(false);
-    setEditData(null);
-    setIsAddFormOpen(false);
-  };
-
-  const handleOpenDrawer = () => {
-    setIsAddFormOpen(true);
-    ToastService.info("Opening form to add new candidate");
-  };
-
   const generateColumns = (loading = false) => [
     {
       key: 'id',
@@ -277,9 +234,7 @@ const BenchList = () => {
         ) : (
           "Invalid Data"
         )
-    }
-       
-    ,
+    },
     {
       key: 'email',
       label: 'Email',
@@ -377,7 +332,6 @@ const BenchList = () => {
 
   return (
     <>
-
       <Stack
         direction="row"
         alignItems="center"
@@ -392,19 +346,16 @@ const BenchList = () => {
           justifyContent: 'space-between', 
         }}
       >
-
         <Typography variant="h6" color="primary">
           Bench Candidate Management
         </Typography>
-
        
         <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
-
           <DateRangeFilter component="BenchList" />
           <Button
             variant="text"
             color="primary"
-            onClick={() => handleOpenDrawer()}
+            onClick={handleAdd}
           >
             <Add /> <User2Icon />
           </Button>
@@ -442,53 +393,14 @@ const BenchList = () => {
         uniqueId="id"
       />
 
-      {/* Edit Modal */}
-      <Dialog
-        open={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          ToastService.info("Edit cancelled");
-        }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Edit Candidate</DialogTitle>
-        <DialogContent>
-          {editData && (
-            <BenchForm
-              initialValues={editData}
-              onCancel={() => {
-                setIsEditModalOpen(false);
-                ToastService.info("Edit cancelled");
-              }}
-              onSuccess={handleFormSubmitSuccess}
-              isEditMode={true}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Add New Candidate Modal */}
-      <Dialog
-        open={isAddFormOpen}
-        onClose={() => {
-          setIsAddFormOpen(false);
-          ToastService.info("Add new candidate cancelled");
-        }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogContent>
-          <BenchForm
-            onCancel={() => {
-              setIsAddFormOpen(false);
-              ToastService.info("Add new candidate cancelled");
-            }}
-            onSuccess={handleFormSubmitSuccess}
-            isEditMode={false}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Reusable Form Component - handles both Add and Edit */}
+      <BenchCandidateForm
+        open={isFormOpen}
+        onClose={handleFormClose}
+        onSuccess={handleFormSuccess}
+        id={editCandidateId}
+        initialData={editCandidateId ? benchData.find(item => item.id === editCandidateId) : null} 
+      />
 
       {/* View Modal with Filter Controls */}
       <Dialog
@@ -522,7 +434,7 @@ const BenchList = () => {
                   onClick={() => toggleFilter('showContact')}
                 >
                   <ContactPhone fontSize="small" />
-                </IconButton>
+                  </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Experience">
                 <IconButton
@@ -551,36 +463,14 @@ const BenchList = () => {
                   <School fontSize="small" />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Toggle Documents">
-                <IconButton
-                  color={selectedCandidate?.filterCriteria?.showDocuments ? "primary" : "default"}
-                  size="small"
-                  onClick={() => toggleFilter('showDocuments')}
-                >
-                  <FilterList fontSize="small" />
-                </IconButton>
-              </Tooltip>
             </Box>
           </Box>
         </DialogTitle>
         <DialogContent dividers>
-          {selectedCandidate && (
-            <CandidateDetails
-              candidateId={selectedCandidate.id}
-              filterCriteria={selectedCandidate.filterCriteria}
-              onClose={() => {
-                setIsViewModalOpen(false);
-                ToastService.info("Closed candidate details view");
-              }}
-              onDownloadResume={() => downloadResume(selectedCandidate.id, selectedCandidate.fullName)}
-            />
-          )}
+          <CandidateDetails candidate={selectedCandidate} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
-            setIsViewModalOpen(false);
-            ToastService.info("Closed candidate details view");
-          }}>
+          <Button onClick={() => setIsViewModalOpen(false)} color="primary">
             Close
           </Button>
         </DialogActions>
@@ -589,25 +479,23 @@ const BenchList = () => {
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => {
-          setDeleteDialogOpen(false);
-          ToastService.info("Delete cancelled");
-        }}
+        onClose={() => setDeleteDialogOpen(false)}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete {candidateToDelete?.fullName}? This action cannot be undone.
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete{' '}
+            <strong>{candidateToDelete?.fullName}</strong> from the bench list?
+            This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
-            setDeleteDialogOpen(false);
-            ToastService.info("Delete cancelled");
-          }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button onClick={confirmDelete} color="error" autoFocus>
+          <Button onClick={confirmDelete} color="error" variant="contained">
             Delete
           </Button>
         </DialogActions>
