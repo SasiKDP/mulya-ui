@@ -23,7 +23,6 @@ import ToastService from "../../Services/toastService";
 import { fetchAllClients } from "../../redux/clientsSlice";
 import { fetchEmployees } from "../../redux/employeesSlice";
 import DynamicForm from "../FormContainer/DynamicForm";
-import WorkIcon from "@mui/icons-material/Work";
 import EditIcon from "@mui/icons-material/Edit";
 
 const EditRequirement = ({ requirementData, onClose }) => {
@@ -298,10 +297,10 @@ const EditRequirement = ({ requirementData, onClose }) => {
       type: "select",
       required: true,
       options: [
-        { label: "In Progress", value: "INPROGRESS" },
-        { label: "Submitted", value: "SUBMITTED" },
-        { label: "On Hold", value: "HOLD" },
-        { label: "Closed", value: "CLOSED" },
+        { label: "IN-PROGRESS", value: "In Progress" },
+        { label: "SUBMITTED", value: "Submitted" },
+        { label: "HOLD", value: "Hold" },
+        { label: "CLOSED", value: "Closed" },
       ],
       gridProps: fieldGridProps,
     },
@@ -472,7 +471,16 @@ const EditRequirement = ({ requirementData, onClose }) => {
           <EditIcon sx={{ mr: 1, color: "#1976d2" }} />
           Edit Requirement
         </Typography>
-        <IconButton onClick={onClose} size="small">
+        <IconButton 
+          onClick={onClose} 
+          size="small"
+          sx={{
+            '&:hover': {
+              backgroundColor: 'rgba(244, 67, 54, 0.1)', // Light red background on hover
+              color: '#f44336', // Red color on hover
+            }
+          }}
+        >
           <CloseIcon />
         </IconButton>
       </Box>
@@ -509,9 +517,11 @@ const EditRequirement = ({ requirementData, onClose }) => {
           onSubmit={handleSubmit}
           fields={formFields}
           submitButtonText="Update Requirement"
-          resetButtonText="Reset"
+          cancelButtonText="Cancel"
+          onCancel={onClose}
           loading={submitting}
           gridSpacing={2}
+          onClose={onClose}
           columnSpacing={3}
           gridContainerProps={{ alignItems: "stretch" }}
         />
@@ -520,6 +530,13 @@ const EditRequirement = ({ requirementData, onClose }) => {
           <Typography color="text.secondary">
             No requirement data available
           </Typography>
+          <Button 
+            variant="outlined" 
+            onClick={onClose}
+            sx={{ mt: 2 }}
+          >
+            Close
+          </Button>
         </Box>
       )}
     </Box>

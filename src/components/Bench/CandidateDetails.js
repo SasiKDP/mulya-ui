@@ -4,7 +4,6 @@ import {
   Typography, 
   Grid, 
   CircularProgress, 
-  Divider, 
   Chip, 
   Paper, 
   Button, 
@@ -12,31 +11,12 @@ import {
   Avatar,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
-  Badge,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Card,
-  CardContent
+  CardContent,
+  Divider
 } from '@mui/material';
-import { 
-  Email, 
-  Phone, 
-  LinkedIn, 
-  Person, 
-  Work, 
-  School, 
-  Code, 
-  Description, 
-  Download,
-  ContactPhone,
-  ExpandMore,
-  CalendarToday,
-  Business,
-  Star
-} from '@mui/icons-material';
+import { Download } from '@mui/icons-material';
 import httpService from '../../Services/httpService';
 import ToastService from '../../Services/toastService';
 
@@ -44,12 +24,7 @@ const CandidateDetails = ({ candidateId, onClose, onDownloadResume }) => {
   const [candidateData, setCandidateData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expanded, setExpanded] = useState('panel1'); // Default open panel
   
-  const handleChange = (panel) => (event, newExpanded) => {
-    setExpanded(newExpanded ? panel : false);
-  };
-
   useEffect(() => {
     const fetchCandidateDetails = async () => {
       try {
@@ -88,27 +63,25 @@ const CandidateDetails = ({ candidateId, onClose, onDownloadResume }) => {
   }
 
   return (
-    <Card elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+    <Card elevation={2} sx={{ borderRadius: 1, overflow: 'hidden' }}>
       {/* Header with Avatar and Name */}
       <Box sx={{ 
         p: 3, 
-        background: 'linear-gradient(to right, #3f51b5, #5c6bc0)',
-        color: 'white',
+        bgcolor: '#f5f5f5',
         display: 'flex',
         alignItems: 'center'
       }}>
         <Avatar 
-          sx={{ width: 80, height: 80, mr: 3, bgcolor: 'white', color: '#3f51b5', border: '3px solid white' }}
+          sx={{ width: 70, height: 70, mr: 3, bgcolor: '#3f51b5' }}
         >
           {candidateData.fullName?.charAt(0)?.toUpperCase() || 'C'}
         </Avatar>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500 }}>{candidateData.fullName}</Typography>
-          <Typography variant="body1">
+          <Typography variant="h5" sx={{ fontWeight: 500 }}>{candidateData.fullName}</Typography>
+          <Typography variant="body2" color="text.secondary">
             Bench ID: {candidateData.id}
             {candidateData.referredBy && (
-              <Box component="span" sx={{ ml: 2, display: 'inline-flex', alignItems: 'center' }}>
-                <Person fontSize="small" sx={{ mr: 0.5, fontSize: '1rem' }} />
+              <Box component="span" sx={{ ml: 2 }}>
                 Referred by: {candidateData.referredBy}
               </Box>
             )}
@@ -116,248 +89,192 @@ const CandidateDetails = ({ candidateId, onClose, onDownloadResume }) => {
         </Box>
       </Box>
 
-      <CardContent>
+      <CardContent sx={{ px: 3 }}>
         {/* Basic Information */}
-        <Accordion expanded={expanded === 'panel1'} onChange={handleChange('panel1')}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Person sx={{ mr: 1 }} />
-              <Typography variant="h6">Basic Information</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="body1">
-                  <strong>Full Name:</strong> {candidateData.fullName}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="body1">
-                  <strong>Bench ID:</strong> {candidateData.id}
-                </Typography>
-              </Grid>
-              {candidateData.totalExperience && (
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body1">
-                    <strong>Total Experience:</strong> {candidateData.totalExperience} years
-                  </Typography>
-                </Grid>
-              )}
-              {candidateData.relevantExperience && (
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body1">
-                    <strong>Relevant Experience:</strong> {candidateData.relevantExperience} years
-                  </Typography>
-                </Grid>
-              )}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ mb: 2, pb: 1, borderBottom: '1px solid #e0e0e0' }}>
+            Basic Information
+          </Typography>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body1">
+                <strong>Full Name:</strong> {candidateData.fullName}
+              </Typography>
             </Grid>
-          </AccordionDetails>
-        </Accordion>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body1">
+                <strong>Bench ID:</strong> {candidateData.id}
+              </Typography>
+            </Grid>
+            {candidateData.totalExperience && (
+              <Grid item xs={12} md={6}>
+                <Typography variant="body1">
+                  <strong>Total Experience:</strong> {candidateData.totalExperience} years
+                </Typography>
+              </Grid>
+            )}
+            {candidateData.relevantExperience && (
+              <Grid item xs={12} md={6}>
+                <Typography variant="body1">
+                  <strong>Relevant Experience:</strong> {candidateData.relevantExperience} years
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+        </Box>
 
         {/* Contact Information */}
-        <Accordion expanded={expanded === 'panel2'} onChange={handleChange('panel2')}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <ContactPhone sx={{ mr: 1 }} />
-              <Typography variant="h6">Contact Information</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <List dense>
-              <ListItem>
-                <ListItemIcon>
-                  <Email fontSize="small" />
-                </ListItemIcon>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ mb: 2, pb: 1, borderBottom: '1px solid #e0e0e0' }}>
+            Contact Information
+          </Typography>
+          
+          <List disablePadding>
+            <ListItem disableGutters>
+              <ListItemText 
+                primary="Email" 
+                secondary={candidateData.email || 'Not provided'} 
+              />
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText 
+                primary="Phone" 
+                secondary={candidateData.contactNumber || 'Not provided'} 
+              />
+            </ListItem>
+            {candidateData.linkedin && (
+              <ListItem disableGutters>
                 <ListItemText 
-                  primary="Email" 
-                  secondary={candidateData.email || 'Not provided'} 
+                  primary="LinkedIn" 
+                  secondary={
+                    <Link href={candidateData.linkedin} target="_blank" rel="noopener">
+                      {candidateData.linkedin}
+                    </Link>
+                  } 
                 />
               </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <Phone fontSize="small" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Phone" 
-                  secondary={candidateData.contactNumber || 'Not provided'} 
-                />
-              </ListItem>
-              {candidateData.linkedin && (
-                <ListItem>
-                  <ListItemIcon>
-                    <LinkedIn fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="LinkedIn" 
-                    secondary={
-                      <Link href={candidateData.linkedin} target="_blank" rel="noopener">
-                        {candidateData.linkedin}
-                      </Link>
-                    } 
-                  />
-                </ListItem>
-              )}
-            </List>
-          </AccordionDetails>
-        </Accordion>
+            )}
+          </List>
+        </Box>
 
-        {/* Experience */}
+        {/* Work Experience */}
         {candidateData.workHistory && candidateData.workHistory.length > 0 && (
-          <Accordion expanded={expanded === 'panel3'} onChange={handleChange('panel3')}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Work sx={{ mr: 1 }} />
-                <Typography variant="h6">Work Experience</Typography>
-                <Badge badgeContent={candidateData.workHistory.length} color="primary" sx={{ ml: 2 }} />
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" sx={{ mb: 2, pb: 1, borderBottom: '1px solid #e0e0e0' }}>
+              Work Experience ({candidateData.workHistory.length})
+            </Typography>
+            
+            {candidateData.workHistory.map((work, index) => (
+              <Box 
+                key={index} 
+                sx={{ 
+                  mb: 3, 
+                  pb: 2,
+                  borderBottom: index !== candidateData.workHistory.length - 1 ? '1px solid #eaeaea' : 'none'
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{work.position}</Typography>
+                <Typography variant="subtitle2">{work.company}</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  {work.startDate} - {work.endDate || 'Present'}
+                </Typography>
+                {work.description && (
+                  <Typography variant="body2">
+                    {work.description}
+                  </Typography>
+                )}
               </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              {candidateData.workHistory.map((work, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    mb: 3, 
-                    pl: 2, 
-                    borderLeft: '3px solid', 
-                    borderColor: 'primary.main',
-                    pb: 1
-                  }}
-                >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{work.position}</Typography>
-                  <Typography variant="subtitle2">
-                    <Business fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
-                    {work.company}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                    <CalendarToday fontSize="small" sx={{ mr: 1 }} />
-                    {work.startDate} - {work.endDate || 'Present'}
-                  </Typography>
-                  {work.description && (
-                    <Typography variant="body2">
-                      {work.description}
-                    </Typography>
-                  )}
-                </Box>
-              ))}
-            </AccordionDetails>
-          </Accordion>
+            ))}
+          </Box>
         )}
 
         {/* Skills */}
         {candidateData.skills && candidateData.skills.length > 0 && (
-          <Accordion expanded={expanded === 'panel4'} onChange={handleChange('panel4')}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Code sx={{ mr: 1 }} />
-                <Typography variant="h6">Skills</Typography>
-                <Badge badgeContent={candidateData.skills.length} color="primary" sx={{ ml: 2 }} />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {candidateData.skills.map((skill, index) => (
-                  <Chip 
-                    key={index} 
-                    label={skill} 
-                    color="primary"
-                    variant="outlined"
-                    sx={{ mb: 1, fontSize: '0.9rem', py: 0.5 }}
-                  />
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" sx={{ mb: 2, pb: 1, borderBottom: '1px solid #e0e0e0' }}>
+              Skills ({candidateData.skills.length})
+            </Typography>
+            
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {candidateData.skills.map((skill, index) => (
+                <Chip 
+                  key={index} 
+                  label={skill} 
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                  sx={{ mb: 1 }}
+                />
+              ))}
+            </Box>
+          </Box>
         )}
 
         {/* Education */}
         {candidateData.education && candidateData.education.length > 0 && (
-          <Accordion expanded={expanded === 'panel5'} onChange={handleChange('panel5')}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <School sx={{ mr: 1 }} />
-                <Typography variant="h6">Education</Typography>
-                <Badge badgeContent={candidateData.education.length} color="primary" sx={{ ml: 2 }} />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              {candidateData.education.map((edu, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    mb: 3, 
-                    p: 2, 
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1
-                  }}
-                >
-                  <Typography variant="h6">{edu.degree}</Typography>
-                  <Typography variant="subtitle1">
-                    <School fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
-                    {edu.institution}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" sx={{ mb: 2, pb: 1, borderBottom: '1px solid #e0e0e0' }}>
+              Education ({candidateData.education.length})
+            </Typography>
+            
+            {candidateData.education.map((edu, index) => (
+              <Paper 
+                key={index} 
+                variant="outlined"
+                sx={{ 
+                  mb: 2, 
+                  p: 2,
+                  borderRadius: 1
+                }}
+              >
+                <Typography variant="subtitle1" fontWeight="medium">{edu.degree}</Typography>
+                <Typography variant="subtitle2">{edu.institution}</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  {edu.year}
+                </Typography>
+                {edu.description && (
+                  <Typography variant="body2">
+                    {edu.description}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                    <CalendarToday fontSize="small" sx={{ mr: 1 }} />
-                    {edu.year}
-                  </Typography>
-                  {edu.description && (
-                    <Typography variant="body2">
-                      {edu.description}
-                    </Typography>
-                  )}
-                </Box>
-              ))}
-            </AccordionDetails>
-          </Accordion>
+                )}
+              </Paper>
+            ))}
+          </Box>
         )}
 
         {/* Documents */}
-        <Accordion expanded={expanded === 'panel6'} onChange={handleChange('panel6')}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Description sx={{ mr: 1 }} />
-              <Typography variant="h6">Documents</Typography>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2, pb: 1, borderBottom: '1px solid #e0e0e0' }}>
+            Documents
+          </Typography>
+          
+          <Paper 
+            variant="outlined"
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: 2,
+              borderRadius: 1
+            }}
+          >
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="body1">
+                {candidateData.resumeAvailable ? 'Resume Available' : 'Resume Not Available'}
+              </Typography>
             </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                p: 2,
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1
-              }}
-            >
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body1">
-                  {candidateData.resumeAvailable ? (
-                    <Badge color="success" variant="dot" sx={{ mr: 1 }}>
-                      <Typography component="span">Resume Available</Typography>
-                    </Badge>
-                  ) : (
-                    <Badge color="error" variant="dot" sx={{ mr: 1 }}>
-                      <Typography component="span">Resume Not Available</Typography>
-                    </Badge>
-                  )}
-                </Typography>
-              </Box>
-              {candidateData.resumeAvailable && (
-                <Button 
-                  variant="contained" 
-                  startIcon={<Download />}
-                  onClick={onDownloadResume}
-                >
-                  Download Resume
-                </Button>
-              )}
-            </Box>
-          </AccordionDetails>
-        </Accordion>
+            {candidateData.resumeAvailable && (
+              <Button 
+                variant="contained" 
+                startIcon={<Download />}
+                onClick={onDownloadResume}
+                size="small"
+              >
+                Download Resume
+              </Button>
+            )}
+          </Paper>
+        </Box>
       </CardContent>
     </Card>
   );

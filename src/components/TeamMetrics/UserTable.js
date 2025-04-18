@@ -1,16 +1,18 @@
 import React, { useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Box, Typography, CircularProgress } from '@mui/material';
 import DataTable from '../muiComponents/DataTabel';
 import { generateColumns } from './columnUtils';
 
-const UserTable = ({ role, title, employeesList }) => {
+const UserTable = ({ role, title, employeesList, loading = false }) => {
   const navigate = useNavigate();
 
   const handleEmployeeClick = useCallback((employeeId) => {
+    if (!employeeId) return;
+    
     if (role === 'BDM') {
       navigate(`/dashboard/team-metrics/bdmstatus/${employeeId}`);
-    } else if (role === 'TEAMLEAD' ||role === "EMPLOYEE") {
+    } else if (role === 'TEAMLEAD' || role === "EMPLOYEE") {
       navigate(`/dashboard/team-metrics/employeestatus/${employeeId}`);
     } else {
       navigate(`/dashboard/team-metrics/overview/${employeeId}`);
@@ -18,8 +20,26 @@ const UserTable = ({ role, title, employeesList }) => {
   }, [navigate, role]);
 
   const columns = useMemo(() => 
-    generateColumns(role, handleEmployeeClick), 
-  [role, handleEmployeeClick]);
+    generateColumns(role, handleEmployeeClick, loading), 
+  [role, handleEmployeeClick, loading]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!employeesList || employeesList.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+        <Typography variant="body1" color="text.secondary">
+          No {title.toLowerCase()} found.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: '100%', mt: 2 }}>
@@ -27,7 +47,7 @@ const UserTable = ({ role, title, employeesList }) => {
         data={employeesList || []}
         columns={columns}
         title={title}
-        loading={false}
+        loading={loading}
         enableSelection={false}
         defaultSortColumn="employeeName"
         defaultSortDirection="asc"
