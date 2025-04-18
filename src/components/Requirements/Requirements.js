@@ -40,6 +40,7 @@ import { DateRangeIcon } from "@mui/x-date-pickers";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { useDispatch, useSelector } from "react-redux";
 import { setFilteredReqDataRequested } from "../../redux/requirementSlice";
+import { Send } from "lucide-react";
 
 const Requirements = () => {
   const [data, setData] = useState([]);
@@ -147,7 +148,7 @@ const Requirements = () => {
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
-    refreshData();
+   
   };
 
   const handleCloseEditDrawer = () => {
@@ -224,7 +225,7 @@ const Requirements = () => {
       case "closed":
         color = "error";
         break;
-      case "on hold":
+      case "hold"||'on hold':
         color = "warning";
         break;
       case "in progress":
@@ -544,6 +545,21 @@ const Requirements = () => {
         ),
       },
       {
+        key: "recruiterName",
+        label: "Recruiter(s)",
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={100} />
+          ) : !row.recruiterName || row.recruiterName.length === 0 ? (
+            "N/A"
+          ) : Array.isArray(row.recruiterName) ? (
+            row.recruiterName.join(", ")
+          ) : (
+            "Invalid Data"
+          ),
+      },
+      
+      {
         key: "numberOfSubmissions",
         label: "Submissions",
         render: (row) => isLoading ? (
@@ -735,20 +751,15 @@ const Requirements = () => {
       >
         <Typography variant='h6' color='primary'>Requirements Management</Typography>
         <DateRangeFilter component="Requirement" />
+        
         <Button
-          variant="text"
-          startIcon={<Refresh />}
-          onClick={refreshData}
-          disabled={loading}
-          sx={{ mr: 1 }}
-        />
-        <Button
-          variant="text"
+          variant="contained"
           color="primary"
           onClick={() => {
             setDrawerOpen(true);
             ToastService.info("Opening new requirement form");
           }}
+          startIcon={<Send size={18} />}
         >
           Post New Requirement
         </Button>

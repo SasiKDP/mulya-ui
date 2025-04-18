@@ -53,7 +53,7 @@ const candidateFormFields = [
   {
     name: "skills",
     label: "Skills",
-    type: "multiselect",
+    type: "search-select",
     required: true,
     options: [...skills],
     gridProps: { xs: 12,md:6},

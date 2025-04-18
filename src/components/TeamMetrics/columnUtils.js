@@ -1,15 +1,23 @@
 import React from 'react';
 import { Chip, Skeleton } from '@mui/material';
 
+/**
+ * Unified column generator for all user types (BDM, TEAMLEAD, EMPLOYEE)
+ * @param {string} role User role (BDM, TEAMLEAD, EMPLOYEE)
+ * @param {function} handleEmployeeClick Function to handle click on employee name/id
+ * @param {boolean} loading Loading state for skeleton display
+ * @returns {Array} Array of column configurations
+ */
 export const generateColumns = (role, handleEmployeeClick, loading = false) => {
+  // Common base columns for all roles
   const baseColumns = [
     {
-      key: "employeeId",
-      label: "Employee ID",
+      key: role === 'BDM' ? "employeeId" : "employeeId", // Key consistency
+      label: role === 'BDM' ? "Employee ID" : "Employee ID",
       type: "text",
       sortable: true,
       filterable: true,
-      width: 120,
+      width: role === 'BDM' ? 120 : 120,
       render: (row) => loading ? (
         <Skeleton variant="text" width={100} height={24} />
       ) : (
@@ -21,7 +29,7 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
           }}
           onClick={() => handleEmployeeClick(row.employeeId)}
         >
-          {row.employeeId}
+          {role === 'BDM' ? row.employeeId : row.employeeId}
         </span>
       ),
     },
@@ -37,9 +45,27 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
       ) : (
         row.employeeName
       ),
-    },
+    }
   ];
 
+  // // For non-BDM roles, add email field
+  // if (role !== 'BDM') {
+  //   baseColumns.push({
+  //     key: 'employeeEmail',
+  //     label: 'Email',
+  //     type: 'text',
+  //     sortable: true,
+  //     filterable: true,
+  //     width: 250,
+  //     render: (row) => loading ? (
+  //       <Skeleton variant="text" width={100} height={24} />
+  //     ) : (
+  //       row.employeeEmail
+  //     ),
+  //   });
+  // }
+
+  // Role-specific columns
   const roleSpecificColumns = {
     BDM: [
       {
@@ -119,6 +145,7 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
     ]
   };
 
+  // Common metrics columns with appropriate key naming based on role
   const metricsColumns = [
     {
       key: role === 'BDM' ? "clientCount" : "numberOfClients",
@@ -216,5 +243,128 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
     }
   ];
 
-  return [...baseColumns, ...(roleSpecificColumns[role] || []), ...metricsColumns];
+  // Add team lead specific metrics if role is TEAMLEAD
+  const teamLeadExtras = role === 'TEAMLEAD' ? [
+    {
+      key: 'selfSubmissions',
+      label: 'Self Submissions',
+      type: 'number',
+      sortable: true,
+      filterable: true,
+      width: 150,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={60} height={24} />
+      ) : (
+        <Chip
+          label={row.selfSubmissions || 0}
+          size="small"
+          variant="outlined"
+          color="info"
+        />
+      ),
+    },
+    {
+      key: 'selfInterviews',
+      label: 'Self Interviews',
+      type: 'number',
+      sortable: true,
+      filterable: true,
+      width: 140,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={60} height={24} />
+      ) : (
+        <Chip
+          label={row.selfInterviews || 0}
+          size="small"
+          variant="outlined"
+          color="info"
+        />
+      ),
+    },
+    {
+      key: 'selfPlacements',
+      label: 'Self Placements',
+      type: 'number',
+      sortable: true,
+      filterable: true,
+      width: 140,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={60} height={24} />
+      ) : (
+        <Chip
+          label={row.selfPlacements || 0}
+          size="small"
+          sx={{
+            backgroundColor: '#f3e5f5',
+            color: '#7b1fa2',
+          }}
+        />
+      ),
+    },
+    {
+      key: 'teamSubmissions',
+      label: 'Team Submissions',
+      type: 'number',
+      sortable: true,
+      filterable: true,
+      width: 150,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={60} height={24} />
+      ) : (
+        <Chip
+          label={row.teamSubmissions || 0}
+          size="small"
+          variant="outlined"
+          color="warning"
+        />
+      ),
+    },
+    {
+      key: 'teamInterviews',
+      label: 'Team Interviews',
+      type: 'number',
+      sortable: true,
+      filterable: true,
+      width: 140,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={60} height={24} />
+      ) : (
+        <Chip
+          label={row.teamInterviews || 0}
+          size="small"
+          variant="outlined"
+          color="warning"
+        />
+      ),
+    },
+    {
+      key: 'teamPlacements',
+      label: 'Team Placements',
+      type: 'number',
+      sortable: true,
+      filterable: true,
+      width: 140,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={60} height={24} />
+      ) : (
+        <Chip
+          label={row.teamPlacements || 0}
+          size="small"
+          sx={{
+            backgroundColor: '#fff8e1',
+            color: '#ff8f00',
+            fontWeight: 600,
+          }}
+        />
+      ),
+    }
+  ] : [];
+
+  // Combine all column types based on role
+  return [
+    ...baseColumns, 
+    ...(roleSpecificColumns[role] || []), 
+    ...metricsColumns,
+    ...teamLeadExtras
+  ];
 };

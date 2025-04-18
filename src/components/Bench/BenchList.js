@@ -5,7 +5,6 @@ import httpService from '../../Services/httpService';
 import DataTable from '../muiComponents/DataTabel';
 
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
-
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 import {
@@ -52,7 +51,7 @@ import ComponentTitle from "../../utils/ComponentTitle";
 import { useDispatch, useSelector } from 'react-redux';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import { DatePicker, DateRangeIcon, DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import DateRangeFilter, { } from '../muiComponents/DateRangeFilter';
+import DateRangeFilter from '../muiComponents/DateRangeFilter';
 import dayjs from 'dayjs';
 import { Minus, User2Icon } from 'lucide-react';
 import { formatDate, validateDateRange } from '../../utils/validateDateRange';
@@ -75,7 +74,6 @@ const BenchList = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { isFilteredDataRequested, filteredBenchList } = useSelector((state) => state.bench);
   const dispatch = useDispatch();
-
 
   const fetchBenchList = async () => {
     try {
@@ -101,7 +99,6 @@ const BenchList = () => {
     setSelectedCandidate({
       ...row,
       filterCriteria: {
-        // Default filter settings - all enabled initially
         showBasicInfo: true,
         showContact: true,
         showExperience: true,
@@ -129,11 +126,9 @@ const BenchList = () => {
   const handleEdit = async (row) => {
     try {
       ToastService.info(`Loading details for ${row.fullName}...`);
-      // Get full candidate details including skills
       const response = await httpService.get(`/candidate/bench/${row.id}`);
       const candidateData = response.data;
 
-      // Format candidate data for the form
       const formData = {
         id: candidateData.id,
         fullName: candidateData.fullName,
@@ -167,7 +162,7 @@ const BenchList = () => {
       const toastId = ToastService.loading("Deleting candidate...");
       await httpService.delete(`/candidate/bench/deletebench/${candidateToDelete.id}`);
       ToastService.update(toastId, "Candidate deleted successfully!", "success");
-      fetchBenchList(); // Refresh the list
+      fetchBenchList();
       setDeleteDialogOpen(false);
     } catch (error) {
       ToastService.error("Failed to delete candidate");
@@ -175,28 +170,24 @@ const BenchList = () => {
     }
   };
 
-  const downloadResume = async (candidateId, candidateName) => {
+  const downloadResume = async (id, candidateName) => {
     try {
       const toastId = ToastService.loading("Preparing resume download...");
 
-      // Make the request with proper response type for file download
-      const response = await httpService.get(`/candidate/bench/download-resume/${candidateId}`, {
+      const response = await httpService.get(`/candidate/bench/download/${id}`, {
         responseType: 'blob',
         headers: {
           'Accept': 'application/pdf,application/octet-stream'
         }
       });
 
-      // Verify we received valid data
       if (!(response.data instanceof Blob) || response.data.size === 0) {
         throw new Error("Invalid or empty file received");
       }
 
-      // Create a blob URL for the file
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
 
-      // Get filename from headers if available, otherwise construct one
       let filename = `${candidateName.replace(/\s+/g, '_')}_Resume.pdf`;
       const contentDisposition = response.headers['content-disposition'];
       if (contentDisposition) {
@@ -206,14 +197,12 @@ const BenchList = () => {
         }
       }
 
-      // Create and trigger download link
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
 
-      // Clean up resources
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(link);
@@ -223,7 +212,6 @@ const BenchList = () => {
     } catch (error) {
       console.error("Download error:", error);
 
-      // More specific error messages based on the error type
       if (error.response) {
         if (error.response.status === 404) {
           ToastService.error("Resume file not found for this candidate");
@@ -242,7 +230,7 @@ const BenchList = () => {
 
   const handleFormSubmitSuccess = (message) => {
     ToastService.success(message || "Operation completed successfully!");
-    fetchBenchList(); // Refresh the list after successful form submission
+    fetchBenchList();
     setIsEditModalOpen(false);
     setEditData(null);
     setIsAddFormOpen(false);
@@ -272,6 +260,26 @@ const BenchList = () => {
       width: 180,
       render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
     },
+    {
+      key: 'skills',
+      label: 'Skills',
+      type: 'text',
+      sortable: true,
+      filterable: true,
+      width: 250,
+      render: (row) =>
+        loading ? (
+          <Skeleton variant="text" width={120} />
+        ) : !row.skills || row.skills.length === 0 ? (
+          "N/A"
+        ) : Array.isArray(row.skills) ? (
+          row.skills.join(", ")
+        ) : (
+          "Invalid Data"
+        )
+    }
+       
+    ,
     {
       key: 'email',
       label: 'Email',
@@ -355,8 +363,8 @@ const BenchList = () => {
               <IconButton
                 color="success"
                 size="small"
-                onClick={() => row.resumeAvailable && downloadResume(row.id, row.fullName)}
-
+                disabled={!row.resumeAvailable}
+                onClick={() => downloadResume(row.id, row.fullName)}
               >
                 <Download fontSize="small" />
               </IconButton>
@@ -367,12 +375,8 @@ const BenchList = () => {
     },
   ];
 
-
-
-
   return (
     <>
-
       <Stack direction="row" alignItems="center" spacing={2}
         sx={{
           flexWrap: 'wrap',
@@ -382,9 +386,7 @@ const BenchList = () => {
           backgroundColor: '#f9f9f9',
           borderRadius: 2,
           boxShadow: 1,
-
         }}>
-
         <Typography variant='h6' color='primary'>Bench Candidate Management</Typography>
 
         <DateRangeFilter component="BenchList"/>
@@ -401,8 +403,6 @@ const BenchList = () => {
         <Button
           variant="text"
           color="primary"
-
-
           onClick={() => handleOpenDrawer()}
         >
           <Add /> <User2Icon />
@@ -415,7 +415,6 @@ const BenchList = () => {
         pageLimit={20}
         title="Bench List"
         onRefresh={fetchBenchList}
-        // isRefreshing={loading}
         enableSelection={false}
         defaultSortColumn="fullName"
         defaultSortDirection="asc"
