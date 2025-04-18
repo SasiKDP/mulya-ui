@@ -16,12 +16,50 @@ export const filterRequirementsByDateRange = createAsyncThunk(
        }
 )
 
+// Filter requirements for employee
+export const filterRequirementsByRecruiter = createAsyncThunk(
+  'recruiter/requirements/filterByDateRange',
+  async({startDate, endDate}, {getState, rejectWithValue}) => {
+      try{
+        const state = getState();
+        const recruiterId = state.auth.userId;
+ 
+        const response = await httpService.get(`/requirements/recruiter/${recruiterId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+        
+        return response.data;
+      }catch(error){
+        console.log(error);
+        return rejectWithValue(error);
+      }
+     }
+)
+
+// Filter requirements for employee
+export const filterRequirementsByTeamLead = createAsyncThunk(
+  'teamLead/requirements/filterByDateRange',
+  async({startDate, endDate}, {getState, rejectWithValue}) => {
+      try{
+        const state = getState();
+        const userId = state.auth.userId;
+ 
+        const response = await httpService.get(`/requirements/assignedby/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+        
+        return response.data;
+      }catch(error){
+        console.log(error);
+        return rejectWithValue(error);
+      }
+     }
+)
+
 
 const requirementSlice =  createSlice({
     name: "requirement",
     initialState: {
         loading: false,
         filteredRequirementList: [],
+        filterAssignedRequirements: [],
+        filteredTeamLeadRequirements: [],
         isFilteredReqRequested: false,
         error: null
     },
@@ -46,6 +84,38 @@ const requirementSlice =  createSlice({
             state.error = action.payload.message;
             
           })
+
+          // Filter Recruiter requirements
+          .addCase(filterRequirementsByRecruiter.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+          })
+          .addCase(filterRequirementsByRecruiter.fulfilled, (state, action) => {
+            state.loading = false;
+            state.filterAssignedRequirements = action.payload;
+          })
+          .addCase(filterRequirementsByRecruiter.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload.message;
+            
+          })
+
+          // Filter Recruiter requirements
+          .addCase(filterRequirementsByTeamLead.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+          })
+          .addCase(filterRequirementsByTeamLead.fulfilled, (state, action) => {
+            state.loading = false;
+            state.filteredTeamLeadRequirements = action.payload;
+          })
+          .addCase(filterRequirementsByTeamLead.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload.message;
+            
+          })
+
+
         }
 })
 

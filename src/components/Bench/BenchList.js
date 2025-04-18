@@ -373,40 +373,37 @@ const BenchList = () => {
   return (
     <>
 
-      <Stack direction="row" alignItems="center" spacing={2}
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={2}
         sx={{
           flexWrap: 'wrap',
           mb: 3,
-          justifyContent: 'space-between',
           p: 2,
           backgroundColor: '#f9f9f9',
           borderRadius: 2,
           boxShadow: 1,
+          justifyContent: 'space-between', 
+        }}
+      >
 
-        }}>
+        <Typography variant="h6" color="primary">
+          Bench Candidate Management
+        </Typography>
 
-        <Typography variant='h6' color='primary'>Bench Candidate Management</Typography>
+       
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
 
-        <DateRangeFilter component="BenchList"/>
-
-        <Button
-          variant="text"
-          startIcon={<Refresh />}
-          onClick={fetchBenchList}
-          disabled={loading}
-          sx={{ mr: 1 }}
-        >
-          {/* Refresh */}
-        </Button>
-        <Button
-          variant="text"
-          color="primary"
-
-
-          onClick={() => handleOpenDrawer()}
-        >
-          <Add /> <User2Icon />
-        </Button>
+          <DateRangeFilter component="BenchList" />
+          <Button
+            variant="text"
+            color="primary"
+            onClick={() => handleOpenDrawer()}
+          >
+            <Add /> <User2Icon />
+          </Button>
+        </Stack>
       </Stack>
 
       <DataTable
@@ -415,7 +412,8 @@ const BenchList = () => {
         pageLimit={20}
         title="Bench List"
         onRefresh={fetchBenchList}
-        // isRefreshing={loading}
+        refreshData={fetchBenchList}
+        isRefreshing={loading}
         enableSelection={false}
         defaultSortColumn="fullName"
         defaultSortDirection="asc"
