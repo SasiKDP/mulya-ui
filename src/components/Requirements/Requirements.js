@@ -750,10 +750,11 @@ const Requirements = () => {
         }}
       >
         <Typography variant='h6' color='primary'>Requirements Management</Typography>
+
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
         <DateRangeFilter component="Requirement" />
-        
         <Button
-          variant="contained"
+          variant="text"
           color="primary"
           onClick={() => {
             setDrawerOpen(true);
@@ -763,6 +764,9 @@ const Requirements = () => {
         >
           Post New Requirement
         </Button>
+
+         
+        </Stack>
       </Stack>
       
       {loading && data.length === 0 ? (

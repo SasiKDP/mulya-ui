@@ -22,12 +22,18 @@ import { useSelector } from "react-redux";
 import { useConfirm } from "../../hooks/useConfirm"; // Create this hook or use a dialog component
 import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { getStatusChip } from "../../utils/statusUtils";
+
+
 
 const Interviews = () => {
   const { userId } = useSelector((state) => state.auth);
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const { filterInterviewsForRecruiter } = useSelector((state) => state.interview);
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
 
   // Edit drawer state
   const [editDrawer, setEditDrawer] = useState({
@@ -112,30 +118,6 @@ const Interviews = () => {
     });
   };
 
-  // Render status chip
-  const renderStatusChip = (status) => {
-    const statusConfig = {
-      SCHEDULED: { color: "primary", variant: "filled" },
-      COMPLETED: { color: "success", variant: "filled" },
-      CANCELLED: { color: "error", variant: "filled" },
-      RESCHEDULED: { color: "warning", variant: "filled" },
-    };
-
-    const config = statusConfig[status] || {
-      color: "default",
-      variant: "outlined",
-    };
-
-    return (
-      <Chip
-        label={status}
-        size="small"
-        color={config.color}
-        variant={config.variant}
-      />
-    );
-  };
-
   // Table columns
   const columns = [
     { key: "jobId", label: "Job ID", width: 100 },
@@ -153,7 +135,7 @@ const Interviews = () => {
       key: "interviewStatus",
       label: "Status",
       width: 140,
-      render: (row) => renderStatusChip(row.interviewStatus),
+      render: (row) => getStatusChip(row.interviewStatus, row),
     },
     {
       key: "zoomLink",
@@ -231,9 +213,25 @@ const Interviews = () => {
         </Box>
       ) : (
         <>
+         <Stack direction="row" alignItems="center" spacing={2}
+        sx={{
+          flexWrap: 'wrap',
+          mb: 3,
+          justifyContent: 'space-between',
+          p: 2,
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          boxShadow: 1,
+
+        }}>
+
+        <Typography variant='h6' color='primary'>Interviews List</Typography>
+
+        <DateRangeFilter component="InterviewsForRecruiter" />
+      </Stack>
 
           <DataTable
-            data={interviews}
+            data={isFilteredDataRequested ? filterInterviewsForRecruiter : interviews || []}
             columns={columns}
             title="Scheduled Interviews"
             // loading={loading}
