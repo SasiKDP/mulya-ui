@@ -5,7 +5,6 @@ export const filterBenchListByDateRange = createAsyncThunk(
     'benchList/filterByDateRange',
     async({startDate, endDate}, {rejectWithValue}) => {
         try{
-          console.log(startDate + "  "+ endDate);
           const response = await httpService.get(`/candidate/bench/filter-by-date?startDate=${startDate}&endDate=${endDate}`);
           
           return response.data;

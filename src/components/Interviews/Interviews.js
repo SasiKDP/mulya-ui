@@ -24,11 +24,16 @@ import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { getStatusChip } from "../../utils/statusUtils";
 
+
+
 const Interviews = () => {
   const { userId } = useSelector((state) => state.auth);
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const { filterInterviewsForRecruiter } = useSelector((state) => state.interview);
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
 
   // Edit drawer state
   const [editDrawer, setEditDrawer] = useState({
@@ -208,9 +213,25 @@ const Interviews = () => {
         </Box>
       ) : (
         <>
+         <Stack direction="row" alignItems="center" spacing={2}
+        sx={{
+          flexWrap: 'wrap',
+          mb: 3,
+          justifyContent: 'space-between',
+          p: 2,
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          boxShadow: 1,
+
+        }}>
+
+        <Typography variant='h6' color='primary'>Interviews List</Typography>
+
+        <DateRangeFilter component="InterviewsForRecruiter" />
+      </Stack>
 
           <DataTable
-            data={interviews}
+            data={isFilteredDataRequested ? filterInterviewsForRecruiter : interviews || []}
             columns={columns}
             title="Scheduled Interviews"
             // loading={loading}
