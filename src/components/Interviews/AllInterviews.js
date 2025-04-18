@@ -7,6 +7,7 @@ import ToastService from "../../Services/toastService";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent"; // Make sure this component exists
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { useSelector } from "react-redux";
+import { getStatusChip } from "../../utils/statusUtils";
 
 const AllInterviews = () => {
   const [interviews, setInterviews] = useState([]);
@@ -14,7 +15,7 @@ const AllInterviews = () => {
   const [expandedRows, setExpandedRows] = useState({});
 
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-  const {filteredInterviewList} = useSelector((state) => state.interview);
+  const { filteredInterviewList } = useSelector((state) => state.interview);
 
   const fetchInterviews = async () => {
     try {
@@ -60,9 +61,9 @@ const AllInterviews = () => {
   const getExpandedContentConfig = () => {
     return {
       title: "Interview Details",
-      description: { 
-        key: "notes", 
-        fallback: "No additional notes available." 
+      description: {
+        key: "notes",
+        fallback: "No additional notes available."
       },
       backgroundColor: "#f5f5f5",
       sections: [
@@ -178,9 +179,9 @@ const AllInterviews = () => {
         render: (row) => loading ? (
           <Skeleton variant="rectangular" width={100} height={24} />
         ) : (
-          <Chip 
-            label={row.interviewLevel} 
-            size="small" 
+          <Chip
+            label={row.interviewLevel}
+            size="small"
             variant="outlined"
           />
         )
@@ -216,28 +217,15 @@ const AllInterviews = () => {
       {
         key: "interviewStatus",
         label: "Status",
-        type: "select",
         sortable: true,
         filterable: true,
-        options: ["Scheduled", "Completed", "Cancelled", "Rescheduled"],
-        render: (row) => loading ? (
-          <Skeleton variant="rectangular" width={100} height={24} />
-        ) : (
-          <Chip
-            label={row.interviewStatus || "Scheduled"}
-            size="small"
-            sx={{
-              backgroundColor: getStatusColor(row.interviewStatus).bg,
-              color: getStatusColor(row.interviewStatus).text,
-              fontWeight: 500
-            }}
-          />
-        )
-      }
+        width: 140,
+        render: (row) => getStatusChip(row.interviewStatus, row),
+      },
     ];
 
     const conditionalColumns = [];
-    
+
     if (interviews.some(item => item.clientName)) {
       conditionalColumns.push({
         key: "clientName",
@@ -301,27 +289,17 @@ const AllInterviews = () => {
     ];
   };
 
-  const getStatusColor = (status) => {
-    const statusColors = {
-      Scheduled: { bg: '#e3f2fd', text: '#1565c0' },
-      Completed: { bg: '#e8f5e9', text: '#2e7d32' },
-      Cancelled: { bg: '#ffebee', text: '#c62828' },
-      Rescheduled: { bg: '#fff3e0', text: '#e65100' }
-    };
-    return statusColors[status] || { bg: '#f5f5f5', text: '#000000' };
-  };
-
-  const processedData = loading 
+  const processedData = loading
     ? Array(5).fill({}).map((_, index) => ({
-        interviewId: `temp-${index + 1}`,
-        expandContent: renderExpandedContent,
-        isExpanded: expandedRows[`temp-${index + 1}`]
-      }))
+      interviewId: `temp-${index + 1}`,
+      expandContent: renderExpandedContent,
+      isExpanded: expandedRows[`temp-${index + 1}`]
+    }))
     : interviews.map((row) => ({
-        ...row,
-        expandContent: renderExpandedContent,
-        isExpanded: expandedRows[row.interviewId]
-      }));
+      ...row,
+      expandContent: renderExpandedContent,
+      isExpanded: expandedRows[row.interviewId]
+    }));
 
   useEffect(() => {
     fetchInterviews();
@@ -329,26 +307,25 @@ const AllInterviews = () => {
 
   return (
     <>
-    
-            <Stack direction="row" alignItems="center" spacing={2}
-              sx={{
-                flexWrap: 'wrap',
-                mb: 3,
-                justifyContent: 'space-between',
-                p: 2,
-                backgroundColor: '#f9f9f9',
-                borderRadius: 2,
-                boxShadow: 1,
-      
-              }}>
-      
-              <Typography variant='h6' color='primary'>Interviews Management</Typography>
-      
-              <DateRangeFilter component="Interviews"/>
-            </Stack>
+
+      <Stack direction="row" alignItems="center" spacing={2}
+        sx={{
+          flexWrap: 'wrap',
+          mb: 3,
+          justifyContent: 'space-between',
+          p: 2,
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          boxShadow: 1,
+
+        }}>
+
+        <Typography variant='h6' color='primary'>Interviews Management</Typography>
+
+        <DateRangeFilter component="Interviews" />
+      </Stack>
       <DataTable
-        // data={processedData}
-        data={isFilteredDataRequested ?  filteredInterviewList : processedData || []}
+        data={isFilteredDataRequested ? filteredInterviewList : processedData || []}
         columns={generateColumns()}
         title="Scheduled Interviews"
         //loading={loading}
