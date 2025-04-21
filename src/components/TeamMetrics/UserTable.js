@@ -52,7 +52,6 @@ const UserTable = ({ role, title, employeesList, loading = false }) => {
         defaultSortColumn="employeeName"
         defaultSortDirection="asc"
         defaultRowsPerPage={10}
-        customTableHeight={550}
         primaryColor="#1976d2"
         secondaryColor="#e0f2f1"
         customStyles={{
