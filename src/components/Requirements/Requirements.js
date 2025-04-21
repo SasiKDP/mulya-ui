@@ -65,6 +65,7 @@ const Requirements = () => {
 
   const { filteredRequirementList } = useSelector((state) => state.requirement);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
+  const { role, userId } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -79,7 +80,22 @@ const Requirements = () => {
       setLoading(true);
   
       try {
-        const response = await httpService.get('/requirements/getAssignments');
+        let response;
+  
+        if (role === "SUPERADMIN") {
+          response = await httpService.get("/requirements/getAssignments");
+        } else if (role === "TEAMLEAD" || role === "BDM") {
+          response = await httpService.get(`/requirements/assignedby/${userId}`);
+        } else {
+          setData([]);
+          setError(new Error("Unauthorized role for this action"));
+          ToastService.update(
+            loadingToastId,
+            "Unauthorized role for fetching requirements",
+            "error"
+          );
+          return;
+        }
   
         if (Array.isArray(response.data)) {
           const priorityStatuses = ["Submitted", "On Hold", "In Progress"];
@@ -92,33 +108,44 @@ const Requirements = () => {
               return aPriority - bPriority;
             }
   
-            return new Date(b.requirementAddedTimeStamp) - new Date(a.requirementAddedTimeStamp);
+            return (
+              new Date(b.requirementAddedTimeStamp) -
+              new Date(a.requirementAddedTimeStamp)
+            );
           });
   
           setData(sortedData);
-          ToastService.update(loadingToastId, "Requirements data loaded successfully", "success");
+          ToastService.update(
+            loadingToastId,
+            "Requirements data loaded successfully",
+            "success"
+          );
         } else {
           setData([]);
-          if (response.data && response.data.message) {
-            setError(new Error(response.data.message));
-            ToastService.update(loadingToastId, `Error: ${response.data.message}`, "error");
-          } else {
-            setError(new Error("Data fetched was not an array."));
-            ToastService.update(loadingToastId, "Error: Data fetched was not an array", "error");
-          }
+          const msg =
+            response.data?.message || "Data fetched was not an array.";
+          setError(new Error(msg));
+          ToastService.update(loadingToastId, `Error: ${msg}`, "error");
         }
       } catch (err) {
         setError(err);
         setData([]);
-        ToastService.update(loadingToastId, `Error fetching data: ${err.message}`, "error");
+        ToastService.update(
+          loadingToastId,
+          `Error fetching data: ${err.message}`,
+          "error"
+        );
       } finally {
         setLoading(false);
       }
     };
   
     fetchData();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, role, userId]);
   
+  
+  
+
   // Update columns when loading state or data changes
   useEffect(() => {
     setColumns(generateColumns(loading));
@@ -148,7 +175,6 @@ const Requirements = () => {
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
-   
   };
 
   const handleCloseEditDrawer = () => {
@@ -173,23 +199,29 @@ const Requirements = () => {
   const handleConfirmDelete = async () => {
     if (!deleteDialog.jobId) return;
 
-    const deleteToastId = ToastService.loading(`Deleting requirement: ${deleteDialog.jobTitle}...`);
+    const deleteToastId = ToastService.loading(
+      `Deleting requirement: ${deleteDialog.jobTitle}...`
+    );
 
     try {
       setLoading(true);
       // Using httpService instead of axios directly
-      const response = await httpService.delete(`/requirements/deleteRequirement/${deleteDialog.jobId}`);
+      const response = await httpService.delete(
+        `/requirements/deleteRequirement/${deleteDialog.jobId}`
+      );
 
       if (response.data.success) {
         ToastService.update(
-          deleteToastId, 
-          `Requirement "${deleteDialog.jobTitle}" deleted successfully`, 
+          deleteToastId,
+          `Requirement "${deleteDialog.jobTitle}" deleted successfully`,
           "success"
         );
       } else {
         ToastService.update(
           deleteToastId,
-          `Failed to delete requirement: ${response.data.message || "Unknown error"}`,
+          `Failed to delete requirement: ${
+            response.data.message || "Unknown error"
+          }`,
           "error"
         );
       }
@@ -210,7 +242,7 @@ const Requirements = () => {
   const handleViewDetails = (rowId) => {
     setExpandedRowId(rowId === expandedRowId ? null : rowId);
   };
-  
+
   const handleDownloadJD = (jobId, jobTitle) => {
     ToastService.info(`Downloading job description for: ${jobTitle}`);
   };
@@ -225,7 +257,7 @@ const Requirements = () => {
       case "closed":
         color = "error";
         break;
-      case "hold"||'on hold':
+      case "hold" || "on hold":
         color = "warning";
         break;
       case "in progress":
@@ -408,25 +440,33 @@ const Requirements = () => {
         {
           title: "Requirements",
           fields: [
-            { label: "Total Experience", key: "experienceRequired", fallback: "-" },
-            { label: "Relevant Experience", key: "relevantExperience", fallback: "-" },
+            {
+              label: "Total Experience",
+              key: "experienceRequired",
+              fallback: "-",
+            },
+            {
+              label: "Relevant Experience",
+              key: "relevantExperience",
+              fallback: "-",
+            },
             { label: "Notice Period", key: "noticePeriod", fallback: "-" },
             { label: "Qualification", key: "qualification", fallback: "-" },
-            { 
-              label: "Recruiters", 
-              key: "recruiterName", 
+            {
+              label: "Recruiters",
+              key: "recruiterName",
               fallback: "Not assigned",
               transform: (names) => {
                 if (!names || names.length === 0) return "Not assigned";
-                
+
                 // Trim whitespace from each name and filter out empty strings
                 const cleanedNames = names
-                  .map(name => name.trim())
-                  .filter(name => name.length > 0);
-                
+                  .map((name) => name.trim())
+                  .filter((name) => name.length > 0);
+
                 // Join with comma + space
                 return cleanedNames.join(", ");
-              }
+              },
             },
           ],
         },
@@ -434,12 +474,21 @@ const Requirements = () => {
           title: "Additional Information",
           fields: [
             { label: "Salary Package", key: "salaryPackage", fallback: "-" },
-            { label: "Positions Available", key: "noOfPositions", fallback: "-" },
-            { 
-              label: "Posted Date", 
-              key: "requirementAddedTimeStamp", 
+            {
+              label: "Positions Available",
+              key: "noOfPositions",
               fallback: "-",
-              transform: (value) => value ? new Date(value).toLocaleDateString() + " " + new Date(value).toLocaleTimeString() : "-"
+            },
+            {
+              label: "Posted Date",
+              key: "requirementAddedTimeStamp",
+              fallback: "-",
+              transform: (value) =>
+                value
+                  ? new Date(value).toLocaleDateString() +
+                    " " +
+                    new Date(value).toLocaleTimeString()
+                  : "-",
             },
             { label: "Status", key: "status", fallback: "-" },
             { label: "Assigned By", key: "assignedBy", fallback: "-" },
@@ -476,73 +525,82 @@ const Requirements = () => {
     const skeletonProps = {
       rows: 1,
       height: 24,
-      animation: "wave"
+      animation: "wave",
     };
-  
+
     return [
       {
         key: "jobId",
         label: "Job ID",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={80} />
-        ) : (
-          <Link
-            component="button"
-            variant="body2"
-            onClick={() => handleJobIdClick(row.jobId)}
-            sx={{
-              textDecoration: "none",
-              cursor: "pointer",
-              "&:hover": { textDecoration: "underline" },
-            }}
-          >
-            {row.jobId}
-          </Link>
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={80} />
+          ) : (
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => handleJobIdClick(row.jobId)}
+              sx={{
+                textDecoration: "none",
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
+            >
+              {row.jobId}
+            </Link>
+          ),
       },
       {
         key: "requirementAddedTimeStamp",
         label: "Posted Date",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={100} />
-        ) : (
-          !row.requirementAddedTimeStamp ? "N/A" : 
-          isNaN(new Date(row.requirementAddedTimeStamp)) ? "Invalid Date" : 
-          new Date(row.requirementAddedTimeStamp).toISOString().split("T")[0]
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={100} />
+          ) : !row.requirementAddedTimeStamp ? (
+            "N/A"
+          ) : isNaN(new Date(row.requirementAddedTimeStamp)) ? (
+            "Invalid Date"
+          ) : (
+            new Date(row.requirementAddedTimeStamp).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          ),
       },
       {
         key: "jobTitle",
         label: "Job Title",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={120} />
-        ) : (
-          row.jobTitle || "N/A"
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={120} />
+          ) : (
+            row.jobTitle || "N/A"
+          ),
       },
       {
         key: "clientName",
         label: "Client Name",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={100} />
-        ) : (
-          row.clientName || "N/A"
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={100} />
+          ) : (
+            row.clientName || "N/A"
+          ),
       },
       {
         key: "assignedBy",
         label: "Assigned By",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={100} />
-        ) : (
-          row.assignedBy ? (
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={100} />
+          ) : row.assignedBy ? (
             <Typography sx={{ fontWeight: 350, color: "#e91e64" }}>
               {row.assignedBy}
             </Typography>
           ) : (
             "Not Assigned"
-          )
-        ),
+          ),
       },
       {
         key: "recruiterName",
@@ -558,144 +616,157 @@ const Requirements = () => {
             "Invalid Data"
           ),
       },
-      
+
       {
         key: "numberOfSubmissions",
         label: "Submissions",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={100} />
-        ) : (
-          <Chip 
-            label={row.numberOfSubmissions || 0}
-            variant="outlined"
-            color={row.numberOfSubmissions > 0 ? "primary" : "default"}
-            sx={{ 
-              fontWeight: 500,
-              borderWidth: row.numberOfSubmissions > 0 ? 2 : 1,
-              borderColor: row.numberOfSubmissions > 0 ? "primary.main" : "divider"
-            }}
-          />
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={100} />
+          ) : (
+            <Chip
+              label={row.numberOfSubmissions || 0}
+              variant="outlined"
+              color={row.numberOfSubmissions > 0 ? "primary" : "default"}
+              sx={{
+                fontWeight: 500,
+                borderWidth: row.numberOfSubmissions > 0 ? 2 : 1,
+                borderColor:
+                  row.numberOfSubmissions > 0 ? "primary.main" : "divider",
+              }}
+            />
+          ),
       },
       {
         key: "numberOfInterviews",
         label: "Interviews",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={100} />
-        ) : (
-          <Chip 
-            label={row.numberOfInterviews || 0}
-            variant="outlined"
-            color={row.numberOfInterviews > 0 ? "success" : "default"}
-            sx={{ 
-              fontWeight: 500,
-              borderWidth: row.numberOfInterviews > 0 ? 2 : 1,
-              borderColor: row.numberOfInterviews > 0 ? "success.main" : "divider"
-            }}
-          />
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={100} />
+          ) : (
+            <Chip
+              label={row.numberOfInterviews || 0}
+              variant="outlined"
+              color={row.numberOfInterviews > 0 ? "success" : "default"}
+              sx={{
+                fontWeight: 500,
+                borderWidth: row.numberOfInterviews > 0 ? 2 : 1,
+                borderColor:
+                  row.numberOfInterviews > 0 ? "success.main" : "divider",
+              }}
+            />
+          ),
       },
       {
         key: "jobDescription",
         label: "Job Description",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={120} />
-        ) : (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {row.jobDescription ? (
-              <>
-                <Typography noWrap sx={{ maxWidth: 80 }}>
-                  {row.jobDescription.slice(0, 15)}
-                  {row.jobDescription.length > 15 && "..."}
-                </Typography>
-                {row.jobDescription.length > 15 && (
-                  <Tooltip title="View Full Description">
-                    <Button
-                      onClick={() => handleOpenDescriptionDialog(row.jobDescription, row.jobTitle)}
-                      size="small"
-                      startIcon={<DescriptionIcon />}
-                      sx={{ minWidth: 0 }}
-                    >
-                      more
-                    </Button>
-                  </Tooltip>
-                )}
-              </>
-            ) : (
-              <Tooltip title="Download Job Description">
-                <Link
-                  href={`/requirements/download-job-description/${row.jobId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  underline="none"
-                  sx={{ color: "#00796b" }}
-                  onClick={() => handleDownloadJD(row.jobId, row.jobTitle)}
-                >
-                  Download JD
-                </Link>
-              </Tooltip>
-            )}
-          </Box>
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={120} />
+          ) : (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {row.jobDescription ? (
+                <>
+                  <Typography noWrap sx={{ maxWidth: 80 }}>
+                    {row.jobDescription.slice(0, 15)}
+                    {row.jobDescription.length > 15 && "..."}
+                  </Typography>
+                  {row.jobDescription.length > 15 && (
+                    <Tooltip title="View Full Description">
+                      <Button
+                        onClick={() =>
+                          handleOpenDescriptionDialog(
+                            row.jobDescription,
+                            row.jobTitle
+                          )
+                        }
+                        size="small"
+                        startIcon={<DescriptionIcon />}
+                        sx={{ minWidth: 0 }}
+                      >
+                        more
+                      </Button>
+                    </Tooltip>
+                  )}
+                </>
+              ) : (
+                <Tooltip title="Download Job Description">
+                  <Link
+                    href={`/requirements/download-job-description/${row.jobId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    underline="none"
+                    sx={{ color: "#00796b" }}
+                    onClick={() => handleDownloadJD(row.jobId, row.jobTitle)}
+                  >
+                    Download JD
+                  </Link>
+                </Tooltip>
+              )}
+            </Box>
+          ),
       },
       {
         key: "status",
         label: "Status",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={80} />
-        ) : (
-          renderStatus(row.status)
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={80} />
+          ) : (
+            renderStatus(row.status)
+          ),
       },
       {
         key: "salaryPackage",
         label: "Package",
-        render: (row) => isLoading ? (
-          <LoadingSkeleton {...skeletonProps} width={80} />
-        ) : (
-          row.salaryPackage || "N/A"
-        ),
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={80} />
+          ) : (
+            row.salaryPackage || "N/A"
+          ),
       },
       {
         key: "actions",
         label: "Actions",
-        render: (row) => isLoading ? (
-          <Stack direction="row" spacing={1}>
-            <LoadingSkeleton rows={1} width={32} height={32} />
-            <LoadingSkeleton rows={1} width={32} height={32} />
-            <LoadingSkeleton rows={1} width={32} height={32} />
-          </Stack>
-        ) : (
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="View Details">
-              <IconButton
-                size="small"
-                color="info"
-                onClick={() => handleViewDetails(row.jobId)}
-              >
-                <VisibilityIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Edit Requirement">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => handleEditClick(row)}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete Requirement">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleDeleteClick(row.jobId, row.jobTitle)}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        ),
+        render: (row) =>
+          isLoading ? (
+            <Stack direction="row" spacing={1}>
+              <LoadingSkeleton rows={1} width={32} height={32} />
+              <LoadingSkeleton rows={1} width={32} height={32} />
+              <LoadingSkeleton rows={1} width={32} height={32} />
+            </Stack>
+          ) : (
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="View Details">
+                <IconButton
+                  size="small"
+                  color="info"
+                  onClick={() => handleViewDetails(row.jobId)}
+                >
+                  <VisibilityIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Edit Requirement">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => handleEditClick(row)}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete Requirement">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleDeleteClick(row.jobId, row.jobTitle)}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          ),
       },
     ];
   };
@@ -706,21 +777,21 @@ const Requirements = () => {
     expanded: row.jobId === expandedRowId,
   }));
 
-  if (error) {
-    return (
-      <Box sx={{ p: 3, textAlign: "center" }}>
-        <Typography color="error">Error: {error.message}</Typography>
-        <Button
-          variant="outlined"
-          onClick={refreshData}
-          startIcon={<Refresh />}
-          sx={{ mt: 2 }}
-        >
-          Retry
-        </Button>
-      </Box>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <Box sx={{ p: 3, textAlign: "center" }}>
+  //       <Typography color="error">Error: {error.message}</Typography>
+  //       <Button
+  //         variant="outlined"
+  //         onClick={refreshData}
+  //         startIcon={<Refresh />}
+  //         sx={{ mt: 2 }}
+  //       >
+  //         Retry
+  //       </Button>
+  //     </Box>
+  //   );
+  // }
 
   const handleCalenderDialog = () => {
     setDialogOpen(!dialogOpen);
@@ -740,42 +811,51 @@ const Requirements = () => {
         alignItems="center"
         spacing={2}
         sx={{
-          flexWrap: 'wrap',
+          flexWrap: "wrap",
           mb: 3,
-          justifyContent: 'space-between',
+          justifyContent: "space-between",
           p: 2,
-          backgroundColor: '#f9f9f9',
+          backgroundColor: "#f9f9f9",
           borderRadius: 2,
           boxShadow: 1,
         }}
       >
-        <Typography variant='h6' color='primary'>Requirements Management</Typography>
+        <Typography variant="h6" color="primary">
+          Requirements Management
+        </Typography>
 
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
-        <DateRangeFilter component="Requirement" />
-        <Button
-          variant="text"
-          color="primary"
-          onClick={() => {
-            setDrawerOpen(true);
-            ToastService.info("Opening new requirement form");
-          }}
-          startIcon={<Send size={18} />}
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={2}
+          sx={{ ml: "auto" }}
         >
-          Post New Requirement
-        </Button>
-
-         
+          <DateRangeFilter component="Requirement" />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => {
+              setDrawerOpen(true);
+              ToastService.info("Opening new requirement form");
+            }}
+            startIcon={<Send size={18} />}
+          >
+            Post New Requirement
+          </Button>
         </Stack>
       </Stack>
-      
+
       {loading && data.length === 0 ? (
         <Box sx={{ p: 3 }}>
           <LoadingSkeleton rows={5} height={60} spacing={2} />
         </Box>
       ) : (
         <DataTable
-          data={isFilteredDataRequested ? filteredRequirementList : processedData || []} 
+          data={
+            isFilteredDataRequested
+              ? filteredRequirementList
+              : processedData || []
+          }
           columns={columns}
           title=""
           loading={loading}
@@ -839,7 +919,7 @@ const Requirements = () => {
         sx={{
           "& .MuiDrawer-paper": {
             width: { xs: "100%", sm: "70%", md: "60%", lg: "60%" },
-            mt: 3
+            mt: 3,
           },
         }}
       >
