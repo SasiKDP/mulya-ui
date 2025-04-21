@@ -45,6 +45,7 @@ import {
   Phone,
   Cancel,
 } from "@mui/icons-material";
+import { useSelector } from "react-redux";
 
 // Create a custom theme
 const theme = createTheme({
@@ -96,7 +97,9 @@ const ClientForm = ({
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currency, setCurrency] = useState(initialData?.currency || "INR");
-  const [onBoardedByName, setOnBoardedBy] = useState(initialData?.onBoardedBy || "");
+  const { userName } = useSelector((state) => state.auth);
+  const [onBoardedByName, setOnBoardedBy] = useState(initialData?.onBoardedBy || userName);
+
 
   useEffect(() => {
     if (initialData) {
