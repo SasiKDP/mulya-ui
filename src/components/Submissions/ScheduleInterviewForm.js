@@ -9,10 +9,10 @@ import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
 
 const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
-  const [notification, setNotification] = useState({ 
-    open: false, 
-    message: "", 
-    severity: "success" 
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success",
   });
   const { userId, email } = useSelector((state) => state.auth);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -36,7 +36,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         candidateEmailId: data.emailId || data.candidateEmailId || "",
         fullName: data.fullName || data.candidateFullName || "",
         candidateId: data.candidateId || "",
-        clientEmail: data.clientEmail || "",
+        clientEmail: data.clientEmail || [],
         clientName: data.clientName || "",
         duration: data.duration || 30,
         externalInterviewDetails: data.externalInterviewDetails || "",
@@ -46,16 +46,17 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         userEmail: email || "",
         userId: data.userId || userId || "",
         zoomLink: data.zoomLink || "",
-        interviewStatus: "SCHEDULED"
+        interviewStatus: "SCHEDULED",
+        skipNotification: data?.skipNotification || false,
       };
     }
-    
+
     return {
       contactNumber: "",
       candidateEmailId: "",
       fullName: "",
       candidateId: "",
-      clientEmail: "",
+      clientEmail: [],
       clientName: "",
       duration: 30,
       externalInterviewDetails: "",
@@ -65,7 +66,8 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       userEmail: email || "",
       userId: userId || "",
       zoomLink: "",
-      interviewStatus: "SCHEDULED"
+      interviewStatus: "SCHEDULED",
+      skipNotification: false,
     };
   };
 
@@ -75,9 +77,9 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       // Candidate Information Section
       {
         name: "sectionCandidate",
-        type: "section",
+        type: "divider",
         label: "Candidate Information",
-        gridProps: { xs: 12 }
+        gridProps: { xs: 12 },
       },
       {
         name: "candidateId",
@@ -85,7 +87,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         type: "text",
         required: true,
         disabled: true,
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
       {
         name: "fullName",
@@ -93,7 +95,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         type: "text",
         required: true,
         disabled: true,
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
       {
         name: "candidateEmailId",
@@ -101,7 +103,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         type: "email",
         required: true,
         disabled: true,
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
       {
         name: "contactNumber",
@@ -109,7 +111,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         type: "text",
         required: true,
         disabled: true,
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
       {
         name: "userEmail",
@@ -117,7 +119,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         type: "email",
         required: true,
         disabled: true,
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
       {
         name: "jobId",
@@ -125,15 +127,15 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         type: "text",
         required: true,
         disabled: true,
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
-      
+
       // Client Information Section
       {
         name: "sectionClient",
-        type: "section",
+        type: "divider",
         label: "Client Information",
-        gridProps: { xs: 12 }
+        gridProps: { xs: 12 },
       },
       {
         name: "clientName",
@@ -141,28 +143,27 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         type: "text",
         required: true,
         disabled: true,
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
       {
         name: "clientEmail",
         label: "Client Email",
-        type: "email",
-        gridProps: { xs: 12, sm: 6 }
+        type: "chipInput",
+        description: "Enter client email addresses and press Enter after each",
+        gridProps: { xs: 12, sm: 6 },
       },
-      
-      // Interview Details Section
       {
         name: "sectionInterview",
-        type: "section",
+        type: "divider",
         label: "Interview Details",
-        gridProps: { xs: 12 }
+        gridProps: { xs: 12 },
       },
       {
         name: "interviewDateTime",
         label: "Interview Date & Time",
         type: "datetime",
         required: true,
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
       {
         name: "duration",
@@ -173,16 +174,16 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
           { value: 15, label: "15 minutes" },
           { value: 30, label: "30 minutes" },
           { value: 45, label: "45 minutes" },
-          { value: 60, label: "60 minutes" }
+          { value: 60, label: "60 minutes" },
         ],
-        gridProps: { xs: 12, sm: 6 }
+        gridProps: { xs: 12, sm: 6 },
       },
       {
         name: "zoomLink",
         label: "Meeting Link",
         type: "text",
         placeholder: "https://zoom.us/j/example",
-        gridProps: { xs: 12 }
+        gridProps: { xs: 12 },
       },
       {
         name: "interviewLevel",
@@ -194,21 +195,33 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
           { value: "EXTERNAL", label: "EXTERNAL" },
           { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
           { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
-          { value: "FINAL", label: "FINAL" }
+          { value: "FINAL", label: "FINAL" },
         ],
-        gridProps: { xs: 12 }
-      }
+        gridProps: { xs: 12 },
+      },
+      {
+        name: "skipNotification",
+        label: "Skip Email Notification",
+        type: "checkbox",
+        description: "Check this box to skip sending email notifications",
+        gridProps: { xs: 12 },
+      },
     ];
 
     // Add External Interview Details field if needed based on interviewLevel
-    if (["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(values.interviewLevel)) {
+    if (
+      ["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(
+        values.interviewLevel
+      )
+    ) {
       fields.push({
         name: "externalInterviewDetails",
         label: "Interview Details",
         type: "textarea",
         rows: 4,
         required: true,
-        gridProps: { xs: 12 }
+        placeholder: "Enter details about the external interview",
+        gridProps: { xs: 12 },
       });
     }
 
@@ -227,10 +240,15 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       .email("Invalid email format")
       .required("User email is required"),
     clientName: Yup.string().required("Client name is required"),
-    clientEmail: Yup.string().email("Invalid email format").nullable(),
+    clientEmail: Yup.array().of(
+      Yup.string().email("Invalid email format")
+    ),
     interviewDateTime: Yup.date()
       .required("Interview date and time is required")
-      .min(oneMonthAgo, "Interview date and time must be within the last month or in the future"),
+      .min(
+        oneMonthAgo,
+        "Interview date and time must be within the last month or in the future"
+      ),
     duration: Yup.number()
       .required("Duration is required")
       .min(15, "Duration must be at least 15 minutes")
@@ -238,22 +256,27 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
     zoomLink: Yup.string().nullable(),
     interviewLevel: Yup.string()
       .required("Interview level is required")
-      .oneOf(["INTERNAL", "EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"], "Invalid interview level"),
+      .oneOf(
+        ["INTERNAL", "EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"],
+        "Invalid interview level"
+      ),
     externalInterviewDetails: Yup.string().when("interviewLevel", {
-      is: (level) => ["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(level),
+      is: (level) =>
+        ["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(level),
       then: Yup.string().required("External interview details are required"),
-      otherwise: Yup.string().nullable()
-    })
+      otherwise: Yup.string().nullable(),
+    }),
+    skipNotification: Yup.boolean(),
   });
 
   const handleCloseNotification = () => {
-    setNotification(prev => ({ ...prev, open: false }));
+    setNotification((prev) => ({ ...prev, open: false }));
   };
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       setSubmitting(true);
-      
+  
       // Format values for API
       const payload = {
         candidateId: values.candidateId,
@@ -271,22 +294,35 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         jobId: values.jobId,
         userEmail: values.userEmail,
         userId: values.userId,
-        externalInterviewDetails: values.externalInterviewDetails
+        externalInterviewDetails: values.externalInterviewDetails,
+        skipNotification: values.skipNotification,
       };
-
-      const response = await httpService.post(
-        `/candidate/interview-schedule/${values.userId}`,
-        payload
+  
+      const response = await fetch(
+        `http://192.168.0.213:8086/candidate/interview-schedule/${values.userId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
       );
-      
-      setInterviewResponse(response.data);
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to schedule interview");
+      }
+  
+      setInterviewResponse(data);
       setSubmissionSuccess(true);
       setNotification({
-        open: true, 
-        message: "Interview scheduled successfully", 
-        severity: "success"
+        open: true,
+        message: "Interview scheduled successfully",
+        severity: "success",
       });
-      
+  
       // Close form after success
       setTimeout(() => {
         if (onSuccess) onSuccess();
@@ -295,26 +331,23 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
     } catch (error) {
       console.error("Error scheduling interview:", error);
       setNotification({
-        open: true, 
+        open: true,
         message: `Error scheduling interview: ${
-          error.response?.data?.message || error.message
-        }`, 
-        severity: "error"
+          error.message || "Unknown error"
+        }`,
+        severity: "error",
       });
     } finally {
       setSubmitting(false);
     }
   };
+  
 
   const SuccessMessage = () => {
     if (!submissionSuccess || !interviewResponse) return null;
 
     return (
-      <Alert
-        icon={<Check />}
-        severity="success"
-        sx={{ mb: 3 }}
-      >
+      <Alert icon={<Check />} severity="success" sx={{ mb: 3 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
           Interview scheduled for <strong>Candidate ID:</strong>{" "}
           {interviewResponse.candidateId} successfully.
@@ -326,8 +359,20 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   const initialValues = getInitialValues();
 
   return (
-    <Box sx={{ width: "100%", p: { xs: 1, sm: 2 }, maxHeight: "80vh", overflow: "auto" }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+    <Box
+      sx={{
+        width: "100%",
+        p: { xs: 1, sm: 2 },
+        
+        overflow: "auto",
+      }}
+    >
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 2 }}
+      >
         <Typography variant="h6" color="primary" fontWeight="medium">
           Schedule Interview
         </Typography>
@@ -335,9 +380,9 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
           <CloseIcon />
         </IconButton>
       </Box>
-      
+
       <SuccessMessage />
-      
+
       <DynamicForm
         fields={getFormFields(initialValues)}
         initialValues={initialValues}
@@ -349,17 +394,17 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         watchFields={["interviewLevel"]} // Watch this field for conditional rendering
       />
 
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={4000} 
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert 
-          onClose={handleCloseNotification} 
+        <Alert
+          onClose={handleCloseNotification}
           severity={notification.severity}
           variant="filled"
-          sx={{ width: '80%' }}
+          sx={{ width: "80%" }}
         >
           {notification.message}
         </Alert>

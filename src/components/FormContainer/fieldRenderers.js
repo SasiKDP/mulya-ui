@@ -21,6 +21,7 @@ import {
   Slider,
   Divider,
   Paper,
+  Chip,
 } from "@mui/material";
 import {
   DatePicker,
@@ -147,6 +148,69 @@ export const renderField = (field, formik, editMode = false) => {
               />
             );
 
+          case "chipInput":
+            // Create state for the input value using React.useState
+            const [inputValue, setInputValue] = React.useState("");
+            
+            // Function to add a new chip
+            const handleChipAdd = (event) => {
+              if (event.key === 'Enter' && inputValue.trim()) {
+                event.preventDefault();
+                // Get current values array or empty array if undefined
+                const currentValues = values[field.name] || [];
+                
+                // Only add if the value isn't already in the array
+                if (!currentValues.includes(inputValue.trim())) {
+                  setFieldValue(field.name, [...currentValues, inputValue.trim()]);
+                }
+                setInputValue("");
+              }
+            };
+            
+            // Function to delete a chip
+            const handleChipDelete = (chipToDelete) => {
+              const currentValues = values[field.name] || [];
+              setFieldValue(
+                field.name,
+                currentValues.filter(item => item !== chipToDelete)
+              );
+            };
+            
+            return (
+              <Box>
+                <TextField
+                  {...commonProps}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleChipAdd}
+                  placeholder={field.placeholder || "Type and press Enter to add"}
+                  helperText={
+                    errorText || 
+                    field.description || 
+                    "Press Enter after typing each item"
+                  }
+                />
+                <Box mt={1} display="flex" flexWrap="wrap" gap={1}>
+                  {(values[field.name] || []).map((item, index) => (
+                    <Chip
+                      key={index}
+                      label={item}
+                      onDelete={() => handleChipDelete(item)}
+                      disabled={field.disabled || (editMode && field.disableOnEdit)}
+                      color={field.chipColor || "default"}
+                      sx={{
+                        borderRadius: 1,
+                        transition: "all 0.2s",
+                        "&:hover": {
+                          backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                        },
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            );
+
           case "date":
             return (
               <TextField
@@ -247,27 +311,28 @@ export const renderField = (field, formik, editMode = false) => {
               </TextField>
             );
 
-            case "datetime":
-              return (
-                <TextField
-                  {...commonProps}
-                  type="datetime-local"
-                  value={values[field.name] || ""}
-                  onChange={(e) => {
-                    setFieldValue(field.name, e.target.value);
-                  }}
-                  InputProps={{
-                    ...commonProps.InputProps,
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <CalendarTodayOutlinedIcon color="action" fontSize="small" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  fullWidth
-                />
-              );
+          case "datetime":
+            return (
+              <TextField
+                {...commonProps}
+                type="datetime-local"
+                value={values[field.name] || ""}
+                onChange={(e) => {
+                  setFieldValue(field.name, e.target.value);
+                }}
+                InputProps={{
+                  ...commonProps.InputProps,
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CalendarTodayOutlinedIcon color="action" fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+                fullWidth
+              />
+            );
             
+          // ... Rest of the code remains the same
 
           case "textarea":
             return (

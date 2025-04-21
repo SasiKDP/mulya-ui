@@ -536,7 +536,7 @@ const Submission = () => {
         onClose={closeScheduleDrawer}
         PaperProps={{
           sx: {
-            width: { xs: "100%", sm: 500, md: 500, lg: 600 },
+            width: { xs: "100%", sm:'50%', md:'50%', lg: '50%' },
             p: 2,
             pt: 0,
             borderTopLeftRadius: 12,
@@ -562,21 +562,13 @@ const Submission = () => {
           </IconButton>
         </Box>
 
-        <Box
-          sx={{
-            px: 2,
-            pb: 4,
-            pt: 1,
-            overflowY: "auto",
-            height: "calc(100% - 60px)",
-          }}
-        >
+       
           <ScheduleInterviewForm
             data={scheduleData}
             onClose={closeScheduleDrawer}
             refreshData={fetchData} 
           />
-        </Box>
+       
       </Drawer>
 
       <Snackbar

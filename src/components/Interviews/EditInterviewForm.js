@@ -37,7 +37,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       candidateEmailId: data.emailId || data.candidateEmailId || "",
       fullName: data.fullName || data.candidateFullName || "",
       candidateId: data.candidateId || "",
-      clientEmail: data.clientEmail || "",
+      clientEmail: data.clientEmail || [],
       clientName: data.clientName || "",
       duration: data.duration || 30,
       externalInterviewDetails: data.externalInterviewDetails || "",
@@ -47,7 +47,8 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       userEmail: email || "",
       userId: data.userId || userId || "",
       zoomLink: data.zoomLink || "",
-      interviewStatus: data.interviewStatus || "SCHEDULED"
+      interviewStatus: data.interviewStatus || "SCHEDULED",
+      skipNotification: data.skipNotification || false
     };
   };
 
@@ -128,7 +129,8 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       {
         name: "clientEmail",
         label: "Client Email",
-        type: "email",
+        type: "chipInput",
+        description: "Enter client email addresses and press Enter after each",
         gridProps: { xs: 12, sm: 6 }
       },
       
@@ -195,7 +197,14 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           { value: "FINAL", label: "FINAL" }
         ],
         gridProps: { xs: 6 }
-      }
+      },
+      {
+        name: "skipNotification",
+        label: "Skip Email Notification",
+        type: "checkbox",
+        description: "Check this box to skip sending email notifications",
+        gridProps: { xs: 12 }
+      },
     ];
 
     // Add External Interview Details field if needed based on interviewLevel
@@ -225,7 +234,9 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       .email("Invalid email format")
       .required("User email is required"),
     clientName: Yup.string().required("Client name is required"),
-    clientEmail: Yup.string().email("Invalid email format").nullable(),
+    clientEmail: Yup.array().of(
+      Yup.string().email("Invalid email format")
+    ),
     interviewDateTime: Yup.date()
       .required("Interview date and time is required")
       .min(oneMonthAgo, "Interview date and time must be within the last month or in the future"),
@@ -252,7 +263,8 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         "NO_SHOW", 
         "SELECTED", 
         "PLACED"
-      ], "Invalid interview status")
+      ], "Invalid interview status"),
+    skipNotification: Yup.boolean(),
   });
 
   const handleCloseNotification = () => {
@@ -262,8 +274,8 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       setSubmitting(true);
-      
-      // Format values for API
+  
+      // Prepare the payload
       const payload = {
         candidateId: values.candidateId,
         candidateEmailId: values.candidateEmailId,
@@ -280,23 +292,35 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         jobId: values.jobId,
         userEmail: values.userEmail,
         userId: values.userId,
-        externalInterviewDetails: values.externalInterviewDetails
+        externalInterviewDetails: values.externalInterviewDetails,
+        skipNotification: values.skipNotification,
       };
-
-      const response = await httpService.put(
-        `/candidate/interview-update/${values.userId}/${values.candidateId}`,
-        payload
+  
+      const response = await fetch(`http://192.168.0.213:8086/candidate/interview-update/${values.userId}/${values.candidateId}/${values.jobId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
       );
-      
-      setInterviewResponse(response.data);
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Something went wrong");
+      }
+  
+      const data = await response.json();
+  
+      setInterviewResponse(data);
       setSubmissionSuccess(true);
       setNotification({
-        open: true, 
-        message: "Interview updated successfully", 
-        severity: "success"
+        open: true,
+        message: "Interview updated successfully",
+        severity: "success",
       });
-      
-      // Close form after success
+  
       setTimeout(() => {
         if (onSuccess) onSuccess();
         onClose(true);
@@ -304,16 +328,15 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
     } catch (error) {
       console.error("Error updating interview:", error);
       setNotification({
-        open: true, 
-        message: `Error updating interview: ${
-          error.response?.data?.message || error.message
-        }`, 
-        severity: "error"
+        open: true,
+        message: `Error updating interview: ${error.message}`,
+        severity: "error",
       });
     } finally {
       setSubmitting(false);
     }
   };
+  
 
   const SuccessMessage = () => {
     if (!submissionSuccess || !interviewResponse) return null;
@@ -335,7 +358,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   const initialValues = getInitialValues();
 
   return (
-    <Box sx={{ width: "100%", p: { xs: 1, sm: 2 }, maxHeight: "80vh", overflow: "auto" }}>
+    <Box sx={{ width: "100%", p: { xs: 1, sm: 2 },  overflow: "auto" }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h6" color="primary" fontWeight="medium">
           Update Interview

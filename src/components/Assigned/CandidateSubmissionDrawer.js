@@ -5,7 +5,6 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
-import httpService from "../../Services/httpService";
 import MuiTextField from "../muiComponents/MuiTextField";
 import MuiButton from "../muiComponents/MuiButton";
 import MuiSelect from "../muiComponents/MuiSelect";
@@ -107,6 +106,7 @@ const CandidateSubmissionDrawer = ({
   const initialValues =
     mode === "edit" && candidateData
       ? {
+          userId: candidateData.userId || userId,
           fullName: candidateData.fullName || "",
           candidateEmailId: candidateData.candidateEmailId || "",
           contactNumber: candidateData.contactNumber || "",
@@ -126,7 +126,8 @@ const CandidateSubmissionDrawer = ({
             candidateData.requiredTechnologiesRating || "",
           overallFeedback: candidateData.overallFeedback || "",
           userEmail: email || "",
-          clientName: candidateData.clientName || "",
+          clientName: candidateData.clientName || clientName || "",
+          // jobId: candidateData.jobId || jobId || "",
         }
       : {
           userId: userId || "",
@@ -159,66 +160,71 @@ const CandidateSubmissionDrawer = ({
       setLoading(true);
       setErrorResponse(null);
       try {
-        const form = new FormData();
+        const formData = new FormData();
+        
+        // Add all fields to FormData including userId
         Object.keys(values).forEach((key) => {
-          if (key !== "resumeFile" && values[key] !== null) {
-            form.append(key, values[key].toString());
+          if (key !== "resumeFile" && values[key] !== null && values[key] !== undefined) {
+            formData.append(key, values[key].toString());
           }
         });
+
         if (values.resumeFile) {
-          form.append("resumeFile", values.resumeFile);
+          formData.append("resumeFile", values.resumeFile);
         }
 
-        let response;
+        // Debug: Log FormData contents
+        for (let [key, value] of formData.entries()) {
+          console.log(key, value);
+        }
+
+        const baseUrl = "http://192.168.0.213:8086"; // Replace with your API base URL
+        let url = "";
+        let method = "";
+        
         if (mode === "edit" && candidateData) {
-          response = await httpService.put(
-            `/candidate/candidatesubmissions/${candidateData.candidateId}`,
-            form,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
+          url = `${baseUrl}/candidate/candidatesubmissions/${candidateData.candidateId}`;
+          method = "PUT";
         } else {
-          response = await httpService.post(
-            "/candidate/candidatesubmissions",
-            form,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
+          url = `${baseUrl}/candidate/candidatesubmissions`;
+          method = "POST";
         }
 
-        if (response.data && response.data.status === "Success") {
+        const response = await fetch(url, {
+          method: method,
+          body: formData,
+          // Note: Don't set Content-Type header when sending FormData
+          // The browser will automatically set it with the correct boundary
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Something went wrong");
+        }
+
+        if (data && data.status === "Success") {
           showToast(
-            response.data.message ||
+            data.message ||
               `Candidate profile ${
-                mode === "edit" && candidateData ? "updated" : "submitted"
+                mode === "edit" ? "updated" : "submitted"
               } successfully.`
           );
           if (refreshData) {
             refreshData();
           }
+          onClose();
         }
-        onClose();
       } catch (error) {
         console.error("Error submitting/updating candidate:", error);
         setErrorResponse({
           message:
-            error.response?.data?.message ||
-            `Failed to ${
-              mode === "edit" && candidateData ? "update" : "submit"
-            } candidate data. Please try again.`,
+            error.message ||
+            `Failed to ${mode === "edit" ? "update" : "submit"} candidate data. Please try again.`,
         });
-
         showToast(
-          error.response?.data?.message ||
-            `Failed to ${
-              mode === "edit" && candidateData ? "update" : "submit"
-            } candidate data. Please try again.`,
+          error.message ||
+            `Failed to ${mode === "edit" ? "update" : "submit"} candidate data. Please try again.`,
           "error"
         );
       } finally {
@@ -288,7 +294,7 @@ const CandidateSubmissionDrawer = ({
       }}
     >
       <Typography variant="h6">
-        {mode === "edit" && candidateData ? "Edit Candidate" : "Submit Candidate"}
+        {mode === "edit" ? "Edit Candidate" : "Submit Candidate"}
       </Typography>
       <form onSubmit={formik.handleSubmit}>
         <Grid container spacing={2}>
@@ -392,7 +398,7 @@ const CandidateSubmissionDrawer = ({
               {loading || formik.isSubmitting ? (
                 <CircularProgress size={24} />
               ) : (
-                mode === "edit" && candidateData
+                mode === "edit"
                   ? "Update Candidate"
                   : "Submit Candidate"
               )}

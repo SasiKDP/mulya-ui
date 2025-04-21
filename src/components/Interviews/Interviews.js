@@ -16,7 +16,6 @@ import {
 } from "@mui/icons-material";
 import DataTable from "../muiComponents/DataTabel";
 
-import httpService from "../../Services/httpService";
 import { useSelector } from "react-redux";
 import { useConfirm } from "../../hooks/useConfirm";
 import EditInterviewForm from "./EditInterviewForm";
@@ -39,24 +38,12 @@ const Interviews = () => {
 
   const { confirm } = useConfirm();
 
-  // Process interview data from API
   const processInterviewData = (data) => {
     return data.map((interview) => {
-      // Parse interview status (which is a stringified JSON array)
-      let status = "SCHEDULED";
-      try {
-        const statusArray = JSON.parse(interview.interviewStatus);
-        if (statusArray && statusArray.length > 0) {
-          status = statusArray[0].status || "SCHEDULED";
-        }
-      } catch (e) {
-        console.error("Error parsing interview status", e);
-      }
-
-      // Handle candidate full name (can be null)
+      const status = interview.latestInterviewStatus || "SCHEDULED";
       const candidateName =
         interview.candidateFullName ||
-        interview.candidateEmailId.split("@")[0] ||
+        (interview.candidateEmailId?.split("@")[0]) ||
         "Unknown Candidate";
 
       return {
@@ -70,8 +57,20 @@ const Interviews = () => {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get(`/candidate/allInterviews`);
-      const processedData = processInterviewData(response.data.payload || []);
+
+      const response = await fetch(`http://192.168.0.213:8086/candidate/allInterviews`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const result = await response.json();
+      const processedData = processInterviewData(result.payload || []);
       setInterviews(processedData);
       setError(null);
     } catch (err) {
@@ -95,12 +94,12 @@ const Interviews = () => {
 
   const handleConfirmDelete = async () => {
     const interview = confirmDialog.interview;
-    console.log(interview);
     if (!interview) return;
 
     try {
-      await httpService.delete(
-        `/candidate/deleteinterview/${interview.candidateId}/${interview.jobId}`
+      await fetch(
+        `http://192.168.0.213:8086/candidate/deleteinterview/${interview.candidateId}/${interview.jobId}`,
+        { method: "DELETE" }
       );
       fetchInterviews();
     } catch (err) {
@@ -122,14 +121,12 @@ const Interviews = () => {
     handleCloseEditDrawer();
   };
 
-  // Improved date formatting that handles UTC and displays local time
   const formatDateTime = (dateTimeString) => {
     if (!dateTimeString) return "N/A";
-
     try {
       const date = new Date(dateTimeString);
-      return date.toLocaleString("en-US", {
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      return date.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -151,6 +148,7 @@ const Interviews = () => {
       COMPLETED: { color: "success", variant: "filled" },
       CANCELLED: { color: "error", variant: "filled" },
       RESCHEDULED: { color: "warning", variant: "filled" },
+      PLACED: { color: "success", variant: "outlined" },
     };
 
     const config = statusConfig[upperStatus] || {

@@ -422,7 +422,7 @@ const Assigned = () => {
       <Drawer anchor="right" open={openDrawer} onClose={closeDrawer}>
         {selectedJob && (
           <CandidateSubmissionDrawer
-            userId={selectedJob?.userId}
+          userId={selectedJob?.userId}
             clientName={selectedJob.clientName}
             jobId={selectedJob?.jobId}
             candidateData={selectedCandidate}
