@@ -32,6 +32,20 @@ export const updateEmployee = createAsyncThunk(
   }
 );
 
+export const filterUsersByDateRange = createAsyncThunk(
+  'users/filterUsersByDateRange',
+  async({startDate, endDate}, {rejectWithValue}) => {
+      try{
+        const response = await httpService.get(`/users/employee/filterByJoiningDate?startDate=${startDate}&endDate=${endDate}`);
+        
+        return response.data;
+      }catch(error){
+        console.log(error);
+        return rejectWithValue(error);
+      }
+     }
+)
+
 // Delete employee thunk
 export const deleteEmployee = createAsyncThunk(
   "employee/deleteEmployee",
@@ -45,6 +59,7 @@ const employeesSlice = createSlice({
   name: "employee",
   initialState: {
     employeesList: [],
+    filteredUsers: [],
     fetchStatus: "idle",
     fetchError: null,
     updateStatus: "idle",
@@ -107,7 +122,22 @@ const employeesSlice = createSlice({
       .addCase(deleteEmployee.rejected, (state, action) => {
         state.deleteStatus = "failed";
         state.deleteError = action.error.message;
-      });
+      })
+
+ // Filter Bench List By date Range
+          .addCase(filterUsersByDateRange.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+          })
+          .addCase(filterUsersByDateRange.fulfilled, (state, action) => {
+            state.loading = false;
+            state.filteredUsers = action.payload;
+          })
+          .addCase(filterUsersByDateRange.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload.message;
+            
+          })
   },
 });
 

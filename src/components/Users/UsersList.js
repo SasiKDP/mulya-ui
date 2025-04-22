@@ -16,6 +16,7 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  Stack,
 } from "@mui/material";
 import { Refresh, Delete, Edit, PersonAdd, Close } from "@mui/icons-material";
 import { useSelector, useDispatch } from "react-redux";
@@ -32,6 +33,7 @@ import ComponentTitle from "../../utils/ComponentTitle";
 import UserForm from "./UserForm";
 import httpService from "../../Services/httpService";
 import Registration from "../LogIn/Registration";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
 
 // Expanded content component for row details
 const ExpandedUserContent = ({ row }) => {
@@ -133,6 +135,9 @@ const UsersList = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [openAddDrawer, setOpenAddDrawer] = useState(false);
+
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
+    const {filteredUsers} = useSelector((state) => state.employee);
 
   const dispatch = useDispatch();
   const {
@@ -437,22 +442,34 @@ const UsersList = () => {
 
   return (
     <>
-      <ComponentTitle title="User Management ">
-        {/* <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={refreshData}
-          disabled={loading}
-        >
-          Refresh
-        </Button> */}
-        <Button variant="contained" color="primary" onClick={handleAddUser}>
+     
+
+      <Stack direction="row" alignItems="center" spacing={2}
+              sx={{
+                flexWrap: 'wrap',
+                mb: 3,
+                justifyContent: 'space-between',
+                p: 2,
+                backgroundColor: '#f9f9f9',
+                borderRadius: 2,
+                boxShadow: 1,
+      
+              }}>
+      
+              <Typography variant='h6' color='primary'>Users Management</Typography>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
+              <DateRangeFilter component="Users"/>
+      
+              
+              <Button variant="contained" color="primary" onClick={handleAddUser}>
           Add User
         </Button>
-      </ComponentTitle>
+        </Stack>
+            </Stack>
 
       <DataTable
-        data={users}
+      
+        data={isFilteredDataRequested ?  filteredUsers : users || []}
         columns={columns}
         title=""
         loading={fetchStatus === "loading"}

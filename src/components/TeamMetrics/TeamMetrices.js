@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Tab, Box, CircularProgress } from '@mui/material';
+import { Tabs, Tab, Box, CircularProgress, Stack, Typography } from '@mui/material';
 import UserTable from './UserTable';
 import httpService from '../../Services/httpService';
+import DateRangeFilter from '../muiComponents/DateRangeFilter';
 
 const TeamMetrics = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -90,6 +91,23 @@ const TeamMetrics = () => {
   };
 
   return (
+    <>
+     <Stack direction="row" alignItems="center" spacing={2}
+              sx={{
+                flexWrap: 'wrap',
+                mb: 3,
+                justifyContent: 'space-between',
+                p: 2,
+                backgroundColor: '#f9f9f9',
+                borderRadius: 2,
+                boxShadow: 1,
+      
+              }}>
+      
+              <Typography variant='h6' color='primary'>Team Metrics</Typography>
+      
+              <DateRangeFilter component="TeamMetrics"/>
+            </Stack>
     <Box sx={{ width: '100%', height: '100vh', mt: -1.5 }}>
       <Tabs
         value={activeTab}
@@ -136,6 +154,7 @@ const TeamMetrics = () => {
         {renderTabContent()}
       </Box>
     </Box>
+    </>
   );
 };
 

@@ -7,6 +7,7 @@ import {
   Chip,
   CircularProgress,
   Drawer,
+  Stack,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -15,11 +16,13 @@ import {
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import DataTable from "../muiComponents/DataTabel";
-
 import { useSelector } from "react-redux";
 import { useConfirm } from "../../hooks/useConfirm";
-import EditInterviewForm from "./EditInterviewForm";
+import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { getStatusChip } from "../../utils/statusUtils";
 import ConfirmDialog from "../muiComponents/ConfirmDialog";
+import EditInterviewForm from "./EditInterviewForm"; // Make sure this import is correct
 
 const Interviews = () => {
   const { userId } = useSelector((state) => state.auth);
@@ -30,6 +33,9 @@ const Interviews = () => {
     open: false,
     interview: null,
   });
+
+  const { filterInterviewsForRecruiter } = useSelector((state) => state.interview);
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
 
   const [editDrawer, setEditDrawer] = useState({
     open: false,
@@ -139,33 +145,6 @@ const Interviews = () => {
     }
   };
 
-  const renderStatusChip = (status) => {
-    if (!status) return null;
-
-    const upperStatus = status.toUpperCase();
-    const statusConfig = {
-      SCHEDULED: { color: "primary", variant: "filled" },
-      COMPLETED: { color: "success", variant: "filled" },
-      CANCELLED: { color: "error", variant: "filled" },
-      RESCHEDULED: { color: "warning", variant: "filled" },
-      PLACED: { color: "success", variant: "outlined" },
-    };
-
-    const config = statusConfig[upperStatus] || {
-      color: "default",
-      variant: "outlined",
-    };
-
-    return (
-      <Chip
-        label={upperStatus}
-        size="small"
-        color={config.color}
-        variant={config.variant}
-      />
-    );
-  };
-
   const columns = [
     { key: "jobId", label: "Job ID", width: 100 },
     {
@@ -194,7 +173,7 @@ const Interviews = () => {
       key: "interviewStatus",
       label: "Status",
       width: 140,
-      render: (row) => renderStatusChip(row.interviewStatus),
+      render: (row) => getStatusChip(row.interviewStatus, row),
     },
     {
       key: "zoomLink",
@@ -272,8 +251,26 @@ const Interviews = () => {
         </Box>
       ) : (
         <>
+          <Stack 
+            direction="row" 
+            alignItems="center" 
+            spacing={2}
+            sx={{
+              flexWrap: 'wrap',
+              mb: 3,
+              justifyContent: 'space-between',
+              p: 2,
+              backgroundColor: '#f9f9f9',
+              borderRadius: 2,
+              boxShadow: 1,
+            }}
+          >
+            <Typography variant='h6' color='primary'>Interviews List</Typography>
+            <DateRangeFilter component="InterviewsForRecruiter" />
+          </Stack>
+
           <DataTable
-            data={interviews}
+            data={isFilteredDataRequested ? filterInterviewsForRecruiter : interviews || []}
             columns={columns}
             title="Scheduled Interviews"
             enableSelection={false}
@@ -311,7 +308,8 @@ const Interviews = () => {
         title="Delete Interview?"
         content={`Do you really want to delete the interview for ${
           confirmDialog.interview?.candidateFullName ||
-          confirmDialog.interview?.candidateEmailId
+          confirmDialog.interview?.candidateEmailId ||
+          "this candidate"
         }? This action cannot be undone.`}
         onClose={() => setConfirmDialog({ open: false, interview: null })}
         onConfirm={handleConfirmDelete}

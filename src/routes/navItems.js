@@ -89,7 +89,7 @@ export const navItems = [
     text: "Placements",
     path: "placements",
     icon: <PersonAddIcon />,
-    roles: ["SUPERADMIN", "PARTNER",'EMPLOYEE'],
+    roles: ["SUPERADMIN", "PARTNER"],
   },
   {
     text: "Bench",

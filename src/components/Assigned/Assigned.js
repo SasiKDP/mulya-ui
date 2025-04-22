@@ -10,6 +10,7 @@ import {
   Drawer,
   CircularProgress,
   Skeleton,
+  Stack,
 } from "@mui/material";
 import { Assignment as AssignmentIcon, Refresh, Edit as EditIcon } from "@mui/icons-material";
 import httpService from "../../Services/httpService";
@@ -19,6 +20,7 @@ import { fetchEmployees } from "../../redux/employeesSlice";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent"; 
 import ToastService from "../../Services/toastService";
 import ComponentTitle from "../../utils/ComponentTitle";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
 
 const Assigned = () => {
   const [data, setData] = useState([]);
@@ -32,6 +34,11 @@ const Assigned = () => {
 
   const { userId, email } = useSelector((state) => state.auth);
   const employeeList = useSelector((state) => state.employee.employeesList);
+    const { filterAssignedRequirements, filteredTeamLeadRequirements } = useSelector((state) => state.requirement);
+    const { isFilteredDataRequested } = useSelector((state) => state.bench);
+
+    const {role} = useSelector((state) => state.auth);
+
   const dispatch = useDispatch();
 
   const fetchData = async () => {
@@ -397,17 +404,34 @@ const Assigned = () => {
 
   return (
     <>
-      <ComponentTitle title='Assigned List' />
+     <Stack direction="row" alignItems="center" spacing={2}
+        sx={{
+          flexWrap: 'wrap',
+          mb: 3,
+          justifyContent: 'space-between',
+          p: 2,
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          boxShadow: 1,
+
+        }}>
+
+        <Typography variant='h6' color='primary'>Assigned List</Typography>
+        {role == "TEAMLEAD" ? <DateRangeFilter component="RequirementTeamLead"/> : <DateRangeFilter component="AssignedList" />}
+        
+      </Stack>
 
       <DataTable
-        data={processedData}
-        columns={generateColumns(data)}
+        // data={processedData}
+        data={isFilteredDataRequested ? role == "TEAMLEAD" ? filteredTeamLeadRequirements : filterAssignedRequirements : processedData || []} 
+        columns={generateColumns(data)}  // Always call generateColumns to handle loading state
         title=""
         loading={loading}
         enableSelection={false}
         defaultSortColumn="requirementAddedTimeStamp"
         defaultSortDirection="desc"
         defaultRowsPerPage={10}
+        
         refreshData={fetchData}
         primaryColor="#00796b"
         secondaryColor="#e0f2f1"

@@ -1,53 +1,33 @@
-// CandidateDetails.jsx
 import React, { useEffect, useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Grid, 
-  CircularProgress, 
-  Divider, 
-  Chip, 
-  Paper, 
-  Button, 
-  Link,
-  Card,
-  CardContent,
-  Avatar,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText
+import {
+  Box, Typography, Grid, CircularProgress, Chip, Paper, Button, Link,
+  Avatar, List, ListItem, ListItemText, Card, CardContent, Divider, Stack
 } from '@mui/material';
-import { 
-  Email, 
-  Phone, 
-  LinkedIn, 
-  Person, 
-  Work, 
-  School, 
-  Code, 
-  Business, 
-  CalendarToday, 
-  Description, 
-  Download,
-  ContactPhone
-} from '@mui/icons-material';
+import { Download, Email, Phone, Work, School, Info } from '@mui/icons-material';
 import httpService from '../../Services/httpService';
 import ToastService from '../../Services/toastService';
 
+const SectionCard = ({ title, children }) => (
+  <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Info fontSize="small" /> {title}
+    </Typography>
+    <Divider sx={{ mb: 2 }} />
+    {children}
+  </Paper>
+);
 
-
-const CandidateDetails = ({ candidateId, filterCriteria, onClose, onDownloadResume }) => {
+const CandidateDetails = ({ candidate, onClose, onDownloadResume }) => {
   const [candidateData, setCandidateData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   useEffect(() => {
     const fetchCandidateDetails = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await httpService.get(`/candidate/bench/${candidateId}`);
+        const response = await httpService.get(`/candidate/getBenchBy/${candidate.id}`);
         setCandidateData(response.data);
       } catch (error) {
         console.error('Failed to fetch candidate details:', error);
@@ -57,10 +37,10 @@ const CandidateDetails = ({ candidateId, filterCriteria, onClose, onDownloadResu
         setLoading(false);
       }
     };
-    
+
     fetchCandidateDetails();
-  }, [candidateId]);
-  
+  }, [candidate]);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
@@ -68,7 +48,7 @@ const CandidateDetails = ({ candidateId, filterCriteria, onClose, onDownloadResu
       </Box>
     );
   }
-  
+
   if (error || !candidateData) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -78,209 +58,121 @@ const CandidateDetails = ({ candidateId, filterCriteria, onClose, onDownloadResu
       </Box>
     );
   }
-  
+
   return (
-    <Box sx={{ p: 1 }}>
-      {/* Basic Info Section */}
-      {filterCriteria?.showBasicInfo && (
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Avatar 
-              sx={{ width: 64, height: 64, mr: 2, bgcolor: 'primary.main' }}
-            >
-              {candidateData.fullName?.charAt(0)?.toUpperCase() || 'C'}
-            </Avatar>
-            <Box>
-              <Typography variant="h5">{candidateData.fullName}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Bench ID: {candidateData.id}
-              </Typography>
-              {candidateData.referredBy && (
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                  <Person fontSize="small" sx={{ mr: 0.5, fontSize: '1rem' }} />
-                  <Typography variant="body2">
-                    Referred by: {candidateData.referredBy}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          </Box>
-        </Paper>
-      )}
-      
-      {/* Contact Information */}
-      {filterCriteria?.showContact && (
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-            <ContactPhone sx={{ mr: 1 }} /> Contact Information
+    <Box>
+      {/* Header */}
+      <Paper elevation={2} sx={{ display: 'flex', alignItems: 'center', p: 3, mb: 4, borderRadius: 2 }}>
+        <Avatar sx={{ width: 70, height: 70, mr: 3, bgcolor: '#3f51b5' }}>
+          {candidateData.fullName?.charAt(0)?.toUpperCase() || 'C'}
+        </Avatar>
+        <Box>
+          <Typography variant="h5" fontWeight={600}>
+            {candidateData.fullName}
           </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <List dense>
-            <ListItem>
-              <ListItemIcon>
-                <Email fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Email" 
-                secondary={candidateData.email || 'Not provided'} 
-              />
-            </ListItem>
-            <ListItem>
-              <ListItemIcon>
-                <Phone fontSize="small" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="Phone" 
-                secondary={candidateData.contactNumber || 'Not provided'} 
-              />
-            </ListItem>
-            {candidateData.linkedin && (
-              <ListItem>
-                <ListItemIcon>
-                  <LinkedIn fontSize="small" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="LinkedIn" 
-                  secondary={
-                    <Link href={candidateData.linkedin} target="_blank" rel="noopener">
-                      {candidateData.linkedin}
-                    </Link>
-                  } 
-                />
-              </ListItem>
+          <Typography variant="body2" color="text.secondary">
+            Bench ID: {candidateData.id}
+            {candidateData.referredBy && (
+              <Box component="span" sx={{ ml: 2 }}>
+                • Referred by: {candidateData.referredBy}
+              </Box>
             )}
-          </List>
-        </Paper>
-      )}
-      
-      {/* Experience Information */}
-      {filterCriteria?.showExperience && (
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-            <Work sx={{ mr: 1 }} /> Experience
           </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Total Experience
-                  </Typography>
-                  <Typography variant="h5">
-                    {candidateData.totalExperience} years
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Relevant Experience
-                  </Typography>
-                  <Typography variant="h5">
-                    {candidateData.relevantExperience} years
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
+        </Box>
+      </Paper>
+
+      {/* Basic Info */}
+      <SectionCard title="Basic Information">
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Full Name:</strong> {candidateData.fullName}</Typography>
           </Grid>
-          
-          {/* Work history if available */}
-          {candidateData.workHistory && candidateData.workHistory.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>Work History</Typography>
-              {candidateData.workHistory.map((work, index) => (
-                <Box key={index} sx={{ mb: 2, pl: 1, borderLeft: '2px solid', borderColor: 'primary.light' }}>
-                  <Typography variant="subtitle2">{work.position}</Typography>
-                  <Typography variant="body2">{work.company}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {work.startDate} - {work.endDate || 'Present'}
-                  </Typography>
-                  {work.description && (
-                    <Typography variant="body2" sx={{ mt: 0.5 }}>
-                      {work.description}
-                    </Typography>
-                  )}
-                </Box>
-              ))}
-            </Box>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Bench ID:</strong> {candidateData.id}</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Total Experience:</strong> {candidateData.totalExperience} years</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Relevant Experience:</strong> {candidateData.relevantExperience} years</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Created Date:</strong> {new Date(candidateData.createdDate).toLocaleDateString()}</Typography>
+          </Grid>
+        </Grid>
+      </SectionCard>
+
+      {/* Contact Info */}
+      <SectionCard title="Contact Information">
+        <Stack spacing={1}>
+          <Typography><Email fontSize="small" sx={{ mr: 1 }} /> {candidateData.email || 'Not provided'}</Typography>
+          <Typography><Phone fontSize="small" sx={{ mr: 1 }} /> {candidateData.contactNumber || 'Not provided'}</Typography>
+          {candidateData.linkedin && (
+            <Typography>
+              <Link href={candidateData.linkedin} target="_blank" rel="noopener">
+                LinkedIn Profile
+              </Link>
+            </Typography>
           )}
-        </Paper>
-      )}
-      
-      {/* Skills Information */}
-      {filterCriteria?.showSkills && candidateData.skills && candidateData.skills.length > 0 && (
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-            <Code sx={{ mr: 1 }} /> Skills
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
+        </Stack>
+      </SectionCard>
+
+      {/* Skills */}
+      {candidateData.skills?.length > 0 && (
+        <SectionCard title={`Skills (${candidateData.skills.length})`}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {candidateData.skills.map((skill, index) => (
-              <Chip 
-                key={index} 
-                label={skill} 
-                variant="outlined" 
-                color="primary"
-              />
+            {candidateData.skills.map((skill, idx) => (
+              <Chip key={idx} label={skill} variant="outlined" color="primary" />
             ))}
           </Box>
-        </Paper>
+        </SectionCard>
       )}
-      
-      {/* Education Information */}
-      {filterCriteria?.showEducation && candidateData.education && candidateData.education.length > 0 && (
-        <Paper elevation={1} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-            <School sx={{ mr: 1 }} /> Education
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-          {candidateData.education.map((edu, index) => (
-            <Box key={index} sx={{ mb: 2 }}>
-              <Typography variant="subtitle1">{edu.degree}</Typography>
-              <Typography variant="body1">{edu.institution}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {edu.year}
-              </Typography>
-              {edu.description && (
-                <Typography variant="body2" sx={{ mt: 0.5 }}>
-                  {edu.description}
-                </Typography>
-              )}
-              {index < candidateData.education.length - 1 && (
-                <Divider sx={{ my: 1 }} />
+
+      {/* Work Experience */}
+      {candidateData.workHistory?.length > 0 && (
+        <SectionCard title={`Work Experience (${candidateData.workHistory.length})`}>
+          {candidateData.workHistory.map((work, idx) => (
+            <Box key={idx} sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600}><Work sx={{ fontSize: 18, mr: 1 }} />{work.position}</Typography>
+              <Typography variant="body2" fontWeight={500}>{work.company}</Typography>
+              <Typography variant="body2" color="text.secondary">{work.startDate} - {work.endDate || 'Present'}</Typography>
+              {work.description && (
+                <Typography variant="body2" sx={{ mt: 0.5 }}>{work.description}</Typography>
               )}
             </Box>
           ))}
-        </Paper>
+        </SectionCard>
       )}
-      
-      {/* Documents/Resume Section */}
-      {filterCriteria?.showDocuments && (
-        <Paper elevation={1} sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-            <Description sx={{ mr: 1 }} /> Documents
+
+      {/* Education */}
+      {candidateData.education?.length > 0 && (
+        <SectionCard title={`Education (${candidateData.education.length})`}>
+          {candidateData.education.map((edu, idx) => (
+            <Box key={idx} sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600}><School sx={{ fontSize: 18, mr: 1 }} />{edu.degree}</Typography>
+              <Typography variant="body2">{edu.institution}</Typography>
+              <Typography variant="body2" color="text.secondary">{edu.year}</Typography>
+              {edu.description && (
+                <Typography variant="body2" sx={{ mt: 0.5 }}>{edu.description}</Typography>
+              )}
+            </Box>
+          ))}
+        </SectionCard>
+      )}
+
+      {/* Documents */}
+      <SectionCard title="Documents">
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography>
+            {candidateData.resumeAvailable ? 'Resume Available' : 'Resume Not Available'}
           </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body1" sx={{ mr: 2 }}>
-              Resume: {candidateData.resumeAvailable ? 'Available' : 'Not available'}
-            </Typography>
-            {candidateData.resumeAvailable && (
-              <Button 
-                variant="outlined" 
-                startIcon={<Download />}
-                onClick={onDownloadResume}
-                size="small"
-              >
-                Download Resume
-              </Button>
-            )}
-          </Box>
-        </Paper>
-      )}
+          {candidateData.resumeAvailable && (
+            <Button variant="contained" size="small" onClick={onDownloadResume} startIcon={<Download />}>
+              Download Resume
+            </Button>
+          )}
+        </Stack>
+      </SectionCard>
     </Box>
   );
 };

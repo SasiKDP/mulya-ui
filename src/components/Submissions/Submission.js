@@ -9,6 +9,7 @@ import {
   Skeleton,
   Snackbar,
   Alert,
+  Stack,
 } from "@mui/material";
 import { Download, Edit, Delete } from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -23,7 +24,9 @@ import CandidateSubmissionDrawer from "../Assigned/CandidateSubmissionDrawer";
 import ScheduleInterviewForm from "./ScheduleInterviewForm";
 import httpService from "../../Services/httpService";
 import { useSelector } from "react-redux";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { showToast } from "../../utils/ToastNotification";
+
 
 const Submission = () => {
   const [data, setData] = useState([]);
@@ -41,6 +44,11 @@ const Submission = () => {
 
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState(null);
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
+  const { filteredSubmissionsForRecruiter } = useSelector((state) => state.submission);
+
+  console.log("Filtered Recruiter Data: ", filteredSubmissionsForRecruiter);
+  
 
   const { userId } = useSelector((state) => state.auth);
 
@@ -498,8 +506,25 @@ const Submission = () => {
 
   return (
     <div>
+       <Stack direction="row" alignItems="center" spacing={2}
+        sx={{
+          flexWrap: 'wrap',
+          mb: 3,
+          justifyContent: 'space-between',
+          p: 2,
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          boxShadow: 1,
+
+        }}>
+
+        <Typography variant='h6' color='primary'>Submissions List</Typography>
+
+        <DateRangeFilter component="RecruiterSubmission" />
+      </Stack>
+      
       <DataTable
-        data={data}
+        data={isFilteredDataRequested ? filteredSubmissionsForRecruiter : data || []} 
         columns={columns}
         title="Candidate Submissions"
         enableSelection={false}

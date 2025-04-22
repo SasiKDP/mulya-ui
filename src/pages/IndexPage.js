@@ -52,10 +52,6 @@ export default function HomePage() {
     const fetchDashboardCounts = async () => {
       try {
         const response = await httpService.get('/candidate/dashboardcounts');
-        
-        // Map the response data to our stats object
-        // Assuming the API returns data in the format mentioned in the chat
-        // If the API response structure is different, adjust this mapping accordingly
         setStats({
           requirements: response.data.requirements || 0,
           candidates: response.data.candidates || 0,
@@ -66,14 +62,11 @@ export default function HomePage() {
           users: response.data.users || 0,
           bench: response.data.bench || 0,
         });
-        
         setLoading(false);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         ToastService.error('Failed to load dashboard data');
         setLoading(false);
-        
-        // Fallback to some default values in case of error
         setStats({
           requirements: 0,
           candidates: 0,
@@ -154,12 +147,22 @@ export default function HomePage() {
     {
       title: 'Placements',
       key: 'placements',
+      subtitle: 'This Month',
       color: '#6366F1', // Indigo-500
       bg: '#EEF2FF',   // Indigo-50
-      bg: '#eff6ff',
       icon: <Award size={24} />,
       buttonText: 'View Placements',
       path: '/dashboard/placements',
+    },
+    {
+      title: 'Employees',
+      key: 'users',
+      subtitle: 'Available',
+      color: '#06B6D4', // Cyan-500
+      bg: '#ECFEFF',   // Cyan-50
+      icon: <UserCheck size={24} />,
+      buttonText: 'View Employees',
+      path: '/dashboard/users',
     },
     {
       title: 'Bench',

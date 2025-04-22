@@ -15,6 +15,7 @@ import {
   DialogActions,
   Drawer,
   DialogContentText,
+  Badge,
 } from "@mui/material";
 import {
   Refresh,
@@ -24,6 +25,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
+  Cancel,
 } from "@mui/icons-material";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -34,6 +36,10 @@ import PostRequirement from "./PostRequirement/PostRequirement";
 import EditRequirement from "./EditRequirement";
 import httpService from "../../Services/httpService"; // Import httpService
 import LoadingSkeleton from "../muiComponents/LoadingSkeleton"; // Import LoadingSkeleton
+import { DateRangeIcon } from "@mui/x-date-pickers";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { useDispatch, useSelector } from "react-redux";
+import { setFilteredReqDataRequested } from "../../redux/requirementSlice";
 
 const Requirements = () => {
   const [data, setData] = useState([]);
@@ -55,6 +61,11 @@ const Requirements = () => {
     jobTitle: "",
   });
   const [expandedRowId, setExpandedRowId] = useState(null);
+
+  const { filteredRequirementList } = useSelector((state) => state.requirement);
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
+  const dispatch = useDispatch();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const refreshData = () => {
     setRefreshTrigger((prev) => prev + 1);
@@ -84,11 +95,9 @@ const Requirements = () => {
           });
   
           setData(sortedData);
-          setColumns(generateColumns(sortedData, loading));
           ToastService.update(loadingToastId, "Requirements data loaded successfully", "success");
         } else {
           setData([]);
-          setColumns([]);
           if (response.data && response.data.message) {
             setError(new Error(response.data.message));
             ToastService.update(loadingToastId, `Error: ${response.data.message}`, "error");
@@ -100,7 +109,6 @@ const Requirements = () => {
       } catch (err) {
         setError(err);
         setData([]);
-        setColumns([]);
         ToastService.update(loadingToastId, `Error fetching data: ${err.message}`, "error");
       } finally {
         setLoading(false);
@@ -110,8 +118,10 @@ const Requirements = () => {
     fetchData();
   }, [refreshTrigger]);
   
-  
-  
+  // Update columns when loading state or data changes
+  useEffect(() => {
+    setColumns(generateColumns(loading));
+  }, [loading]);
 
   const handleJobIdClick = (jobId) => {
     console.log("Job ID clicked:", jobId);
@@ -461,16 +471,19 @@ const Requirements = () => {
     );
   };
 
-  const generateColumns = (data, loading) => {
-    if (data.length === 0) return [];
-
+  const generateColumns = (isLoading) => {
+    const skeletonProps = {
+      rows: 1,
+      height: 24,
+      animation: "wave"
+    };
+  
     return [
       {
         key: "jobId",
         label: "Job ID",
-        type: "select",
-        render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={80} height={24} />
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={80} />
         ) : (
           <Link
             component="button"
@@ -489,23 +502,19 @@ const Requirements = () => {
       {
         key: "requirementAddedTimeStamp",
         label: "Posted Date",
-        type: "select",
-        render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={100} height={24} />
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={100} />
         ) : (
-          !row.requirementAddedTimeStamp ? "N/A" : (
-            isNaN(new Date(row.requirementAddedTimeStamp))
-              ? "Invalid Date"
-              : new Date(row.requirementAddedTimeStamp).toISOString().split("T")[0]
-          )
+          !row.requirementAddedTimeStamp ? "N/A" : 
+          isNaN(new Date(row.requirementAddedTimeStamp)) ? "Invalid Date" : 
+          new Date(row.requirementAddedTimeStamp).toISOString().split("T")[0]
         ),
       },
       {
         key: "jobTitle",
         label: "Job Title",
-        type: "text",
-        render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={120} height={24} />
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={120} />
         ) : (
           row.jobTitle || "N/A"
         ),
@@ -513,9 +522,8 @@ const Requirements = () => {
       {
         key: "clientName",
         label: "Client Name",
-        type: "text",
-        render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={100} height={24} />
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={100} />
         ) : (
           row.clientName || "N/A"
         ),
@@ -523,9 +531,8 @@ const Requirements = () => {
       {
         key: "assignedBy",
         label: "Assigned By",
-        type: "text",
-        render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={100} height={24} />
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={100} />
         ) : (
           row.assignedBy ? (
             <Typography sx={{ fontWeight: 350, color: "#e91e64" }}>
@@ -537,10 +544,46 @@ const Requirements = () => {
         ),
       },
       {
+        key: "numberOfSubmissions",
+        label: "Submissions",
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={100} />
+        ) : (
+          <Chip 
+            label={row.numberOfSubmissions || 0}
+            variant="outlined"
+            color={row.numberOfSubmissions > 0 ? "primary" : "default"}
+            sx={{ 
+              fontWeight: 500,
+              borderWidth: row.numberOfSubmissions > 0 ? 2 : 1,
+              borderColor: row.numberOfSubmissions > 0 ? "primary.main" : "divider"
+            }}
+          />
+        ),
+      },
+      {
+        key: "numberOfInterviews",
+        label: "Interviews",
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={100} />
+        ) : (
+          <Chip 
+            label={row.numberOfInterviews || 0}
+            variant="outlined"
+            color={row.numberOfInterviews > 0 ? "success" : "default"}
+            sx={{ 
+              fontWeight: 500,
+              borderWidth: row.numberOfInterviews > 0 ? 2 : 1,
+              borderColor: row.numberOfInterviews > 0 ? "success.main" : "divider"
+            }}
+          />
+        ),
+      },
+      {
         key: "jobDescription",
         label: "Job Description",
-        render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={120} height={24} />
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={120} />
         ) : (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {row.jobDescription ? (
@@ -552,12 +595,7 @@ const Requirements = () => {
                 {row.jobDescription.length > 15 && (
                   <Tooltip title="View Full Description">
                     <Button
-                      onClick={() =>
-                        handleOpenDescriptionDialog(
-                          row.jobDescription,
-                          row.jobTitle
-                        )
-                      }
+                      onClick={() => handleOpenDescriptionDialog(row.jobDescription, row.jobTitle)}
                       size="small"
                       startIcon={<DescriptionIcon />}
                       sx={{ minWidth: 0 }}
@@ -587,9 +625,8 @@ const Requirements = () => {
       {
         key: "status",
         label: "Status",
-        type: "select",
-        render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={80} height={24} />
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={80} />
         ) : (
           renderStatus(row.status)
         ),
@@ -597,9 +634,8 @@ const Requirements = () => {
       {
         key: "salaryPackage",
         label: "Package",
-        type: "text",
-        render: (row) => loading ? (
-          <LoadingSkeleton rows={1} width={80} height={24} />
+        render: (row) => isLoading ? (
+          <LoadingSkeleton {...skeletonProps} width={80} />
         ) : (
           row.salaryPackage || "N/A"
         ),
@@ -607,7 +643,7 @@ const Requirements = () => {
       {
         key: "actions",
         label: "Actions",
-        render: (row) => loading ? (
+        render: (row) => isLoading ? (
           <Stack direction="row" spacing={1}>
             <LoadingSkeleton rows={1} width={32} height={32} />
             <LoadingSkeleton rows={1} width={32} height={32} />
@@ -670,20 +706,39 @@ const Requirements = () => {
     );
   }
 
+  const handleCalenderDialog = () => {
+    setDialogOpen(!dialogOpen);
+  };
+
+  const handleDisableFilter = () => {
+    dispatch(setFilteredReqDataRequested(false));
+    setDialogOpen(false);
+  };
+
   return (
     <>
       <ToastContainer />
-      <ComponentTitle title="Requirements">
+
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={2}
+        sx={{
+          flexWrap: 'wrap',
+          mb: 3,
+          justifyContent: 'space-between',
+          p: 2,
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          boxShadow: 1,
+        }}
+      >
+        <Typography variant='h6' color='primary'>Requirements Management</Typography>
+
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
+        <DateRangeFilter component="Requirement" />
         <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={refreshData}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
-        <Button
-          variant="contained"
+          variant="text"
           color="primary"
           onClick={() => {
             setDrawerOpen(true);
@@ -692,7 +747,10 @@ const Requirements = () => {
         >
           Post New Requirement
         </Button>
-      </ComponentTitle>
+
+         
+        </Stack>
+      </Stack>
       
       {loading && data.length === 0 ? (
         <Box sx={{ p: 3 }}>
@@ -700,7 +758,7 @@ const Requirements = () => {
         </Box>
       ) : (
         <DataTable
-          data={processedData}
+          data={isFilteredDataRequested ? filteredRequirementList : processedData || []} 
           columns={columns}
           title=""
           loading={loading}
