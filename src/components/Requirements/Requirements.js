@@ -727,6 +727,16 @@ const Requirements = () => {
           ),
       },
       {
+        key: "age",
+        label: "Age Of Requirement",
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={80} />
+          ) : (
+            row.age || "N/A"
+          ),
+      },
+      {
         key: "actions",
         label: "Actions",
         render: (row) =>

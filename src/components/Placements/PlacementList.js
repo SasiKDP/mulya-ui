@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, Button, Drawer, CircularProgress } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Button, Drawer, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
 import { MoreVert, Edit, Visibility, Delete, Add, Refresh, Close } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import DataTable from '../muiComponents/DataTabel';
 import ComponentTitle from '../../utils/ComponentTitle';
 import PlacementForm from './PlacementForm';
+import PlacementCard from './PlacementCard';
 import httpService from '../../Services/httpService';
 
 const PlacementsList = () => {
@@ -14,6 +15,8 @@ const PlacementsList = () => {
   const [data, setData] = useState([]);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedPlacement, setSelectedPlacement] = useState(null);
   const [editingPlacement, setEditingPlacement] = useState(null);
   const navigate = useNavigate();
 
@@ -27,8 +30,18 @@ const PlacementsList = () => {
     setEditingPlacement(null);
   };
 
+  const handleOpenDetailsDialog = (row) => {
+    setSelectedPlacement(row);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleCloseDetailsDialog = () => {
+    setDetailsDialogOpen(false);
+    setSelectedPlacement(null);
+  };
+
   const handleView = (row) => {
-    navigate(`/placements/view/${row.id}`);
+    handleOpenDetailsDialog(row);
   };
 
   const handleEdit = (row) => {
@@ -285,6 +298,7 @@ const PlacementsList = () => {
         uniqueId="id"
       />
 
+      {/* Form Drawer */}
       <Drawer
         anchor="right"
         open={drawerOpen}
@@ -330,6 +344,55 @@ const PlacementsList = () => {
           </Box>
         </Box>
       </Drawer>
+
+      {/* Details Dialog */}
+      <Dialog
+        open={detailsDialogOpen}
+        onClose={handleCloseDetailsDialog}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          borderBottom: '1px solid #eee',
+          pb: 2
+        }}>
+          <Typography variant="h5">
+            Placement Details
+          </Typography>
+          <IconButton 
+            onClick={handleCloseDetailsDialog}
+            aria-label="close"
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+              '&:hover': {
+                backgroundColor: (theme) => theme.palette.action.hover
+              }
+            }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ py: 2 }}>
+          {selectedPlacement && (
+            <PlacementCard data={selectedPlacement} />
+          )}
+        </DialogContent>
+        <DialogActions sx={{ borderTop: '1px solid #eee', py: 2, px: 3 }}>
+          <Button onClick={handleCloseDetailsDialog} color="primary">
+            Close
+          </Button>
+         
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
