@@ -21,6 +21,7 @@ import {
   Slider,
   Divider,
   Paper,
+  Autocomplete,
 } from "@mui/material";
 import {
   DatePicker,
@@ -288,6 +289,111 @@ export const renderField = (field, formik, editMode = false) => {
                 rows={field.rows || 4}
                 maxRows={field.maxRows || 10}
               />
+            );
+          case "search-select":
+            return (
+              <Box sx={{ my: 1.5 }}>
+                <Autocomplete
+                  multiple={field.multiple || false}
+                  options={field.options || []}
+                  getOptionLabel={(option) => option.label}
+                  value={
+                    field.multiple
+                      ? field.options?.filter((opt) =>
+                          (values[field.name] || []).includes(opt.value)
+                        ) || []
+                      : field.options?.find(
+                          (opt) => opt.value === values[field.name]
+                        ) || null
+                  }
+                  onChange={(_, newValue) => {
+                    if (field.multiple) {
+                      const valuesArray = newValue.map((item) => item.value);
+                      setFieldValue(field.name, valuesArray);
+                    } else {
+                      setFieldValue(field.name, newValue ? newValue.value : "");
+                    }
+                  }}
+                  onBlur={handleBlur}
+                  disabled={field.disabled || (editMode && field.disableOnEdit)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={field.label}
+                      variant="outlined"
+                      placeholder={field.placeholder || "Search..."}
+                      error={Boolean(errorText)}
+                      helperText={errorText || field.description}
+                      required={field.required}
+                      InputProps={{
+                        ...params.InputProps,
+                        style: {
+                          borderRadius: 8,
+                        },
+                        endAdornment: (
+                          <>
+                            {helpTooltip}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          transition: "all 0.2s ease-in-out",
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: alpha(theme.palette.primary.main, 0.6),
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: theme.palette.primary.main,
+                            borderWidth: 2,
+                            boxShadow: `0 0 0 3px ${alpha(
+                              theme.palette.primary.main,
+                              0.15
+                            )}`,
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <MenuItem
+                      {...props}
+                      key={option.value}
+                      sx={{
+                        borderRadius: 1,
+                        "&:hover": {
+                          backgroundColor: alpha(
+                            theme.palette.primary.main,
+                            0.1
+                          ),
+                        },
+                      }}
+                    >
+                      {option.label}
+                    </MenuItem>
+                  )}
+                  noOptionsText="No results found"
+                  isOptionEqualToValue={(option, value) =>
+                    option.value === value.value
+                  }
+                  PaperComponent={(props) => (
+                    <Paper
+                      {...props}
+                      sx={{
+                        borderRadius: 2,
+                        boxShadow: "0 8px 16px rgba(0,0,0,0.1)",
+                        mt: 0.5,
+                      }}
+                    />
+                  )}
+                  sx={{
+                    "& .MuiAutocomplete-popupIndicator": {
+                      transform: "none",
+                    },
+                  }}
+                  freeSolo={field.freeSolo || false}
+                />
+              </Box>
             );
 
           case "select":

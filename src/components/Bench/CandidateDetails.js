@@ -1,61 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Grid, 
-  CircularProgress, 
-  Divider, 
-  Chip, 
-  Paper, 
-  Button, 
-  Link,
-  Avatar,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Badge,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Card,
-  CardContent
+import {
+  Box, Typography, Grid, CircularProgress, Chip, Paper, Button, Link,
+  Avatar, List, ListItem, ListItemText, Card, CardContent, Divider, Stack
 } from '@mui/material';
-import { 
-  Email, 
-  Phone, 
-  LinkedIn, 
-  Person, 
-  Work, 
-  School, 
-  Code, 
-  Description, 
-  Download,
-  ContactPhone,
-  ExpandMore,
-  CalendarToday,
-  Business,
-  Star
-} from '@mui/icons-material';
+import { Download, Email, Phone, Work, School, Info } from '@mui/icons-material';
 import httpService from '../../Services/httpService';
 import ToastService from '../../Services/toastService';
 
-const CandidateDetails = ({ candidateId, onClose, onDownloadResume }) => {
+const SectionCard = ({ title, children }) => (
+  <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+    <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Info fontSize="small" /> {title}
+    </Typography>
+    <Divider sx={{ mb: 2 }} />
+    {children}
+  </Paper>
+);
+
+const CandidateDetails = ({ candidate, onClose, onDownloadResume }) => {
   const [candidateData, setCandidateData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expanded, setExpanded] = useState('panel1'); // Default open panel
-  
-  const handleChange = (panel) => (event, newExpanded) => {
-    setExpanded(newExpanded ? panel : false);
-  };
 
   useEffect(() => {
     const fetchCandidateDetails = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await httpService.get(`/candidate/getBenchBy/${candidateId}`);
+        const response = await httpService.get(`/candidate/getBenchBy/${candidate.id}`);
         setCandidateData(response.data);
       } catch (error) {
         console.error('Failed to fetch candidate details:', error);
@@ -65,10 +37,10 @@ const CandidateDetails = ({ candidateId, onClose, onDownloadResume }) => {
         setLoading(false);
       }
     };
-    
+
     fetchCandidateDetails();
-  }, [candidateId]);
-  
+  }, [candidate]);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
@@ -76,7 +48,7 @@ const CandidateDetails = ({ candidateId, onClose, onDownloadResume }) => {
       </Box>
     );
   }
-  
+
   if (error || !candidateData) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -88,278 +60,120 @@ const CandidateDetails = ({ candidateId, onClose, onDownloadResume }) => {
   }
 
   return (
-    <Card elevation={3} sx={{ borderRadius: 2, overflow: 'hidden' }}>
-      {/* Header with Avatar and Name */}
-      <Box sx={{ 
-        p: 3, 
-        background: 'linear-gradient(to right, #3f51b5, #5c6bc0)',
-        color: 'white',
-        display: 'flex',
-        alignItems: 'center'
-      }}>
-        <Avatar 
-          sx={{ width: 80, height: 80, mr: 3, bgcolor: 'white', color: '#3f51b5', border: '3px solid white' }}
-        >
+    <Box>
+      {/* Header */}
+      <Paper elevation={2} sx={{ display: 'flex', alignItems: 'center', p: 3, mb: 4, borderRadius: 2 }}>
+        <Avatar sx={{ width: 70, height: 70, mr: 3, bgcolor: '#3f51b5' }}>
           {candidateData.fullName?.charAt(0)?.toUpperCase() || 'C'}
         </Avatar>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 500 }}>{candidateData.fullName}</Typography>
-          <Typography variant="body1">
+          <Typography variant="h5" fontWeight={600}>
+            {candidateData.fullName}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
             Bench ID: {candidateData.id}
             {candidateData.referredBy && (
-              <Box component="span" sx={{ ml: 2, display: 'inline-flex', alignItems: 'center' }}>
-                <Person fontSize="small" sx={{ mr: 0.5, fontSize: '1rem' }} />
-                Referred by: {candidateData.referredBy}
+              <Box component="span" sx={{ ml: 2 }}>
+                • Referred by: {candidateData.referredBy}
               </Box>
             )}
           </Typography>
         </Box>
-      </Box>
+      </Paper>
 
-      <CardContent>
-        {/* Basic Information */}
-        <Accordion expanded={expanded === 'panel1'} onChange={handleChange('panel1')}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Person sx={{ mr: 1 }} />
-              <Typography variant="h6">Basic Information</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="body1">
-                  <strong>Full Name:</strong> {candidateData.fullName}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="body1">
-                  <strong>Bench ID:</strong> {candidateData.id}
-                </Typography>
-              </Grid>
-              {candidateData.totalExperience && (
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body1">
-                    <strong>Total Experience:</strong> {candidateData.totalExperience} years
-                  </Typography>
-                </Grid>
-              )}
-              {candidateData.relevantExperience && (
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body1">
-                    <strong>Relevant Experience:</strong> {candidateData.relevantExperience} years
-                  </Typography>
-                </Grid>
-              )}
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
+      {/* Basic Info */}
+      <SectionCard title="Basic Information">
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Full Name:</strong> {candidateData.fullName}</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Bench ID:</strong> {candidateData.id}</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Total Experience:</strong> {candidateData.totalExperience} years</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Relevant Experience:</strong> {candidateData.relevantExperience} years</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography><strong>Created Date:</strong> {new Date(candidateData.createdDate).toLocaleDateString()}</Typography>
+          </Grid>
+        </Grid>
+      </SectionCard>
 
-        {/* Contact Information */}
-        <Accordion expanded={expanded === 'panel2'} onChange={handleChange('panel2')}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <ContactPhone sx={{ mr: 1 }} />
-              <Typography variant="h6">Contact Information</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <List dense>
-              <ListItem>
-                <ListItemIcon>
-                  <Email fontSize="small" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Email" 
-                  secondary={candidateData.email || 'Not provided'} 
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <Phone fontSize="small" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Phone" 
-                  secondary={candidateData.contactNumber || 'Not provided'} 
-                />
-              </ListItem>
-              {candidateData.linkedin && (
-                <ListItem>
-                  <ListItemIcon>
-                    <LinkedIn fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="LinkedIn" 
-                    secondary={
-                      <Link href={candidateData.linkedin} target="_blank" rel="noopener">
-                        {candidateData.linkedin}
-                      </Link>
-                    } 
-                  />
-                </ListItem>
-              )}
-            </List>
-          </AccordionDetails>
-        </Accordion>
+      {/* Contact Info */}
+      <SectionCard title="Contact Information">
+        <Stack spacing={1}>
+          <Typography><Email fontSize="small" sx={{ mr: 1 }} /> {candidateData.email || 'Not provided'}</Typography>
+          <Typography><Phone fontSize="small" sx={{ mr: 1 }} /> {candidateData.contactNumber || 'Not provided'}</Typography>
+          {candidateData.linkedin && (
+            <Typography>
+              <Link href={candidateData.linkedin} target="_blank" rel="noopener">
+                LinkedIn Profile
+              </Link>
+            </Typography>
+          )}
+        </Stack>
+      </SectionCard>
 
-        {/* Experience */}
-        {candidateData.workHistory && candidateData.workHistory.length > 0 && (
-          <Accordion expanded={expanded === 'panel3'} onChange={handleChange('panel3')}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Work sx={{ mr: 1 }} />
-                <Typography variant="h6">Work Experience</Typography>
-                <Badge badgeContent={candidateData.workHistory.length} color="primary" sx={{ ml: 2 }} />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              {candidateData.workHistory.map((work, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    mb: 3, 
-                    pl: 2, 
-                    borderLeft: '3px solid', 
-                    borderColor: 'primary.main',
-                    pb: 1
-                  }}
-                >
-                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{work.position}</Typography>
-                  <Typography variant="subtitle2">
-                    <Business fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
-                    {work.company}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                    <CalendarToday fontSize="small" sx={{ mr: 1 }} />
-                    {work.startDate} - {work.endDate || 'Present'}
-                  </Typography>
-                  {work.description && (
-                    <Typography variant="body2">
-                      {work.description}
-                    </Typography>
-                  )}
-                </Box>
-              ))}
-            </AccordionDetails>
-          </Accordion>
-        )}
+      {/* Skills */}
+      {candidateData.skills?.length > 0 && (
+        <SectionCard title={`Skills (${candidateData.skills.length})`}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {candidateData.skills.map((skill, idx) => (
+              <Chip key={idx} label={skill} variant="outlined" color="primary" />
+            ))}
+          </Box>
+        </SectionCard>
+      )}
 
-        {/* Skills */}
-        {candidateData.skills && candidateData.skills.length > 0 && (
-          <Accordion expanded={expanded === 'panel4'} onChange={handleChange('panel4')}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Code sx={{ mr: 1 }} />
-                <Typography variant="h6">Skills</Typography>
-                <Badge badgeContent={candidateData.skills.length} color="primary" sx={{ ml: 2 }} />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {candidateData.skills.map((skill, index) => (
-                  <Chip 
-                    key={index} 
-                    label={skill} 
-                    color="primary"
-                    variant="outlined"
-                    sx={{ mb: 1, fontSize: '0.9rem', py: 0.5 }}
-                  />
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        )}
-
-        {/* Education */}
-        {candidateData.education && candidateData.education.length > 0 && (
-          <Accordion expanded={expanded === 'panel5'} onChange={handleChange('panel5')}>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <School sx={{ mr: 1 }} />
-                <Typography variant="h6">Education</Typography>
-                <Badge badgeContent={candidateData.education.length} color="primary" sx={{ ml: 2 }} />
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              {candidateData.education.map((edu, index) => (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    mb: 3, 
-                    p: 2, 
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1
-                  }}
-                >
-                  <Typography variant="h6">{edu.degree}</Typography>
-                  <Typography variant="subtitle1">
-                    <School fontSize="small" sx={{ verticalAlign: 'middle', mr: 1 }} />
-                    {edu.institution}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-                    <CalendarToday fontSize="small" sx={{ mr: 1 }} />
-                    {edu.year}
-                  </Typography>
-                  {edu.description && (
-                    <Typography variant="body2">
-                      {edu.description}
-                    </Typography>
-                  )}
-                </Box>
-              ))}
-            </AccordionDetails>
-          </Accordion>
-        )}
-
-        {/* Documents */}
-        <Accordion expanded={expanded === 'panel6'} onChange={handleChange('panel6')}>
-          <AccordionSummary expandIcon={<ExpandMore />}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Description sx={{ mr: 1 }} />
-              <Typography variant="h6">Documents</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Box 
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                p: 2,
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1
-              }}
-            >
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body1">
-                  {candidateData.resumeAvailable ? (
-                    <Badge color="success" variant="dot" sx={{ mr: 1 }}>
-                      <Typography component="span">Resume Available</Typography>
-                    </Badge>
-                  ) : (
-                    <Badge color="error" variant="dot" sx={{ mr: 1 }}>
-                      <Typography component="span">Resume Not Available</Typography>
-                    </Badge>
-                  )}
-                </Typography>
-              </Box>
-              {candidateData.resumeAvailable && (
-                <Button 
-                  variant="contained" 
-                  startIcon={<Download />}
-                  onClick={onDownloadResume}
-                >
-                  Download Resume
-                </Button>
+      {/* Work Experience */}
+      {candidateData.workHistory?.length > 0 && (
+        <SectionCard title={`Work Experience (${candidateData.workHistory.length})`}>
+          {candidateData.workHistory.map((work, idx) => (
+            <Box key={idx} sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600}><Work sx={{ fontSize: 18, mr: 1 }} />{work.position}</Typography>
+              <Typography variant="body2" fontWeight={500}>{work.company}</Typography>
+              <Typography variant="body2" color="text.secondary">{work.startDate} - {work.endDate || 'Present'}</Typography>
+              {work.description && (
+                <Typography variant="body2" sx={{ mt: 0.5 }}>{work.description}</Typography>
               )}
             </Box>
-          </AccordionDetails>
-        </Accordion>
-      </CardContent>
-    </Card>
+          ))}
+        </SectionCard>
+      )}
+
+      {/* Education */}
+      {candidateData.education?.length > 0 && (
+        <SectionCard title={`Education (${candidateData.education.length})`}>
+          {candidateData.education.map((edu, idx) => (
+            <Box key={idx} sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" fontWeight={600}><School sx={{ fontSize: 18, mr: 1 }} />{edu.degree}</Typography>
+              <Typography variant="body2">{edu.institution}</Typography>
+              <Typography variant="body2" color="text.secondary">{edu.year}</Typography>
+              {edu.description && (
+                <Typography variant="body2" sx={{ mt: 0.5 }}>{edu.description}</Typography>
+              )}
+            </Box>
+          ))}
+        </SectionCard>
+      )}
+
+      {/* Documents */}
+      <SectionCard title="Documents">
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography>
+            {candidateData.resumeAvailable ? 'Resume Available' : 'Resume Not Available'}
+          </Typography>
+          {candidateData.resumeAvailable && (
+            <Button variant="contained" size="small" onClick={onDownloadResume} startIcon={<Download />}>
+              Download Resume
+            </Button>
+          )}
+        </Stack>
+      </SectionCard>
+    </Box>
   );
 };
 

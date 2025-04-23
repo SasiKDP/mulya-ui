@@ -16,12 +16,31 @@ export const filterSubmissionsByDateRange = createAsyncThunk(
        }
 )
 
+// Filter Submissions by Recruiter
+export const filterSubmissionssByRecruiter = createAsyncThunk(
+  'recruiter/submissions/filterByDateRange',
+  async({startDate, endDate}, {getState, rejectWithValue}) => {
+      try{
+        const state = getState();
+        const recruiterId = state.auth.userId;
+ 
+        const response = await httpService.get(`/candidate/submissions/${recruiterId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+        
+        return response.data;
+      }catch(error){
+        console.log(error);
+        return rejectWithValue(error);
+      }
+     }
+)
+
 
 const submissionSlice =  createSlice({
     name: "submission",
     initialState: {
         loading: false,
         filteredSubmissionsList: [],
+        filteredSubmissionsForRecruiter: [],
         error: null
     },
     reducers: {
@@ -39,6 +58,22 @@ const submissionSlice =  createSlice({
             state.filteredSubmissionsList = action.payload;
           })
           .addCase(filterSubmissionsByDateRange.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload.message;
+            
+          })
+
+          // Filter Submissions List By date Range For Recruiter
+          .addCase(filterSubmissionssByRecruiter.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+          })
+          .addCase(filterSubmissionssByRecruiter.fulfilled, (state, action) => {
+            state.filteredSubmissionsForRecruiter = action.payload;
+            state.loading = false;
+            
+          })
+          .addCase(filterSubmissionssByRecruiter.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload.message;
             

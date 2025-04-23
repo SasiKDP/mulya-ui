@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Box, IconButton, Tooltip, Skeleton, Chip, Typography, Stack } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Tooltip,
+  Skeleton,
+  Chip,
+  Typography,
+  Stack,
+} from "@mui/material";
 import { Visibility, Edit, Delete } from "@mui/icons-material";
 import DataTable from "../muiComponents/DataTabel";
 import httpService from "../../Services/httpService";
@@ -7,6 +15,7 @@ import ToastService from "../../Services/toastService";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent"; // Make sure this component exists
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { useSelector } from "react-redux";
+import { getStatusChip } from "../../utils/statusUtils";
 
 const AllInterviews = () => {
   const [interviews, setInterviews] = useState([]);
@@ -14,16 +23,18 @@ const AllInterviews = () => {
   const [expandedRows, setExpandedRows] = useState({});
 
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-  const {filteredInterviewList} = useSelector((state) => state.interview);
+  const { filteredInterviewList } = useSelector((state) => state.interview);
 
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get("/candidate/allscheduledinterviews");
+      const response = await httpService.get(
+        "/candidate/allscheduledinterviews"
+      );
       // Add temporary IDs if not present
       const dataWithIds = response.data.map((item, index) => ({
         ...item,
-        interviewId: item.interviewId || `temp-${index + 1}`
+        interviewId: item.interviewId || `temp-${index + 1}`,
       }));
       setInterviews(dataWithIds || []);
     } catch (error) {
@@ -51,45 +62,67 @@ const AllInterviews = () => {
   };
 
   const toggleRowExpansion = (interviewId) => {
-    setExpandedRows(prev => ({
+    setExpandedRows((prev) => ({
       ...prev,
-      [interviewId]: !prev[interviewId]
+      [interviewId]: !prev[interviewId],
     }));
   };
 
   const getExpandedContentConfig = () => {
     return {
       title: "Interview Details",
-      description: { 
-        key: "notes", 
-        fallback: "No additional notes available." 
+      description: {
+        key: "notes",
+        fallback: "No additional notes available.",
       },
       backgroundColor: "#f5f5f5",
       sections: [
         {
           title: "Interview Information",
           fields: [
-            { label: "Candidate Name", key: "candidateFullName", fallback: "-" },
-            { label: "Candidate Email", key: "candidateEmailId", fallback: "-" },
-            { label: "Contact Number", key: "candidateContactNo", fallback: "-" }
-          ]
+            {
+              label: "Candidate Name",
+              key: "candidateFullName",
+              fallback: "-",
+            },
+            {
+              label: "Candidate Email",
+              key: "candidateEmailId",
+              fallback: "-",
+            },
+            {
+              label: "Contact Number",
+              key: "candidateContactNo",
+              fallback: "-",
+            },
+          ],
         },
         {
           title: "Schedule Details",
           fields: [
-            { label: "Interview Date", key: "interviewDateTime", fallback: "-", format: (value) => new Date(value).toLocaleString() },
-            { label: "Duration", key: "duration", fallback: "-", format: (value) => `${value} minutes` },
-            { label: "Interview Level", key: "interviewLevel", fallback: "-" }
-          ]
+            {
+              label: "Interview Date",
+              key: "interviewDateTime",
+              fallback: "-",
+              format: (value) => new Date(value).toLocaleString(),
+            },
+            {
+              label: "Duration",
+              key: "duration",
+              fallback: "-",
+              format: (value) => `${value} minutes`,
+            },
+            { label: "Interview Level", key: "interviewLevel", fallback: "-" },
+          ],
         },
         {
           title: "Job Information",
           fields: [
             { label: "Job ID", key: "jobId", fallback: "-" },
             { label: "Client Name", key: "clientName", fallback: "-" },
-            { label: "Scheduled By", key: "userEmail", fallback: "-" }
-          ]
-        }
+            { label: "Scheduled By", key: "userEmail", fallback: "-" },
+          ],
+        },
       ],
       actions: [
         {
@@ -99,7 +132,7 @@ const AllInterviews = () => {
           variant: "outlined",
           size: "small",
           color: "primary",
-          sx: { mr: 1 }
+          sx: { mr: 1 },
         },
         {
           label: "Delete Interview",
@@ -107,9 +140,9 @@ const AllInterviews = () => {
           onClick: (row) => handleDelete(row),
           variant: "outlined",
           size: "small",
-          color: "error"
-        }
-      ]
+          color: "error",
+        },
+      ],
     };
   };
 
@@ -119,7 +152,7 @@ const AllInterviews = () => {
         <Box sx={{ p: 2 }}>
           <Skeleton variant="text" width="60%" height={30} sx={{ mb: 2 }} />
           <Skeleton variant="rectangular" height={100} sx={{ mb: 2 }} />
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: "flex", gap: 2 }}>
             <Skeleton variant="rectangular" width="30%" height={100} />
             <Skeleton variant="rectangular" width="30%" height={100} />
             <Skeleton variant="rectangular" width="30%" height={100} />
@@ -127,7 +160,9 @@ const AllInterviews = () => {
         </Box>
       );
     }
-    return <ReusableExpandedContent row={row} config={getExpandedContentConfig()} />;
+    return (
+      <ReusableExpandedContent row={row} config={getExpandedContentConfig()} />
+    );
   };
 
   const generateColumns = () => {
@@ -150,11 +185,12 @@ const AllInterviews = () => {
         type: "text",
         sortable: true,
         filterable: true,
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={120} height={24} />
-        ) : (
-          row.candidateFullName
-        )
+        render: (row) =>
+          loading ? (
+            <Skeleton variant="text" width={120} height={24} />
+          ) : (
+            row.candidateFullName
+          ),
       },
       {
         key: "candidateContactNo",
@@ -162,11 +198,12 @@ const AllInterviews = () => {
         type: "text",
         sortable: true,
         filterable: true,
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={100} height={24} />
-        ) : (
-          row.candidateContactNo
-        )
+        render: (row) =>
+          loading ? (
+            <Skeleton variant="text" width={100} height={24} />
+          ) : (
+            row.candidateContactNo
+          ),
       },
       {
         key: "interviewLevel",
@@ -174,16 +211,17 @@ const AllInterviews = () => {
         type: "select",
         sortable: true,
         filterable: true,
-        options: ["EXTERNAL", "INTERNAL", "HR", "Managerial", "Final"],
-        render: (row) => loading ? (
-          <Skeleton variant="rectangular" width={100} height={24} />
-        ) : (
-          <Chip 
-            label={row.interviewLevel} 
-            size="small" 
-            variant="outlined"
-          />
-        )
+        options: ["EXTERNAL", "INTERNAL"],
+        render: (row) =>
+          loading ? (
+            <Skeleton variant="rectangular" width={100} height={24} />
+          ) : (
+            <Chip
+              label={row.interviewLevel?.toUpperCase()}
+              size="small"
+              variant="outlined"
+            />
+          ),
       },
       {
         key: "interviewDateTime",
@@ -191,11 +229,12 @@ const AllInterviews = () => {
         type: "datetime",
         sortable: true,
         filterable: true,
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={150} height={24} />
-        ) : (
-          new Date(row.interviewDateTime).toLocaleString()
-        )
+        render: (row) =>
+          loading ? (
+            <Skeleton variant="text" width={150} height={24} />
+          ) : (
+            new Date(row.interviewDateTime).toLocaleString()
+          ),
       },
       {
         key: "zoomLink",
@@ -203,53 +242,42 @@ const AllInterviews = () => {
         type: "link",
         sortable: false,
         filterable: false,
-        render: (row) => loading ? (
-          <Skeleton variant="rectangular" width={120} height={24} />
-        ) : row.zoomLink ? (
-          <a href={row.zoomLink} target="_blank" rel="noopener noreferrer">
-            Join Meeting
-          </a>
-        ) : (
-          <span style={{ color: '#999' }}>Not available</span>
-        )
+        render: (row) =>
+          loading ? (
+            <Skeleton variant="rectangular" width={120} height={24} />
+          ) : row.zoomLink ? (
+            <a href={row.zoomLink} target="_blank" rel="noopener noreferrer">
+              Join Meeting
+            </a>
+          ) : (
+            <span style={{ color: "#999" }}>Not available</span>
+          ),
       },
       {
         key: "interviewStatus",
         label: "Status",
-        type: "select",
         sortable: true,
         filterable: true,
-        options: ["Scheduled", "Completed", "Cancelled", "Rescheduled"],
-        render: (row) => loading ? (
-          <Skeleton variant="rectangular" width={100} height={24} />
-        ) : (
-          <Chip
-            label={row.interviewStatus || "Scheduled"}
-            size="small"
-            sx={{
-              backgroundColor: getStatusColor(row.interviewStatus).bg,
-              color: getStatusColor(row.interviewStatus).text,
-              fontWeight: 500
-            }}
-          />
-        )
-      }
+        width: 140,
+        render: (row) => getStatusChip(row.interviewStatus, row),
+      },
     ];
 
     const conditionalColumns = [];
-    
-    if (interviews.some(item => item.clientName)) {
+
+    if (interviews.some((item) => item.clientName)) {
       conditionalColumns.push({
         key: "clientName",
         label: "Client Name",
         type: "text",
         sortable: true,
         filterable: true,
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={120} height={24} />
-        ) : (
-          row.clientName
-        )
+        render: (row) =>
+          loading ? (
+            <Skeleton variant="text" width={120} height={24} />
+          ) : (
+            row.clientName
+          ),
       });
     }
 
@@ -296,31 +324,23 @@ const AllInterviews = () => {
               </IconButton>
             </Tooltip>
           </Box>
-        )
-      }
+        ),
+      },
     ];
   };
 
-  const getStatusColor = (status) => {
-    const statusColors = {
-      Scheduled: { bg: '#e3f2fd', text: '#1565c0' },
-      Completed: { bg: '#e8f5e9', text: '#2e7d32' },
-      Cancelled: { bg: '#ffebee', text: '#c62828' },
-      Rescheduled: { bg: '#fff3e0', text: '#e65100' }
-    };
-    return statusColors[status] || { bg: '#f5f5f5', text: '#000000' };
-  };
-
-  const processedData = loading 
-    ? Array(5).fill({}).map((_, index) => ({
-        interviewId: `temp-${index + 1}`,
-        expandContent: renderExpandedContent,
-        isExpanded: expandedRows[`temp-${index + 1}`]
-      }))
+  const processedData = loading
+    ? Array(5)
+        .fill({})
+        .map((_, index) => ({
+          interviewId: `temp-${index + 1}`,
+          expandContent: renderExpandedContent,
+          isExpanded: expandedRows[`temp-${index + 1}`],
+        }))
     : interviews.map((row) => ({
         ...row,
         expandContent: renderExpandedContent,
-        isExpanded: expandedRows[row.interviewId]
+        isExpanded: expandedRows[row.interviewId],
       }));
 
   useEffect(() => {
@@ -329,26 +349,30 @@ const AllInterviews = () => {
 
   return (
     <>
-    
-            <Stack direction="row" alignItems="center" spacing={2}
-              sx={{
-                flexWrap: 'wrap',
-                mb: 3,
-                justifyContent: 'space-between',
-                p: 2,
-                backgroundColor: '#f9f9f9',
-                borderRadius: 2,
-                boxShadow: 1,
-      
-              }}>
-      
-              <Typography variant='h6' color='primary'>Interviews Management</Typography>
-      
-              <DateRangeFilter component="Interviews"/>
-            </Stack>
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={2}
+        sx={{
+          flexWrap: "wrap",
+          mb: 3,
+          justifyContent: "space-between",
+          p: 2,
+          backgroundColor: "#f9f9f9",
+          borderRadius: 2,
+          boxShadow: 1,
+        }}
+      >
+        <Typography variant="h6" color="primary">
+          Interviews Management
+        </Typography>
+
+        <DateRangeFilter component="Interviews" />
+      </Stack>
       <DataTable
-        // data={processedData}
-        data={isFilteredDataRequested ?  filteredInterviewList : processedData || []}
+        data={
+          isFilteredDataRequested ? filteredInterviewList : processedData || []
+        }
         columns={generateColumns()}
         title="Scheduled Interviews"
         //loading={loading}
@@ -374,4 +398,3 @@ const AllInterviews = () => {
 };
 
 export default AllInterviews;
-

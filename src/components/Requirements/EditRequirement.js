@@ -23,7 +23,6 @@ import ToastService from "../../Services/toastService";
 import { fetchAllClients } from "../../redux/clientsSlice";
 import { fetchEmployees } from "../../redux/employeesSlice";
 import DynamicForm from "../FormContainer/DynamicForm";
-import WorkIcon from "@mui/icons-material/Work";
 import EditIcon from "@mui/icons-material/Edit";
 
 const EditRequirement = ({ requirementData, onClose }) => {
@@ -64,18 +63,29 @@ const EditRequirement = ({ requirementData, onClose }) => {
           : "text"
       );
 
-      // Process recruiter IDs from the requirement data
+      // Process recruiter IDs and Names from the requirement data
       let recruiterIds = [];
-      if (
-        requirementData.recruiterIds &&
-        Array.isArray(requirementData.recruiterIds)
-      ) {
+      let recruiterNames = [];
+      
+      // Handle recruiterIds
+      if (Array.isArray(requirementData.recruiterIds)) {
         recruiterIds = requirementData.recruiterIds;
       } else if (typeof requirementData.recruiterIds === "string") {
         try {
           recruiterIds = JSON.parse(requirementData.recruiterIds);
         } catch (e) {
           console.error("Failed to parse recruiter IDs", e);
+        }
+      }
+      
+      // Handle recruiterName
+      if (Array.isArray(requirementData.recruiterName)) {
+        recruiterNames = requirementData.recruiterName;
+      } else if (typeof requirementData.recruiterName === "string") {
+        try {
+          recruiterNames = JSON.parse(requirementData.recruiterName);
+        } catch (e) {
+          console.error("Failed to parse recruiter names", e);
         }
       }
 
@@ -99,14 +109,14 @@ const EditRequirement = ({ requirementData, onClose }) => {
         relevantExperience:
           extractNumber(requirementData.relevantExperience) || 0,
         qualification: requirementData.qualification || "",
-        recruiters: recruiterIds || [],
+        recruiterIds: recruiterIds || [],
+        recruiterName: recruiterNames || [],
         salaryPackage: extractNumber(requirementData.salaryPackage) || "",
         noOfPositions: requirementData.noOfPositions || 1,
         status: requirementData.status || "In Progress",
         assignedBy: requirementData.assignedBy || "",
         jobDescription: requirementData.jobDescription || "",
         noticePeriod: requirementData.noticePeriod || "",
-        // We don't set jobDescriptionFile as it needs to be a new file upload
       });
       
       setIsLoading(false);
@@ -145,6 +155,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
       ?.map((emp) => ({
         label: `${emp.userName} (${emp.employeeId})`,
         value: emp.employeeId,
+        name: emp.userName
       })) || [];
 
   const fieldGridProps = { xs: 12, sm: 6, md: 6, lg: 4, xl: 4, xxl: 3 };
@@ -249,10 +260,14 @@ const EditRequirement = ({ requirementData, onClose }) => {
       gridProps: fieldGridProps,
     },
     {
-      name: "recruiters",
+      name: "recruiterIds",
       label: "Assigned Recruiters",
       type: "multiselect",
       options: recruiterOptions,
+      getOptionLabel: (option) => {
+        const recruiter = recruiterOptions.find(r => r.value === option);
+        return recruiter ? recruiter.label : option;
+      },
       validation: Yup.array().min(1, "At least one recruiter is required"),
       gridProps: fieldGridProps,
     },
@@ -282,10 +297,10 @@ const EditRequirement = ({ requirementData, onClose }) => {
       type: "select",
       required: true,
       options: [
-        { label: "In Progress", value: "INPROGRESS" },
-        { label: "Submitted", value: "SUBMITTED" },
-        { label: "On Hold", value: "HOLD" },
-        { label: "Closed", value: "CLOSED" },
+        { label: "IN-PROGRESS", value: "In Progress" },
+        { label: "SUBMITTED", value: "Submitted" },
+        { label: "HOLD", value: "Hold" },
+        { label: "CLOSED", value: "Closed" },
       ],
       gridProps: fieldGridProps,
     },
@@ -361,13 +376,19 @@ const EditRequirement = ({ requirementData, onClose }) => {
 
       // Add all form fields to FormData
       Object.keys(values).forEach((key) => {
-        if (key === "recruiters") {
+        if (key === "recruiterIds") {
           // Handle array of recruiters
           formData.append(key, JSON.stringify(values[key]));
-        } else if (key === "jobDescriptionFile" && values[key]) {
+          // Also add recruiter names based on selected IDs
+          const selectedRecruiters = values[key].map(id => {
+            const recruiter = recruiterOptions.find(r => r.value === id);
+            return recruiter ? recruiter.name : id;
+          });
+          formData.append("recruiterName", JSON.stringify(selectedRecruiters));
+        } else if (key === "jobDescription" && values[key]) {
           // Only append file if it exists
           formData.append(key, values[key]);
-        } else {
+        } else if (key !== "recruiterName") { // Skip recruiterName as we handle it above
           // Add other fields
           formData.append(key, values[key]);
         }
@@ -379,14 +400,14 @@ const EditRequirement = ({ requirementData, onClose }) => {
       // Make PUT request to update the requirement
       const jobId = values.jobId;
       formData.delete("jobId");
-
-      const response = await httpService.put(
+      let response;
+      response = await httpService.put(
         `/requirements/updateRequirement/${jobId}`,
         formData,
         {
           headers: {
             "Content-Type": "multipart/form-data",
-          },
+          }
         }
       );
 
@@ -450,7 +471,16 @@ const EditRequirement = ({ requirementData, onClose }) => {
           <EditIcon sx={{ mr: 1, color: "#1976d2" }} />
           Edit Requirement
         </Typography>
-        <IconButton onClick={onClose} size="small">
+        <IconButton 
+          onClick={onClose} 
+          size="small"
+          sx={{
+            '&:hover': {
+              backgroundColor: 'rgba(244, 67, 54, 0.1)', // Light red background on hover
+              color: '#f44336', // Red color on hover
+            }
+          }}
+        >
           <CloseIcon />
         </IconButton>
       </Box>
@@ -478,7 +508,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
         </FormControl>
       </Paper>
 
-      {isLoading  ? (
+      {isLoading ? (
         renderLoadingSkeleton()
       ) : Object.keys(initialValues).length > 0 ? (
         <DynamicForm
@@ -487,9 +517,11 @@ const EditRequirement = ({ requirementData, onClose }) => {
           onSubmit={handleSubmit}
           fields={formFields}
           submitButtonText="Update Requirement"
-          resetButtonText="Reset"
+          cancelButtonText="Cancel"
+          onCancel={onClose}
           loading={submitting}
           gridSpacing={2}
+          onClose={onClose}
           columnSpacing={3}
           gridContainerProps={{ alignItems: "stretch" }}
         />
@@ -498,6 +530,13 @@ const EditRequirement = ({ requirementData, onClose }) => {
           <Typography color="text.secondary">
             No requirement data available
           </Typography>
+          <Button 
+            variant="outlined" 
+            onClick={onClose}
+            sx={{ mt: 2 }}
+          >
+            Close
+          </Button>
         </Box>
       )}
     </Box>

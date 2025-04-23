@@ -22,13 +22,15 @@ export const generateInterviewColumns = (data = [], handlers = {}) => {
       filterable: true,
     },
     {
-        key: "interviewLevel",
-        label: "Interview Level",
-        type: "select",
-        sortable: true,
-        filterable: true,
-        options: ["EXTERNAL", "INTERNAL", "HR", "Managerial", "Final"],
-      },
+      key: "interviewLevel",
+      label: "Interview Level",
+      type: "select",
+      sortable: true,
+      filterable: true,
+      options: ["EXTERNAL", "INTERNAL", "HR", "Managerial", "Final"],
+      render: (value) => value.toUpperCase(),
+    },
+    
     {
       key: "candidateEmailId",
       label: "Candidate Email",
