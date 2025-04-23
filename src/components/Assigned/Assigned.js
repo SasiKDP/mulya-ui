@@ -357,7 +357,7 @@ const Assigned = () => {
         width: 160,
         align: "center",
         render: (row) => {
-          const isDisabled = row.status?.toLowerCase() === 'hold';
+          const isDisabled = row.status?.toLowerCase() === 'hold' || row.status?.toLowerCase() === 'closed';
           return (
             <Box sx={{ display: "flex", justifyContent: "center" }}>
               <Tooltip title={isDisabled ? "Submission disabled for HOLD status" : "Submit Candidate"}>
