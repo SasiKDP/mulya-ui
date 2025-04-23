@@ -82,10 +82,10 @@ const Requirements = () => {
       try {
         let response;
   
-        if (role === "SUPERADMIN") {
+        if (role === "SUPERADMIN"|| role === "BDM") {
           response = await httpService.get("/requirements/getAssignments");
-        } else if (role === "TEAMLEAD" || role === "BDM") {
-          response = await httpService.get(`/requirements/assignedby/${userId}`);
+        } else if (role === "TEAMLEAD" ) {
+          response = await httpService.get(`/requirements/teamleadrequirements/${userId}`);
         } else {
           setData([]);
           setError(new Error("Unauthorized role for this action"));
