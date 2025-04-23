@@ -223,6 +223,11 @@ const Assigned = () => {
           render: () => <Skeleton variant="text" width={100} />,
         },
         {
+          key: "age",
+          label: "Age Of Requirement",
+          render: () => <Skeleton variant="text" width={100} />,
+        },
+        {
           key: "status",
           label: "Status",
           render: () => <Skeleton variant="rounded" width={80} height={24} />,
@@ -295,6 +300,13 @@ const Assigned = () => {
       {
         key: "assignedBy",
         label: "Assigned By",
+        type: "text",
+        sortable: true,
+        filterable: true,
+      },
+      {
+        key: "age",
+        label: "Age Of Requirement",
         type: "text",
         sortable: true,
         filterable: true,
