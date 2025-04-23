@@ -135,16 +135,6 @@ export default function HomePage() {
       path: '/dashboard/clients',
     },
     {
-      title: 'Placements',
-      key: 'placements',
-      subtitle: 'This Month',
-      color: '#6366F1', // Indigo-500
-      bg: '#EEF2FF',   // Indigo-50
-      icon: <Award size={24} />,
-      buttonText: 'View Placements',
-      path: '/dashboard/placements',
-    },
-    {
       title: 'Employees',
       key: 'users',
       subtitle: 'Available',
@@ -154,6 +144,17 @@ export default function HomePage() {
       buttonText: 'View Employees',
       path: '/dashboard/users',
     },
+    {
+      title: 'Placements',
+      key: 'placements',
+      subtitle: 'This Month',
+      color: '#6366F1', // Indigo-500
+      bg: '#EEF2FF',   // Indigo-50
+      icon: <Award size={24} />,
+      buttonText: 'View Placements',
+      path: '/dashboard/placements',
+    },
+   
     {
       title: 'Bench',
       key: 'bench',

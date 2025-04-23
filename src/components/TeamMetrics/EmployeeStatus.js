@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import httpService from '../../Services/httpService';
 import { 
   Box, 
@@ -17,14 +17,16 @@ import {
   CircularProgress,
   Card, 
   CardContent, 
-  Grid
+  Grid,
+  Button
 } from '@mui/material';
 import { 
   Work, 
   People, 
   EventNote, 
   CheckCircle, 
-  Error 
+  Error,
+  ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import DataTable from '../muiComponents/DataTabel';
 import { generateClientColumns } from '../TableColumns/ClientColumns';
@@ -67,6 +69,7 @@ const EmployeeStatus = () => {
 
   // Get employeeId from URL params
   const { employeeId } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRequirements = async () => {
@@ -228,9 +231,9 @@ const EmployeeStatus = () => {
 
   const renderInterviews = () => {
     if (!requirements?.scheduledInterviews) return <Typography>No interview data available</Typography>;
-    
+  
     const allInterviews = [];
-    
+  
     // Flatten the interviews structure
     Object.entries(requirements.scheduledInterviews).forEach(([clientName, interviews]) => {
       interviews.forEach(interview => {
@@ -240,30 +243,35 @@ const EmployeeStatus = () => {
         });
       });
     });
-    
- 
-    
+  
+    // Sort the interviews by interviewDateTime in descending order to show the latest first
+    const sortedInterviews = allInterviews.sort((a, b) => {
+      const dateA = new Date(a.interviewDateTime).getTime();
+      const dateB = new Date(b.interviewDateTime).getTime();
+      return dateB - dateA; // Descending order
+    });
+  
     return (
       <DataTable
-      data={allInterviews || []}
-      columns={generateInterviewColumnsTeamLead()}
-      title={`Interview Details `}
-      enableSelection={false}
-      defaultSortColumn="clientName"
-      defaultSortDirection="asc"
-      defaultRowsPerPage={10}
-      primaryColor="#1976d2"
-      secondaryColor="#e0f2f1"
-      customStyles={{
-        headerBackground: "#1976d2",
-        rowHover: "#e0f2f1",
-        selectedRow: "#b2dfdb",
-      }}
-      uniqueId="candidateId"
-    />
+        data={sortedInterviews || []}
+        columns={generateInterviewColumnsTeamLead()}
+        title="Interview Details"
+        enableSelection={false}
+        defaultSortColumn="interviewDateTime"
+        defaultSortDirection="desc" // Sort by interviewDateTime in descending order
+        defaultRowsPerPage={10}
+        primaryColor="#1976d2"
+        secondaryColor="#e0f2f1"
+        customStyles={{
+          headerBackground: "#1976d2",
+          rowHover: "#e0f2f1",
+          selectedRow: "#b2dfdb",
+        }}
+        uniqueId="candidateId"
+      />
     );
   };
-
+  
   const renderPlacements = () => {
     if (!requirements?.placements) return <Typography>No placement data available</Typography>;
     
@@ -305,7 +313,15 @@ const EmployeeStatus = () => {
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
-    
+      {/* Back button */}
+      <Button
+        variant="outlined"
+        onClick={() => navigate('/dashboard/team-metrics')}
+        sx={{ mb: 2 }}
+        startIcon={<ArrowBackIcon />}
+      >
+        Back to Team Metrics
+      </Button>
       
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mt: 1, mb: 3 }}>

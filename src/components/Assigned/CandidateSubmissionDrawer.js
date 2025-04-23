@@ -5,7 +5,6 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
-import httpService from "../../Services/httpService";
 import MuiTextField from "../muiComponents/MuiTextField";
 import MuiButton from "../muiComponents/MuiButton";
 import MuiSelect from "../muiComponents/MuiSelect";
@@ -13,6 +12,9 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { showToast } from "../../utils/ToastNotification";
+import { useSelector } from "react-redux";
+import httpService from "../../Services/httpService";
+
 
 const validationSchema = Yup.object().shape({
   fullName: Yup.string().required("Full Name is required"),
@@ -85,11 +87,13 @@ const validationSchema = Yup.object().shape({
   overallFeedback: Yup.string()
     .max(100, "Feedback cannot be more than 100 characters")
     .required("Overall feedback is required"),
-  resumeFile: Yup.mixed().nullable(), // Allow null for edit
+  resumeFile: Yup.mixed().nullable(),
+  clientName: Yup.string().required("Client name is required"),
 });
 
 const CandidateSubmissionDrawer = ({
   onClose,
+  clientName,
   userId,
   jobId,
   employeeEmail,
@@ -99,12 +103,14 @@ const CandidateSubmissionDrawer = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [errorResponse, setErrorResponse] = useState(null);
+  const { email } = useSelector((state) => state.auth);
 
   const initialValues =
     mode === "edit" && candidateData
       ? {
+          userId: candidateData.userId || userId,
           fullName: candidateData.fullName || "",
-          candidateEmailId: candidateData.emailId || "",
+          candidateEmailId: candidateData.candidateEmailId || "",
           contactNumber: candidateData.contactNumber || "",
           currentOrganization: candidateData.currentOrganization || "",
           qualification: candidateData.qualification || "",
@@ -116,16 +122,19 @@ const CandidateSubmissionDrawer = ({
           currentLocation: candidateData.currentLocation || "",
           preferredLocation: candidateData.preferredLocation || "",
           skills: candidateData.skills || "",
-          resumeFile: null, // Initial file is null for edit
+          resumeFile: null,
           communicationSkills: candidateData.communicationSkills || "",
           requiredTechnologiesRating:
             candidateData.requiredTechnologiesRating || "",
           overallFeedback: candidateData.overallFeedback || "",
-          userEmail: candidateData.userEmail || "",
+          userEmail: email || "",
+          clientName: candidateData.clientName || clientName || "",
+          jobId: candidateData.jobId,
         }
       : {
           userId: userId || "",
           jobId: jobId || "",
+          clientName: clientName || "",
           fullName: "",
           candidateEmailId: "",
           contactNumber: "",
@@ -143,94 +152,94 @@ const CandidateSubmissionDrawer = ({
           communicationSkills: "",
           requiredTechnologiesRating: "",
           overallFeedback: "",
-          userEmail:employeeEmail || "",
+          userEmail: email || "",
         };
 
-  const formik = useFormik({
-    initialValues: initialValues,
-    validationSchema: validationSchema,
-    onSubmit: async (values) => {
-      setLoading(true);
-      setErrorResponse(null);
-      try {
-        const form = new FormData();
-        Object.keys(values).forEach((key) => {
-          if (key !== "resumeFile" && values[key] !== null) {
-            form.append(key, values[key].toString());
-          }
-        });
-        if (values.resumeFile) {
-          form.append("resumeFile", values.resumeFile);
-        }
-
-        let response;
-        if (mode === "edit" && candidateData) {
-          response = await httpService.put(
-            `/candidate/candidatesubmissions/${candidateData.candidateId}`,
-            form,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
+        const formik = useFormik({
+          initialValues: initialValues,
+          validationSchema: validationSchema,
+          onSubmit: async (values) => {
+            setLoading(true);
+            setErrorResponse(null);
+        
+            try {
+              const formData = new FormData();
+        
+              Object.keys(values).forEach((key) => {
+                if (key !== "resumeFile" && values[key] !== null && values[key] !== undefined) {
+                  formData.append(key, values[key].toString());
+                }
+              });
+        
+              if (values.resumeFile) {
+                formData.append("resumeFile", values.resumeFile);
+              }
+        
+              // Debug: Log FormData contents
+              for (let [key, value] of formData.entries()) {
+                console.log(key, value);
+              }
+        
+              let url = "";
+              let method = "";
+        
+              if (mode === "edit" && candidateData) {
+                url = `/candidate/editSubmission/${candidateData.candidateId}`;
+                method = "put";
+              } else {
+                url = `/candidate/candidatesubmissions`;
+                method = "post";
+              }
+        
+              const config = {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
+              };
+        
+              const responseData = await httpService[method](url, formData, config);
+        
+              if (responseData?.status === "Success") {
+                showToast(
+                  responseData.message ||
+                    `Candidate profile ${mode === "edit" ? "updated" : "submitted"} successfully.`
+                );
+        
+                if (refreshData) refreshData();
+                onClose();
+              }
+            } catch (error) {
+              console.error("Error submitting/updating candidate:", error);
+        
+              const errorMessage =
+                error?.response?.data?.message ||
+                error.message ||
+                `Failed to ${mode === "edit" ? "update" : "submit"} candidate data. Please try again.`;
+        
+              setErrorResponse({ message: errorMessage });
+        
+              showToast(errorMessage, "error");
+            } finally {
+              setLoading(false);
             }
-          );
-        } else {
-          response = await httpService.post(
-            "/candidate/candidatesubmissions",
-            form,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-        }
-
-        console.log("Candidate submitted/updated:", response.data);
-
-        if (response.data && response.data.status === "Success") {
-          showToast(
-            response.data.message ||
-              `Candidate profile ${
-                mode === "edit" && candidateData ? "updated" : "submitted"
-              } successfully.`
-          );
-          if (refreshData) {
-            refreshData();
-          }
-        }
-        onClose();
-      } catch (error) {
-        console.error("Error submitting/updating candidate:", error);
-        setErrorResponse({
-          message:
-            error.response?.data?.message ||
-            `Failed to ${
-              mode === "edit" && candidateData ? "update" : "submit"
-            } candidate data. Please try again.`,
+          },
         });
-
-        showToast(
-          error.response?.data?.message ||
-            `Failed to ${
-              mode === "edit" && candidateData ? "update" : "submit"
-            } candidate data. Please try again.`,
-          "error"
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-  });
 
   useEffect(() => {
     if (mode !== "edit") {
       formik.setFieldValue("userId", userId || "");
       formik.setFieldValue("jobId", jobId || "");
+      formik.setFieldValue("clientName", clientName || "");
     }
-  }, [userId, jobId, mode]);
+  }, [userId, jobId, clientName, mode]);
 
   const fields = [
+    { 
+      name: "clientName", 
+      label: "Client Name", 
+      type: "text",
+      disabled: true 
+    },
     { name: "fullName", label: "Full Name", type: "text" },
     { name: "candidateEmailId", label: "Email", type: "email" },
     { name: "contactNumber", label: "Contact Number", type: "text" },
@@ -263,7 +272,7 @@ const CandidateSubmissionDrawer = ({
       type: "number",
     },
     { name: "overallFeedback", label: "Overall Feedback", type: "text" },
-    { name: "userEmail", label: "User Email", type: "text" },
+    { name: "userEmail", label: "User Email", type: "text", disabled: true },
   ];
 
   return (
@@ -277,7 +286,7 @@ const CandidateSubmissionDrawer = ({
       }}
     >
       <Typography variant="h6">
-        {mode === "edit" && candidateData ? "Edit Candidate" : "Submit Candidate"}
+        {mode === "edit" ? "Edit Candidate" : "Submit Candidate"}
       </Typography>
       <form onSubmit={formik.handleSubmit}>
         <Grid container spacing={2}>
@@ -299,6 +308,7 @@ const CandidateSubmissionDrawer = ({
                     formik.touched[field.name] && formik.errors[field.name]
                   }
                   fullWidth
+                  disabled={field.disabled}
                 />
               ) : (
                 <MuiTextField
@@ -316,6 +326,7 @@ const CandidateSubmissionDrawer = ({
                     formik.touched[field.name] && formik.errors[field.name]
                   }
                   fullWidth
+                  disabled={field.disabled}
                 />
               )}
             </Grid>
@@ -379,7 +390,7 @@ const CandidateSubmissionDrawer = ({
               {loading || formik.isSubmitting ? (
                 <CircularProgress size={24} />
               ) : (
-                mode === "edit" && candidateData
+                mode === "edit"
                   ? "Update Candidate"
                   : "Submit Candidate"
               )}
