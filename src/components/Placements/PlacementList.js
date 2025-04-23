@@ -88,6 +88,8 @@ const PlacementsList = () => {
       { key: 'consultantEmail', label: 'Email', type: 'text', sortable: true, filterable: true, width: 200 },
       { key: 'phone', label: 'Phone', type: 'text', sortable: true, filterable: true, width: 120 },
       { key: 'technology', label: 'Technology', type: 'select', sortable: true, filterable: true, width: 130 },
+      { key: 'sales', label: 'Sales',  width: 130 },
+      { key: 'recruiter', label: 'Recruiter', width: 130 },
       { key: 'client', label: 'Client', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'vendorName', label: 'Vendor', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'startDate', label: 'Start Date', type: 'text', sortable: true, filterable: true, width: 120 },
