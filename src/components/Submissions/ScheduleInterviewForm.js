@@ -277,7 +277,6 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
     try {
       setSubmitting(true);
   
-      // Format values for API
       const payload = {
         candidateId: values.candidateId,
         candidateEmailId: values.candidateEmailId,
@@ -288,7 +287,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         duration: values.duration,
         zoomLink: values.zoomLink,
         interviewLevel: values.interviewLevel,
-        interviewStatus: "SCHEDULED", // Always SCHEDULED for new interviews
+        interviewStatus: "SCHEDULED",
         clientEmail: values.clientEmail,
         clientName: values.clientName,
         jobId: values.jobId,
@@ -298,24 +297,12 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         skipNotification: values.skipNotification,
       };
   
-      const response = await fetch(
-        `http://192.168.0.213:8086/candidate/interview-schedule/${values.userId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
+      const responseData = await httpService.post(
+        `/candidate/interview-schedule/${values.userId}`,
+        payload
       );
   
-      const data = await response.json();
-  
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to schedule interview");
-      }
-  
-      setInterviewResponse(data);
+      setInterviewResponse(responseData);
       setSubmissionSuccess(true);
       setNotification({
         open: true,
@@ -323,7 +310,6 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         severity: "success",
       });
   
-      // Close form after success
       setTimeout(() => {
         if (onSuccess) onSuccess();
         onClose(true);
@@ -333,7 +319,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       setNotification({
         open: true,
         message: `Error scheduling interview: ${
-          error.message || "Unknown error"
+          error?.response?.data?.message || error.message || "Unknown error"
         }`,
         severity: "error",
       });

@@ -20,9 +20,10 @@ import { useSelector } from "react-redux";
 import { useConfirm } from "../../hooks/useConfirm";
 import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
-import { getStatusChip } from "../../utils/statusUtils";
+import { getInterviewLevelChip, getStatusChip } from "../../utils/statusUtils";
 import ConfirmDialog from "../muiComponents/ConfirmDialog";
 import EditInterviewForm from "./EditInterviewForm"; // Make sure this import is correct
+import httpService from "../../Services/httpService";
 
 const Interviews = () => {
   const { userId } = useSelector((state) => state.auth);
@@ -34,7 +35,9 @@ const Interviews = () => {
     interview: null,
   });
 
-  const { filterInterviewsForRecruiter } = useSelector((state) => state.interview);
+  const { filterInterviewsForRecruiter } = useSelector(
+    (state) => state.interview
+  );
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
 
   const [editDrawer, setEditDrawer] = useState({
@@ -49,7 +52,7 @@ const Interviews = () => {
       const status = interview.latestInterviewStatus || "SCHEDULED";
       const candidateName =
         interview.candidateFullName ||
-        (interview.candidateEmailId?.split("@")[0]) ||
+        interview.candidateEmailId?.split("@")[0] ||
         "Unknown Candidate";
 
       return {
@@ -63,20 +66,8 @@ const Interviews = () => {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-
-      const response = await fetch(`http://192.168.0.213:8086/candidate/allInterviews`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      const result = await response.json();
-      const processedData = processInterviewData(result.payload || []);
+      const response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
+      const processedData = processInterviewData(response.data.payload || []);
       setInterviews(processedData);
       setError(null);
     } catch (err) {
@@ -91,10 +82,13 @@ const Interviews = () => {
     fetchInterviews();
   }, [userId]);
 
-  const handleEdit = (interview) => {
+  const handleEdit = (interview, isReschedule = false) => {
     setEditDrawer({
       open: true,
-      data: interview,
+      data: {
+        ...interview,
+        isReschedule, // Pass this flag to the form
+      },
     });
   };
 
@@ -103,10 +97,10 @@ const Interviews = () => {
     if (!interview) return;
 
     try {
-      await fetch(
-        `http://192.168.0.213:8086/candidate/deleteinterview/${interview.candidateId}/${interview.jobId}`,
-        { method: "DELETE" }
+      await httpService.delete(
+        `/candidate/deleteinterview/${interview.candidateId}/${interview.jobId}`
       );
+
       fetchInterviews();
     } catch (err) {
       console.error("Error deleting interview:", err);
@@ -161,7 +155,12 @@ const Interviews = () => {
       ),
     },
     { key: "clientName", label: "Client", width: 150 },
-    { key: "interviewLevel", label: "Level", width: 100 },
+    {
+      key: "interviewLevel",
+      label: "Level",
+      width: 120,
+      render: (row) => getInterviewLevelChip(row.interviewLevel),
+    },
     {
       key: "interviewDateTime",
       label: "Interview Date & Time",
@@ -202,27 +201,60 @@ const Interviews = () => {
     {
       key: "actions",
       label: "Actions",
-      width: 120,
-      render: (row) => (
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <IconButton
-            onClick={() => handleEdit(row)}
-            color="primary"
-            size="small"
-            title="Edit Interview"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            onClick={() => setConfirmDialog({ open: true, interview: row })}
-            color="error"
-            size="small"
-            title="Delete Interview"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ),
+      width: 200,
+      render: (row) => {
+        const status = row.interviewStatus?.toUpperCase();
+        const showReschedule = [
+          "CANCELLED",
+          "RESCHEDULED",
+          "SELECTED",
+          "NO_SHOW",
+        ].includes(status);
+
+        const getButtonText = () => {
+          switch (status) {
+            case "SELECTED":
+              return "Schedule Joining";
+            case "CANCELLED":
+            case "RESCHEDULED":
+            case "NO_SHOW":
+              return "Reschedule";
+            default:
+              return "Update";
+          }
+        };
+
+        return (
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <IconButton
+              onClick={() => handleEdit(row)}
+              color="primary"
+              size="small"
+              title="Edit Interview"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              onClick={() => setConfirmDialog({ open: true, interview: row })}
+              color="error"
+              size="small"
+              title="Delete Interview"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+            {showReschedule && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleEdit(row, true)} // true for reschedule or joining
+                sx={{ px: 1, py: 0.5 }}
+              >
+                {getButtonText()}
+              </Button>
+            )}
+          </Box>
+        );
+      },
     },
   ];
 
@@ -251,26 +283,32 @@ const Interviews = () => {
         </Box>
       ) : (
         <>
-          <Stack 
-            direction="row" 
-            alignItems="center" 
+          <Stack
+            direction="row"
+            alignItems="center"
             spacing={2}
             sx={{
-              flexWrap: 'wrap',
+              flexWrap: "wrap",
               mb: 3,
-              justifyContent: 'space-between',
+              justifyContent: "space-between",
               p: 2,
-              backgroundColor: '#f9f9f9',
+              backgroundColor: "#f9f9f9",
               borderRadius: 2,
               boxShadow: 1,
             }}
           >
-            <Typography variant='h6' color='primary'>Interviews List</Typography>
+            <Typography variant="h6" color="primary">
+              Interviews List
+            </Typography>
             <DateRangeFilter component="InterviewsForRecruiter" />
           </Stack>
 
           <DataTable
-            data={isFilteredDataRequested ? filterInterviewsForRecruiter : interviews || []}
+            data={
+              isFilteredDataRequested
+                ? filterInterviewsForRecruiter
+                : interviews || []
+            }
             columns={columns}
             title="Scheduled Interviews"
             enableSelection={false}

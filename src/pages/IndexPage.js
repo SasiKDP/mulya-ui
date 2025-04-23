@@ -154,16 +154,7 @@ export default function HomePage() {
       buttonText: 'View Placements',
       path: '/dashboard/placements',
     },
-    {
-      title: 'Employees',
-      key: 'users',
-      subtitle: 'Available',
-      color: '#06B6D4', // Cyan-500
-      bg: '#ECFEFF',   // Cyan-50
-      icon: <UserCheck size={24} />,
-      buttonText: 'View Employees',
-      path: '/dashboard/users',
-    },
+   
     {
       title: 'Bench',
       key: 'bench',

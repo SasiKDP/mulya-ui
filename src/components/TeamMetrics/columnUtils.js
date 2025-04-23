@@ -1,15 +1,23 @@
 import React from 'react';
 import { Chip, Skeleton } from '@mui/material';
 
+/**
+ * Unified column generator for all user types (BDM, TEAMLEAD, EMPLOYEE)
+ * @param {string} role User role (BDM, TEAMLEAD, EMPLOYEE)
+ * @param {function} handleEmployeeClick Function to handle click on employee name/id
+ * @param {boolean} loading Loading state for skeleton display
+ * @returns {Array} Array of column configurations
+ */
 export const generateColumns = (role, handleEmployeeClick, loading = false) => {
+  // Common base columns for all roles
   const baseColumns = [
     {
-      key: "employeeId",
-      label: "Employee ID",
+      key: role === 'BDM' ? "employeeId" : "employeeId", // Key consistency
+      label: role === 'BDM' ? "Employee ID" : "Employee ID",
       type: "text",
       sortable: true,
       filterable: true,
-      width: 120,
+      width: role === 'BDM' ? 120 : 120,
       render: (row) => loading ? (
         <Skeleton variant="text" width={100} height={24} />
       ) : (
@@ -21,7 +29,7 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
           }}
           onClick={() => handleEmployeeClick(row.employeeId)}
         >
-          {row.employeeId}
+          {role === 'BDM' ? row.employeeId : row.employeeId}
         </span>
       ),
     },
@@ -37,9 +45,10 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
       ) : (
         row.employeeName
       ),
-    },
+    }
   ];
 
+  // Role-specific columns
   const roleSpecificColumns = {
     BDM: [
       {
@@ -119,102 +128,368 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
     ]
   };
 
-  const metricsColumns = [
+  // Common metrics columns based on role
+  let metricsColumns = [];
+  
+  // For BDM, show all metrics
+  if (role === 'BDM') {
+    metricsColumns = [
+      {
+        key: "clientCount",
+        label: "Clients",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 100,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.clientCount || 0}
+            size="small"
+            variant="outlined"
+          />
+        ),
+      },
+      {
+        key: "requirementsCount",
+        label: "Requirements",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.requirementsCount || 0}
+            size="small"
+            variant="outlined"
+            color="primary"
+          />
+        ),
+      },
+      {
+        key: "submissionCount",
+        label: "Submissions",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.submissionCount || 0}
+            size="small"
+            variant="outlined"
+            color="secondary"
+          />
+        ),
+      },
+      {
+        key: "interviewCount",
+        label: "Interviews",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 110,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.interviewCount || 0}
+            size="small"
+            sx={{
+              backgroundColor: '#e3f2fd',
+              color: '#1565c0',
+            }}
+          />
+        ),
+      },
+      {
+        key: "placementCount",
+        label: "Placements",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 110,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.placementCount || 0}
+            size="small"
+            sx={{
+              backgroundColor: '#e8f5e9',
+              color: '#2e7d32',
+              fontWeight: 600,
+            }}
+          />
+        ),
+      }
+    ];
+  } else if (role === 'EMPLOYEE') {
+    // For Employee, show all metrics with different key names
+    metricsColumns = [
+      {
+        key: "numberOfClients",
+        label: "Clients",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 100,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfClients || 0}
+            size="small"
+            variant="outlined"
+          />
+        ),
+      },
+      {
+        key: "numberOfRequirements",
+        label: "Requirements",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfRequirements || 0}
+            size="small"
+            variant="outlined"
+            color="primary"
+          />
+        ),
+      },
+      {
+        key: "numberOfSubmissions",
+        label: "Submissions",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfSubmissions || 0}
+            size="small"
+            variant="outlined"
+            color="secondary"
+          />
+        ),
+      },
+      {
+        key: "numberOfInterviews",
+        label: "Interviews",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 110,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfInterviews || 0}
+            size="small"
+            sx={{
+              backgroundColor: '#e3f2fd',
+              color: '#1565c0',
+            }}
+          />
+        ),
+      },
+      {
+        key: "numberOfPlacements",
+        label: "Placements",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 110,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfPlacements || 0}
+            size="small"
+            sx={{
+              backgroundColor: '#e8f5e9',
+              color: '#2e7d32',
+              fontWeight: 600,
+            }}
+          />
+        ),
+      }
+    ];
+  } else if (role === 'TEAMLEAD') {
+    // For TEAMLEAD, just show clients and requirements, but not submissions, interviews, placements
+    metricsColumns = [
+      {
+        key: "numberOfClients",
+        label: "Clients",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 100,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfClients || 0}
+            size="small"
+            variant="outlined"
+          />
+        ),
+      },
+      {
+        key: "numberOfRequirements",
+        label: "Requirements",
+        type: "number",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfRequirements || 0}
+            size="small"
+            variant="outlined"
+            color="primary"
+          />
+        ),
+      }
+    ];
+  }
+
+  // Team lead specific metrics - only shown for TEAMLEAD role
+  const teamLeadExtras = role === 'TEAMLEAD' ? [
     {
-      key: role === 'BDM' ? "clientCount" : "numberOfClients",
-      label: "Clients",
-      type: "number",
+      key: 'selfSubmissions',
+      label: 'Self Submissions',
+      type: 'number',
       sortable: true,
       filterable: true,
-      width: 100,
+      width: 150,
       render: (row) => loading ? (
         <Skeleton variant="rectangular" width={60} height={24} />
       ) : (
         <Chip
-          label={row[role === 'BDM' ? "clientCount" : "numberOfClients"] || 0}
+          label={row.selfSubmissions || 0}
           size="small"
           variant="outlined"
+          color="info"
         />
       ),
     },
     {
-      key: role === 'BDM' ? "requirementsCount" : "numberOfRequirements",
-      label: "Requirements",
-      type: "number",
+      key: 'selfInterviews',
+      label: 'Self Interviews',
+      type: 'number',
       sortable: true,
       filterable: true,
-      width: 120,
+      width: 140,
       render: (row) => loading ? (
         <Skeleton variant="rectangular" width={60} height={24} />
       ) : (
         <Chip
-          label={row[role === 'BDM' ? "requirementsCount" : "numberOfRequirements"] || 0}
+          label={row.selfInterviews || 0}
           size="small"
           variant="outlined"
-          color="primary"
+          color="info"
         />
       ),
     },
     {
-      key: role === 'BDM' ? "submissionCount" : "numberOfSubmissions",
-      label: "Submissions",
-      type: "number",
+      key: 'selfPlacements',
+      label: 'Self Placements',
+      type: 'number',
       sortable: true,
       filterable: true,
-      width: 120,
+      width: 140,
       render: (row) => loading ? (
         <Skeleton variant="rectangular" width={60} height={24} />
       ) : (
         <Chip
-          label={row[role === 'BDM' ? "submissionCount" : "numberOfSubmissions"] || 0}
-          size="small"
-          variant="outlined"
-          color="secondary"
-        />
-      ),
-    },
-    {
-      key: role === 'BDM' ? "interviewCount" : "numberOfInterviews",
-      label: "Interviews",
-      type: "number",
-      sortable: true,
-      filterable: true,
-      width: 110,
-      render: (row) => loading ? (
-        <Skeleton variant="rectangular" width={60} height={24} />
-      ) : (
-        <Chip
-          label={row[role === 'BDM' ? "interviewCount" : "numberOfInterviews"] || 0}
+          label={row.selfPlacements || 0}
           size="small"
           sx={{
-            backgroundColor: '#e3f2fd',
-            color: '#1565c0',
+            backgroundColor: '#f3e5f5',
+            color: '#7b1fa2',
           }}
         />
       ),
     },
     {
-      key: role === 'BDM' ? "placementCount" : "numberOfPlacements",
-      label: "Placements",
-      type: "number",
+      key: 'teamSubmissions',
+      label: 'Team Submissions',
+      type: 'number',
       sortable: true,
       filterable: true,
-      width: 110,
+      width: 150,
       render: (row) => loading ? (
         <Skeleton variant="rectangular" width={60} height={24} />
       ) : (
         <Chip
-          label={row[role === 'BDM' ? "placementCount" : "numberOfPlacements"] || 0}
+          label={row.teamSubmissions || 0}
+          size="small"
+          variant="outlined"
+          color="warning"
+        />
+      ),
+    },
+    {
+      key: 'teamInterviews',
+      label: 'Team Interviews',
+      type: 'number',
+      sortable: true,
+      filterable: true,
+      width: 140,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={60} height={24} />
+      ) : (
+        <Chip
+          label={row.teamInterviews || 0}
+          size="small"
+          variant="outlined"
+          color="warning"
+        />
+      ),
+    },
+    {
+      key: 'teamPlacements',
+      label: 'Team Placements',
+      type: 'number',
+      sortable: true,
+      filterable: true,
+      width: 140,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={60} height={24} />
+      ) : (
+        <Chip
+          label={row.teamPlacements || 0}
           size="small"
           sx={{
-            backgroundColor: '#e8f5e9',
-            color: '#2e7d32',
+            backgroundColor: '#fff8e1',
+            color: '#ff8f00',
             fontWeight: 600,
           }}
         />
       ),
     }
-  ];
+  ] : [];
 
-  return [...baseColumns, ...(roleSpecificColumns[role] || []), ...metricsColumns];
+  // Combine all column types based on role
+  return [
+    ...baseColumns, 
+    ...(roleSpecificColumns[role] || []), 
+    ...metricsColumns,
+    ...teamLeadExtras
+  ];
 };
