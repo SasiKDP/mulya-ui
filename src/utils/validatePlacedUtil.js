@@ -4,10 +4,8 @@ import axios from "axios";
 
 export const validateIfPlaced = async(interviewStatus, data, dispatch) => {
     
-    console.log("Inside Validate if placed");
-    console.log(data);
       if(interviewStatus === "Placed" || interviewStatus === "PLACED" || interviewStatus === "placed") {
-          dispatch(addtoPlacementHandler(data));
+        dispatch(addtoPlacementHandler(data));
       }
       return;
 }
