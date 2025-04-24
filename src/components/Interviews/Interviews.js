@@ -29,7 +29,6 @@ import { getInterviewLevelChip, getStatusChip } from "../../utils/statusUtils";
 import { fetchInterviewsTeamLead } from "../../redux/interviewSlice";
 import ConfirmDialog from "../muiComponents/ConfirmDialog";
 import EditInterviewForm from "./EditInterviewForm"; // Make sure this import is correct
-import httpService from "../../Services/httpService";
 
 const Interviews = () => {
 

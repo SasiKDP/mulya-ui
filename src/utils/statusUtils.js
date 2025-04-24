@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { AccessTime } from "@mui/icons-material";
 import { TextField } from "@mui/material";
-import { validateIfPlaced } from "./validatePlacedUtil";
 
 export const getStatusColor = (status) => {
   const normalized = status?.trim().toUpperCase();
@@ -22,30 +21,147 @@ export const getStatusColor = (status) => {
   return statusColors[normalized] || { bg: "#F3F4F6", text: "#374151" };
 };
 
-  export const getStatusChip = (status, row, dispatch) => {
-    const normalized = status?.trim().toUpperCase();
-    const { bg, text } = getStatusColor(status);
-    const label = normalized || 'SCHEDULED';
-    const isPlaced = normalized === 'PLACED';
-  
-    return (
-      <Chip
-        label={label}
-        onClick={() => {normalized === "PLACED" && validateIfPlaced(status, row, dispatch)}}
-        size="small"
-        sx={{
-          bgcolor: bg,
-          color: text,
-          fontWeight: 500,
-          borderRadius: '999px',
-          px: 1.5,
-          height: 24,
-          textTransform: 'uppercase', 
-          letterSpacing: '0.5px',
-          fontSize: '0.75rem',
-          cursor: isPlaced ? 'pointer' : 'default',
-          '&:hover': isPlaced ? { opacity: 0.9 } : {},
-        }}
-      />
-    );
+export const getStatusChip = (status, row) => {
+  const normalized = status?.trim().toUpperCase();
+  const { bg, text } = getStatusColor(status);
+  const label = normalized || "SCHEDULED";
+  const isPlaced = normalized === "PLACED";
+
+  return (
+    <Chip
+      label={label}
+      size="small"
+      sx={{
+        bgcolor: bg,
+        color: text,
+        fontWeight: 500,
+        borderRadius: "999px",
+        px: 1.5,
+        height: 24,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        fontSize: "0.75rem",
+        cursor: isPlaced ? "pointer" : "default",
+        "&:hover": isPlaced ? { opacity: 0.9 } : {},
+      }}
+    />
+  );
+};
+
+//interview levels
+
+export const getInterviewLevelChip = (level) => {
+  const LEVELS = {
+    INTERNAL: {
+      label: "Internal",
+      borderColor: "#1565C0",
+      textColor: "#1565C0",
+    },
+    EXTERNAL: {
+      label: "External",
+      borderColor: "#6A1B9A",
+      textColor: "#6A1B9A",
+    },
+    "EXTERNAL-L1": {
+      label: "External L1",
+      borderColor: "#F57C00",
+      textColor: "#F57C00",
+    },
+    "EXTERNAL-L2": {
+      label: "External L2",
+      borderColor: "#EF6C00",
+      textColor: "#EF6C00",
+    },
+    FINAL: {
+      label: "Final",
+      borderColor: "#2E7D32",
+      textColor: "#2E7D32",
+    },
   };
+
+  const key = (level || "").toUpperCase();
+  const config = LEVELS[key] || {
+    label: level || "Unknown",
+    borderColor: "#BDBDBD",
+    textColor: "#757575",
+  };
+
+  return (
+    <Chip
+      label={config.label}
+      size="small"
+      variant="outlined"
+      sx={{
+        borderColor: config.borderColor,
+        color: config.textColor,
+        fontWeight: 500,
+      }}
+    />
+  );
+};
+
+export const generateExperienceChip = ({
+  experience,
+  minWidth = 64,
+  fontWeight = 400, // Slightly bolder for better readability
+  fontSize = "0.85rem",
+  variant = "outlined", // Default to outlined, but can be changed
+}) => {
+  // Color scheme based on experience levels
+  let color = "#4caf50"; // Green (high experience)
+  if (experience < 1) {
+    color = "#f44336"; // Red (low experience)
+  } else if (experience < 3) {
+    color = "#ff9800"; // Orange (medium experience)
+  }
+
+  // Return the MUI Chip component
+  return (
+    <Chip
+      variant={variant}
+      label={`${experience} ${experience === 1 ? "Yr" : "Yrs"}`}
+      sx={{
+        color: color,
+        borderColor: variant === "outlined" ? color : undefined,
+        backgroundColor: variant === "filled" ? `${color}20` : undefined, // 20% opacity for filled
+        fontWeight: fontWeight,
+        fontSize: fontSize,
+        minWidth: minWidth,
+        "& .MuiChip-label": {
+          padding: "0 8px", // Adjust label padding
+        },
+      }}
+      size="small"
+    />
+  );
+};
+
+export const generateMobileNumberChip = (value) => {
+  const formatMobileNumber = (value) => {
+    if (!value) return value;
+
+    const phoneNumber = value.replace(/\D/g, "");
+
+    if (phoneNumber.length < 4) return phoneNumber;
+    if (phoneNumber.length < 7) return `${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3)}`;
+    return `${phoneNumber.slice(0, 3)} ${phoneNumber.slice(3, 6)} ${phoneNumber.slice(6, 10)}`;
+  };
+
+  return (
+    <Chip
+      label={formatMobileNumber(value)}
+      variant="outlined"
+      sx={{
+        fontWeight: 500,
+        fontSize: "0.875rem",
+        minWidth: 150,
+        padding: "5px 10px",
+        textTransform: "none",
+        borderRadius: 2,
+        borderColor: "#F8BBD0", // Soft pink border
+        color: "#D81B60", // Deep pink text
+        backgroundColor: "transparent", // Transparent background for simplicity
+      }}
+    />
+  );
+};
