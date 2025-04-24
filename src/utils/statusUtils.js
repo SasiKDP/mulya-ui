@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { AccessTime } from "@mui/icons-material";
 import { TextField } from "@mui/material";
+import { validateIfPlaced } from "./validatePlacedUtil";
 export const getStatusColor = (status) => {
   const normalized = status?.trim().toUpperCase();
   const statusColors = {
@@ -18,7 +19,7 @@ export const getStatusColor = (status) => {
   return statusColors[normalized] || { bg: "#F3F4F6", text: "#374151" };
 };
 
-export const getStatusChip = (status, row) => {
+export const getStatusChip = (status, row, dispatch) => {
   const normalized = status?.trim().toUpperCase();
   const { bg, text } = getStatusColor(status);
   const label = normalized || "SCHEDULED";
@@ -27,6 +28,7 @@ export const getStatusChip = (status, row) => {
   return (
     <Chip
       label={label}
+      onClick={() => {normalized === "PLACED" && validateIfPlaced(status, row, dispatch)}}
       size="small"
       sx={{
         bgcolor: bg,
