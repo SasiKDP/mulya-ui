@@ -24,6 +24,7 @@ import TeamMetrices from "../components/TeamMetrics/TeamMetrices";
 import bdmStatus from "../components/TeamMetrics/BdmStatus";
 import EmployeeStatus from "../components/TeamMetrics/EmployeeStatus";
 import BdmStatus from "../components/TeamMetrics/BdmStatus";
+import JobDetails from "../components/Requirements/jobTracking/JobDetails";
 
 
 const routeConfig = [
@@ -105,7 +106,10 @@ const routeConfig = [
                 allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]}
               />
             ),
-            children: [{ index: true, element: <Requirements /> }],
+            children: [
+              { index: true, element: <Requirements /> },
+              { path: "job-details/:jobId", element: <JobDetails /> }
+            ],
           },
           {
             path: "jobForm",

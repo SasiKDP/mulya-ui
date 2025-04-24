@@ -101,6 +101,30 @@ export const createClient = createAsyncThunk(
   }
 );
 
+//clients daterage filter 
+
+export const filterClientsByDateRange = createAsyncThunk(
+  'clients/filterByDateRange',
+  async ({startDate , endDate},{rejectWithValue})=>{
+    try{
+      const response = await httpService.get('/requirements/bdm/getAll/filterByDate',{startDate,endDate})
+      const clientsListDateRange = response.data?.data || []
+
+      if (!Array.isArray(clientsListDateRange)) {
+        throw new Error("Expected 'data' to be an array of clients");
+      }
+
+      return clientsListDateRange
+
+    }catch(error){
+      const errorMessage =
+        error.response?.data?.message || error.message || "Failed to filter clients";
+      return rejectWithValue(errorMessage);
+    }
+  }
+)
+
+
 // Helper function to validate client data
 const validateClientData = (data) => {
   if (!Array.isArray(data)) {
@@ -213,7 +237,24 @@ const clientSlice = createSlice({
         state.createStatus = 'failed';
         state.error = action.payload;
         showToast(action.payload, "error");
-      });
+      })
+
+      //date range filter 
+      .addCase(filterClientsByDateRange.pending,(state)=>{
+        state.loading = true;
+        state.error = null ;
+
+      })
+      .addCase(filterClientsByDateRange.fulfilled, (state,action)=>{
+        state.loading= false;
+        state.list=action.payload;
+        showToast("Filtered client list fetched successfully!", "success");
+      })
+      .addCase(filterClientsByDateRange.rejected , (state,action)=>{
+        state.loading = false
+        state.error = action.payload
+        showToast(`Filtering failed: ${action.payload}`, "error");
+      })
   }
 });
 

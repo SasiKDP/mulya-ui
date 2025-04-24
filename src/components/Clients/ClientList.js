@@ -17,6 +17,7 @@ import {
   Alert,
   Drawer,
   Skeleton,
+  Stack,
 } from "@mui/material";
 import {
   Refresh,
@@ -38,6 +39,7 @@ import { showToast } from "../../utils/ToastNotification";
 import ToastNotification from "../../utils/ToastNotification";
 import ComponentTitle from "../../utils/ComponentTitle";
 import OnBoardClient from "./OnBoardClient";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
 
 const ClientList = () => {
   const dispatch = useDispatch();
@@ -166,142 +168,152 @@ const ClientList = () => {
     dispatch(fetchAllClients());
   }, [dispatch]);
 
-  const generateColumns = useCallback((data) => {
-    if (!data || data.length === 0) return [];
+  const generateColumns = useCallback(
+    (data) => {
+      if (!data || data.length === 0) return [];
 
-    return [
-      {
-        key: "id",
-        label: "Client ID",
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={80} height={24} />
-        ) : (
-          row.id
-        ),
-      },
-      {
-        key: "clientName",
-        label: "Client Name",
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={120} height={24} />
-        ) : (
-          row.clientName || "N/A"
-        ),
-      },
-      {
-        key: "onBoardedBy",
-        label: "BDM",
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={100} height={24} />
-        ) : (
-          row.onBoardedBy || "N/A"
-        ),
-      },
-      {
-        key: "clientSpocName",
-        label: "Contact Person",
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={150} height={24} />
-        ) : (
-          row.clientSpocName && Array.isArray(row.clientSpocName)
-            ? row.clientSpocName.filter(Boolean).join(", ") || "N/A"
-            : "N/A"
-        ),
-      },
-      {
-        key: "positionType",
-        label: "Position Type",
-        render: (row) => loading ? (
-          <Skeleton variant="rectangular" width={100} height={32} />
-        ) : (
-          <Chip
-            label={row.positionType || "Not specified"}
-            color={row.positionType ? "primary" : "default"}
-            variant="outlined"
-            size="small"
-          />
-        ),
-      },
-      {
-        key: "netPayment",
-        label: "Net Payment",
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={80} height={24} />
-        ) : (
-          row.currency
-            ? `${row.currency} ${row.netPayment}`
-            : row.netPayment || "N/A"
-        ),
-      },
-      {
-        key: "supportingCustomers",
-        label: "Supporting Customers",
-        render: (row) => loading ? (
-          <Skeleton variant="text" width={150} height={24} />
-        ) : (
-          row.supportingCustomers && Array.isArray(row.supportingCustomers) ? (
-            <Tooltip
-              title={row.supportingCustomers.filter(Boolean).join(", ")}
-              arrow
-            >
-              <Typography variant="body2" noWrap>
-                {row.supportingCustomers.filter(Boolean).join(", ") || "None"}
+      return [
+        {
+          key: "id",
+          label: "Client ID",
+          render: (row) =>
+            loading ? (
+              <Skeleton variant="text" width={80} height={24} />
+            ) : (
+              row.id
+            ),
+        },
+        {
+          key: "clientName",
+          label: "Client Name",
+          render: (row) =>
+            loading ? (
+              <Skeleton variant="text" width={120} height={24} />
+            ) : (
+              row.clientName || "N/A"
+            ),
+        },
+        {
+          key: "onBoardedBy",
+          label: "BDM",
+          render: (row) =>
+            loading ? (
+              <Skeleton variant="text" width={100} height={24} />
+            ) : (
+              row.onBoardedBy || "N/A"
+            ),
+        },
+        {
+          key: "clientSpocName",
+          label: "Contact Person",
+          render: (row) =>
+            loading ? (
+              <Skeleton variant="text" width={150} height={24} />
+            ) : row.clientSpocName && Array.isArray(row.clientSpocName) ? (
+              row.clientSpocName.filter(Boolean).join(", ") || "N/A"
+            ) : (
+              "N/A"
+            ),
+        },
+        {
+          key: "positionType",
+          label: "Position Type",
+          render: (row) =>
+            loading ? (
+              <Skeleton variant="rectangular" width={100} height={32} />
+            ) : (
+              <Chip
+                label={row.positionType || "Not specified"}
+                color={row.positionType ? "primary" : "default"}
+                variant="outlined"
+                size="small"
+              />
+            ),
+        },
+        {
+          key: "netPayment",
+          label: "Net Payment",
+          render: (row) =>
+            loading ? (
+              <Skeleton variant="text" width={80} height={24} />
+            ) : row.currency ? (
+              `${row.currency} ${row.netPayment}`
+            ) : (
+              row.netPayment || "N/A"
+            ),
+        },
+        {
+          key: "supportingCustomers",
+          label: "Supporting Customers",
+          render: (row) =>
+            loading ? (
+              <Skeleton variant="text" width={150} height={24} />
+            ) : row.supportingCustomers &&
+              Array.isArray(row.supportingCustomers) ? (
+              <Tooltip
+                title={row.supportingCustomers.filter(Boolean).join(", ")}
+                arrow
+              >
+                <Typography variant="body2" noWrap>
+                  {row.supportingCustomers.filter(Boolean).join(", ") || "None"}
+                </Typography>
+              </Tooltip>
+            ) : (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                fontStyle="italic"
+              >
+                None
               </Typography>
-            </Tooltip>
-          ) : (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              fontStyle="italic"
-            >
-              None
-            </Typography>
-          )
-        ),
-      },
-      {
-        key: "actions",
-        label: "Actions",
-        render: (row) => loading ? (
-          <Box display="flex" gap={1}>
-            <Skeleton variant="circular" width={32} height={32} />
-            <Skeleton variant="circular" width={32} height={32} />
-            <Skeleton variant="circular" width={32} height={32} />
-          </Box>
-        ) : (
-          <Box display="flex" gap={1}>
-            <Tooltip title="Edit Client">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => handleEditClick(row.id)}
-              >
-                <Edit />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Download Documents">
-              <IconButton
-                size="small"
-                color="secondary"
-                onClick={() => handleDownloadDocs(row.id)}
-              >
-                <CloudDownload />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete Client">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleDeleteClick(row.id)}
-              >
-                <Delete />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        ),
-      },
-    ];
-  }, [loading]);
+            ),
+        },
+        {
+          key: "actions",
+          label: "Actions",
+          render: (row) =>
+            loading ? (
+              <Box display="flex" gap={1}>
+                <Skeleton variant="circular" width={32} height={32} />
+                <Skeleton variant="circular" width={32} height={32} />
+                <Skeleton variant="circular" width={32} height={32} />
+              </Box>
+            ) : (
+              <Box display="flex" gap={1}>
+                <Tooltip title="Edit Client">
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => handleEditClick(row.id)}
+                  >
+                    <Edit />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Download Documents">
+                  <IconButton
+                    size="small"
+                    color="secondary"
+                    onClick={() => handleDownloadDocs(row.id)}
+                  >
+                    <CloudDownload />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete Client">
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteClick(row.id)}
+                  >
+                    <Delete />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            ),
+        },
+      ];
+    },
+    [loading]
+  );
 
   const columns = useMemo(
     () => generateColumns(clients),
@@ -312,7 +324,7 @@ const ClientList = () => {
     <>
       <ToastNotification />
 
-      <ComponentTitle title="Client Management">
+      {/* <ComponentTitle title="Client Management">
         <Button
           variant="outlined"
           startIcon={<Refresh />}
@@ -328,7 +340,42 @@ const ClientList = () => {
         >
           Add New Client
         </Button>
-      </ComponentTitle>
+      </ComponentTitle> */}
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={2}
+        sx={{
+          flexWrap: "wrap",
+          mb: 3,
+          justifyContent: "space-between",
+          p: 2,
+          backgroundColor: "#f9f9f9",
+          borderRadius: 2,
+          boxShadow: 1,
+        }}
+      >
+        <Typography variant="h6" color="primary">
+         Clients Management
+        </Typography>
+
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={2}
+          sx={{ ml: "auto" }}
+        >
+          <DateRangeFilter component="Clients" />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setDrawerOpen(true)}
+          >
+            Add New Client
+          </Button>
+        </Stack>
+      </Stack>
+      
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>

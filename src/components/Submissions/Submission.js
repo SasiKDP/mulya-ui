@@ -551,7 +551,7 @@ const Submission = () => {
         defaultSortColumn="candidateId"
         defaultSortDirection="desc"
         defaultRowsPerPage={10}
-        customTableHeight={650}
+        
         refreshData={fetchData}
         primaryColor="#00796b"
         secondaryColor="#e0f2f1"
