@@ -1,4 +1,5 @@
 import { Chip } from "@mui/material";
+import { validateIfPlaced } from "./validatePlacedUtil";
 
 export const getStatusColor = (status) => {
     const normalized = status?.trim().toUpperCase();
@@ -16,7 +17,7 @@ export const getStatusColor = (status) => {
   };
   
 
-  export const getStatusChip = (status, row) => {
+  export const getStatusChip = (status, row, dispatch) => {
     const normalized = status?.trim().toUpperCase();
     const { bg, text } = getStatusColor(status);
     const label = normalized || 'SCHEDULED';
@@ -25,6 +26,7 @@ export const getStatusColor = (status) => {
     return (
       <Chip
         label={label}
+        onClick={() => {normalized === "PLACED" && validateIfPlaced(status, row, dispatch)}}
         size="small"
         sx={{
           bgcolor: bg,

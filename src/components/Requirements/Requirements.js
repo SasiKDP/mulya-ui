@@ -16,6 +16,9 @@ import {
   Drawer,
   DialogContentText,
   Badge,
+  Paper,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Refresh,
@@ -39,7 +42,7 @@ import LoadingSkeleton from "../muiComponents/LoadingSkeleton"; // Import Loadin
 import { DateRangeIcon } from "@mui/x-date-pickers";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { useDispatch, useSelector } from "react-redux";
-import { setFilteredReqDataRequested } from "../../redux/requirementSlice";
+import { fetchAllRequirementsBDM, fetchRequirementsBdmSelf, setFilteredReqDataRequested } from "../../redux/requirementSlice";
 import { Send } from "lucide-react";
 
 const Requirements = () => {
@@ -69,6 +72,10 @@ const Requirements = () => {
   const dispatch = useDispatch();
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const {requirementsAllBDM, requirementsSelfBDM} = useSelector((state) => state.requirement)
+  const [tabValue, setTabValue] = useState(0);
+  const [isAllData, setIsAllData] = useState(false)
+
   const refreshData = () => {
     setRefreshTrigger((prev) => prev + 1);
     ToastService.info("Refreshing requirements data...");
@@ -81,12 +88,18 @@ const Requirements = () => {
   
       try {
         let response;
+        let selfRequirements;
   
         if (role === "SUPERADMIN") {
           response = await httpService.get("/requirements/getAssignments");
-        } else if (role === "TEAMLEAD" || role === "BDM") {
+        } else if (role === "TEAMLEAD") {
           response = await httpService.get(`/requirements/assignedby/${userId}`);
-        } else {
+        }else if(role === "BDM"){
+          dispatch(fetchAllRequirementsBDM());
+          dispatch(fetchRequirementsBdmSelf());
+        }
+        
+        else {
           setData([]);
           setError(new Error("Unauthorized role for this action"));
           ToastService.update(
@@ -245,6 +258,16 @@ const Requirements = () => {
 
   const handleDownloadJD = (jobId, jobTitle) => {
     ToastService.info(`Downloading job description for: ${jobTitle}`);
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    const selected = event.target.id;
+    if (selected === "all") {
+      setIsAllData(true);
+      return;
+    }
+    setIsAllData(false)
   };
 
   const renderStatus = (status) => {
@@ -845,17 +868,24 @@ const Requirements = () => {
         </Stack>
       </Stack>
 
+      {role === "BDM" &&
+            <Paper sx={{ mb: 3 }}>
+              <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+                <Tab id="self" label="Self Requirements" />
+                <Tab id="all" label="All Requirements" />
+              </Tabs>
+            </Paper>
+          }
+
       {loading && data.length === 0 ? (
         <Box sx={{ p: 3 }}>
           <LoadingSkeleton rows={5} height={60} spacing={2} />
         </Box>
       ) : (
         <DataTable
-          data={
-            isFilteredDataRequested
-              ? filteredRequirementList
-              : processedData || []
-          }
+        data={isFilteredDataRequested ? filteredRequirementList :
+          role === "BDM" ? isAllData ? requirementsAllBDM : requirementsSelfBDM :
+          processedData || []}
           columns={columns}
           title=""
           loading={loading}

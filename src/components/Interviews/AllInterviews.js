@@ -14,8 +14,9 @@ import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent"; // Make sure this component exists
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { getStatusChip } from "../../utils/statusUtils";
+import DialogBox from "../DialogBox/DialogBox";
 
 const AllInterviews = () => {
   const [interviews, setInterviews] = useState([]);
@@ -24,6 +25,9 @@ const AllInterviews = () => {
 
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const { filteredInterviewList } = useSelector((state) => state.interview);
+  const dispatch = useDispatch();
+
+  const isSuccessful = true;
 
   const fetchInterviews = async () => {
     try {
@@ -259,7 +263,7 @@ const AllInterviews = () => {
         sortable: true,
         filterable: true,
         width: 140,
-        render: (row) => getStatusChip(row.interviewStatus, row),
+        render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
       },
     ];
 
@@ -368,7 +372,7 @@ const AllInterviews = () => {
         </Typography>
 
         <DateRangeFilter component="Interviews" />
-      </Stack>
+      </Stack>     
       <DataTable
         data={
           isFilteredDataRequested ? filteredInterviewList : processedData || []
