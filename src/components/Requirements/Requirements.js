@@ -41,6 +41,7 @@ import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { useDispatch, useSelector } from "react-redux";
 import { setFilteredReqDataRequested } from "../../redux/requirementSlice";
 import { Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Requirements = () => {
   const [data, setData] = useState([]);
@@ -51,6 +52,7 @@ const Requirements = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [editFormData, setEditFormData] = useState(null);
+  const navigate = useNavigate()
   const [descriptionDialog, setDescriptionDialog] = useState({
     open: false,
     content: "",
@@ -154,6 +156,7 @@ const Requirements = () => {
   const handleJobIdClick = (jobId) => {
     console.log("Job ID clicked:", jobId);
     ToastService.info(`Viewing details for Job ID: ${jobId}`);
+    navigate(`job-details/${jobId}`);
   };
 
   const handleOpenDescriptionDialog = (content, title) => {
