@@ -26,6 +26,11 @@ import {
   CheckCircle, 
   Error 
 } from '@mui/icons-material';
+import DataTable from '../muiComponents/DataTabel';
+import { generateClientColumns } from '../TableColumns/ClientColumns';
+import { generateJobDetailsColumns } from '../TableColumns/JobDetailsColumnsTL';
+import { generateCandidateColumns } from '../TableColumns/CandidateColumns';
+import { generateInterviewColumns, generateInterviewColumnsTeamLead } from '../TableColumns/InterviewsColumnsTM';
 
 // TabPanel component for tab content
 function TabPanel(props) {
@@ -163,42 +168,23 @@ const EmployeeStatus = () => {
     });
     
     return (
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="jobs table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Job ID</TableCell>
-              <TableCell>Title</TableCell>
-              <TableCell>Client</TableCell>
-              <TableCell>Positions</TableCell>
-              <TableCell>Type</TableCell>
-              <TableCell>Mode</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Posted Date</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {allJobs.map((job, index) => (
-              <TableRow key={index} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell>{job.jobId}</TableCell>
-                <TableCell>{job.jobTitle}</TableCell>
-                <TableCell>{job.clientName}</TableCell>
-                <TableCell>{job.noOfPositions}</TableCell>
-                <TableCell>{job.jobType}</TableCell>
-                <TableCell>{job.jobMode}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={job.status} 
-                    color={getStatusColor(job.status)} 
-                    size="small" 
-                  />
-                </TableCell>
-                <TableCell>{new Date(job.postedDate).toLocaleDateString()}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <DataTable
+        data={allJobs || []}
+        columns={generateJobDetailsColumns()}
+        title={`Job Details `}
+        enableSelection={false}
+        defaultSortColumn="clientName"
+        defaultSortDirection="asc"
+        defaultRowsPerPage={10}
+        primaryColor="#1976d2"
+        secondaryColor="#e0f2f1"
+        customStyles={{
+          headerBackground: "#1976d2",
+          rowHover: "#e0f2f1",
+          selectedRow: "#b2dfdb",
+        }}
+        uniqueId="jobId"
+      />
     );
   };
 
@@ -216,36 +202,27 @@ const EmployeeStatus = () => {
         });
       });
     });
+
+    
     
     return (
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="candidates table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Candidate ID</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Job ID</TableCell>
-              <TableCell>Job Title</TableCell>
-              <TableCell>Client</TableCell>
-              <TableCell>Skills</TableCell>
-              <TableCell>Feedback</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {allCandidates.map((candidate, index) => (
-              <TableRow key={index} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell>{candidate.candidateId}</TableCell>
-                <TableCell>{candidate.fullName}</TableCell>
-                <TableCell>{candidate.jobId}</TableCell>
-                <TableCell>{candidate.jobTitle}</TableCell>
-                <TableCell>{candidate.clientName}</TableCell>
-                <TableCell>{candidate.skills}</TableCell>
-                <TableCell>{candidate.overallFeedback}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <DataTable
+      data={allCandidates || []}
+      columns={generateCandidateColumns()}
+      title={`Candidate Details `}
+      enableSelection={false}
+      defaultSortColumn="clientName"
+      defaultSortDirection="asc"
+      defaultRowsPerPage={10}
+      primaryColor="#1976d2"
+      secondaryColor="#e0f2f1"
+      customStyles={{
+        headerBackground: "#1976d2",
+        rowHover: "#e0f2f1",
+        selectedRow: "#b2dfdb",
+      }}
+      uniqueId="candidateId"
+    />
     );
   };
 
@@ -264,39 +241,26 @@ const EmployeeStatus = () => {
       });
     });
     
+ 
+    
     return (
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="interviews table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Candidate Name</TableCell>
-              <TableCell>Job Title</TableCell>
-              <TableCell>Client</TableCell>
-              <TableCell>Interview Level</TableCell>
-              <TableCell>Date & Time</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {allInterviews.map((interview, index) => (
-              <TableRow key={index} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell>{interview.fullName}</TableCell>
-                <TableCell>{interview.jobTitle}</TableCell>
-                <TableCell>{interview.clientName}</TableCell>
-                <TableCell>{interview.interviewLevel}</TableCell>
-                <TableCell>{new Date(interview.interviewDateTime).toLocaleString()}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={interview.interviewStatus} 
-                    color={getStatusColor(interview.interviewStatus)} 
-                    size="small" 
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <DataTable
+      data={allInterviews || []}
+      columns={generateInterviewColumnsTeamLead()}
+      title={`Interview Details `}
+      enableSelection={false}
+      defaultSortColumn="clientName"
+      defaultSortDirection="asc"
+      defaultRowsPerPage={10}
+      primaryColor="#1976d2"
+      secondaryColor="#e0f2f1"
+      customStyles={{
+        headerBackground: "#1976d2",
+        rowHover: "#e0f2f1",
+        selectedRow: "#b2dfdb",
+      }}
+      uniqueId="candidateId"
+    />
     );
   };
 
@@ -314,40 +278,28 @@ const EmployeeStatus = () => {
         });
       });
     });
+
+    console.log("All Placements", allPlacements);
+    
     
     return (
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="placements table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Candidate Name</TableCell>
-              <TableCell>Job Title</TableCell>
-              <TableCell>Client</TableCell>
-              <TableCell>Interview Level</TableCell>
-              <TableCell>Date & Time</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {allPlacements.map((placement, index) => (
-              <TableRow key={index} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell>{placement.fullName}</TableCell>
-                <TableCell>{placement.jobTitle}</TableCell>
-                <TableCell>{placement.clientName}</TableCell>
-                <TableCell>{placement.interviewLevel}</TableCell>
-                <TableCell>{new Date(placement.interviewDateTime).toLocaleString()}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={placement.interviewStatus} 
-                    color={getStatusColor(placement.interviewStatus)} 
-                    size="small" 
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <DataTable
+      data={allPlacements || []}
+      columns={generateInterviewColumnsTeamLead()}
+      title={`Placement Details `}
+      enableSelection={false}
+      defaultSortColumn="clientName"
+      defaultSortDirection="asc"
+      defaultRowsPerPage={10}
+      primaryColor="#1976d2"
+      secondaryColor="#e0f2f1"
+      customStyles={{
+        headerBackground: "#1976d2",
+        rowHover: "#e0f2f1",
+        selectedRow: "#b2dfdb",
+      }}
+      uniqueId="candidateId"
+    />
     );
   };
 
