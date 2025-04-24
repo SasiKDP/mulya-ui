@@ -6,6 +6,7 @@ import benchReducer from '../redux/benchSlice'
 import requirementReducer from '../redux/requirementSlice'
 import interviewReducer from '../redux/interviewSlice'
 import submissionReducer from '../redux/submissionSlice'
+import commonReducer from '../redux/commonSlice'
 
 export const store = configureStore({
   reducer: {
@@ -15,7 +16,8 @@ export const store = configureStore({
     bench: benchReducer,
     requirement: requirementReducer,
     interview: interviewReducer,
-    submission: submissionReducer
+    submission: submissionReducer,
+    common: commonReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
