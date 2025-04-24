@@ -98,7 +98,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
             { value: "FINAL", label: "FINAL" },
           ],
-          // disabled: true
+          disabled: true,
           gridProps: commonGridProps,
         },
         {
@@ -149,7 +149,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
             { value: "FINAL", label: "FINAL" },
           ],
-          disabled: true, // Disable interview level field
+          // disabled: true, // Disable interview level field
           gridProps: commonGridProps,
         },
         {

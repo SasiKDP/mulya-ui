@@ -140,7 +140,8 @@ const Interviews = () => {
   };
 
   const columns = [
-    { key: "jobId", label: "Job ID", width: 100 },
+    
+    { key: "interviewId", label: "Interview ID", width: 100 },
     {
       key: "candidateFullName",
       label: "Candidate",
