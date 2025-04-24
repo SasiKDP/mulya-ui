@@ -8,7 +8,7 @@ import { useDispatch } from 'react-redux';
 import ToastService from '../../Services/toastService'; 
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import { validateDateRange } from '../../utils/validateDateRange';
-import { filterRequirementsByDateRange, filterRequirementsByRecruiter } from '../../redux/requirementSlice';
+import { filterRequirementsByDateRange, filterRequirementsByRecruiter, filterRequirementsByTeamLead } from '../../redux/requirementSlice';
 import { filterInterviewsByDateRange, filterInterviewsByRecruiter } from '../../redux/interviewSlice';
 import { filterUsersByDateRange } from '../../redux/employeesSlice';
 import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../../redux/submissionSlice';
@@ -23,7 +23,8 @@ const componentToActionMap = {
   Submissions: filterSubmissionsByDateRange,
   AssignedList: filterRequirementsByRecruiter,
   RecruiterSubmission: filterSubmissionssByRecruiter,
-  InterviewsForRecruiter: filterInterviewsByRecruiter
+  InterviewsForRecruiter: filterInterviewsByRecruiter,
+  RequirementTeamLead: filterRequirementsByTeamLead
 };
 
 

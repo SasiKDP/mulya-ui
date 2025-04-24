@@ -65,6 +65,24 @@ export const filterRequirementsByRecruiter = createAsyncThunk(
      }
 )
 
+// Filter requirements for employee
+export const filterRequirementsByTeamLead = createAsyncThunk(
+  'teamLead/requirements/filterByDateRange',
+  async({startDate, endDate}, {getState, rejectWithValue}) => {
+      try{
+        const state = getState();
+        const userId = state.auth.userId;
+ 
+        const response = await httpService.get(`/requirements/assignedby/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+        
+        return response.data;
+      }catch(error){
+        console.log(error);
+        return rejectWithValue(error);
+      }
+     }
+)
+
 
 const requirementSlice =  createSlice({
     name: "requirement",
@@ -72,6 +90,7 @@ const requirementSlice =  createSlice({
         loading: false,
         filteredRequirementList: [],
         filterAssignedRequirements: [],
+        filteredTeamLeadRequirements: [],
         requirementsAllBDM : [],
         requirementsSelfBDM : [],
         isFilteredReqRequested: false,
@@ -141,6 +160,23 @@ const requirementSlice =  createSlice({
             state.error = action.payload.message;
             
           })
+
+          // Filter Recruiter requirements
+          .addCase(filterRequirementsByTeamLead.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+          })
+          .addCase(filterRequirementsByTeamLead.fulfilled, (state, action) => {
+            state.loading = false;
+            state.filteredTeamLeadRequirements = action.payload;
+          })
+          .addCase(filterRequirementsByTeamLead.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload.message;
+            
+          })
+
+
         }
 })
 

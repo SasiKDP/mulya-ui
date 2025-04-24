@@ -1,513 +1,396 @@
-import React, { useState, useEffect } from "react";
-import {
-  Box,
-  TextField,
-  Button,
-  Typography,
-  MenuItem,
-  Grid,
-  Divider,
-  CircularProgress,
-  Snackbar,
-  Alert,
-  IconButton,
-  Paper,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio
-} from "@mui/material";
-import { Close as CloseIcon, Check } from "@mui/icons-material";
+import React, { useState } from "react";
+import { Box, Typography, Alert, Snackbar, IconButton } from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 import httpService from "../../Services/httpService";
-import { Formik, Form, Field } from "formik";
+import DynamicForm from "../FormContainer/DynamicForm";
 import * as Yup from "yup";
 import dayjs from "dayjs";
+import { useSelector } from "react-redux";
+import { Check } from "lucide-react";
 
-
-const oneMonthAgo = new Date();
-oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-// Validation Schema
-const validationSchema = Yup.object().shape({
-  jobId: Yup.string().required("Job ID is required"),
-  candidateId: Yup.string().required("Candidate ID is required"),
-  candidateFullName: Yup.string().required("Candidate name is required"),
-  candidateContactNo: Yup.string().required("Contact number is required"),
-  candidateEmailId: Yup.string()
-    .email("Invalid email format")
-    .required("Candidate email is required"),
-  userEmail: Yup.string()
-    .email("Invalid email format")
-    .required("User email is required"),
-  clientName: Yup.string().required("Client name is required"),
-  clientEmail: Yup.string().email("Invalid email format").nullable(),
-  interviewDateTime: Yup.date()
-    .required("Interview date and time is required")
-    .min(oneMonthAgo, "Interview date and time must be within the last month or in the future"),
-  duration: Yup.number()
-    .required("Duration is required")
-    .min(15, "Duration must be at least 15 minutes")
-    .max(60, "Duration cannot exceed 60 minutes"),
-  zoomLink: Yup.string().nullable(),
-  interviewLevel: Yup.string()
-    .required("Interview level is required")
-    .oneOf(["INTERNAL", "EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"], "Invalid interview level"),
-  externalInterviewDetails: Yup.string().nullable(),
-  interviewStatus: Yup.string().nullable()
-});
-
-const ScheduleInterviewForm = ({ data, onClose, mode = "create" }) => {
-  const [notification, setNotification] = useState({ 
-    open: false, 
-    message: "", 
-    severity: "success" 
+const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
+  const [notification, setNotification] = useState({
+    open: false,
+    message: "",
+    severity: "success",
   });
-  
+  const { userId, email } = useSelector((state) => state.auth);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [interviewResponse, setInterviewResponse] = useState(null);
 
-  const interviewLevels = [
-    "INTERNAL",
-    "EXTERNAL",
-    "EXTERNAL-L1",
-    "EXTERNAL-L2",
-    "FINAL",
-  ];
+  // Define one month ago for validation
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-  const interviewStatuses = [
-    "SCHEDULED",
-    "RESCHEDULED",
-    'REJECTED',
-    "CANCELLED",
-    "SELECTED",
-    'PLACED'
-  ];
-
-  // Prepare initial values for Formik
+  // Prepare initial values for form
   const getInitialValues = () => {
     if (data) {
       let dateTimeValue = "";
       if (data.interviewDateTime) {
-        // Format date to work with input type datetime-local
         const date = new Date(data.interviewDateTime);
         dateTimeValue = date.toISOString().slice(0, 16);
       }
 
       return {
-        candidateContactNo: data.contactNumber || data.candidateContactNo || "",
+        contactNumber: data.contactNumber || data.candidateContactNo || "",
         candidateEmailId: data.emailId || data.candidateEmailId || "",
-        candidateFullName: data.fullName || data.candidateFullName || "",
+        fullName: data.fullName || data.candidateFullName || "",
         candidateId: data.candidateId || "",
-        clientEmail: data.clientEmail || "",
+        clientEmail: data.clientEmail || [],
         clientName: data.clientName || "",
         duration: data.duration || 30,
         externalInterviewDetails: data.externalInterviewDetails || "",
         interviewDateTime: dateTimeValue,
         interviewLevel: data.interviewLevel || "INTERNAL",
-        interviewScheduledTimestamp: data.interviewScheduledTimestamp || "",
         jobId: data.jobId || "",
-        userEmail: data.userEmail || "",
-        userId: data.userId || "",
+        userEmail: email || "",
+        userId: data.userId || userId || "",
         zoomLink: data.zoomLink || "",
-        interviewStatus: data.interviewStatus || "SCHEDULED"
+        interviewStatus: "SCHEDULED",
+        skipNotification: data?.skipNotification || false,
       };
     }
-    
-    // Default values if no data is provided
+
     return {
-      candidateContactNo: "",
+      contactNumber: "",
       candidateEmailId: "",
-      candidateFullName: "",
+      fullName: "",
       candidateId: "",
-      clientEmail: "",
+      clientEmail: [],
       clientName: "",
       duration: 30,
       externalInterviewDetails: "",
       interviewDateTime: "",
       interviewLevel: "INTERNAL",
-      interviewScheduledTimestamp: "",
       jobId: "",
-      userEmail: "",
-      userId: "",
+      userEmail: email || "",
+      userId: userId || "",
       zoomLink: "",
-      interviewStatus: "SCHEDULED"
+      interviewStatus: "SCHEDULED",
+      skipNotification: false,
     };
   };
 
+  // Define field configurations for the dynamic form
+  const getFormFields = (values) => {
+    const fields = [
+      // Candidate Information Section
+      {
+        name: "sectionCandidate",
+        type: "divider",
+        label: "Candidate Information",
+        gridProps: { xs: 12 },
+      },
+      {
+        name: "candidateId",
+        label: "Candidate ID",
+        type: "text",
+        required: true,
+        disabled: true,
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "fullName",
+        label: "Candidate Name",
+        type: "text",
+        required: true,
+        disabled: true,
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "candidateEmailId",
+        label: "Candidate Email",
+        type: "email",
+        required: true,
+        disabled: true,
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "contactNumber",
+        label: "Candidate Contact",
+        type: "text",
+        required: true,
+        disabled: true,
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "userEmail",
+        label: "User Email",
+        type: "email",
+        required: true,
+        disabled: true,
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "jobId",
+        label: "Job ID",
+        type: "text",
+        required: true,
+        disabled: true,
+        gridProps: { xs: 12, sm: 6 },
+      },
+
+      // Client Information Section
+      {
+        name: "sectionClient",
+        type: "divider",
+        label: "Client Information",
+        gridProps: { xs: 12 },
+      },
+      {
+        name: "clientName",
+        label: "Client Name",
+        type: "text",
+        required: true,
+        disabled: true,
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "clientEmail",
+        label: "Client Email",
+        type: "chipInput",
+        description: "Enter client email addresses and press Enter after each",
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "sectionInterview",
+        type: "divider",
+        label: "Interview Details",
+        gridProps: { xs: 12 },
+      },
+      {
+        name: "interviewDateTime",
+        label: "Interview Date & Time",
+        type: "datetime",
+        required: true,
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "duration",
+        label: "Duration (minutes)",
+        type: "select",
+        required: true,
+        options: [
+          { value: 15, label: "15 minutes" },
+          { value: 30, label: "30 minutes" },
+          { value: 45, label: "45 minutes" },
+          { value: 60, label: "60 minutes" },
+        ],
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "zoomLink",
+        label: "Meeting Link",
+        type: "text",
+        placeholder: "https://zoom.us/j/example",
+        gridProps: { xs: 12 },
+      },
+      {
+        name: "interviewLevel",
+        label: "Interview Level",
+        type: "select",
+        required: true,
+        options: [
+          { value: "INTERNAL", label: "INTERNAL" },
+          { value: "EXTERNAL", label: "EXTERNAL" },
+          { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
+          { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
+          { value: "FINAL", label: "FINAL" },
+        ],
+        gridProps: { xs: 12 },
+      },
+      {
+        name: "skipNotification",
+        label: "Skip Email Notification",
+        type: "checkbox",
+        description: "Check this box to skip sending email notifications",
+        gridProps: { xs: 12 },
+      },
+    ];
+
+    // Add External Interview Details field if needed based on interviewLevel
+    if (
+      ["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(
+        values.interviewLevel
+      )
+    ) {
+      fields.push({
+        name: "externalInterviewDetails",
+        label: "Interview Details",
+        type: "textarea",
+        rows: 4,
+        required: true,
+        placeholder: "Enter details about the external interview",
+        gridProps: { xs: 12 },
+      });
+    }
+
+    return fields;
+  };
+
+  // Validation schema for the form
+  const validationSchema = Yup.object().shape({
+    candidateId: Yup.string().required("Candidate ID is required"),
+    fullName: Yup.string().required("Candidate name is required"),
+    contactNumber: Yup.string().required("Contact number is required"),
+    candidateEmailId: Yup.string()
+      .email("Invalid email format")
+      .required("Candidate email is required"),
+    userEmail: Yup.string()
+      .email("Invalid email format")
+      .required("User email is required"),
+    clientName: Yup.string().required("Client name is required"),
+    clientEmail: Yup.array().of(
+      Yup.string().email("Invalid email format")
+    ),
+    interviewDateTime: Yup.date()
+      .required("Interview date and time is required")
+      .min(
+        oneMonthAgo,
+        "Interview date and time must be within the last month or in the future"
+      ),
+    duration: Yup.number()
+      .required("Duration is required")
+      .min(15, "Duration must be at least 15 minutes")
+      .max(60, "Duration cannot exceed 60 minutes"),
+    zoomLink: Yup.string().nullable(),
+    interviewLevel: Yup.string()
+      .required("Interview level is required")
+      .oneOf(
+        ["INTERNAL", "EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"],
+        "Invalid interview level"
+      ),
+    externalInterviewDetails: Yup.string().when("interviewLevel", {
+      is: (level) =>
+        ["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(level),
+      then: Yup.string().required("External interview details are required"),
+      otherwise: Yup.string().nullable(),
+    }),
+    skipNotification: Yup.boolean(),
+  });
+
   const handleCloseNotification = () => {
-    setNotification(prev => ({ ...prev, open: false }));
+    setNotification((prev) => ({ ...prev, open: false }));
   };
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       setSubmitting(true);
-      
-      // Format values for API
+  
       const payload = {
         candidateId: values.candidateId,
         candidateEmailId: values.candidateEmailId,
-        candidateFullName: values.candidateFullName,
-        candidateContactNo: values.candidateContactNo,
+        fullName: values.fullName,
+        contactNumber: values.contactNumber,
         interviewDateTime: dayjs(values.interviewDateTime).format(),
         interviewScheduledTimestamp: dayjs(values.interviewDateTime).valueOf(),
         duration: values.duration,
         zoomLink: values.zoomLink,
         interviewLevel: values.interviewLevel,
-        interviewStatus: values.interviewStatus,
+        interviewStatus: "SCHEDULED",
         clientEmail: values.clientEmail,
         clientName: values.clientName,
         jobId: values.jobId,
         userEmail: values.userEmail,
         userId: values.userId,
-        externalInterviewDetails: values.externalInterviewDetails
+        externalInterviewDetails: values.externalInterviewDetails,
+        skipNotification: values.skipNotification,
       };
-
-      let response;
-      if (mode === "edit") {
-        response = await httpService.put(
-          `/candidate/interview-update/${values.userId}/${values.candidateId}`,
-          payload
-        );
-      } else {
-        response = await httpService.post(
-          `/candidate/interview-schedule/${values.userId}`,
-          payload
-        );
-      }
-      
-      setInterviewResponse(response.data);
+  
+      const responseData = await httpService.post(
+        `/candidate/interview-schedule/${values.userId}`,
+        payload
+      );
+  
+      setInterviewResponse(responseData);
       setSubmissionSuccess(true);
       setNotification({
-        open: true, 
-        message: mode === "edit" 
-          ? "Interview updated successfully" 
-          : "Interview scheduled successfully", 
-        severity: "success"
+        open: true,
+        message: "Interview scheduled successfully",
+        severity: "success",
       });
-      
-      // Close form after success
-      setTimeout(() => onClose(true), 3000);
+  
+      setTimeout(() => {
+        if (onSuccess) onSuccess();
+        onClose(true);
+      }, 2000);
     } catch (error) {
-      console.error("Error with interview:", error);
+      console.error("Error scheduling interview:", error);
       setNotification({
-        open: true, 
-        message: `Error ${mode === "edit" ? "updating" : "scheduling"} interview: ${
-          error.response?.data?.message || error.message
-        }`, 
-        severity: "error"
+        open: true,
+        message: `Error scheduling interview: ${
+          error?.response?.data?.message || error.message || "Unknown error"
+        }`,
+        severity: "error",
       });
     } finally {
       setSubmitting(false);
     }
   };
+  
 
-  // Success Message Component
   const SuccessMessage = () => {
     if (!submissionSuccess || !interviewResponse) return null;
 
     return (
-      <Paper elevation={0} sx={{ mb: 3, backgroundColor: "#f0fdf4", p: 2 }}>
-        <Alert
-          icon={<Check />}
-          severity="success"
-          sx={{ mb: 2 }}
-        >
-          <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-            Interview {mode === "edit" ? "updated" : "scheduled"} for <strong>Candidate ID:</strong>{" "}
-            {interviewResponse.candidateId} successfully and email notifications
-            sent.
-          </Typography>
-        </Alert>
-      </Paper>
+      <Alert icon={<Check />} severity="success" sx={{ mb: 3 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+          Interview scheduled for <strong>Candidate ID:</strong>{" "}
+          {interviewResponse.candidateId} successfully.
+        </Typography>
+      </Alert>
     );
   };
 
+  const initialValues = getInitialValues();
+
   return (
-    <Box sx={{ width: "100%", p: { xs: 1, sm: 2 }, maxHeight: "80vh", overflow: "auto" }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Typography variant="h6" color="primary">
-          {mode === "edit" ? "Update Interview" : "Schedule Interview"}
+    <Box
+      sx={{
+        width: "100%",
+        p: { xs: 1, sm: 2 },
+        
+        overflow: "auto",
+      }}
+    >
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 2 }}
+      >
+        <Typography variant="h6" color="primary" fontWeight="medium">
+          Schedule Interview
         </Typography>
         <IconButton onClick={onClose}>
           <CloseIcon />
         </IconButton>
       </Box>
-      <Divider sx={{ mb: 2 }} />
-      
+
       <SuccessMessage />
-      
-      <Formik
-        initialValues={getInitialValues()}
+
+      <DynamicForm
+        fields={getFormFields(initialValues)}
+        initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
-      >
-        {({ values, errors, touched, setFieldValue, isSubmitting }) => (
-          <Form>
-            {/* Candidate Information Section */}
-            <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle1" fontWeight="medium" color="text.secondary">
-                Candidate Information
-              </Typography>
-              <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="candidateId"
-                    as={TextField}
-                    label="Candidate ID"
-                    fullWidth
-                    disabled={mode === "edit"}
-                    size="small"
-                    error={touched.candidateId && Boolean(errors.candidateId)}
-                    helperText={touched.candidateId && errors.candidateId}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="candidateFullName"
-                    as={TextField}
-                    label="Candidate Name"
-                    fullWidth
-                    disabled={mode === "edit"}
-                    size="small"
-                    error={touched.candidateFullName && Boolean(errors.candidateFullName)}
-                    helperText={touched.candidateFullName && errors.candidateFullName}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="candidateEmailId"
-                    as={TextField}
-                    label="Candidate Email"
-                    fullWidth
-                    disabled={mode === "edit"}
-                    size="small"
-                    error={touched.candidateEmailId && Boolean(errors.candidateEmailId)}
-                    helperText={touched.candidateEmailId && errors.candidateEmailId}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="candidateContactNo"
-                    as={TextField}
-                    label="Candidate Contact"
-                    fullWidth
-                    disabled={mode === "edit"}
-                    size="small"
-                    error={touched.candidateContactNo && Boolean(errors.candidateContactNo)}
-                    helperText={touched.candidateContactNo && errors.candidateContactNo}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="userEmail"
-                    as={TextField}
-                    label="User Email"
-                    fullWidth
-                    disabled={mode === "edit"}
-                    size="small"
-                    error={touched.userEmail && Boolean(errors.userEmail)}
-                    helperText={touched.userEmail && errors.userEmail}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="jobId"
-                    as={TextField}
-                    label="Job ID"
-                    fullWidth
-                    disabled={mode === "edit"}
-                    size="small"
-                    error={touched.jobId && Boolean(errors.jobId)}
-                    helperText={touched.jobId && errors.jobId}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
+        submitButtonText="Schedule"
+        cancelButtonText="Cancel"
+        onCancel={onClose}
+        watchFields={["interviewLevel"]} // Watch this field for conditional rendering
+      />
 
-            {/* Job and Client Information */}
-            <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle1" fontWeight="medium" color="text.secondary">
-                Client Information
-              </Typography>
-              <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} sm={6}>
-                 
-                    <Field
-                      name="clientName"
-                      as={TextField}
-                      label="Client Name"
-                      fullWidth
-                      size="small"
-                      error={touched.clientName && Boolean(errors.clientName)}
-                      helperText={touched.clientName && errors.clientName}
-                    />
-                  
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Field
-                    name="clientEmail"
-                    as={TextField}
-                    label="Client Email"
-                    fullWidth
-                    size="small"
-                    error={touched.clientEmail && Boolean(errors.clientEmail)}
-                    helperText={touched.clientEmail && errors.clientEmail}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
-
-            {/* Interview Details */}
-            <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-              <Typography variant="subtitle1" fontWeight="medium" color="text.secondary">
-                Interview Details
-              </Typography>
-              <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="interviewDateTime"
-                    as={TextField}
-                    label="Interview Date & Time"
-                    type="datetime-local"
-                    fullWidth
-                    required
-                    size="small"
-                    InputLabelProps={{ shrink: true }}
-                    error={touched.interviewDateTime && Boolean(errors.interviewDateTime)}
-                    helperText={touched.interviewDateTime && errors.interviewDateTime}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="duration"
-                    as={TextField}
-                    label="Duration (minutes)"
-                    type="number"
-                    fullWidth
-                    size="small"
-                    InputProps={{ inputProps: { min: 15, max: 60, step: 15 } }}
-                    error={touched.duration && Boolean(errors.duration)}
-                    helperText={touched.duration && errors.duration}
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={4}>
-                  <Field
-                    name="zoomLink"
-                    as={TextField}
-                    label="Meeting Link"
-                    fullWidth
-                    size="small"
-                    error={touched.zoomLink && Boolean(errors.zoomLink)}
-                    helperText={touched.zoomLink && errors.zoomLink}
-                  />
-                </Grid>
-
-                <Grid item xs={12}>
-                  <FormControl component="fieldset" required>
-                    <FormLabel component="legend">Interview Level</FormLabel>
-                    <Field name="interviewLevel">
-                      {({ field }) => (
-                        <RadioGroup 
-                          {...field} 
-                          row
-                          onChange={(e) => {
-                            setFieldValue("interviewLevel", e.target.value);
-                            if (!e.target.value.includes("EXTERNAL")) {
-                              setFieldValue("externalInterviewDetails", "");
-                            }
-                          }}
-                        >
-                          {interviewLevels.map(level => (
-                            <FormControlLabel
-                              key={level}
-                              value={level}
-                              control={<Radio />}
-                              label={level}
-                            />
-                          ))}
-                        </RadioGroup>
-                      )}
-                    </Field>
-                  </FormControl>
-                </Grid>
-
-                {mode === "edit" && (
-                  <Grid item xs={12}>
-                    <FormControl component="fieldset">
-                      <FormLabel component="legend">Interview Status</FormLabel>
-                      <Field name="interviewStatus">
-                        {({ field }) => (
-                          <RadioGroup {...field} row>
-                            {interviewStatuses.map(status => (
-                              <FormControlLabel
-                                key={status}
-                                value={status}
-                                control={<Radio />}
-                                label={status}
-                              />
-                            ))}
-                          </RadioGroup>
-                        )}
-                      </Field>
-                    </FormControl>
-                  </Grid>
-                )}
-
-                {values.interviewLevel.includes("EXTERNAL") && (
-                  <Grid item xs={12}>
-                    <Field
-                      name="externalInterviewDetails"
-                      as={TextField}
-                      label="External Interview Details"
-                      multiline
-                      rows={3}
-                      fullWidth
-                      size="small"
-                      error={touched.externalInterviewDetails && Boolean(errors.externalInterviewDetails)}
-                      helperText={touched.externalInterviewDetails && errors.externalInterviewDetails}
-                    />
-                  </Grid>
-                )}
-              </Grid>
-            </Paper>
-
-            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-              <Button 
-                variant="outlined" 
-                color="error" 
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit"
-                variant="contained" 
-                color="primary" 
-                disabled={isSubmitting}
-                startIcon={isSubmitting && <CircularProgress size={16} color="inherit" />}
-              >
-                {mode === "edit" ? "Update" : "Schedule"}
-              </Button>
-            </Box>
-          </Form>
-        )}
-      </Formik>
-
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={4000} 
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert 
-          onClose={handleCloseNotification} 
+        <Alert
+          onClose={handleCloseNotification}
           severity={notification.severity}
           variant="filled"
-          sx={{ width: '100%' }}
+          sx={{ width: "80%" }}
         >
           {notification.message}
         </Alert>

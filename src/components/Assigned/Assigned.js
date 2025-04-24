@@ -27,60 +27,53 @@ const Assigned = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [columns, setColumns] = useState([]);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedJob, setSelectedJob] = useState(null);
   const [openDrawer, setOpenDrawer] = useState(false);
   const [mode, setMode] = useState("create");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
-  const { userId } = useSelector((state) => state.auth);
+  const { userId, email, role } = useSelector((state) => state.auth);
   const employeeList = useSelector((state) => state.employee.employeesList);
-    const { filterAssignedRequirements } = useSelector((state) => state.requirement);
-    const { isFilteredDataRequested } = useSelector((state) => state.bench);
+  const { filterAssignedRequirements, filteredTeamLeadRequirements } = useSelector((state) => state.requirement);
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
 
   const dispatch = useDispatch();
 
-  const refreshData = () => {
-    setRefreshTrigger((prev) => prev + 1);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await httpService.get(
+        `/requirements/recruiter/${userId}`
+      );
+      if (Array.isArray(response.data)) {
+        setData(response.data);
+        setColumns(generateColumns(response.data));
+        ToastService.success(`${response.data.length} jobs loaded successfully`);
+      } else {
+        setData([]);
+        setColumns([]);
+        if (response.data && response.data.message) {
+          setError(new Error(response.data.message));
+          ToastService.error(response.data.message);
+        } else {
+          setError(new Error("Data fetched was not an array."));
+          ToastService.error("Data fetched was not in the expected format");
+        }
+      }
+    } catch (err) {
+      setError(err);
+      setData([]);
+      setColumns([]);
+      ToastService.error(`Error loading data: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     ToastService.info("Loading assigned jobs...");
-    
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await httpService.get(
-          `/requirements/recruiter/${userId}`
-        );
-        if (Array.isArray(response.data)) {
-          setData(response.data);
-          setColumns(generateColumns(response.data));
-          ToastService.success(`${response.data.length} jobs loaded successfully`);
-        } else {
-          setData([]);
-          setColumns([]);
-          if (response.data && response.data.message) {
-            setError(new Error(response.data.message));
-            ToastService.error(response.data.message);
-          } else {
-            setError(new Error("Data fetched was not an array."));
-            ToastService.error("Data fetched was not in the expected format");
-          }
-        }
-      } catch (err) {
-        setError(err);
-        setData([]);
-        setColumns([]);
-        ToastService.error(`Error loading data: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-    dispatch(fetchEmployees());
-  }, [userId, refreshTrigger, dispatch]);
+  }, [userId]);
 
   const handleSubmit = (row) => {
     const status = row.status?.toLowerCase();
@@ -89,7 +82,12 @@ const Assigned = () => {
       return;
     }
     
-    setSelectedJob({ userId: userId, jobId: row.jobId });
+    setSelectedJob({ 
+      userId: userId, 
+      jobId: row.jobId,
+      clientName: row.clientName 
+    });
+    
     setMode("create");
     setSelectedCandidate(null);
     setOpenDrawer(true);
@@ -350,27 +348,28 @@ const Assigned = () => {
         width: 160,
         align: "center",
         render: (row) => {
-          const isDisabled = row.status?.toLowerCase() === 'hold';
+          const isDisabled = row.status?.toLowerCase() === 'hold' || row.status?.toLowerCase() === 'closed';
           return (
             <Box sx={{ display: "flex", justifyContent: "center" }}>
               <Tooltip title={isDisabled ? "Submission disabled for HOLD status" : "Submit Candidate"}>
                 <span>
-                  <IconButton
-                    aria-label="submit"
+                  <Button
+                    variant="contained"
                     size="small"
                     color="primary"
                     onClick={() => handleSubmit(row)}
-                    sx={{ mr: 1 }}
                     disabled={isDisabled}
+                    startIcon={<AssignmentIcon fontSize="small" />}
                   >
-                    <AssignmentIcon fontSize="small" />
-                  </IconButton>
+                    Submit
+                  </Button>
                 </span>
               </Tooltip>
             </Box>
           );
         },
-      },
+      }
+      ,
     ];
   };
 
@@ -388,7 +387,7 @@ const Assigned = () => {
     return (
       <Box sx={{ p: 3, textAlign: "center" }}>
         <Typography color="error">Error: {error.message}</Typography>
-        <Button variant="outlined" onClick={refreshData} startIcon={<Refresh />} sx={{ mt: 2 }}>
+        <Button variant="outlined" onClick={fetchData} startIcon={<Refresh />} sx={{ mt: 2 }}>
           Retry
         </Button>
       </Box>
@@ -397,7 +396,7 @@ const Assigned = () => {
 
   return (
     <>
-     <Stack direction="row" alignItems="center" spacing={2}
+      <Stack direction="row" alignItems="center" spacing={2}
         sx={{
           flexWrap: 'wrap',
           mb: 3,
@@ -406,26 +405,21 @@ const Assigned = () => {
           backgroundColor: '#f9f9f9',
           borderRadius: 2,
           boxShadow: 1,
-
         }}>
-
         <Typography variant='h6' color='primary'>Assigned List</Typography>
-
-        <DateRangeFilter component="AssignedList" />
+        {role === "TEAMLEAD" ? <DateRangeFilter component="RequirementTeamLead"/> : <DateRangeFilter component="AssignedList" />}
       </Stack>
 
       <DataTable
-        // data={processedData}
-        data={isFilteredDataRequested ? filterAssignedRequirements : processedData || []} 
-        columns={generateColumns(data)}  // Always call generateColumns to handle loading state
+        data={isFilteredDataRequested ? role === "TEAMLEAD" ? filteredTeamLeadRequirements : filterAssignedRequirements : processedData || []} 
+        columns={generateColumns(data)}
         title=""
         loading={loading}
         enableSelection={false}
         defaultSortColumn="requirementAddedTimeStamp"
         defaultSortDirection="desc"
         defaultRowsPerPage={10}
-        
-        refreshData={refreshData}
+        refreshData={fetchData}
         primaryColor="#00796b"
         secondaryColor="#e0f2f1"
         customStyles={{
@@ -436,18 +430,21 @@ const Assigned = () => {
         uniqueId="jobId"
       />
 
-      <Drawer anchor="right" open={openDrawer} onClose={closeDrawer}>
+      <Drawer 
+        anchor="right" 
+        open={openDrawer} 
+        onClose={closeDrawer}
+      >
         {selectedJob && (
           <CandidateSubmissionDrawer
             userId={selectedJob?.userId}
+            clientName={selectedJob.clientName}
             jobId={selectedJob?.jobId}
             candidateData={selectedCandidate}
             mode={mode}
             onClose={closeDrawer}
-            refreshData={refreshData}
-            employeeEmail={employeeList
-              .filter((employee) => employee.employeeId === userId)
-              .map((employee) => employee.email)}
+            refreshData={fetchData}
+            employeeEmail={email}
           />
         )}
       </Drawer>
@@ -455,4 +452,4 @@ const Assigned = () => {
   );
 };
 
-export default Assigned;
+export default Assigned

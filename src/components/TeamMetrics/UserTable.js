@@ -42,7 +42,7 @@ const UserTable = ({ role, title, employeesList, loading = false }) => {
   }
 
   return (
-    <Box sx={{ width: '100%', mt: 2 }}>
+    <Box sx={{ width: '100%'}}>
       <DataTable
         data={employeesList || []}
         columns={columns}

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import httpService from '../../Services/httpService';
-import DataTable from '../muiComponents/DataTabel';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import httpService from "../../Services/httpService";
+import DataTable from "../muiComponents/DataTabel";
 
 import {
   Box,
@@ -16,8 +16,10 @@ import {
   Button,
   Skeleton,
   Chip,
-  Stack
-} from '@mui/material';
+  Stack,
+  LinearProgress,
+  Avatar,
+} from "@mui/material";
 import {
   Edit,
   Delete,
@@ -30,14 +32,20 @@ import {
   School,
   ContactPhone,
   Code,
-} from '@mui/icons-material';
-import ToastService from '../../Services/toastService';
-import BenchCandidateForm from './BenchForm';
-import CandidateDetails from './CandidateDetails';
-import { useDispatch, useSelector } from 'react-redux';
-import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
-import DateRangeFilter from '../muiComponents/DateRangeFilter';
-import { User2Icon } from 'lucide-react';
+  Email,
+} from "@mui/icons-material";
+import ToastService from "../../Services/toastService";
+import BenchCandidateForm from "./BenchForm";
+import CandidateDetails from "./CandidateDetails";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  filterBenchListByDateRange,
+  setFilteredDataRequested,
+} from "../../redux/benchSlice";
+import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { Link, PhoneIcon, User2Icon } from "lucide-react";
+import { generateExperienceChip, generateMobileNumberChip } from "../../utils/statusUtils";
+
 
 const BenchList = () => {
   const [benchData, setBenchData] = useState([]);
@@ -46,12 +54,14 @@ const BenchList = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
-  
+
   // Form handling states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editCandidateId, setEditCandidateId] = useState(null);
 
-  const { isFilteredDataRequested, filteredBenchList } = useSelector((state) => state.bench);
+  const { isFilteredDataRequested, filteredBenchList } = useSelector(
+    (state) => state.bench
+  );
   const dispatch = useDispatch();
 
   const fetchBenchList = async () => {
@@ -59,12 +69,14 @@ const BenchList = () => {
       setLoading(true);
       ToastService.info("Loading bench candidates...");
 
-      const response = await httpService.get('/candidate/bench/getBenchList');
+      const response = await httpService.get("/candidate/bench/getBenchList");
       setBenchData(response.data);
-      ToastService.success(`Loaded ${response.data?.length || 0} bench candidates`);
+      ToastService.success(
+        `Loaded ${response.data?.length || 0} bench candidates`
+      );
     } catch (error) {
-      console.error('Failed to fetch bench list:', error);
-      ToastService.error('Failed to load bench candidates');
+      console.error("Failed to fetch bench list:", error);
+      ToastService.error("Failed to load bench candidates");
     } finally {
       setLoading(false);
     }
@@ -83,8 +95,8 @@ const BenchList = () => {
         showExperience: true,
         showSkills: true,
         showEducation: true,
-        showDocuments: true
-      }
+        showDocuments: true,
+      },
     });
     setIsViewModalOpen(true);
     ToastService.info(`Viewing details for ${row.fullName}`);
@@ -96,8 +108,8 @@ const BenchList = () => {
         ...selectedCandidate,
         filterCriteria: {
           ...selectedCandidate.filterCriteria,
-          [filterKey]: !selectedCandidate.filterCriteria[filterKey]
-        }
+          [filterKey]: !selectedCandidate.filterCriteria[filterKey],
+        },
       });
     }
   };
@@ -130,8 +142,14 @@ const BenchList = () => {
   const confirmDelete = async () => {
     try {
       const toastId = ToastService.loading("Deleting candidate...");
-      await httpService.delete(`/candidate/bench/deletebench/${candidateToDelete.id}`);
-      ToastService.update(toastId, "Candidate deleted successfully!", "success");
+      await httpService.delete(
+        `/candidate/bench/deletebench/${candidateToDelete.id}`
+      );
+      ToastService.update(
+        toastId,
+        "Candidate deleted successfully!",
+        "success"
+      );
       fetchBenchList();
       setDeleteDialogOpen(false);
     } catch (error) {
@@ -144,32 +162,37 @@ const BenchList = () => {
     try {
       const toastId = ToastService.loading("Preparing resume download...");
 
-      const response = await httpService.get(`/candidate/bench/download/${id}`, {
-        responseType: 'blob',
-        headers: {
-          'Accept': 'application/pdf,application/octet-stream'
+      const response = await httpService.get(
+        `/candidate/bench/download/${id}`,
+        {
+          responseType: "blob",
+          headers: {
+            Accept: "application/pdf,application/octet-stream",
+          },
         }
-      });
+      );
 
       if (!(response.data instanceof Blob) || response.data.size === 0) {
         throw new Error("Invalid or empty file received");
       }
 
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
 
-      let filename = `${candidateName.replace(/\s+/g, '_')}_Resume.pdf`;
-      const contentDisposition = response.headers['content-disposition'];
+      let filename = `${candidateName.replace(/\s+/g, "_")}_Resume.pdf`;
+      const contentDisposition = response.headers["content-disposition"];
       if (contentDisposition) {
-        const fileNameMatch = contentDisposition.match(/filename="?([^";\n]*)"/i);
+        const fileNameMatch = contentDisposition.match(
+          /filename="?([^";\n]*)"/i
+        );
         if (fileNameMatch && fileNameMatch[1]) {
           filename = fileNameMatch[1];
         }
       }
 
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', filename);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
 
@@ -178,7 +201,11 @@ const BenchList = () => {
         document.body.removeChild(link);
       }, 100);
 
-      ToastService.update(toastId, "Resume downloaded successfully!", "success");
+      ToastService.update(
+        toastId,
+        "Resume downloaded successfully!",
+        "success"
+      );
     } catch (error) {
       console.error("Download error:", error);
 
@@ -186,7 +213,9 @@ const BenchList = () => {
         if (error.response.status === 404) {
           ToastService.error("Resume file not found for this candidate");
         } else if (error.response.status === 403) {
-          ToastService.error("You don't have permission to download this resume");
+          ToastService.error(
+            "You don't have permission to download this resume"
+          );
         } else {
           ToastService.error(`Server error: ${error.response.status}`);
         }
@@ -200,27 +229,35 @@ const BenchList = () => {
 
   const generateColumns = (loading = false) => [
     {
-      key: 'id',
-      label: 'Bench ID',
-      type: 'text',
+      key: "id",
+      label: "Bench ID",
+      type: "text",
       sortable: true,
       filterable: true,
       width: 120,
-      render: loading ? () => <Skeleton variant="text" width={60} /> : undefined
+      render: loading
+        ? () => <Skeleton variant="text" width={60} />
+        : (row) => (
+            <Typography variant="body2" fontWeight="medium" color="primary">
+              {row.id}
+            </Typography>
+          ),
     },
     {
-      key: 'fullName',
-      label: 'Full Name',
-      type: 'text',
+      key: "fullName",
+      label: "Full Name",
+      type: "text",
       sortable: true,
       filterable: true,
       width: 180,
-      render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
+      render: loading
+        ? () => <Skeleton variant="text" width={120} />
+        : (row) => <Typography variant="body2">{row.fullName}</Typography>,
     },
     {
-      key: 'skills',
-      label: 'Skills',
-      type: 'text',
+      key: "skills",
+      label: "Skills",
+      type: "text",
       sortable: true,
       filterable: true,
       width: 250,
@@ -228,107 +265,223 @@ const BenchList = () => {
         loading ? (
           <Skeleton variant="text" width={120} />
         ) : !row.skills || row.skills.length === 0 ? (
-          "N/A"
+          <Typography variant="body2" color="text.secondary" fontStyle="italic">
+            N/A
+          </Typography>
         ) : Array.isArray(row.skills) ? (
-          row.skills.join(", ")
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+            {row.skills.slice(0, 3).map((skill, idx) => (
+              <Chip
+                key={idx}
+                label={skill}
+                size="small"
+                variant="outlined"
+                sx={{ fontSize: "0.75rem" }}
+              />
+            ))}
+            {row.skills.length > 3 && (
+              <Chip
+                label={`+${row.skills.length - 3}`}
+                size="small"
+                color="primary"
+                sx={{ fontSize: "0.75rem" }}
+              />
+            )}
+          </Box>
         ) : (
-          "Invalid Data"
-        )
+          <Typography variant="body2" color="error">
+            Invalid Data
+          </Typography>
+        ),
     },
     {
-      key: 'email',
-      label: 'Email',
-      type: 'text',
+      key: "email",
+      label: "Email",
+      type: "text",
       sortable: true,
       filterable: true,
       width: 220,
-      render: loading ? () => <Skeleton variant="text" width={180} /> : undefined
+      render: loading
+        ? () => <Skeleton variant="text" width={180} />
+        : (row) => (
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              {row.email}
+            </Box>
+          ),
     },
+
     {
-      key: 'contactNumber',
-      label: 'Contact Number',
-      type: 'text',
+      key: "contactNumber",
+      label: "Contact Number",
+      type: "text",
       sortable: true,
       filterable: true,
       width: 150,
-      render: loading ? () => <Skeleton variant="text" width={100} /> : undefined
-    },
+      render: (row) => (
+        <>
+          {generateMobileNumberChip(row.contactNumber)}
+        </>
+      ),
+    }
+    ,
     {
-      key: 'referredBy',
-      label: 'Referred By',
-      type: 'text',
+      key: "referredBy",
+      label: "Referred By",
+      type: "text",
       sortable: true,
       filterable: true,
       width: 180,
-      render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
+      render: loading
+        ? () => <Skeleton variant="text" width={120} />
+        : (row) => (
+            <Typography variant="body2">
+              {row.referredBy || (
+                <Box
+                  component="span"
+                  sx={{ fontStyle: "italic", color: "text.secondary" }}
+                >
+                  Direct
+                </Box>
+              )}
+            </Typography>
+          ),
     },
     {
-      key: 'totalExperience',
-      label: 'Total Exp (Yrs)',
-      type: 'text',
+      key: "totalExperience",
+      label: "Total Exp (Yrs)",
+      type: "text",
       sortable: true,
       filterable: true,
       width: 150,
-      render: loading ? () => <Skeleton variant="text" width={80} /> : undefined
+      render: loading
+        ? () => <Skeleton variant="text" width={80} />
+        : (row) => (
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              {generateExperienceChip({ experience: row.totalExperience })}
+            </Box>
+          ),
     },
     {
-      key: 'relevantExperience',
-      label: 'Rel Exp (Yrs)',
-      type: 'text',
+      key: "relevantExperience",
+      label: "Rel Exp (Yrs)",
+      type: "text",
       sortable: true,
       filterable: true,
       width: 150,
-      render: loading ? () => <Skeleton variant="text" width={80} /> : undefined
+      render: loading
+        ? () => <Skeleton variant="text" width={80} />
+        : (row) => (
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              {generateExperienceChip({ experience: row.relevantExperience })}
+            </Box>
+          ),
     },
+
     {
-      key: 'actions',
-      label: 'Actions',
+      key: "actions",
+      label: "Actions",
       sortable: false,
       filterable: false,
       width: 200,
-      align: 'center',
-      render: loading ? () => (
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} variant="circular" width={32} height={32} />
-          ))}
-        </Box>
-      ) : (row) => (
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }} onClick={(e) => e.stopPropagation()}>
-          <Tooltip title="View">
-            <IconButton color="info" size="small" onClick={() => handleView(row)}>
-              <Visibility fontSize="small" />
-            </IconButton>
-          </Tooltip>
+      align: "center",
+      render: loading
+        ? () => (
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} variant="circular" width={32} height={32} />
+              ))}
+            </Box>
+          )
+        : (row) => (
+            <Box
+              sx={{ display: "flex", justifyContent: "center", gap: 1 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Tooltip title="View">
+                <IconButton
+                  color="info"
+                  size="small"
+                  onClick={() => handleView(row)}
+                >
+                  <Visibility fontSize="small" />
+                </IconButton>
+              </Tooltip>
 
-          <Tooltip title="Edit">
-            <IconButton color="primary" size="small" onClick={() => handleEdit(row)}>
-              <Edit fontSize="small" />
-            </IconButton>
-          </Tooltip>
+              <Tooltip title="Edit">
+                <IconButton
+                  color="primary"
+                  size="small"
+                  onClick={() => handleEdit(row)}
+                >
+                  <Edit fontSize="small" />
+                </IconButton>
+              </Tooltip>
 
-          <Tooltip title="Delete">
-            <IconButton color="error" size="small" onClick={() => handleDelete(row)}>
-              <Delete fontSize="small" />
-            </IconButton>
-          </Tooltip>
+              <Tooltip title="Delete">
+                <IconButton
+                  color="error"
+                  size="small"
+                  onClick={() => handleDelete(row)}
+                >
+                  <Delete fontSize="small" />
+                </IconButton>
+              </Tooltip>
 
-          <Tooltip title={row.resumeAvailable ? "Download Resume" : "Resume not available"}>
-            <span>
-              <IconButton
-                color="success"
-                size="small"
-                disabled={!row.resumeAvailable}
-                onClick={() => downloadResume(row.id, row.fullName)}
+              <Tooltip
+                title={
+                  row.resumeAvailable
+                    ? "Download Resume"
+                    : "Resume not available"
+                }
               >
-                <Download fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Box>
-      ),
+                <span>
+                  <IconButton
+                    color="success"
+                    size="small"
+                    disabled={!row.resumeAvailable}
+                    onClick={() => downloadResume(row.id, row.fullName)}
+                  >
+                    <Download fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
+          ),
     },
   ];
+
+  // Helper functions
+  const getInitials = (name) => {
+    if (!name) return "";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  };
+
+  const stringToColor = (string) => {
+    if (!string) return "#1976d2";
+    let hash = 0;
+    for (let i = 0; i < string.length; i++) {
+      hash = string.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    let color = "#";
+    for (let i = 0; i < 3; i++) {
+      const value = (hash >> (i * 8)) & 0xff;
+      color += `00${value.toString(16)}`.slice(-2);
+    }
+    return color;
+  };
+
+  const getExperienceColor = (years) => {
+    if (years < 2) return "#f44336"; // Beginner - Red
+    if (years < 5) return "#ff9800"; // Junior - Orange
+    if (years < 8) return "#2196f3"; // Mid-level - Blue
+    if (years < 12) return "#4caf50"; // Senior - Green
+    return "#9c27b0"; // Expert - Purple
+  };
 
   return (
     <>
@@ -337,26 +490,27 @@ const BenchList = () => {
         alignItems="center"
         spacing={2}
         sx={{
-          flexWrap: 'wrap',
+          flexWrap: "wrap",
           mb: 3,
           p: 2,
-          backgroundColor: '#f9f9f9',
+          backgroundColor: "#f9f9f9",
           borderRadius: 2,
           boxShadow: 1,
-          justifyContent: 'space-between', 
+          justifyContent: "space-between",
         }}
       >
         <Typography variant="h6" color="primary">
           Bench Candidate Management
         </Typography>
-       
-        <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
+
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={2}
+          sx={{ ml: "auto" }}
+        >
           <DateRangeFilter component="BenchList" />
-          <Button
-            variant="text"
-            color="primary"
-            onClick={handleAdd}
-          >
+          <Button variant="text" color="primary" onClick={handleAdd}>
             <Add /> <User2Icon />
           </Button>
         </Stack>
@@ -374,7 +528,7 @@ const BenchList = () => {
         defaultSortColumn="fullName"
         defaultSortDirection="asc"
         noDataMessage={
-          <Box sx={{ py: 4, textAlign: 'center' }}>
+          <Box sx={{ py: 4, textAlign: "center" }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No Records Found
             </Typography>
@@ -384,10 +538,10 @@ const BenchList = () => {
           </Box>
         }
         sx={{
-          '& .MuiDataGrid-root': {
-            border: 'none',
+          "& .MuiDataGrid-root": {
+            border: "none",
             borderRadius: 2,
-            overflow: 'hidden',
+            overflow: "hidden",
           },
         }}
         uniqueId="id"
@@ -399,7 +553,11 @@ const BenchList = () => {
         onClose={handleFormClose}
         onSuccess={handleFormSuccess}
         id={editCandidateId}
-        initialData={editCandidateId ? benchData.find(item => item.id === editCandidateId) : null} 
+        initialData={
+          editCandidateId
+            ? benchData.find((item) => item.id === editCandidateId)
+            : null
+        }
       />
 
       {/* View Modal with Filter Controls */}
@@ -413,52 +571,78 @@ const BenchList = () => {
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Typography variant="h6">
               Candidate Details - {selectedCandidate?.fullName}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 1 }}>
               <Tooltip title="Toggle Personal Info">
                 <IconButton
-                  color={selectedCandidate?.filterCriteria?.showBasicInfo ? "primary" : "default"}
+                  color={
+                    selectedCandidate?.filterCriteria?.showBasicInfo
+                      ? "primary"
+                      : "default"
+                  }
                   size="small"
-                  onClick={() => toggleFilter('showBasicInfo')}
+                  onClick={() => toggleFilter("showBasicInfo")}
                 >
                   <Person fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Contact Info">
                 <IconButton
-                  color={selectedCandidate?.filterCriteria?.showContact ? "primary" : "default"}
+                  color={
+                    selectedCandidate?.filterCriteria?.showContact
+                      ? "primary"
+                      : "default"
+                  }
                   size="small"
-                  onClick={() => toggleFilter('showContact')}
+                  onClick={() => toggleFilter("showContact")}
                 >
                   <ContactPhone fontSize="small" />
-                  </IconButton>
+                </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Experience">
                 <IconButton
-                  color={selectedCandidate?.filterCriteria?.showExperience ? "primary" : "default"}
+                  color={
+                    selectedCandidate?.filterCriteria?.showExperience
+                      ? "primary"
+                      : "default"
+                  }
                   size="small"
-                  onClick={() => toggleFilter('showExperience')}
+                  onClick={() => toggleFilter("showExperience")}
                 >
                   <Work fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Skills">
                 <IconButton
-                  color={selectedCandidate?.filterCriteria?.showSkills ? "primary" : "default"}
+                  color={
+                    selectedCandidate?.filterCriteria?.showSkills
+                      ? "primary"
+                      : "default"
+                  }
                   size="small"
-                  onClick={() => toggleFilter('showSkills')}
+                  onClick={() => toggleFilter("showSkills")}
                 >
                   <Code fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Toggle Education">
                 <IconButton
-                  color={selectedCandidate?.filterCriteria?.showEducation ? "primary" : "default"}
+                  color={
+                    selectedCandidate?.filterCriteria?.showEducation
+                      ? "primary"
+                      : "default"
+                  }
                   size="small"
-                  onClick={() => toggleFilter('showEducation')}
+                  onClick={() => toggleFilter("showEducation")}
                 >
                   <School fontSize="small" />
                 </IconButton>
@@ -486,7 +670,7 @@ const BenchList = () => {
         <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
         <DialogContent>
           <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete{' '}
+            Are you sure you want to delete{" "}
             <strong>{candidateToDelete?.fullName}</strong> from the bench list?
             This action cannot be undone.
           </DialogContentText>
