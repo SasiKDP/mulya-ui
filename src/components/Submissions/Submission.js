@@ -26,6 +26,9 @@ import httpService from "../../Services/httpService";
 import { useSelector } from "react-redux";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { showToast } from "../../utils/ToastNotification";
+import { downloadFile } from "../../utils/downloadUtils";
+
+
 
 
 const Submission = () => {
@@ -152,42 +155,63 @@ const Submission = () => {
 
   const downloadResume = async (jobId, candidateId, e) => {
     e.stopPropagation();
-  
+    
     try {
       setDownloadLoading(true);
   
-      const response = await httpService.get(`/candidate/download-resume/${candidateId}/${jobId}`);
+      // Make the request with proper responseType
+      const response = await httpService.get(
+        `/candidate/download-resume/${candidateId}/${jobId}`,
+        {
+          responseType: 'arraybuffer', // Use arraybuffer instead of blob
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Accept': 'application/pdf' // or whatever file type you expect
+          }
+        }
+      );
   
-      if (!response || !response.data) {
-        throw new Error("No resume file received.");
+      // Check for empty response
+      if (!response.data || response.data.byteLength === 0) {
+        throw new Error('Empty file received');
       }
   
-      // Detect content type and assign proper extension
-      const contentType = response.headers["content-type"];
-      const extension =
-        contentType === "application/pdf"
-          ? ".pdf"
-          : contentType === "application/msword"
-          ? ".doc"
-          : contentType ===
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          ? ".docx"
-          : ".pdf"; // fallback
+      // Get filename from headers or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `resume_${candidateId}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename\*?=['"]?(?:UTF-\d['"]*)?([^;\r\n"']*)['"]?;?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1]);
+        }
+      }
   
-      const filename = `resume_${candidateId}${extension}`;
+      // Determine content type from headers or default to PDF
+      const contentType = response.headers['content-type'] || 'application/pdf';
+  
+      // Create the blob
       const blob = new Blob([response.data], { type: contentType });
-      const url = URL.createObjectURL(blob);
   
-      const link = document.createElement("a");
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
       link.href = url;
-      link.setAttribute("download", filename);
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+  
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+  
+      showSnackbar('Resume downloaded successfully');
     } catch (error) {
-      console.error("Error downloading resume:", error);
-      showSnackbar("Failed to download resume", "error");
+      console.error('Download failed:', error);
+      showSnackbar('Failed to download resume', 'error');
     } finally {
       setDownloadLoading(false);
     }

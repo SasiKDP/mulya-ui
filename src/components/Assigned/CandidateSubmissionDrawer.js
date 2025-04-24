@@ -15,7 +15,6 @@ import { showToast } from "../../utils/ToastNotification";
 import { useSelector } from "react-redux";
 import httpService from "../../Services/httpService";
 
-
 const validationSchema = Yup.object().shape({
   fullName: Yup.string().required("Full Name is required"),
   candidateEmailId: Yup.string()
@@ -155,75 +154,84 @@ const CandidateSubmissionDrawer = ({
           userEmail: email || "",
         };
 
-        const formik = useFormik({
-          initialValues: initialValues,
-          validationSchema: validationSchema,
-          onSubmit: async (values) => {
-            setLoading(true);
-            setErrorResponse(null);
-        
-            try {
-              const formData = new FormData();
-        
-              Object.keys(values).forEach((key) => {
-                if (key !== "resumeFile" && values[key] !== null && values[key] !== undefined) {
-                  formData.append(key, values[key].toString());
-                }
-              });
-        
-              if (values.resumeFile) {
-                formData.append("resumeFile", values.resumeFile);
-              }
-        
-              // Debug: Log FormData contents
-              for (let [key, value] of formData.entries()) {
-                console.log(key, value);
-              }
-        
-              let url = "";
-              let method = "";
-        
-              if (mode === "edit" && candidateData) {
-                url = `/candidate/editSubmission/${candidateData.candidateId}`;
-                method = "put";
-              } else {
-                url = `/candidate/candidatesubmissions`;
-                method = "post";
-              }
-        
-              const config = {
-                headers: {
-                  "Content-Type": "multipart/form-data",
-                },
-              };
-        
-              const responseData = await httpService[method](url, formData, config);
-        
-              if (responseData?.status === "Success") {
-                showToast(
-                  responseData.message ||
-                    `Candidate profile ${mode === "edit" ? "updated" : "submitted"} successfully.`
-                );
-        
-                if (refreshData) refreshData();
-                onClose();
-              }
-            } catch (error) {
-              console.error("Error submitting/updating candidate:", error);
-        
-              const errorMessage =
-                error?.response?.data?.message ||
-                error.message ||
-                `Failed to ${mode === "edit" ? "update" : "submit"} candidate data. Please try again.`;
-        
-              setErrorResponse({ message: errorMessage });
-        
-              showToast(errorMessage, "error");
-            } finally {
-              setLoading(false);
-            }
-          },
+  const formik = useFormik({
+    initialValues: initialValues,
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      setLoading(true);
+      setErrorResponse(null);
+
+      try {
+        const formData = new FormData();
+
+        Object.keys(values).forEach((key) => {
+          if (key !== "resumeFile" && values[key] !== null && values[key] !== undefined) {
+            formData.append(key, values[key].toString());
+          }
         });
+
+        if (values.resumeFile) {
+          formData.append("resumeFile", values.resumeFile);
+        }
+
+        let url = "";
+        let method = "";
+
+        if (mode === "edit" && candidateData) {
+          url = `/candidate/editSubmission/${candidateData.candidateId}`;
+          method = "put";
+        } else {
+          url = `/candidate/candidatesubmissions`;
+          method = "post";
+        }
+
+        const config = {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        };
+
+        const response = await httpService[method](url, formData, config);
+        const responseData = response.data;
+
+        if (responseData?.status === "Success") {
+          showToast(
+            responseData.message ||
+              `Candidate profile ${mode === "edit" ? "updated" : "submitted"} successfully.`
+          );
+          
+          try {
+            // First refresh the data if refreshData is provided
+            if (typeof refreshData === 'function') {
+              await refreshData();
+            }
+          } catch (refreshError) {
+            console.error("Error refreshing data:", refreshError);
+          } finally {
+            // Always close the drawer after API operation completes, regardless of refresh success
+            if (typeof onClose === 'function') {
+              onClose();
+            }
+          }
+        } else {
+          throw new Error(responseData?.message || "Operation failed");
+        }
+      } catch (error) {
+        console.error("Error submitting/updating candidate:", error);
+
+        const errorMessage =
+          error?.response?.data?.message ||
+          error.message ||
+          `Failed to ${mode === "edit" ? "update" : "submit"} candidate data. Please try again.`;
+
+        setErrorResponse({ message: errorMessage });
+
+        showToast(errorMessage, "error");
+      } finally {
+        setLoading(false);
+      }
+    },
+  });
 
   useEffect(() => {
     if (mode !== "edit") {
