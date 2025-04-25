@@ -8,6 +8,9 @@ import {
   CircularProgress,
   Drawer,
   Stack,
+  Paper,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -18,21 +21,21 @@ import {
 import DataTable from "../muiComponents/DataTabel"; // Adjust path as needed
 
 import httpService from "../../Services/httpService";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useConfirm } from "../../hooks/useConfirm"; // Create this hook or use a dialog component
 import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { getStatusChip } from "../../utils/statusUtils";
-
-
+import { fetchInterviewsTeamLead } from "../../redux/interviewSlice";
 
 const Interviews = () => {
-  const { userId } = useSelector((state) => state.auth);
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { filterInterviewsForRecruiter } = useSelector((state) => state.interview);
+  const { filterInterviewsForRecruiter } = useSelector(
+    (state) => state.interview
+  );
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
 
   // Edit drawer state
@@ -40,6 +43,14 @@ const Interviews = () => {
     open: false,
     data: null,
   });
+  const [isTeamData, setIsTeamData] = useState(false);
+  const { selfInterviewsTL, teamInterviewsTL } = useSelector(
+    (state) => state.interview
+  );
+
+  const { userId, role } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const [tabValue, setTabValue] = useState(0);
 
   // Confirmation dialog hook (implement this or use a dialog component)
   const { confirm } = useConfirm();
@@ -47,10 +58,17 @@ const Interviews = () => {
   // Fetch interviews
   const fetchInterviews = async () => {
     try {
-      setLoading(true);
-      const response = await httpService.get(`/candidate/interviews/${userId}`);
-      setInterviews(response.data);
-      setError(null);
+      if (role === "TEAMLEAD") {
+
+        dispatch(fetchInterviewsTeamLead());
+      } else {
+        setLoading(true);
+        const response = await httpService.get(
+          `/candidate/interviews/${userId}`
+        );
+        setInterviews(response.data);
+        setError(null);
+      }
     } catch (err) {
       setError("Failed to fetch interview data");
       console.error("Error fetching interviews:", err);
@@ -61,7 +79,7 @@ const Interviews = () => {
 
   useEffect(() => {
     fetchInterviews();
-  }, [userId]);
+  }, []);
 
   // Handle edit interview
   const handleEdit = (interview) => {
@@ -69,6 +87,16 @@ const Interviews = () => {
       open: true,
       data: interview,
     });
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    const selected = event.target.id;
+    if (selected === "team") {
+      setIsTeamData(true);
+      return;
+    }
+    setIsTeamData(false);
   };
 
   // Handle delete interview
@@ -135,7 +163,7 @@ const Interviews = () => {
       key: "interviewStatus",
       label: "Status",
       width: 140,
-      render: (row) => getStatusChip(row.interviewStatus, row),
+      render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
     },
     {
       key: "zoomLink",
@@ -213,28 +241,53 @@ const Interviews = () => {
         </Box>
       ) : (
         <>
-         <Stack direction="row" alignItems="center" spacing={2}
-        sx={{
-          flexWrap: 'wrap',
-          mb: 3,
-          justifyContent: 'space-between',
-          p: 2,
-          backgroundColor: '#f9f9f9',
-          borderRadius: 2,
-          boxShadow: 1,
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={2}
+            sx={{
+              flexWrap: "wrap",
+              mb: 3,
+              justifyContent: "space-between",
+              p: 2,
+              backgroundColor: "#f9f9f9",
+              borderRadius: 2,
+              boxShadow: 1,
+            }}
+          >
+            <Typography variant="h6" color="primary">
+              Interviews List
+            </Typography>
 
-        }}>
-
-        <Typography variant='h6' color='primary'>Interviews List</Typography>
-
-        <DateRangeFilter component="InterviewsForRecruiter" />
-      </Stack>
+            <DateRangeFilter component="InterviewsForRecruiter" />
+          </Stack>
+          {role === "TEAMLEAD" && (
+            <Paper sx={{ mb: 3 }}>
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+              >
+                <Tab id="self" label="Self Interviews" />
+                <Tab id="team" label="Team Interviews" />
+              </Tabs>
+            </Paper>
+          )}
 
           <DataTable
-            data={isFilteredDataRequested ? filterInterviewsForRecruiter : interviews || []}
+            data={
+              isFilteredDataRequested
+                ? filterInterviewsForRecruiter
+                : role === "TEAMLEAD"
+                ? isTeamData
+                  ? teamInterviewsTL
+                  : selfInterviewsTL
+                : interviews || []
+            }
             columns={columns}
             title="Scheduled Interviews"
-            // loading={loading}
+            loading={loading}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="asc"
