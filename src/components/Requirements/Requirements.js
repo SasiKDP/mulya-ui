@@ -16,6 +16,9 @@ import {
   Drawer,
   DialogContentText,
   Badge,
+  Paper,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Refresh,
@@ -39,9 +42,10 @@ import LoadingSkeleton from "../muiComponents/LoadingSkeleton"; // Import Loadin
 import { DateRangeIcon } from "@mui/x-date-pickers";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { useDispatch, useSelector } from "react-redux";
-import { setFilteredReqDataRequested } from "../../redux/requirementSlice";
+import { fetchAllRequirementsBDM, fetchRequirementsBdmSelf, setFilteredReqDataRequested } from "../../redux/requirementSlice";
 import { Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
 
 const Requirements = () => {
   const [data, setData] = useState([]);
@@ -71,6 +75,10 @@ const Requirements = () => {
   const dispatch = useDispatch();
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const { requirementsAllBDM, requirementsSelfBDM } = useSelector((state) => state.requirement)
+  const [tabValue, setTabValue] = useState(0);
+  const [isAllData, setIsAllData] = useState(false)
+
   const refreshData = () => {
     setRefreshTrigger((prev) => prev + 1);
     ToastService.info("Refreshing requirements data...");
@@ -78,75 +86,77 @@ const Requirements = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const loadingToastId = ToastService.loading("Loading requirements data...");
       setLoading(true);
-  
       try {
         let response;
-  
-        if (role === "SUPERADMIN"|| role === "BDM") {
+
+        if (role === "SUPERADMIN") {
           response = await httpService.get("/requirements/getAssignments");
-        } else if (role === "TEAMLEAD" ) {
+        } else if (role === "TEAMLEAD") {
           response = await httpService.get(`/requirements/teamleadrequirements/${userId}`);
-        } else {
+        }
+        else if (role === "BDM") {
+          dispatch(fetchAllRequirementsBDM());
+          dispatch(fetchRequirementsBdmSelf());
+          ToastService.success("Data Fetched Successfully!")
+        }
+        else {
           setData([]);
           setError(new Error("Unauthorized role for this action"));
-          ToastService.update(
-            loadingToastId,
-            "Unauthorized role for fetching requirements",
-            "error"
-          );
+          ToastService.error("Unauthorized role for fetching requirements",
+            "error")
           return;
         }
-  
-        if (Array.isArray(response.data)) {
+
+        if (Array.isArray(response.data) && role != "BDM") {
           const priorityStatuses = ["Submitted", "On Hold", "In Progress"];
-  
+
           const sortedData = response.data.sort((a, b) => {
             const aPriority = priorityStatuses.includes(a.status) ? 0 : 1;
             const bPriority = priorityStatuses.includes(b.status) ? 0 : 1;
-  
+
             if (aPriority !== bPriority) {
               return aPriority - bPriority;
             }
-  
+
             return (
               new Date(b.requirementAddedTimeStamp) -
               new Date(a.requirementAddedTimeStamp)
             );
           });
-  
+
           setData(sortedData);
-          ToastService.update(
-            loadingToastId,
-            "Requirements data loaded successfully",
-            "success"
-          );
+          ToastService.success("Requirements data loaded successfully")
         } else {
           setData([]);
           const msg =
             response.data?.message || "Data fetched was not an array.";
           setError(new Error(msg));
-          ToastService.update(loadingToastId, `Error: ${msg}`, "error");
+          ToastService.error(msg)
         }
       } catch (err) {
         setError(err);
         setData([]);
-        ToastService.update(
-          loadingToastId,
-          `Error fetching data: ${err.message}`,
-          "error"
-        );
+        console.warn(err);
+        ToastService.error(err)
       } finally {
         setLoading(false);
       }
     };
-  
+
     fetchData();
   }, [refreshTrigger, role, userId]);
-  
-  
-  
+
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    const selected = event.target.id;
+    if (selected === "all") {
+      setIsAllData(true);
+      return;
+    }
+    setIsAllData(false)
+  };
 
   // Update columns when loading state or data changes
   useEffect(() => {
@@ -222,8 +232,7 @@ const Requirements = () => {
       } else {
         ToastService.update(
           deleteToastId,
-          `Failed to delete requirement: ${
-            response.data.message || "Unknown error"
+          `Failed to delete requirement: ${response.data.message || "Unknown error"
           }`,
           "error"
         );
@@ -489,8 +498,8 @@ const Requirements = () => {
               transform: (value) =>
                 value
                   ? new Date(value).toLocaleDateString() +
-                    " " +
-                    new Date(value).toLocaleTimeString()
+                  " " +
+                  new Date(value).toLocaleTimeString()
                   : "-",
             },
             { label: "Status", key: "status", fallback: "-" },
@@ -858,17 +867,24 @@ const Requirements = () => {
         </Stack>
       </Stack>
 
+      {role === "BDM" &&
+            <Paper sx={{ mb: 3 }}>
+              <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+                <Tab id="self" label="Self Requirements" />
+                <Tab id="all" label="All Requirements" />
+              </Tabs>
+            </Paper>
+        }
+
       {loading && data.length === 0 ? (
         <Box sx={{ p: 3 }}>
           <LoadingSkeleton rows={5} height={60} spacing={2} />
         </Box>
       ) : (
         <DataTable
-          data={
-            isFilteredDataRequested
-              ? filteredRequirementList
-              : processedData || []
-          }
+        data={isFilteredDataRequested ? filteredRequirementList :
+          role === "BDM" ? isAllData ? requirementsAllBDM : requirementsSelfBDM :
+          processedData || []}
           columns={columns}
           title=""
           loading={loading}
