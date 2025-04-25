@@ -1,6 +1,23 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import httpService from "../Services/httpService";
 
+export const fetchSubmissionsTeamLead = createAsyncThunk(
+  'submissions/teamlead',
+  async(_, {getState, rejectWithValue}) => {
+      try{
+        const state = getState();
+        const userId =  state.auth.userId
+        const response = await httpService.get(`/candidate/submissions/teamlead/${userId}`);
+
+        return response.data;
+      }catch(error){
+        console.log(error);
+        return rejectWithValue(error);
+      }
+     }
+)
+
+
 export const filterSubmissionsByDateRange = createAsyncThunk(
     'submissions/filterByDateRange',
     async({startDate, endDate}, {rejectWithValue}) => {
@@ -39,6 +56,8 @@ const submissionSlice =  createSlice({
     name: "submission",
     initialState: {
         loading: false,
+        selfSubmissionsTL: [],
+        teamSubmissionsTL: [],
         filteredSubmissionsList: [],
         filteredSubmissionsForRecruiter: [],
         error: null
@@ -48,6 +67,21 @@ const submissionSlice =  createSlice({
 
     }, extraReducers: (builder) => {
         builder
+        //for the taeamlead self-submissions anf tema-submissions 
+        .addCase(fetchSubmissionsTeamLead.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+        })
+        .addCase(fetchSubmissionsTeamLead.fulfilled, (state, action) => {
+          state.loading = false;
+          state.selfSubmissionsTL = action.payload.selfSubmissions;
+          state.teamSubmissionsTL =  action.payload.teamSubmissions;
+        })
+        .addCase(fetchSubmissionsTeamLead.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload.message;
+
+        })
           // Filter Submissions List By date Range
           .addCase(filterSubmissionsByDateRange.pending, (state) => {
             state.loading = true;
