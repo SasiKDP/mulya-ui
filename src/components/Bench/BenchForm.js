@@ -145,7 +145,7 @@ const BenchCandidateForm = ({
       .email("Invalid email format")
       .required("Email is required"),
     contactNumber: Yup.string()
-      .matches(/^\+?\d{10,15}$/, "Invalid phone number format")
+      .matches(/^(\+?\d{10}|\+?\d{12})$/, "Contact number must be 10 or 12 digits")
       .required("Contact number is required"),
     relevantExperience: Yup.number()
       .typeError("Relevant experience must be a number")
@@ -165,7 +165,6 @@ const BenchCandidateForm = ({
     skills: Yup.array()
       .min(1, "At least one skill is required")
       .of(Yup.string().required("Skill cannot be empty")),
-   
   });
 
   const handleChange = (e) => {
@@ -176,9 +175,97 @@ const BenchCandidateForm = ({
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors((prev) => ({ ...prev, resumeFile: "File size is too large (max 5MB)" }));
+        return;
+      }
+      
+      const allowedTypes = [
+        "application/pdf", 
+        "application/msword", 
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        setErrors((prev) => ({ ...prev, resumeFile: "Only PDF and Word documents are allowed" }));
+        return;
+      }
+      
       setFormValues((prev) => ({ ...prev, resumeFile: file }));
       setResumeFileName(file.name);
+      setErrors((prev) => ({ ...prev, resumeFile: undefined }));
     }
+  };
+
+  const validateField = async (fieldName, value) => {
+    try {
+      // Create a schema just for this field
+      let schema;
+      
+      switch (fieldName) {
+        case "contactNumber":
+          schema = Yup.object().shape({
+            contactNumber: Yup.string()
+              .matches(/^(\+?\d{10}|\+?\d{12})$/, "Contact number must be 10 or 12 digits")
+              .required("Contact number is required")
+          });
+          break;
+        case "email":
+          schema = Yup.object().shape({
+            email: Yup.string()
+              .email("Invalid email format")
+              .required("Email is required")
+          });
+          break;
+        case "fullName":
+          schema = Yup.object().shape({
+            fullName: Yup.string().required("Full Name is required")
+          });
+          break;
+        case "relevantExperience":
+          schema = Yup.object().shape({
+            relevantExperience: Yup.number()
+              .typeError("Relevant experience must be a number")
+              .positive("Must be positive")
+              .required("Relevant experience is required")
+          });
+          break;
+        case "totalExperience":
+          schema = Yup.object().shape({
+            totalExperience: Yup.number()
+              .typeError("Total experience must be a number")
+              .positive("Must be positive")
+              .required("Total experience is required")
+              .test(
+                "is-greater",
+                "Total experience must be greater than or equal to relevant experience",
+                function (totalExp) {
+                  return totalExp >= formValues.relevantExperience;
+                }
+              )
+          });
+          break;
+        default:
+          return; // No validation for other fields
+      }
+      
+      await schema.validate({ [fieldName]: value }, { abortEarly: false });
+      
+      // If validation passes, clear error for this field
+      setErrors(prev => ({ ...prev, [fieldName]: undefined }));
+    } catch (validationErrors) {
+      // Set error for this field
+      setErrors(prev => ({ 
+        ...prev, 
+        [fieldName]: validationErrors.errors[0] 
+      }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    validateField(name, value);
   };
 
   const validateForm = async () => {
@@ -313,6 +400,7 @@ const BenchCandidateForm = ({
               label="Full Name"
               value={formValues.fullName}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
               fullWidth
               error={!!errors.fullName}
@@ -327,6 +415,7 @@ const BenchCandidateForm = ({
               type="email"
               value={formValues.email}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
               fullWidth
               error={!!errors.email}
@@ -341,10 +430,11 @@ const BenchCandidateForm = ({
               type="tel"
               value={formValues.contactNumber}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
               fullWidth
               error={!!errors.contactNumber}
-              helperText={errors.contactNumber}
+              helperText={errors.contactNumber || "Must be 10 or 12 digits"}
               disabled={submitting}
             />
           </Grid>
@@ -355,6 +445,7 @@ const BenchCandidateForm = ({
               type="number"
               value={formValues.relevantExperience}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
               fullWidth
               inputProps={{ step: "0.5", min: "0" }}
@@ -370,6 +461,7 @@ const BenchCandidateForm = ({
               type="number"
               value={formValues.totalExperience}
               onChange={handleChange}
+              onBlur={handleBlur}
               required
               fullWidth
               inputProps={{ step: "0.5", min: "0" }}
