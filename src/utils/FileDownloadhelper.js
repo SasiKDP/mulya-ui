@@ -1,5 +1,3 @@
-// FileDownloadHelper.js - Utility functions for file downloads
-
 /**
  * Downloads a file from a URL
  * @param {string} url - The URL of the file to download
@@ -13,7 +11,7 @@ export function downloadFileFromURL(url, filename) {
       link.setAttribute("download", filename || "download");
       link.setAttribute("target", "_blank");
       link.style.display = "none";
-      
+
       // Append to body, click, and then remove
       document.body.appendChild(link);
       setTimeout(() => {
@@ -27,7 +25,7 @@ export function downloadFileFromURL(url, filename) {
       throw new Error(`Failed to download file: ${error.message}`);
     }
   }
-  
+
   /**
    * Downloads a Blob object as a file
    * @param {Blob} blob - The Blob object to download
@@ -37,13 +35,13 @@ export function downloadFileFromURL(url, filename) {
     try {
       // Create a downloadable URL from the blob
       const url = window.URL.createObjectURL(blob);
-      
+
       // Create a temporary anchor element
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename || "download");
       link.style.display = "none";
-      
+
       // Append to body, click, and then remove
       document.body.appendChild(link);
       setTimeout(() => {
@@ -59,7 +57,7 @@ export function downloadFileFromURL(url, filename) {
       throw new Error(`Failed to download file: ${error.message}`);
     }
   }
-  
+
   /**
    * Safely creates a blob from text content and downloads it
    * @param {string} content - Text content to download
