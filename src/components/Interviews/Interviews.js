@@ -22,7 +22,7 @@ import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { getInterviewLevelChip, getStatusChip } from "../../utils/statusUtils";
 import ConfirmDialog from "../muiComponents/ConfirmDialog";
-import EditInterviewForm from "./EditInterviewForm"; // Make sure this import is correct
+import EditInterviewForm from "../Interviews/EditInterviewForm"; // Make sure this import is correct
 import httpService from "../../Services/httpService";
 
 const Interviews = () => {
@@ -139,7 +139,7 @@ const Interviews = () => {
     }
   };
 
-  const columns = [
+ const columns = [
     { key: "jobId", label: "Job ID", width: 100 },
     {
       key: "candidateFullName",

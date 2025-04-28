@@ -34,7 +34,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
     // If rescheduling, we set status to RESCHEDULED
     const status = isReschedule
       ? "SCHEDULED"
-      : data.interviewStatus || "SCHEDULED";
+      : data.latestInterviewStatus || "SCHEDULED";
 
     const initialValues = {
       candidateId: data.candidateId || "",
@@ -273,6 +273,8 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       setSubmitting(false);
     }
   };
+
+  
 
   const SuccessMessage = () => {
     if (!submissionSuccess || !interviewResponse) return null;
