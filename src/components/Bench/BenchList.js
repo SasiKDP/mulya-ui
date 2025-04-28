@@ -41,12 +41,12 @@ import { User2Icon } from 'lucide-react';
 
 const BenchList = () => {
   const [benchData, setBenchData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState(null);
-  
+  const [downloadingResume, setDownloadingResume] = useState(false);
   // Form handling states
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editCandidateId, setEditCandidateId] = useState(null);
@@ -141,62 +141,68 @@ const BenchList = () => {
   };
 
   const downloadResume = async (id, candidateName) => {
+    if (downloadingResume) return;
+  
+    setDownloadingResume(true);
+    const toastId = ToastService.loading("Preparing resume download...");
+  
     try {
-      const toastId = ToastService.loading("Preparing resume download...");
-
-      const response = await httpService.get(`/candidate/bench/download/${id}`, {
-        responseType: 'blob',
+      const response = await fetch(`https://mymulya.com/candidate/bench/download/${id}`, {
+        method: 'GET',
         headers: {
-          'Accept': 'application/pdf,application/octet-stream'
-        }
+          'Accept': 'application/octet-stream',
+        },
       });
-
-      if (!(response.data instanceof Blob) || response.data.size === 0) {
-        throw new Error("Invalid or empty file received");
+  
+      if (!response.ok) {
+        throw response;
       }
-
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-
-      let filename = `${candidateName.replace(/\s+/g, '_')}_Resume.pdf`;
-      const contentDisposition = response.headers['content-disposition'];
+  
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+  
+      let filename = `${candidateName.replace(/\s+/g, '_')}_Resume`;
+  
+      const contentDisposition = response.headers.get('content-disposition');
       if (contentDisposition) {
-        const fileNameMatch = contentDisposition.match(/filename="?([^";\n]*)"/i);
-        if (fileNameMatch && fileNameMatch[1]) {
-          filename = fileNameMatch[1];
+        const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match && match[1]) {
+          filename = match[1].replace(/['"]/g, '');
         }
       }
-
+  
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
-
+  
       setTimeout(() => {
-        window.URL.revokeObjectURL(url);
+        URL.revokeObjectURL(url);
         document.body.removeChild(link);
       }, 100);
-
+  
       ToastService.update(toastId, "Resume downloaded successfully!", "success");
+  
     } catch (error) {
       console.error("Download error:", error);
-
-      if (error.response) {
-        if (error.response.status === 404) {
-          ToastService.error("Resume file not found for this candidate");
-        } else if (error.response.status === 403) {
-          ToastService.error("You don't have permission to download this resume");
-        } else {
-          ToastService.error(`Server error: ${error.response.status}`);
-        }
-      } else if (error.request) {
-        ToastService.error("Network error - please check your connection");
-      } else {
-        ToastService.error(error.message || "Failed to download resume");
+  
+      let errorMessage = "Failed to download resume";
+      if (error.status === 404) {
+        errorMessage = "Resume not found for this candidate";
+      } else if (error.status === 500) {
+        errorMessage = "Server error while processing download";
       }
+  
+      ToastService.update(toastId, errorMessage, "error");
+  
+    } finally {
+      setDownloadingResume(false);
     }
   };
+  
+  
+  
 
   const generateColumns = (loading = false) => [
     {
@@ -206,7 +212,7 @@ const BenchList = () => {
       sortable: true,
       filterable: true,
       width: 120,
-      render: loading ? () => <Skeleton variant="text" width={60} /> : undefined
+      render: loading ? () => <Skeleton variant="text" width={80} height={24} /> : undefined
     },
     {
       key: 'fullName',
@@ -215,7 +221,7 @@ const BenchList = () => {
       sortable: true,
       filterable: true,
       width: 180,
-      render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
+      render: loading ? () => <Skeleton variant="text" width={140} height={24} /> : undefined
     },
     {
       key: 'skills',
@@ -226,11 +232,21 @@ const BenchList = () => {
       width: 250,
       render: (row) =>
         loading ? (
-          <Skeleton variant="text" width={120} />
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Skeleton variant="rounded" width={60} height={24} />
+            <Skeleton variant="rounded" width={80} height={24} />
+          </Box>
         ) : !row.skills || row.skills.length === 0 ? (
           "N/A"
         ) : Array.isArray(row.skills) ? (
-          row.skills.join(", ")
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {row.skills.slice(0, 3).map((skill, index) => (
+              <Chip key={index} label={skill} size="small" />
+            ))}
+            {row.skills.length > 3 && (
+              <Chip label={`+${row.skills.length - 3}`} size="small" />
+            )}
+          </Box>
         ) : (
           "Invalid Data"
         )
@@ -242,7 +258,7 @@ const BenchList = () => {
       sortable: true,
       filterable: true,
       width: 220,
-      render: loading ? () => <Skeleton variant="text" width={180} /> : undefined
+      render: loading ? () => <Skeleton variant="text" width={180} height={24} /> : undefined
     },
     {
       key: 'contactNumber',
@@ -251,7 +267,7 @@ const BenchList = () => {
       sortable: true,
       filterable: true,
       width: 150,
-      render: loading ? () => <Skeleton variant="text" width={100} /> : undefined
+      render: loading ? () => <Skeleton variant="text" width={100} height={24} /> : undefined
     },
     {
       key: 'referredBy',
@@ -260,7 +276,7 @@ const BenchList = () => {
       sortable: true,
       filterable: true,
       width: 180,
-      render: loading ? () => <Skeleton variant="text" width={120} /> : undefined
+      render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
     },
     {
       key: 'totalExperience',
@@ -269,7 +285,14 @@ const BenchList = () => {
       sortable: true,
       filterable: true,
       width: 150,
-      render: loading ? () => <Skeleton variant="text" width={80} /> : undefined
+      render: loading ? () => <Skeleton variant="text" width={80} height={24} /> : (row) => (
+        <Chip 
+          label={`${row.totalExperience || 'N/A'}`} 
+          size="small" 
+          color="primary" 
+          variant="outlined" 
+        />
+      )
     },
     {
       key: 'relevantExperience',
@@ -278,7 +301,14 @@ const BenchList = () => {
       sortable: true,
       filterable: true,
       width: 150,
-      render: loading ? () => <Skeleton variant="text" width={80} /> : undefined
+      render: loading ? () => <Skeleton variant="text" width={80} height={24} /> : (row) => (
+        <Chip 
+          label={`${row.relevantExperience || 'N/A'}`} 
+          size="small" 
+          color="secondary" 
+          variant="outlined" 
+        />
+      )
     },
     {
       key: 'actions',
@@ -289,9 +319,10 @@ const BenchList = () => {
       align: 'center',
       render: loading ? () => (
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} variant="circular" width={32} height={32} />
-          ))}
+          <Skeleton variant="circular" width={32} height={32} />
+          <Skeleton variant="circular" width={32} height={32} />
+          <Skeleton variant="circular" width={32} height={32} />
+          <Skeleton variant="circular" width={32} height={32} />
         </Box>
       ) : (row) => (
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }} onClick={(e) => e.stopPropagation()}>
@@ -313,17 +344,15 @@ const BenchList = () => {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title={row.resumeAvailable ? "Download Resume" : "Resume not available"}>
-            <span>
-              <IconButton
-                color="success"
-                size="small"
-                disabled={!row.resumeAvailable}
-                onClick={() => downloadResume(row.id, row.fullName)}
-              >
-                <Download fontSize="small" />
-              </IconButton>
-            </span>
+          <Tooltip title="Download Resume">
+            <IconButton
+              color="success"
+              size="small"
+              onClick={() => downloadResume(row.id, row.fullName)}
+              disabled={downloadingResume}
+            >
+              <Download fontSize="small" />
+            </IconButton>
           </Tooltip>
         </Box>
       ),
@@ -351,47 +380,67 @@ const BenchList = () => {
         </Typography>
        
         <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
-          <DateRangeFilter component="BenchList" />
+          {loading ? (
+            <Skeleton variant="rounded" width={200} height={36} />
+          ) : (
+            <DateRangeFilter component="BenchList" />
+          )}
           <Button
             variant="text"
             color="primary"
             onClick={handleAdd}
+            disabled={loading}
           >
             <Add /> <User2Icon />
           </Button>
         </Stack>
       </Stack>
 
-      <DataTable
-        data={isFilteredDataRequested ? filteredBenchList : benchData || []}
-        columns={generateColumns(loading)}
-        pageLimit={20}
-        title="Bench List"
-        onRefresh={fetchBenchList}
-        refreshData={fetchBenchList}
-        isRefreshing={loading}
-        enableSelection={false}
-        defaultSortColumn="fullName"
-        defaultSortDirection="asc"
-        noDataMessage={
-          <Box sx={{ py: 4, textAlign: 'center' }}>
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No Records Found
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              No bench consultants found.
-            </Typography>
-          </Box>
-        }
-        sx={{
-          '& .MuiDataGrid-root': {
-            border: 'none',
-            borderRadius: 2,
-            overflow: 'hidden',
-          },
-        }}
-        uniqueId="id"
-      />
+      {loading ? (
+        <Box sx={{ height: 400, width: '100%' }}>
+          <Skeleton variant="rectangular" width="100%" height={56} />
+          {[...Array(10)].map((_, index) => (
+            <Skeleton 
+              key={index} 
+              variant="rectangular" 
+              width="100%" 
+              height={52} 
+              sx={{ mt: 1 }} 
+            />
+          ))}
+        </Box>
+      ) : (
+        <DataTable
+          data={isFilteredDataRequested ? filteredBenchList : benchData || []}
+          columns={generateColumns(loading)}
+          pageLimit={20}
+          title="Bench List"
+          onRefresh={fetchBenchList}
+          refreshData={fetchBenchList}
+          isRefreshing={loading}
+          enableSelection={false}
+          defaultSortColumn="fullName"
+          defaultSortDirection="asc"
+          noDataMessage={
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Records Found
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                No bench consultants found.
+              </Typography>
+            </Box>
+          }
+          sx={{
+            '& .MuiDataGrid-root': {
+              border: 'none',
+              borderRadius: 2,
+              overflow: 'hidden',
+            },
+          }}
+          uniqueId="id"
+        />
+      )}
 
       {/* Reusable Form Component - handles both Add and Edit */}
       <BenchCandidateForm
@@ -417,57 +466,17 @@ const BenchList = () => {
             <Typography variant="h6">
               Candidate Details - {selectedCandidate?.fullName}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Tooltip title="Toggle Personal Info">
-                <IconButton
-                  color={selectedCandidate?.filterCriteria?.showBasicInfo ? "primary" : "default"}
-                  size="small"
-                  onClick={() => toggleFilter('showBasicInfo')}
-                >
-                  <Person fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Toggle Contact Info">
-                <IconButton
-                  color={selectedCandidate?.filterCriteria?.showContact ? "primary" : "default"}
-                  size="small"
-                  onClick={() => toggleFilter('showContact')}
-                >
-                  <ContactPhone fontSize="small" />
-                  </IconButton>
-              </Tooltip>
-              <Tooltip title="Toggle Experience">
-                <IconButton
-                  color={selectedCandidate?.filterCriteria?.showExperience ? "primary" : "default"}
-                  size="small"
-                  onClick={() => toggleFilter('showExperience')}
-                >
-                  <Work fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Toggle Skills">
-                <IconButton
-                  color={selectedCandidate?.filterCriteria?.showSkills ? "primary" : "default"}
-                  size="small"
-                  onClick={() => toggleFilter('showSkills')}
-                >
-                  <Code fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Toggle Education">
-                <IconButton
-                  color={selectedCandidate?.filterCriteria?.showEducation ? "primary" : "default"}
-                  size="small"
-                  onClick={() => toggleFilter('showEducation')}
-                >
-                  <School fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
+            
           </Box>
         </DialogTitle>
         <DialogContent dividers>
-          <CandidateDetails candidate={selectedCandidate} />
+          {selectedCandidate ? (
+            <CandidateDetails candidate={selectedCandidate} />
+          ) : (
+            <Box sx={{ p: 3 }}>
+              <Skeleton variant="rectangular" width="100%" height={400} />
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setIsViewModalOpen(false)} color="primary">
