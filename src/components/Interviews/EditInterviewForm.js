@@ -98,6 +98,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
             { value: "FINAL", label: "FINAL" },
           ],
+          disabled: true,
           gridProps: commonGridProps,
         },
         {
@@ -148,6 +149,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
             { value: "FINAL", label: "FINAL" },
           ],
+          // disabled: true, // Disable interview level field
           gridProps: commonGridProps,
         },
         {
@@ -171,6 +173,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
 
   // Validation schema - simplified for edit mode
   const validationSchema = () => {
+    // Interview level is no longer part of validation since it's disabled
     const baseSchema = {
       interviewStatus: Yup.string()
         .required("Interview status is required")
@@ -185,12 +188,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             "PLACED",
           ],
           "Invalid interview status"
-        ),
-      interviewLevel: Yup.string()
-        .required("Interview level is required")
-        .oneOf(
-          ["INTERNAL", "EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"],
-          "Invalid interview level"
         ),
       skipNotification: Yup.boolean(),
     };
@@ -230,7 +227,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   
       const payload = {
         ...data,
-        interviewLevel: values.interviewLevel,
+        interviewLevel: data.interviewLevel, // Use original interview level value
         interviewStatus: values.interviewStatus,
         skipNotification: values.skipNotification,
         userId: data.userId,
@@ -356,6 +353,11 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           <Typography variant="body2" color="text.secondary">
             <strong>Client:</strong>{" "}
             <span style={{ fontWeight: 500 }}>{data.clientName}</span>
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary">
+            <strong>Interview Level:</strong>{" "}
+            <span style={{ fontWeight: 500 }}>{data.interviewLevel}</span>
           </Typography>
 
           {!isReschedule && data.interviewDateTime && (

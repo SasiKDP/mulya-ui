@@ -24,7 +24,7 @@ export const navItems = [
     roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],
   },
   {
-    text: "MySubmissions",
+    text: "Submissions",
     path: "submissions",
     icon: <SendIcon />,
     roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],
@@ -43,7 +43,7 @@ export const navItems = [
   //     roles: ['ADMIN', 'SUPERADMIN', 'BDM'],
   //   },
   {
-    text: "MyInterviews",
+    text: "Interviews",
     path: "interviews",
     icon: <EventNoteIcon />,
     roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],

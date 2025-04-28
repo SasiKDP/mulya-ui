@@ -10,6 +10,10 @@ import {
   Snackbar,
   Alert,
   Stack,
+  Paper,
+  Tabs,
+  Tab,
+  ButtonGroup,
 } from "@mui/material";
 import { Download, Edit, Delete } from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -23,9 +27,14 @@ import DataTable from "../muiComponents/DataTabel";
 import CandidateSubmissionDrawer from "../Assigned/CandidateSubmissionDrawer";
 import ScheduleInterviewForm from "./ScheduleInterviewForm";
 import httpService from "../../Services/httpService";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { fetchSubmissionsTeamLead } from "../../redux/submissionSlice";
+
 import { showToast } from "../../utils/ToastNotification";
+import { downloadFile } from "../../utils/downloadUtils";
+
+
 
 
 const Submission = () => {
@@ -46,15 +55,23 @@ const Submission = () => {
   const [scheduleData, setScheduleData] = useState(null);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const { filteredSubmissionsForRecruiter } = useSelector((state) => state.submission);
+  const [isTeamData, setIsTeamData] = useState(false)
 
-  console.log("Filtered Recruiter Data: ", filteredSubmissionsForRecruiter);
-  
+  const { selfSubmissionsTL, teamSubmissionsTL } = useSelector((state) => state.submission)
 
-  const { userId } = useSelector((state) => state.auth);
+  const { userId, role } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const [tabValue, setTabValue] = useState(0);
 
   useEffect(() => {
     fetchData();
   }, [userId]);
+
+  useEffect(() => {
+    if (role === "TEAMLEAD") {
+      dispatch(fetchSubmissionsTeamLead());
+    }
+  }, [dispatch])
 
   const fetchData = async () => {
     try {
@@ -80,11 +97,11 @@ const Submission = () => {
 
   const handleMoveToBench = async (row, e) => {
     e.stopPropagation();
-    
+
     if (window.confirm(`Are you sure you want to move ${row.fullName} to the bench?`)) {
       try {
         setMoveToBenchLoading(true);
-        
+
         // Create FormData for the bench request
         const formData = new FormData();
         formData.append("fullName", row.fullName);
@@ -92,7 +109,7 @@ const Submission = () => {
         formData.append("contactNumber", row.contactNumber);
         formData.append("relevantExperience", row.relevantExperience || "");
         formData.append("totalExperience", row.totalExperience || "");
-        
+
         // Convert skills array to JSON string if needed
         if (Array.isArray(row.skills)) {
           formData.append("skills", JSON.stringify(row.skills));
@@ -104,7 +121,7 @@ const Submission = () => {
           // If skills is null or undefined, send empty array
           formData.append("skills", JSON.stringify([]));
         }
-        
+
         formData.append("linkedin", row.linkedin || "");
         formData.append("referredBy", row.userEmail || "");
         
@@ -113,30 +130,30 @@ const Submission = () => {
           const response = await httpService.get(`/candidate/download-resume/${row.jobId}/${row.candidateId}`, {
             responseType: "blob",
           });
-          
+
           // Get file name from content-disposition or create a default one
           const fileName = response.headers["content-disposition"]
             ? response.headers["content-disposition"].split("filename=")[1]
             : `resume_${row.candidateId}.pdf`;
-          
+
           // Create a file from the blob
           const contentType = response.headers["content-type"];
           const file = new File([response.data], fileName, { type: contentType });
-          
+
           // Use the correct field name for the API
           formData.append("resumeFiles", file);
         } catch (error) {
           console.error("Error fetching resume:", error);
           // Continue with the bench submission even if resume fetch fails
         }
-        
+
         // Send to bench endpoint
         await httpService.post('/candidate/bench/save', formData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
-        
+
         // Remove from current list
         setData(data.filter(item => item.submissionId !== row.submissionId));
         
@@ -152,42 +169,63 @@ const Submission = () => {
 
   const downloadResume = async (jobId, candidateId, e) => {
     e.stopPropagation();
-  
+    
     try {
       setDownloadLoading(true);
   
-      const response = await httpService.get(`/candidate/download-resume/${candidateId}/${jobId}`);
+      // Make the request with proper responseType
+      const response = await httpService.get(
+        `/candidate/download-resume/${candidateId}/${jobId}`,
+        {
+          responseType: 'arraybuffer', // Use arraybuffer instead of blob
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Accept': 'application/pdf' // or whatever file type you expect
+          }
+        }
+      );
   
-      if (!response || !response.data) {
-        throw new Error("No resume file received.");
+      // Check for empty response
+      if (!response.data || response.data.byteLength === 0) {
+        throw new Error('Empty file received');
       }
   
-      // Detect content type and assign proper extension
-      const contentType = response.headers["content-type"];
-      const extension =
-        contentType === "application/pdf"
-          ? ".pdf"
-          : contentType === "application/msword"
-          ? ".doc"
-          : contentType ===
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          ? ".docx"
-          : ".pdf"; // fallback
+      // Get filename from headers or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `resume_${candidateId}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename\*?=['"]?(?:UTF-\d['"]*)?([^;\r\n"']*)['"]?;?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1]);
+        }
+      }
   
-      const filename = `resume_${candidateId}${extension}`;
+      // Determine content type from headers or default to PDF
+      const contentType = response.headers['content-type'] || 'application/pdf';
+  
+      // Create the blob
       const blob = new Blob([response.data], { type: contentType });
-      const url = URL.createObjectURL(blob);
   
-      const link = document.createElement("a");
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
       link.href = url;
-      link.setAttribute("download", filename);
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+  
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+  
+      showSnackbar('Resume downloaded successfully');
     } catch (error) {
-      console.error("Error downloading resume:", error);
-      showSnackbar("Failed to download resume", "error");
+      console.error('Download failed:', error);
+      showSnackbar('Failed to download resume', 'error');
     } finally {
       setDownloadLoading(false);
     }
@@ -198,6 +236,16 @@ const Submission = () => {
     setCandidateData(row);
     setMode("edit");
     setOpenDrawer(true);
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    const selected = event.target.id;
+    if(selected === "team"){
+      setIsTeamData(true);
+      return;
+    }
+    setIsTeamData(false)
   };
 
   const handleDelete = async (submissionId, e) => {
@@ -234,6 +282,7 @@ const Submission = () => {
     setScheduleDrawerOpen(false);
   };
 
+
   const generateColumns = (loading = false) => [
     {
       key: "candidateId",
@@ -243,9 +292,9 @@ const Submission = () => {
       filterable: true,
       width: 120,
       render: loading ? () => <Skeleton variant="text" width={80} /> : (row) => (
-        <Typography 
-          variant="body2" 
-          sx={{ 
+        <Typography
+          variant="body2"
+          sx={{
             fontWeight: 500,
             color: 'primary.main',
             fontFamily: 'monospace'
@@ -283,9 +332,9 @@ const Submission = () => {
       filterable: true,
       width: 180,
       render: loading ? () => <Skeleton variant="text" width={120} /> : (row) => (
-        <Typography 
-          variant="body1" 
-          sx={{ 
+        <Typography
+          variant="body1"
+          sx={{
             fontWeight: 450,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -304,7 +353,7 @@ const Submission = () => {
       filterable: true,
       width: 180,
       render: loading ? () => <Skeleton variant="text" width={100} /> : (row) => (
-        <Box sx={{ 
+        <Box sx={{
           display: 'flex',
           alignItems: 'center',
           gap: 1
@@ -324,15 +373,15 @@ const Submission = () => {
       filterable: true,
       width: 220,
       render: loading ? () => <Skeleton variant="text" width={180} /> : (row) => (
-        <Box sx={{ 
+        <Box sx={{
           display: 'flex',
           alignItems: 'center',
           gap: 1
         }}>
           <EmailIcon fontSize="small" color="action" />
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               color: 'secondary.main',
               textDecoration: 'underline',
               cursor: 'pointer',
@@ -353,7 +402,7 @@ const Submission = () => {
       filterable: true,
       width: 120,
       render: loading ? () => <Skeleton variant="text" width={80} /> : (row) => (
-        <Box sx={{ 
+        <Box sx={{
           display: 'flex',
           alignItems: 'center',
           gap: 1
@@ -373,9 +422,9 @@ const Submission = () => {
       filterable: true,
       width: 100,
       render: loading ? () => <Skeleton variant="text" width={60} /> : (row) => (
-        <Chip 
-          label={row.jobId} 
-          size="small" 
+        <Chip
+          label={row.jobId}
+          size="small"
           color="info"
           variant="outlined"
           sx={{ fontWeight: 500 }}
@@ -452,9 +501,9 @@ const Submission = () => {
         </Box>
       ) : (row) => (
         <Box
-          sx={{ 
-            display: "flex", 
-            justifyContent: "center", 
+          sx={{
+            display: "flex",
+            justifyContent: "center",
             gap: 1,
             '& .MuiIconButton-root': {
               backgroundColor: 'action.hover',
@@ -506,7 +555,7 @@ const Submission = () => {
 
   return (
     <div>
-       <Stack direction="row" alignItems="center" spacing={2}
+      <Stack direction="row" alignItems="center" spacing={2}
         sx={{
           flexWrap: 'wrap',
           mb: 3,
@@ -522,9 +571,19 @@ const Submission = () => {
 
         <DateRangeFilter component="RecruiterSubmission" />
       </Stack>
-      
+
+      {role === "TEAMLEAD" &&
+       <Paper sx={{ mb: 3 }}>
+       <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+         <Tab id="self" label="Self Submissions" />
+         <Tab id="team" label="Team Submissions" />
+       </Tabs>
+     </Paper>
+      }
       <DataTable
-        data={isFilteredDataRequested ? filteredSubmissionsForRecruiter : data || []} 
+        data={isFilteredDataRequested ? filteredSubmissionsForRecruiter :
+          role === "TEAMLEAD" ? isTeamData ? teamSubmissionsTL : selfSubmissionsTL :
+            data || []}
         columns={columns}
         title="Candidate Submissions"
         enableSelection={false}
@@ -591,7 +650,7 @@ const Submission = () => {
           <ScheduleInterviewForm
             data={scheduleData}
             onClose={closeScheduleDrawer}
-            refreshData={fetchData} 
+            refreshData={fetchData}
           />
        
       </Drawer>

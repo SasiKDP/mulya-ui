@@ -140,6 +140,8 @@ const PlacementsList = () => {
       }));
   
       setData(formattedData);
+      console.log("Placements Data: ", formattedData);
+      
       toast.success('Placement data refreshed successfully!');
     } catch (error) {
       console.error('Error fetching placement data:', error);

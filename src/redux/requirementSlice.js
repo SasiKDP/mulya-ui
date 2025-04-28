@@ -1,6 +1,37 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import httpService from "../Services/httpService";
 
+export const fetchAllRequirementsBDM = createAsyncThunk(
+  'requirements/All/BDM',
+  async(_, {rejectWithValue}) => {
+      try{
+        const response = await httpService.get('/requirements/getAssignments');
+        return response.data;
+      }catch(error){
+        console.log(error);
+        return rejectWithValue(error);
+      }
+     }
+)
+
+
+export const fetchRequirementsBdmSelf = createAsyncThunk(
+  'requirements/BDM/self',
+  async(_, {getState,rejectWithValue}) => {
+      try{
+        const state = getState();
+        const userId = state.auth.userId;
+        const response = await httpService.get(`/requirements/bdmrequirements/${userId}`);
+        return response.data;
+      }catch(error){
+        console.log(error);
+        return rejectWithValue(error);
+      }
+     }
+)
+// fetchRequirementsBdmSelf
+
+
 export const filterRequirementsByDateRange = createAsyncThunk(
     'requirements/filterByDateRange',
     async({startDate, endDate}, {rejectWithValue}) => {
@@ -60,6 +91,8 @@ const requirementSlice =  createSlice({
         filteredRequirementList: [],
         filterAssignedRequirements: [],
         filteredTeamLeadRequirements: [],
+        requirementsAllBDM : [],
+        requirementsSelfBDM : [],
         isFilteredReqRequested: false,
         error: null
     },
@@ -70,6 +103,34 @@ const requirementSlice =  createSlice({
 
     }, extraReducers: (builder) => {
         builder
+        .addCase(fetchAllRequirementsBDM.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+        })
+        .addCase(fetchAllRequirementsBDM.fulfilled, (state, action) => {
+          state.loading = false;
+          state.requirementsAllBDM = action.payload;
+        })
+        .addCase(fetchAllRequirementsBDM.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload;
+          
+        })
+
+        .addCase(fetchRequirementsBdmSelf.pending, (state) => {
+          state.loading = true;
+          state.error = null;
+        })
+        .addCase(fetchRequirementsBdmSelf.fulfilled, (state, action) => {
+          state.loading = false;
+          state.requirementsSelfBDM = action.payload;
+        })
+        .addCase(fetchRequirementsBdmSelf.rejected, (state, action) => {
+          state.loading = false;
+          state.error = action.payload;
+          
+        })
+
           // Filter Requirement List By date Range
           .addCase(filterRequirementsByDateRange.pending, (state) => {
             state.loading = true;

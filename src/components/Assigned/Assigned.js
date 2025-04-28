@@ -32,12 +32,10 @@ const Assigned = () => {
   const [mode, setMode] = useState("create");
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
-  const { userId, email } = useSelector((state) => state.auth);
+  const { userId, email, role } = useSelector((state) => state.auth);
   const employeeList = useSelector((state) => state.employee.employeesList);
-    const { filterAssignedRequirements, filteredTeamLeadRequirements } = useSelector((state) => state.requirement);
-    const { isFilteredDataRequested } = useSelector((state) => state.bench);
-
-    const {role} = useSelector((state) => state.auth);
+  const { filterAssignedRequirements, filteredTeamLeadRequirements } = useSelector((state) => state.requirement);
+  const { isFilteredDataRequested } = useSelector((state) => state.bench);
 
   const dispatch = useDispatch();
 
@@ -72,15 +70,8 @@ const Assigned = () => {
     }
   };
 
-  // const refreshData = () => {
-  //   ToastService.info("Refreshing data...");
-    
-  //   dispatch(fetchEmployees());
-  // };
-
   useEffect(() => {
     ToastService.info("Loading assigned jobs...");
-    
     fetchData();
   }, [userId]);
 
@@ -357,27 +348,28 @@ const Assigned = () => {
         width: 160,
         align: "center",
         render: (row) => {
-          const isDisabled = row.status?.toLowerCase() === 'hold';
+          const isDisabled = row.status?.toLowerCase() === 'hold' || row.status?.toLowerCase() === 'closed';
           return (
             <Box sx={{ display: "flex", justifyContent: "center" }}>
               <Tooltip title={isDisabled ? "Submission disabled for HOLD status" : "Submit Candidate"}>
                 <span>
-                  <IconButton
-                    aria-label="submit"
+                  <Button
+                    variant="contained"
                     size="small"
                     color="primary"
                     onClick={() => handleSubmit(row)}
-                    sx={{ mr: 1 }}
                     disabled={isDisabled}
+                    startIcon={<AssignmentIcon fontSize="small" />}
                   >
-                    <AssignmentIcon fontSize="small" />
-                  </IconButton>
+                    Submit
+                  </Button>
                 </span>
               </Tooltip>
             </Box>
           );
         },
-      },
+      }
+      ,
     ];
   };
 
@@ -404,7 +396,7 @@ const Assigned = () => {
 
   return (
     <>
-     <Stack direction="row" alignItems="center" spacing={2}
+      <Stack direction="row" alignItems="center" spacing={2}
         sx={{
           flexWrap: 'wrap',
           mb: 3,
@@ -413,25 +405,20 @@ const Assigned = () => {
           backgroundColor: '#f9f9f9',
           borderRadius: 2,
           boxShadow: 1,
-
         }}>
-
         <Typography variant='h6' color='primary'>Assigned List</Typography>
-        {role == "TEAMLEAD" ? <DateRangeFilter component="RequirementTeamLead"/> : <DateRangeFilter component="AssignedList" />}
-        
+        {role === "TEAMLEAD" ? <DateRangeFilter component="RequirementTeamLead"/> : <DateRangeFilter component="AssignedList" />}
       </Stack>
 
       <DataTable
-        // data={processedData}
-        data={isFilteredDataRequested ? role == "TEAMLEAD" ? filteredTeamLeadRequirements : filterAssignedRequirements : processedData || []} 
-        columns={generateColumns(data)}  // Always call generateColumns to handle loading state
+        data={isFilteredDataRequested ? role === "TEAMLEAD" ? filteredTeamLeadRequirements : filterAssignedRequirements : processedData || []} 
+        columns={generateColumns(data)}
         title=""
         loading={loading}
         enableSelection={false}
         defaultSortColumn="requirementAddedTimeStamp"
         defaultSortDirection="desc"
         defaultRowsPerPage={10}
-        
         refreshData={fetchData}
         primaryColor="#00796b"
         secondaryColor="#e0f2f1"
@@ -443,10 +430,14 @@ const Assigned = () => {
         uniqueId="jobId"
       />
 
-      <Drawer anchor="right" open={openDrawer} onClose={closeDrawer}>
+      <Drawer 
+        anchor="right" 
+        open={openDrawer} 
+        onClose={closeDrawer}
+      >
         {selectedJob && (
           <CandidateSubmissionDrawer
-          userId={selectedJob?.userId}
+            userId={selectedJob?.userId}
             clientName={selectedJob.clientName}
             jobId={selectedJob?.jobId}
             candidateData={selectedCandidate}
@@ -461,4 +452,4 @@ const Assigned = () => {
   );
 };
 
-export default Assigned;
+export default Assigned

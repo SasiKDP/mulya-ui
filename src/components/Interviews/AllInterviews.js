@@ -16,8 +16,9 @@ import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { getInterviewLevelChip, getStatusChip } from "../../utils/statusUtils";
+import DialogBox from "../DialogBox/DialogBox";
 import { generateInterviewColumnsTeamLead } from "../TableColumns/InterviewsColumnsTM";
 import EditInterviewForm from "../Interviews/EditInterviewForm";
 
@@ -32,6 +33,9 @@ const AllInterviews = () => {
 
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const { filteredInterviewList } = useSelector((state) => state.interview);
+  const dispatch = useDispatch();
+
+  const isSuccessful = true;
 
   const fetchInterviews = async () => {
     try {
