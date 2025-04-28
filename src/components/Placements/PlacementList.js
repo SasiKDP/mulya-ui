@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, Button, Drawer, CircularProgress } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, Button, Drawer, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
 import { MoreVert, Edit, Visibility, Delete, Add, Refresh, Close } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import ToastService from '../../Services/toastService';
 import DataTable from '../muiComponents/DataTabel';
 import ComponentTitle from '../../utils/ComponentTitle';
 import PlacementForm from './PlacementForm';
+import PlacementCard from './PlacementCard';
 import httpService from '../../Services/httpService';
 
 const PlacementsList = () => {
@@ -14,6 +14,8 @@ const PlacementsList = () => {
   const [data, setData] = useState([]);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedPlacement, setSelectedPlacement] = useState(null);
   const [editingPlacement, setEditingPlacement] = useState(null);
   const navigate = useNavigate();
 
@@ -27,8 +29,18 @@ const PlacementsList = () => {
     setEditingPlacement(null);
   };
 
+  const handleOpenDetailsDialog = (row) => {
+    setSelectedPlacement(row);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleCloseDetailsDialog = () => {
+    setDetailsDialogOpen(false);
+    setSelectedPlacement(null);
+  };
+
   const handleView = (row) => {
-    navigate(`/placements/view/${row.id}`);
+    handleOpenDetailsDialog(row);
   };
 
   const handleEdit = (row) => {
@@ -68,14 +80,14 @@ const PlacementsList = () => {
 
         if (response.data.success) {
           fetchPlacementDetails();
-          toast.success('Placement deleted successfully!');
+          ToastService.success('Placement deleted successfully!');
         } else {
           console.error('Failed to delete placement:', response.data.error);
-          toast.error(response.data.error || 'Failed to delete placement');
+          ToastService.error(response.data.error || 'Failed to delete placement');
         }
       } catch (error) {
         console.error('Error deleting placement:', error);
-        toast.error('An error occurred while deleting the placement');
+        ToastService.error('An error occurred while deleting the placement');
       }
     }
   };
@@ -88,6 +100,8 @@ const PlacementsList = () => {
       { key: 'consultantEmail', label: 'Email', type: 'text', sortable: true, filterable: true, width: 200 },
       { key: 'phone', label: 'Phone', type: 'text', sortable: true, filterable: true, width: 120 },
       { key: 'technology', label: 'Technology', type: 'select', sortable: true, filterable: true, width: 130 },
+      { key: 'sales', label: 'Sales',  width: 130 },
+      { key: 'recruiter', label: 'Recruiter', width: 130 },
       { key: 'client', label: 'Client', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'vendorName', label: 'Vendor', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'startDate', label: 'Start Date', type: 'text', sortable: true, filterable: true, width: 120 },
@@ -140,13 +154,11 @@ const PlacementsList = () => {
       }));
   
       setData(formattedData);
-      console.log("Placements Data: ", formattedData);
-      
-      toast.success('Placement data refreshed successfully!');
+      ToastService.success('Placement data refreshed successfully!');
     } catch (error) {
       console.error('Error fetching placement data:', error);
       setData([]);
-      toast.error('Failed to load placement data. Please try again.');
+      ToastService.error('Failed to load placement data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -204,7 +216,7 @@ const PlacementsList = () => {
           submissionValues
         );
         if (response.data.success) {
-          toast.success('Placement updated successfully!');
+          ToastService.success('Placement updated successfully!');
           fetchPlacementDetails();
           handleCloseDrawer();
         }
@@ -214,14 +226,14 @@ const PlacementsList = () => {
           submissionValues
         );
         if (response.data.success) {
-          toast.success('New placement created successfully!');
+          ToastService.success('New placement created successfully!');
           fetchPlacementDetails();
           handleCloseDrawer();
         }
       }
     } catch (error) {
       console.error('Error saving placement:', error);
-      toast.error(error.response?.data?.message || 'Failed to save placement. Please try again.');
+      ToastService.error(error.response?.data?.message || 'Failed to save placement. Please try again.');
     }
   };
 
@@ -233,8 +245,6 @@ const PlacementsList = () => {
 
   return (
     <>
-      <ToastContainer position="top-right" autoClose={3000} />
-      
       <ComponentTitle title="Placement Management">
         <Button
           variant="outlined"
@@ -285,6 +295,7 @@ const PlacementsList = () => {
         uniqueId="id"
       />
 
+      {/* Form Drawer */}
       <Drawer
         anchor="right"
         open={drawerOpen}
@@ -330,6 +341,54 @@ const PlacementsList = () => {
           </Box>
         </Box>
       </Drawer>
+
+      {/* Details Dialog */}
+      <Dialog
+        open={detailsDialogOpen}
+        onClose={handleCloseDetailsDialog}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          borderBottom: '1px solid #eee',
+          pb: 2
+        }}>
+          <Typography variant="h5">
+            Placement Details
+          </Typography>
+          <IconButton 
+            onClick={handleCloseDetailsDialog}
+            aria-label="close"
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+              '&:hover': {
+                backgroundColor: (theme) => theme.palette.action.hover
+              }
+            }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ py: 2 }}>
+          {selectedPlacement && (
+            <PlacementCard data={selectedPlacement} />
+          )}
+        </DialogContent>
+        <DialogActions sx={{ borderTop: '1px solid #eee', py: 2, px: 3 }}>
+          <Button onClick={handleCloseDetailsDialog} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

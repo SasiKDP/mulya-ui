@@ -4,6 +4,10 @@ import { Box, Tooltip, Typography } from "@mui/material";
 import { AccessTime } from "@mui/icons-material";
 import { TextField } from "@mui/material";
 import { validateIfPlaced } from "./validatePlacedUtil";
+import MuiButton from "../components/muiComponents/MuiButton";
+
+
+
 export const getStatusColor = (status) => {
   const normalized = status?.trim().toUpperCase();
   const statusColors = {
@@ -25,7 +29,31 @@ export const getStatusChip = (status, row, dispatch) => {
   const label = normalized || "SCHEDULED";
   const isPlaced = normalized === "PLACED";
 
-  return (
+  
+    if (isPlaced) {
+      // If placed, show the Add to Placement button
+      return (
+        <MuiButton
+        onClick={() => validateIfPlaced(status, row, dispatch)}
+        size="small"
+        sx={{
+          textTransform: "none",
+          backgroundColor: "#00A870", // ✅ Green color
+          fontWeight: 500,
+          fontSize: "0.75rem",
+          padding: "4px 12px",
+          borderRadius:5,
+          color: "#ffffff",
+          "&:hover": {
+            backgroundColor: "#00915E",
+          },
+        }}
+      >
+        Add to Placement
+      </MuiButton>
+      );
+    }
+    return (
     <Chip
       label={label}
       onClick={() => {normalized === "PLACED" && validateIfPlaced(status, row, dispatch)}}

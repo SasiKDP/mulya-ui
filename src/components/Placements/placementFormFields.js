@@ -1,6 +1,6 @@
 export const placementFormFields = [
   {
-    name: "consultantName",
+    name: "candidateFullName",
     label: "Consultant Name",
     type: "text",
     required: true,
@@ -9,7 +9,7 @@ export const placementFormFields = [
     helperText: "Enter consultant's full name",
   },
   {
-    name: "consultantEmail",
+    name: "candidateEmailId",
     label: "Email",
     type: "email",
     required: true,
@@ -18,7 +18,7 @@ export const placementFormFields = [
     helperText: "Example: name@example.com",
   },
   {
-    name: "phone",
+    name: "candidateContactNo",
     label: "Phone",
     type: "tel",
     required: true,
@@ -36,7 +36,7 @@ export const placementFormFields = [
     sx: { mb: 2 },
   },
   {
-    name: "client",
+    name: "clientName",
     label: "Client",
     type: "text",
     required: true,
@@ -71,7 +71,7 @@ export const placementFormFields = [
   },
   {
     name: "billRateUSD",
-    label: "Bill Rate (USD)",
+    label: "Bill Rate ",
     type: "number",
     required: true,
     inputProps: { step: "0.01" },
@@ -80,7 +80,7 @@ export const placementFormFields = [
   },
   {
     name: "payRate",
-    label: "Pay Rate (USD)",
+    label: "Pay Rate",
     type: "number",
     required: true,
     inputProps: { step: "0.01" },
@@ -94,7 +94,6 @@ export const placementFormFields = [
     required: true,
     options: [
       { value: "W2", label: "W2" },
-      { value: "1099", label: "1099" },
       { value: "C2C", label: "C2C" },
       { value: "Full-time", label: "Full-time" },
       { value: "Part-time", label: "Part-time" },
