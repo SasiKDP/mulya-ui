@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
+import { useDispatch, useSelector } from "react-redux"; // Added Redux imports
 import {
   Typography,
   Paper,
@@ -15,6 +16,7 @@ import {
   FormControl,
   FormHelperText,
   FormLabel,
+  CircularProgress,
 } from "@mui/material";
 import {
   CheckCircleOutline as SuccessIcon,
@@ -32,6 +34,7 @@ import dayjs from "dayjs";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { encryptField } from "../../utils/encrypt";
+import { createPlacement, updatePlacement } from "../../redux/placementSlice"; // Import Redux actions
 
 const SuccessAlert = styled(Alert)(({ theme }) => ({
   borderLeft: `4px solid ${theme.palette.success.main}`,
@@ -72,10 +75,23 @@ const validationSchema = Yup.object({
     .positive("Must be positive"),
   employmentType: Yup.string().required("Employment type is required"),
   status: Yup.string().required("Status is required"),
+  exchangeRate: Yup.number().when('currency', {
+    is: (currency) => currency !== 'INR',
+    then: (schema) => schema
+      .required("Exchange rate is required")
+      .positive("Must be positive"),
+    otherwise: (schema) => schema.notRequired()
+  }),
 });
 
-const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
+const PlacementForm = ({
+  initialValues = {},
+  onCancel,
+  isEdit = false,
+}) => {
   const theme = useTheme();
+  const dispatch = useDispatch();
+  const { loading, error, success } = useSelector((state) => state.placement);
   const [submitStatus, setSubmitStatus] = useState({
     isSubmitting: false,
     success: null,
@@ -88,7 +104,9 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
   const currencyOptions = [
     { value: "USD", label: "USD", symbol: "$" },
     { value: "INR", label: "INR", symbol: "₹" },
-    { value: "EUR", label: "EURO", symbol: "€" },
+    { value: "GBP", label: "GBP", symbol: "£" },
+    { value: "AUD", label: "AUD", symbol: "A$" },
+    { value: "AED", label: "UAE Dirham", symbol: "د.إ" }
   ];
 
   // Format date for the form
@@ -127,9 +145,10 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
       vendorName: initialValues.vendorName || "",
       startDate: formatDate(initialValues.startDate) || null,
       endDate: formatDate(initialValues.endDate) || null,
-      currency: initialValues.currency || "USD",
+      currency: initialValues.currency ,
       billRate: initialValues.billRate || "",
       payRate: initialValues.payRate || "",
+      exchangeRate: initialValues.exchangeRate || "",
       employmentType: initialValues.employmentType || "",
       recruiter: initialValues.recruiter || "",
       sales: initialValues.sales || "",
@@ -143,6 +162,7 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
   const formik = useFormik({
     initialValues: getInitialFormValues(),
     validationSchema: validationSchema,
+    enableReinitialize: isEdit, // Allow reinitialization when in edit mode
     onSubmit: async (values, { setSubmitting }) => {
       setSubmitStatus({
         isSubmitting: true,
@@ -150,43 +170,46 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
         error: null,
         response: null,
       });
-
+    
       try {
-        const formattedValues = {
+        // Parse and convert values
+        const exchangeRate = parseFloat(values.exchangeRate) || 1;
+        let billRate = parseFloat(values.billRate) || 0;
+        let payRate = parseFloat(values.payRate) || 0;
+    
+        // Convert to INR if needed
+        if (values.currency !== 'INR') {
+          billRate = billRate * exchangeRate;
+          payRate = payRate * exchangeRate;
+        }
+    
+        // Calculate gross profit
+        const grossProfit = Math.round(billRate - payRate);
+    
+        // Prepare the payload using the converted values directly in existing keys
+        const payload = {
           ...values,
-          startDate: values.startDate
-            ? values.startDate.format("YYYY-MM-DD")
-            : null,
-          endDate: values.endDate ? values.endDate.format("YYYY-MM-DD") : null,
+          billRate: Math.round(billRate),
+          payRate: Math.round(payRate),
+          grossProfit,
         };
-
-        // Encrypt sensitive fields before submitting
-        formattedValues.payRate = encryptField(values.payRate.toString());
-        formattedValues.billRate = encryptField(values.billRate.toString());
-
-        // Add additional rate fields based on currency if needed
-        if (values.currency === "USD") {
-          formattedValues.billRateUSD = formattedValues.billRate;
-        } else if (values.currency === "INR") {
-          formattedValues.billRateINR = formattedValues.billRate;
+    
+        if (isEdit) {
+          await dispatch(updatePlacement({
+            id: initialValues.id,
+            placementData: payload,
+          }));
+        } else {
+          await dispatch(createPlacement(payload));
         }
-
-        // Calculate gross profit if needed
-        formattedValues.grossProfit = encryptField(
-          (parseFloat(values.billRate) - parseFloat(values.payRate)).toString()
-        );
-
-        if (onSubmit) {
-          await onSubmit(formattedValues);
-        }
-
+    
         setSubmitStatus({
           isSubmitting: false,
           success: true,
           error: null,
           response: {
-            message: "Placement saved successfully!",
-            payload: formattedValues,
+            message: `Placement ${isEdit ? "updated" : "created"} successfully!`,
+            payload,
           },
         });
         setExpandedResponse(false);
@@ -194,14 +217,15 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
         setSubmitStatus({
           isSubmitting: false,
           success: false,
-          error: error.message || "Failed to save placement. Please try again.",
+          error: error.message || `Failed to ${isEdit ? "update" : "create"} placement. Please try again.`,
           response: null,
         });
         setExpandedResponse(false);
       } finally {
         setSubmitting(false);
       }
-    },
+    }
+    
   });
 
   // Get current currency symbol
@@ -212,12 +236,53 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
     return currency ? currency.symbol : "$";
   };
 
+  // Handle currency change to reset exchange rate when changing to INR
+  useEffect(() => {
+    if (formik.values.currency === 'INR') {
+      formik.setFieldValue('exchangeRate', '');
+    }
+  }, [formik.values.currency]);
+
+  // Update submit status based on Redux state
+  useEffect(() => {
+    if (success) {
+      setSubmitStatus({
+        isSubmitting: false,
+        success: true,
+        error: null,
+        response: {
+          message: `Placement ${isEdit ? 'updated' : 'created'} successfully!`,
+        },
+      });
+    }
+    if (error) {
+      setSubmitStatus({
+        isSubmitting: false,
+        success: false,
+        error: error,
+        response: null,
+      });
+    }
+  }, [success, error, isEdit]);
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
         <Typography variant="h5" sx={{ mb: 3 }}>
-          Placement Details
+          {isEdit ? 'Edit Placement' : 'Create New Placement'}
         </Typography>
+
+        {/* Status messages */}
+        {submitStatus.error && (
+          <ErrorAlert severity="error" sx={{ mb: 2 }}>
+            {submitStatus.error}
+          </ErrorAlert>
+        )}
+        {submitStatus.success && (
+          <SuccessAlert severity="success" sx={{ mb: 2 }}>
+            {submitStatus.response?.message}
+          </SuccessAlert>
+        )}
 
         <form onSubmit={formik.handleSubmit}>
           <Grid container spacing={2}>
@@ -430,7 +495,35 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
                 ))}
               </TextField>
             </Grid>
-            
+
+            {formik.values.currency !== 'INR' && (
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  id="exchangeRate"
+                  name="exchangeRate"
+                  label={`Exchange Rate (1 ${formik.values.currency} = ? INR)`}
+                  value={formik.values.exchangeRate}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={
+                    formik.touched.exchangeRate &&
+                    Boolean(formik.errors.exchangeRate)
+                  }
+                  helperText={
+                    formik.touched.exchangeRate && formik.errors.exchangeRate
+                  }
+                  required={formik.values.currency !== 'INR'}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">INR</InputAdornment>
+                    ),
+                  }}
+                  placeholder="Enter exchange rate"
+                />
+              </Grid>
+            )}
+
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
@@ -446,7 +539,8 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
                 error={
                   formik.touched.billRate && Boolean(formik.errors.billRate)
                 }
-                helperText={formik.touched.billRate && formik.errors.billRate}
+                helperText={formik.touched.billRate && formik.errors.billRate
+                }
                 required
                 InputProps={{
                   startAdornment: (
@@ -458,7 +552,7 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
                 }}
               />
             </Grid>
-           
+
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
@@ -484,6 +578,45 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
                 }}
               />
             </Grid>
+
+            {/* Display INR values for non-INR currencies when exchange rate is available */}
+            {formik.values.currency !== 'INR' && formik.values.exchangeRate && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Bill Rate (INR)"
+                    value={Math.round(
+                      parseFloat(formik.values.billRate || 0) *
+                      parseFloat(formik.values.exchangeRate || 0)
+                    ).toString()}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">₹</InputAdornment>
+                      ),
+                      readOnly: true,
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Pay Rate (INR)"
+                    value={Math.round(
+                      parseFloat(formik.values.payRate || 0) *
+                      parseFloat(formik.values.exchangeRate || 0)
+                    ).toString()}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">₹</InputAdornment>
+                      ),
+                      readOnly: true,
+                    }}
+                  />
+                </Grid>
+              </>
+            )}
+
             {/* Employment Information */}
             <Grid item xs={12} sx={{ mt: 2 }}>
               <Typography
@@ -627,13 +760,19 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
             <Grid
               item
               xs={12}
-              sx={{ mt: 3, display: "flex", justifyContent: "space-between" }}
+              sx={{
+                mt: 3,
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: 2
+              }}
             >
               <Button
                 variant="outlined"
                 color="error"
                 startIcon={<CancelIcon />}
                 onClick={onCancel}
+                disabled={loading || formik.isSubmitting}
               >
                 Cancel
               </Button>
@@ -643,79 +782,21 @@ const PlacementForm = ({ initialValues = {}, onSubmit, onCancel }) => {
                 variant="contained"
                 color="primary"
                 startIcon={<SaveIcon />}
-                disabled={formik.isSubmitting || submitStatus.isSubmitting}
+                disabled={loading || formik.isSubmitting}
               >
-                Save Placement
+                {loading || formik.isSubmitting ? (
+                  <>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    {isEdit ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  isEdit ? 'Update Placement' : 'Create Placement'
+                )}
               </Button>
             </Grid>
           </Grid>
         </form>
       </Paper>
-
-      {/* Status Alerts */}
-      <Collapse in={submitStatus.success !== null} sx={{ mt: 2 }}>
-        {submitStatus.success ? (
-          <SuccessAlert
-            icon={<SuccessIcon fontSize="inherit" />}
-            action={
-              <IconButton
-                aria-label="close"
-                color="inherit"
-                size="small"
-                onClick={() => setExpandedResponse(!expandedResponse)}
-              >
-                {expandedResponse ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-              </IconButton>
-            }
-          >
-            <Typography variant="subtitle1" fontWeight={600}>
-              {submitStatus.response?.message}
-            </Typography>
-            <Collapse in={expandedResponse} sx={{ mt: 1 }}>
-              <Box
-                sx={{
-                  backgroundColor: "background.paper",
-                  p: 2,
-                  borderRadius: 1,
-                  border: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography variant="caption" display="block" gutterBottom>
-                  Response details:
-                </Typography>
-                <pre
-                  style={{
-                    whiteSpace: "pre-wrap",
-                    fontFamily: "monospace",
-                    fontSize: "0.75rem",
-                    margin: 0,
-                    overflow: "auto",
-                    maxHeight: "200px",
-                  }}
-                >
-                  {JSON.stringify(submitStatus.response?.payload, null, 2)}
-                </pre>
-              </Box>
-            </Collapse>
-          </SuccessAlert>
-        ) : (
-          <ErrorAlert
-            severity="error"
-            icon={<ErrorIcon fontSize="inherit" />}
-            onClose={() =>
-              setSubmitStatus((prev) => ({ ...prev, error: null }))
-            }
-          >
-            <Typography variant="subtitle1" fontWeight={600}>
-              Submission Failed
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              {submitStatus.error}
-            </Typography>
-          </ErrorAlert>
-        )}
-      </Collapse>
     </LocalizationProvider>
   );
 };

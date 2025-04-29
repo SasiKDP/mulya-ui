@@ -49,7 +49,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       jobId: data.jobId || "",
       skipNotification: data.skipNotification || false,
       userId: data.userId || userId || "",
-      userEmail: email || "",
+      userEmail: data.email||email || "",
       zoomLink: data.zoomLink || "",
       candidateEmailId: data.emailId || data.candidateEmailId || "",
       contactNumber: data.contactNumber || data.candidateContactNo || "",

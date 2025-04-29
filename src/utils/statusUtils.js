@@ -5,6 +5,8 @@ import { AccessTime } from "@mui/icons-material";
 import { TextField } from "@mui/material";
 import { validateIfPlaced } from "./validatePlacedUtil";
 import MuiButton from "../components/muiComponents/MuiButton";
+import { CheckCircle as SuccessIcon } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 
 
 
@@ -25,38 +27,63 @@ export const getStatusColor = (status) => {
 
 export const getStatusChip = (status, row, dispatch) => {
   const normalized = status?.trim().toUpperCase();
+  const isMovedToPlacement =row.placed; // Get the value from the row object
   const { bg, text } = getStatusColor(status);
   const label = normalized || "SCHEDULED";
   const isPlaced = normalized === "PLACED";
 
-  
-    if (isPlaced) {
-      // If placed, show the Add to Placement button
-      return (
-        <MuiButton
-        onClick={() => validateIfPlaced(status, row, dispatch)}
+  // Check if the status is 'PLACED' and isMovedToPlacement is false to enable the button
+  const canAddToPlacement = isPlaced && !isMovedToPlacement;
+
+  if (isMovedToPlacement && isPlaced) {
+    // If moved to placement, show success icon and "Moved to Placement" message
+    return (
+      <Chip
+        label="Placed"
+        icon={<SuccessIcon sx={{ color: "green", marginRight: 1 }} />}
         size="small"
         sx={{
-          textTransform: "none",
-          backgroundColor: "#00A870", // ✅ Green color
+          bgcolor: "#e0f7e9", // Light green background
+          color: "green",
           fontWeight: 500,
+          borderRadius: "999px",
+          px: 1.5,
+          height: 24,
+          textTransform: "uppercase",
+          letterSpacing: "0.5px",
           fontSize: "0.75rem",
-          padding: "4px 12px",
-          borderRadius:5,
-          color: "#ffffff",
-          "&:hover": {
-            backgroundColor: "#00915E",
-          },
+          cursor: "default",
+        }}
+      />
+    );
+  }
+
+  if (canAddToPlacement) {
+    // If placed and not moved to placement, show the Add to Placement hyperlink with default styles
+    return (
+      <Link 
+        to="#" // You can replace this with a valid route URL if needed
+        onClick={(e) => { 
+          e.preventDefault(); // Prevent default link behavior
+          validateIfPlaced(status, row, dispatch); // Call the validateIfPlaced function
+        }} 
+        style={{
+         color:'#1B56FD',
+          textDecoration: "underline", // Default underline for hyperlink
+          fontWeight: "normal", // No bold font
+          fontSize: "0.75rem",
+          cursor: "pointer",
         }}
       >
         Add to Placement
-      </MuiButton>
-      );
-    }
-    return (
+      </Link>
+    );
+  }
+
+  return (
     <Chip
       label={label}
-      onClick={() => {normalized === "PLACED" && validateIfPlaced(status, row, dispatch)}}
+      // onClick={() => { normalized === "PLACED" && validateIfPlaced(status, row, dispatch); }}
       size="small"
       sx={{
         bgcolor: bg,
@@ -72,10 +99,9 @@ export const getStatusChip = (status, row, dispatch) => {
         "&:hover": isPlaced ? { opacity: 0.9 } : {},
       }}
     />
-
   );
-
 };
+
 
 //interview levels
 

@@ -79,10 +79,24 @@ const Interviews = () => {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
-      const processedData = processInterviewData(response.data.payload || []);
+      let response;
+  
+      // If role is SUPERADMIN, fetch all interviews
+      if (role === "SUPERADMIN") {
+        response = await httpService.get("/candidate/allInterviews");
+      } else {
+        response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
+      }
+  
+      // If role is SUPERADMIN, access the response.data.data (for the 'data' key)
+      const interviewData = role === "SUPERADMIN" ? response.data.data : response.data || [];
+  
+      // Process the interview data (this function will be used to format the data)
+      const processedData = processInterviewData(interviewData);
+  
+      // Set the processed data in the state
       setInterviews(processedData);
-      setError(null);
+      setError(null); // Clear any previous errors
     } catch (err) {
       setError("Failed to fetch interview data");
       console.error("Error fetching interviews:", err);
@@ -90,10 +104,11 @@ const Interviews = () => {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchInterviews();
-  }, [userId]);
+  }, [userId, role]);
 
   useEffect(() => {
     if (role === "TEAMLEAD") {
@@ -101,7 +116,7 @@ const Interviews = () => {
       
       dispatch(fetchInterviewsTeamLead());
     }
-  }, [dispatch])
+  }, [dispatch, role])
 
   const handleEdit = (interview, isReschedule = false) => {
     setEditDrawer({
@@ -109,6 +124,8 @@ const Interviews = () => {
       data: {
         ...interview,
         isReschedule, // Pass this flag to the form
+        // Ensure we keep the original userId for editing
+        userId: interview.userId || userId
       },
     });
   };
@@ -207,6 +224,19 @@ const Interviews = () => {
       width: 140,
       render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
     },
+    // Show interviewer/assignee column for SUPERADMIN
+    ...(role === "SUPERADMIN" ? [
+      {
+        key: "assignedTo",
+        label: "Assigned To",
+        width: 150,
+        render: (row) => (
+          <Typography variant="body2">
+            {row.assigneeName || row.assigneeEmail || "Not Assigned"}
+          </Typography>
+        ),
+      }
+    ] : []),
     {
       key: "zoomLink",
       label: "Meeting",
@@ -291,6 +321,17 @@ const Interviews = () => {
     },
   ];
 
+  // Determine which title to display based on role
+  const getTableTitle = () => {
+    if (role === "SUPERADMIN") {
+      return "All Interviews";
+    } else if (role === "TEAMLEAD") {
+      return isTeamData ? "Team Interviews" : "Self Interviews";
+    } else {
+      return "Scheduled Interviews";
+    }
+  };
+
   return (
     <Box sx={{ p: 1 }}>
       {loading && interviews.length === 0 ? (
@@ -325,10 +366,11 @@ const Interviews = () => {
               backgroundColor: '#f9f9f9',
               borderRadius: 2,
               boxShadow: 1,
-
             }}>
 
-            <Typography variant='h6' color='primary'>Interviews List </Typography>
+            <Typography variant='h6' color='primary'>
+              {role === "SUPERADMIN" ? "All Interviews" : "Interviews List"}
+            </Typography>
 
             <DateRangeFilter component="InterviewsForRecruiter" />
           </Stack>
@@ -347,7 +389,7 @@ const Interviews = () => {
               role === "TEAMLEAD" ? isTeamData ? teamInterviewsTL : selfInterviewsTL :
               interviews || []}
             columns={columns}
-            title="Scheduled Interviews"
+            title={getTableTitle()}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="asc"

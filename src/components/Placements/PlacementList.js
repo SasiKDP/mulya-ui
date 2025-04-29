@@ -1,42 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Tooltip, Button, Drawer, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
+import React, { useEffect } from 'react';
+import { Chip,Box, Typography, IconButton, Tooltip, Button, Drawer, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
 import { MoreVert, Edit, Visibility, Delete, Add, Refresh, Close } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import ToastService from '../../Services/toastService';
+import { useDispatch, useSelector } from 'react-redux';
 import DataTable from '../muiComponents/DataTabel';
 import ComponentTitle from '../../utils/ComponentTitle';
 import PlacementForm from './PlacementForm';
 import PlacementCard from './PlacementCard';
-import httpService from '../../Services/httpService';
+import { fetchPlacements, deletePlacement, setSelectedPlacement, resetPlacementState } from '../../redux/placementSlice';
 
 const PlacementsList = () => {
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState([]);
-  const [downloadLoading, setDownloadLoading] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [selectedPlacement, setSelectedPlacement] = useState(null);
-  const [editingPlacement, setEditingPlacement] = useState(null);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { placements, loading, error, selectedPlacement } = useSelector((state) => state.placement);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
+
+  useEffect(() => {
+    dispatch(fetchPlacements());
+  }, [dispatch]);
 
   const handleOpenDrawer = (placement = null) => {
-    setEditingPlacement(placement);
+    if (placement) {
+      dispatch(setSelectedPlacement(placement));
+    } else {
+      dispatch(setSelectedPlacement(null));
+    }
     setDrawerOpen(true);
   };
 
   const handleCloseDrawer = () => {
     setDrawerOpen(false);
-    setEditingPlacement(null);
+    dispatch(resetPlacementState());
   };
 
   const handleOpenDetailsDialog = (row) => {
-    setSelectedPlacement(row);
+    dispatch(setSelectedPlacement(row));
     setDetailsDialogOpen(true);
   };
 
   const handleCloseDetailsDialog = () => {
     setDetailsDialogOpen(false);
-    setSelectedPlacement(null);
+    dispatch(setSelectedPlacement(null));
   };
 
   const handleView = (row) => {
@@ -44,73 +49,143 @@ const PlacementsList = () => {
   };
 
   const handleEdit = (row) => {
-    const formattedRow = {
-      ...row,
-      startDate: row.startDate ? formatDateForEdit(row.startDate) : '',
-      endDate: row.endDate ? formatDateForEdit(row.endDate) : ''
-    };
-    handleOpenDrawer(formattedRow);
-  };
-
-  const formatDateForEdit = (dateStr) => {
-    if (!dateStr) return '';
-    
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      return dateStr;
-    }
-    
-    if (dateStr.includes('/')) {
-      const [month, day, year] = dateStr.split('/');
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    }
-    
-    try {
-      return new Date(dateStr).toISOString().split('T')[0];
-    } catch (e) {
-      return '';
-    }
+    handleOpenDrawer(row);
   };
 
   const handleDelete = async (row) => {
-    if (window.confirm('Are you sure you want to delete this placement?')) {
-      try {
-        const response = await httpService.delete(
-          `/candidate/placement/delete-placement/${row.id}`
-        );
+    
+      dispatch(deletePlacement(row.id));
+   
+  };
 
-        if (response.data.success) {
-          fetchPlacementDetails();
-          ToastService.success('Placement deleted successfully!');
-        } else {
-          console.error('Failed to delete placement:', response.data.error);
-          ToastService.error(response.data.error || 'Failed to delete placement');
-        }
-      } catch (error) {
-        console.error('Error deleting placement:', error);
-        ToastService.error('An error occurred while deleting the placement');
-      }
+  const getColor = (status) => {
+    switch (status) {
+      case 'Active':
+        return 'success';
+      case 'On Hold':
+        return 'warning';
+      case 'Completed':
+        return 'info';
+      case 'Terminated':
+        return 'error';
+      case 'Cancelled':
+        return 'default';
+      default:
+        return 'primary';
+    }
+  };
+  const getColorForEmployeement = (type) => {
+    switch (type) {
+      case "W2":
+        return "primary";
+      case "C2C":
+        return "secondary";
+      case "Full-time":
+        return "success";
+      case "Part-time":
+        return "warning";
+      case "Contract":
+        return "info";
+      case "Contract-to-hire":
+        return "error";
+      default:
+        return "default";
     }
   };
 
-  const generateColumns = (placementData) => {
-    if (!placementData || placementData.length === 0) return [];
+
+  
+  const generateColumns = () => {
     return [
       { key: 'id', label: 'Placement ID', type: 'text', sortable: true, filterable: true, width: 100 },
-      { key: 'consultantName', label: 'Consultant Name', type: 'text', sortable: true, filterable: true, width: 150 },
-      { key: 'consultantEmail', label: 'Email', type: 'text', sortable: true, filterable: true, width: 200 },
-      { key: 'phone', label: 'Phone', type: 'text', sortable: true, filterable: true, width: 120 },
+      { key: 'candidateFullName', label: 'Consultant Name', type: 'text', sortable: true, filterable: true, width: 150 },
+      { key: 'candidateEmailId', label: 'Email', type: 'text', sortable: true, filterable: true, width: 200 },
+      { key: 'candidateContactNo', label: 'Phone', type: 'text', sortable: true, filterable: true, width: 120 },
       { key: 'technology', label: 'Technology', type: 'select', sortable: true, filterable: true, width: 130 },
-      { key: 'sales', label: 'Sales',  width: 130 },
+      { key: 'sales', label: 'Sales', width: 130 },
       { key: 'recruiter', label: 'Recruiter', width: 130 },
-      { key: 'client', label: 'Client', type: 'select', sortable: true, filterable: true, width: 130 },
+      { key: 'clientName', label: 'Client', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'vendorName', label: 'Vendor', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'startDate', label: 'Start Date', type: 'text', sortable: true, filterable: true, width: 120 },
       { key: 'endDate', label: 'End Date', type: 'text', sortable: true, filterable: true, width: 120 },
-      { key: 'billRateUSD', label: 'Bill Rate (USD)', type: 'text', sortable: true, filterable: true, width: 150 },
-      { key: 'payRate', label: 'Pay Rate', type: 'text', sortable: true, filterable: true, width: 130 },
-      { key: 'grossProfit', label: 'Gross Profit', type: 'text', sortable: true, filterable: true, width: 130 },
-      { key: 'employmentType', label: 'Employment Type', type: 'select', sortable: true, filterable: true, width: 150 },
-      { key: 'status', label: 'Status', type: 'select', sortable: true, filterable: true, width: 120 },
+      {
+        key: 'billRate',
+        label: 'Bill Rate',
+        type: 'text',
+        sortable: true,
+        filterable: true,
+        width: 130,
+        render: (row) => (
+          row.billRate?.toLocaleString("en-IN", { maximumFractionDigits: 2 }) || "-"
+        ),
+      },
+      {
+        key: 'payRate',
+        label: 'Pay Rate',
+        type: 'text',
+        sortable: true,
+        filterable: true,
+        width: 130,
+        render: (row) => (
+          row.payRate?.toLocaleString("en-IN", { maximumFractionDigits: 2 }) || "-"
+        ),
+      },
+      {
+        key: 'grossProfit',
+        label: 'Gross Profit',
+        type: 'text',
+        sortable: true,
+        filterable: true,
+        width: 130,
+        render: (row) => (
+          row.grossProfit?.toLocaleString("en-IN", { maximumFractionDigits: 2 }) || "-"
+        ),
+      },
+      {
+        key: "employmentType",
+        label: "Employment Type",
+        type: "select",
+        sortable: true,
+        filterable: true,
+        width: 150,
+        render: (row) => {
+          const type = row.employmentType;
+      
+          
+      
+          return (
+            <Chip
+              label={type}
+              color={getColorForEmployeement(type)}
+              size="small"
+              variant="outlined"
+              sx={{ fontWeight: 500 }}
+            />
+          );
+        },
+      }
+      ,
+      {
+        key: "status",
+        label: "Status",
+        width: 120,
+        sortable: true,
+        filterable: true,
+        render: (row) => {
+          const status = row.status;
+          return (
+            <Chip
+              label={status}
+              color={getColor(status)}
+              size="small"
+              variant="outlined"
+              sx={{ fontWeight: 500 }}
+            />
+          );
+        },
+      }
+      
+      ,
       {
         key: 'actions',
         label: 'Actions',
@@ -141,115 +216,13 @@ const PlacementsList = () => {
     ];
   };
 
-  const fetchPlacementDetails = async () => {
-    setLoading(true);
-    try {
-      const response = await httpService.get('/candidate/placement/placements-list');
-      const rawData = response.data.data;
-  
-      const formattedData = rawData.map((item) => ({
-        ...item,
-        startDate: item.startDate ? formatDate(item.startDate) : '',
-        endDate: item.endDate ? formatDate(item.endDate) : '',
-      }));
-  
-      setData(formattedData);
-      ToastService.success('Placement data refreshed successfully!');
-    } catch (error) {
-      console.error('Error fetching placement data:', error);
-      setData([]);
-      ToastService.error('Failed to load placement data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (isoDate) => {
-    if (!isoDate) return '';
-    
-    if (isoDate.includes('-')) {
-      const [year, month, day] = isoDate.split('-');
-      return `${month}/${day}/${year}`;
-    } else if (isoDate.includes('/')) {
-      return isoDate;
-    }
-    
-    try {
-      const date = new Date(isoDate);
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const year = date.getFullYear();
-      return `${month}/${day}/${year}`;
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return '';
-    }
-  };
-
-  const formatDateForAPI = (dateStr) => {
-    if (!dateStr) return null;
-    
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      return dateStr;
-    }
-    
-    try {
-      return new Date(dateStr).toISOString().split('T')[0];
-    } catch (e) {
-      return null;
-    }
-  };
-
-  const handleFormSubmit = async (values) => {
-    try {
-      const submissionValues = {
-        ...values,
-        startDate: values.startDate ? formatDateForAPI(values.startDate) : null,
-        endDate: values.endDate ? formatDateForAPI(values.endDate) : null,
-      };
-
-      console.log(submissionValues);
-
-      if (editingPlacement) {
-        const response = await httpService.put(
-          `/candidate/placement/update-placement/${editingPlacement.id}`,
-          submissionValues
-        );
-        if (response.data.success) {
-          ToastService.success('Placement updated successfully!');
-          fetchPlacementDetails();
-          handleCloseDrawer();
-        }
-      } else {
-        const response = await httpService.post(
-          '/candidate/placement/create-placement',
-          submissionValues
-        );
-        if (response.data.success) {
-          ToastService.success('New placement created successfully!');
-          fetchPlacementDetails();
-          handleCloseDrawer();
-        }
-      }
-    } catch (error) {
-      console.error('Error saving placement:', error);
-      ToastService.error(error.response?.data?.message || 'Failed to save placement. Please try again.');
-    }
-  };
-
-  useEffect(() => {
-    fetchPlacementDetails();
-  }, []);
-
-  const columns = generateColumns(data);
-
   return (
     <>
-      <ComponentTitle title="Placement Management">
+      <ComponentTitle title="Placement Management" variant='h6'>
         <Button
           variant="outlined"
           startIcon={<Refresh />}
-          onClick={fetchPlacementDetails}
+          onClick={() => dispatch(fetchPlacements())}
           disabled={loading}
           sx={{ mr: 2 }}
         >
@@ -266,11 +239,11 @@ const PlacementsList = () => {
       </ComponentTitle>
       
       <DataTable
-        data={data}
-        columns={columns}
+        data={placements}
+        columns={generateColumns()}
         pageLimit={20}
         title=""
-        onRefresh={fetchPlacementDetails}
+        onRefresh={() => dispatch(fetchPlacements())}
         isRefreshing={loading}
         enableSelection={false}
         defaultSortColumn="id"
@@ -317,7 +290,7 @@ const PlacementsList = () => {
             pb: 2
           }}>
             <Typography variant="h5" component="h2">
-              {editingPlacement ? 'Edit Placement' : 'Add New Placement'}
+              {selectedPlacement ? 'Edit Placement' : 'Add New Placement'}
             </Typography>
             <IconButton 
               onClick={handleCloseDrawer} 
@@ -334,9 +307,9 @@ const PlacementsList = () => {
           </Box>
           <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
             <PlacementForm 
-              initialValues={editingPlacement || {}}
-              onSubmit={handleFormSubmit}
+              initialValues={selectedPlacement || {}}
               onCancel={handleCloseDrawer}
+              isEdit={!!selectedPlacement}
             />
           </Box>
         </Box>
@@ -351,7 +324,6 @@ const PlacementsList = () => {
         PaperProps={{
           sx: {
             borderRadius: 2,
-            
           }
         }}
       >

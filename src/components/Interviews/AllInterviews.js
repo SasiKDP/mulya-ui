@@ -33,7 +33,7 @@ const AllInterviews = () => {
     try {
       setLoading(true);
       const response = await httpService.get(
-        "/candidate/allscheduledinterviews"
+        "/candidate/allInterviews"
       );
       // Add temporary IDs if not present
       const dataWithIds = response.data.map((item, index) => ({
