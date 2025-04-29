@@ -97,13 +97,13 @@ const PlacementsList = () => {
     if (!placementData || placementData.length === 0) return [];
     return [
       { key: 'id', label: 'Placement ID', type: 'text', sortable: true, filterable: true, width: 100 },
-      { key: 'consultantName', label: 'Consultant Name', type: 'text', sortable: true, filterable: true, width: 150 },
-      { key: 'consultantEmail', label: 'Email', type: 'text', sortable: true, filterable: true, width: 200 },
-      { key: 'phone', label: 'Phone', type: 'text', sortable: true, filterable: true, width: 120 },
+      { key: 'candidateFullName', label: 'Consultant Name', type: 'text', sortable: true, filterable: true, width: 150 },
+      { key: 'candidateEmailId', label: 'Email', type: 'text', sortable: true, filterable: true, width: 200 },
+      { key: 'candidateContactNo', label: 'Phone', type: 'text', sortable: true, filterable: true, width: 120 },
       { key: 'technology', label: 'Technology', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'sales', label: 'Sales',  width: 130 },
       { key: 'recruiter', label: 'Recruiter', width: 130 },
-      { key: 'client', label: 'Client', type: 'select', sortable: true, filterable: true, width: 130 },
+      { key: 'clientName', label: 'Client', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'vendorName', label: 'Vendor', type: 'select', sortable: true, filterable: true, width: 130 },
       { key: 'startDate', label: 'Start Date', type: 'text', sortable: true, filterable: true, width: 120 },
       { key: 'endDate', label: 'End Date', type: 'text', sortable: true, filterable: true, width: 120 },
