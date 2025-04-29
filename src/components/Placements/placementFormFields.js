@@ -1,6 +1,6 @@
 export const placementFormFields = [
   {
-    name: "consultantName",
+    name: "candidateFullName",
     label: "Consultant Name",
     type: "text",
     required: true,
@@ -9,7 +9,7 @@ export const placementFormFields = [
     helperText: "Enter consultant's full name",
   },
   {
-    name: "consultantEmail",
+    name: "candidateEmailId",
     label: "Email",
     type: "email",
     required: true,
@@ -18,7 +18,7 @@ export const placementFormFields = [
     helperText: "Example: name@example.com",
   },
   {
-    name: "phone",
+    name: "candidateContactNo",
     label: "Phone",
     type: "tel",
     required: true,
@@ -36,7 +36,7 @@ export const placementFormFields = [
     sx: { mb: 2 },
   },
   {
-    name: "client",
+    name: "clientName",
     label: "Client",
     type: "text",
     required: true,
