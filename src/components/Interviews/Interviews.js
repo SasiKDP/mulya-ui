@@ -224,19 +224,7 @@ const Interviews = () => {
       width: 140,
       render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
     },
-    // Show interviewer/assignee column for SUPERADMIN
-    ...(role === "SUPERADMIN" ? [
-      {
-        key: "assignedTo",
-        label: "Assigned To",
-        width: 150,
-        render: (row) => (
-          <Typography variant="body2">
-            {row.assigneeName || row.assigneeEmail || "Not Assigned"}
-          </Typography>
-        ),
-      }
-    ] : []),
+   
     {
       key: "zoomLink",
       label: "Meeting",
