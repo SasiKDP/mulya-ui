@@ -15,7 +15,7 @@ export const generateSubmissionColumns = (data = [], handlers = {}) => {
       filterable: true,
     },
     {
-      key: "emailId",
+      key: "candidateEmailId",
       label: "Email",
       type: "text",
       sortable: true,
@@ -63,7 +63,6 @@ export const generateSubmissionColumns = (data = [], handlers = {}) => {
       sortable: true,
       filterable: true,
     },
-    
     {
       key: "noticePeriod",
       label: "Notice Period",
@@ -87,6 +86,46 @@ export const generateSubmissionColumns = (data = [], handlers = {}) => {
       sortable: true,
       filterable: true,
       options: ["New", "Screening", "Interview Scheduled", "Rejected", "Hired"],
+    },
+    {
+      key: "currentLocation",
+      label: "Location",
+      type: "text",
+      sortable: true,
+      filterable: true,
+    },
+    {
+      key: "preferredLocation",
+      label: "Preferred Location",
+      type: "text",
+      sortable: true,
+      filterable: true,
+    },
+    {
+      key: "clientName",
+      label: "Client Name",
+      type: "text",
+      sortable: true,
+      filterable: true,
+    },
+    {
+      key: "profileReceivedDate",
+      label: "Profile Received Date",
+      type: "date",
+      sortable: true,
+      filterable: true,
+    },
+    {
+      key: "skills",
+      label: "Skills",
+      type: "text",
+      sortable: false,
+      filterable: true,
+      render: (row) => (
+        <div style={{ whiteSpace: "pre-wrap" }}>
+          {Array.isArray(row.skills) ? row.skills.join(", ") : row.skills}
+        </div>
+      ),
     },
   ];
 

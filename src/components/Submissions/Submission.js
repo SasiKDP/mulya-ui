@@ -76,8 +76,24 @@ const Submission = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get(`/candidate/submissionsByUserId/${userId}`);
-      setData(response.data);
+  
+      let response;
+  
+      if (role === "SUPERADMIN") {
+        response = await httpService.get("/candidate/submissions");
+      } else {
+        response = await httpService.get(`/candidate/submissionsByUserId/${userId}`);
+      }
+  
+      const submissions = response.data.data || response.data || [];
+  
+      // Sort by latest first (assuming there's a `createdAt` field)
+      const sortedSubmissions = submissions.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+  
+      setData(sortedSubmissions);
+      
     } catch (error) {
       console.error("Error fetching candidate submissions:", error);
       showSnackbar("Failed to fetch submissions", "error");
@@ -85,6 +101,8 @@ const Submission = () => {
       setLoading(false);
     }
   };
+  
+  
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });

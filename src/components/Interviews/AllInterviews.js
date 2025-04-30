@@ -40,8 +40,11 @@ const AllInterviews = () => {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get("/candidate/allInterviews");
-      const dataWithIds = response.data.payload.map((item, index) => ({
+      const response = await httpService.get(
+        "/candidate/allInterviews"
+      );
+      // Add temporary IDs if not present
+      const dataWithIds = response.data.map((item, index) => ({
         ...item,
         interviewId: item.interviewId || `temp-${index + 1}`,
       }));
