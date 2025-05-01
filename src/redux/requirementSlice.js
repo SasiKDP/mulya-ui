@@ -78,11 +78,30 @@ export const getRequirementDetailsByJobId = createAsyncThunk(
   }
 );
 
+export const fetchAssignedJobs = createAsyncThunk(
+  'assignedJobs/fetch',
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await httpService.get(`/requirements/recruiter/${userId}`);
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (response.data?.message) {
+        return rejectWithValue(response.data.message);
+      } else {
+        return rejectWithValue("Data fetched was not in the expected format");
+      }
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 const requirementSlice =  createSlice({
     name: "requirement",
     initialState: {
         loading: false,
         filteredRequirementList: [],
+        assignedJobs: [],
         filterAssignedRequirements: [],
         filteredTeamLeadRequirements: [],
         requirementsAllBDM : [],
@@ -147,7 +166,7 @@ const requirementSlice =  createSlice({
           })
           .addCase(filterRequirementsByRecruiter.fulfilled, (state, action) => {
             state.loading = false;
-            state.filterAssignedRequirements = action.payload;
+            state.assignedJobs = action.payload;
           })
           .addCase(filterRequirementsByRecruiter.rejected, (state, action) => {
             state.loading = false;
@@ -167,6 +186,21 @@ const requirementSlice =  createSlice({
           .addCase(getRequirementDetailsByJobId.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload?.message || 'Something went wrong';
+          })
+
+
+          .addCase(fetchAssignedJobs.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+          })
+          .addCase(fetchAssignedJobs.fulfilled, (state, action) => {
+            state.loading = false;
+            state.assignedJobs = action.payload;
+          })
+          .addCase(fetchAssignedJobs.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload?.message || 'Failed to load assigned jobs';
+            state.assignedJobs = [];
           })
           
         }
