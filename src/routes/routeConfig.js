@@ -1,31 +1,51 @@
-import { lazy } from "react";
-import Assigned from "../components/Assigned/Assigned";
-import Submission from "../components/Submissions/Submission";
-import Requirements from "../components/Requirements/Requirements";
-import Interviews from "../components/Interviews/Interviews";
-import LoginPage from "../pages/LoginPage";
-import Dashboard from "../Layout/Dashboard";
-import PostRequirement from "../components/Requirements/PostRequirement/PostRequirement";
-import Registration from "../components/LogIn/Registration";
-import UsersList from "../components/Users/UsersList";
-import ClientList from "../components/Clients/ClientList";
-import OnBoardClient from "../components/Clients/OnBoardClient";
-import NotFound from "../pages/NotFound/NotFound";
-import Unauthorized from "../pages/Unauthorized";
-import DeniedAccessCard from "../pages/NotFound/DeniedAccessCard";
-import PlacementsList from "../components/Placements/PlacementList";
-import BenchList from "../components/Bench/BenchList";
-import IndexPage from "../pages/IndexPage";
+import { lazy, Suspense } from "react";
 import ProtectedRoute from "./ProtectedRoute";
-import AllInterviews from "../components/Interviews/AllInterviews";
-import AllSubmissions from "../components/Submissions/AllSubmissions";
-import TeamDashboard from "../components/TeamMetrics/TeamMetrices";
-import TeamMetrices from "../components/TeamMetrics/TeamMetrices";
-import bdmStatus from "../components/TeamMetrics/BdmStatus";
-import EmployeeStatus from "../components/TeamMetrics/EmployeeStatus";
-import BdmStatus from "../components/TeamMetrics/BdmStatus";
-import JobDetails from "../components/Requirements/jobTracking/JobDetails";
+import { Box, CircularProgress, Typography } from "@mui/material";
 
+const Loadable = (Component) => (
+  <Suspense
+    fallback={
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        height="100vh"
+        gap={2}
+      >
+        <CircularProgress color="primary" size={40} />
+        <Typography variant="subtitle1" color="textSecondary">
+          Loading component...
+        </Typography>
+      </Box>
+    }
+  >
+    <Component />
+  </Suspense>
+);
+
+// Lazy imports
+const Dashboard = lazy(() => import("../Layout/Dashboard"));
+const IndexPage = lazy(() => import("../pages/IndexPage"));
+const LoginPage = lazy(() => import("../pages/LoginPage"));
+const Submission = lazy(() => import("../components/Submissions/Submission"));
+const AllSubmissions = lazy(() => import("../components/Submissions/AllSubmissions"));
+const Assigned = lazy(() => import("../components/Assigned/Assigned"));
+const Requirements = lazy(() => import("../components/Requirements/Requirements"));
+const PostRequirement = lazy(() => import("../components/Requirements/PostRequirement/PostRequirement"));
+const Interviews = lazy(() => import("../components/Interviews/Interviews"));
+const AllInterviews = lazy(() => import("../components/Interviews/AllInterviews"));
+const UsersList = lazy(() => import("../components/Users/UsersList"));
+const ClientList = lazy(() => import("../components/Clients/ClientList"));
+const OnBoardClient = lazy(() => import("../components/Clients/OnBoardClient"));
+const PlacementsList = lazy(() => import("../components/Placements/PlacementList"));
+const BenchList = lazy(() => import("../components/Bench/BenchList"));
+const TeamMetrices = lazy(() => import("../components/TeamMetrics/TeamMetrices"));
+const BdmStatus = lazy(() => import("../components/TeamMetrics/BdmStatus"));
+const EmployeeStatus = lazy(() => import("../components/TeamMetrics/EmployeeStatus"));
+const Unauthorized = lazy(() => import("../pages/Unauthorized"));
+const DeniedAccessCard = lazy(() => import("../pages/NotFound/DeniedAccessCard"));
+const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
 
 const routeConfig = [
   {
@@ -45,7 +65,7 @@ const routeConfig = [
     children: [
       {
         path: "",
-        element: <Dashboard />,
+        element: Loadable(Dashboard),
         children: [
           {
             path: "home",
@@ -61,104 +81,74 @@ const routeConfig = [
                 ]}
               />
             ),
-            children: [{ index: true, element: <IndexPage /> }],
+            children: [{ index: true, element: Loadable(IndexPage) }],
           },
           {
             path: "assigned",
             element: (
               <ProtectedRoute
-                allowedRoles={[
-                  "ADMIN",
-                  "SUPERADMIN",
-                  "EMPLOYEE",
-                  "TEAMLEAD",
-                  "BDM",
-                ]}
+                allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "TEAMLEAD", "BDM"]}
               />
             ),
-            children: [{ index: true, element: <Assigned /> }],
+            children: [{ index: true, element: Loadable(Assigned) }],
           },
           {
             path: "submissions",
             element: (
               <ProtectedRoute
-                allowedRoles={[
-                  "ADMIN",
-                  "SUPERADMIN",
-                  "EMPLOYEE",
-                  "BDM",
-                  "TEAMLEAD",
-                  "PARTNER",
-                ]}
+                allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER"]}
               />
             ),
-            children: [{ index: true, element: <Submission /> }],
+            children: [{ index: true, element: Loadable(Submission) }],
           },
           {
             path: "submissions-all",
             element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
-            children: [{ index: true, element: <AllSubmissions /> }],
+            children: [{ index: true, element: Loadable(AllSubmissions) }],
           },
           {
             path: "requirements",
             element: (
-              <ProtectedRoute
-                allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]}
-              />
+              <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]} />
             ),
-            children: [
-              { index: true, element: <Requirements /> },
-              { path: "job-details/:jobId", element: <JobDetails /> }
-            ],
+            children: [{ index: true, element: Loadable(Requirements) }],
           },
           {
             path: "jobForm",
-            element: (
-              <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />
-            ),
-            children: [{ index: true, element: <PostRequirement /> }],
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
+            children: [{ index: true, element: Loadable(PostRequirement) }],
           },
           {
             path: "interviews",
             element: (
-              <ProtectedRoute
-                allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"]}
-              />
+              <ProtectedRoute allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD",'SUPERADMIN']} />
             ),
-            children: [{ index: true, element: <Interviews /> }],
+            children: [{ index: true, element: Loadable(Interviews) }],
           },
           {
             path: "interviews-all",
             element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
-            children: [{ index: true, element: <AllInterviews /> }],
+            children: [{ index: true, element: Loadable(AllInterviews) }],
           },
           {
             path: "users",
             element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
-            children: [{ index: true, element: <UsersList /> }],
+            children: [{ index: true, element: Loadable(UsersList) }],
           },
           {
             path: "clients",
-            element: (
-              <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />
-            ),
-            children: [{ index: true, element: <ClientList /> }],
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
+            children: [{ index: true, element: Loadable(ClientList) }],
           },
           {
             path: "addNewClient",
-            element: (
-              <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />
-            ),
-            children: [{ index: true, element: <OnBoardClient /> }],
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
+            children: [{ index: true, element: Loadable(OnBoardClient) }],
           },
           {
             path: "placements",
-            element: (
-              <ProtectedRoute
-                allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]}
-              />
-            ),
-            children: [{ index: true, element: <PlacementsList /> }],
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]} />,
+            children: [{ index: true, element: Loadable(PlacementsList) }],
           },
           {
             path: "bench-users",
@@ -174,7 +164,7 @@ const routeConfig = [
                 ]}
               />
             ),
-            children: [{ index: true, element: <BenchList /> }],
+            children: [{ index: true, element: Loadable(BenchList) }],
           },
           {
             path: "team-metrics",
@@ -193,7 +183,7 @@ const routeConfig = [
             children: [
               {
                 index: true,
-                element: <TeamMetrices />,
+                element: Loadable(TeamMetrices),
               },
               {
                 path: "bdmstatus/:employeeId",
@@ -205,12 +195,12 @@ const routeConfig = [
                 children: [
                   {
                     index: true,
-                    element: <BdmStatus />,
+                    element: Loadable(BdmStatus),
                   },
                 ],
               },
               {
-                path: "employeestatus/:employeeId", 
+                path: "employeestatus/:employeeId",
                 element: (
                   <ProtectedRoute
                     allowedRoles={["ADMIN", "SUPERADMIN", "TEAMLEAD"]}
@@ -219,21 +209,21 @@ const routeConfig = [
                 children: [
                   {
                     index: true,
-                    element: <EmployeeStatus />, // or another component if needed
+                    element: Loadable(EmployeeStatus),
                   },
                 ],
               },
             ],
           },
-          { index: true, element: <IndexPage /> },
+          { index: true, element: Loadable(IndexPage) },
         ],
       },
     ],
   },
-  { path: "/", element: <LoginPage /> },
-  { path: "/access", element: <DeniedAccessCard /> },
-  { path: "/unauthorized", element: <Unauthorized /> },
-  { path: "*", element: <NotFound /> },
+  { path: "/", element: Loadable(LoginPage) },
+  { path: "/access", element: Loadable(DeniedAccessCard) },
+  { path: "/unauthorized", element: Loadable(Unauthorized) },
+  { path: "*", element: Loadable(NotFound) },
 ];
 
 export default routeConfig;
