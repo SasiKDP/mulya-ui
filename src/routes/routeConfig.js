@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import ProtectedRoute from "./ProtectedRoute";
 import { Box, CircularProgress, Typography } from "@mui/material";
+import JobDetails from "../components/Requirements/jobTracking/JobDetails";
 
 const Loadable = (Component) => (
   <Suspense
@@ -46,6 +47,7 @@ const EmployeeStatus = lazy(() => import("../components/TeamMetrics/EmployeeStat
 const Unauthorized = lazy(() => import("../pages/Unauthorized"));
 const DeniedAccessCard = lazy(() => import("../pages/NotFound/DeniedAccessCard"));
 const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
+
 
 const routeConfig = [
   {
@@ -111,7 +113,13 @@ const routeConfig = [
             element: (
               <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]} />
             ),
-            children: [{ index: true, element: Loadable(Requirements) }],
+            children: [
+              { index: true, element: Loadable(Requirements) },
+              {
+                path: "job-details/:jobId",
+                element: Loadable(JobDetails),
+              },
+            ],
           },
           {
             path: "jobForm",

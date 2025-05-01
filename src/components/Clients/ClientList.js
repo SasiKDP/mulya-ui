@@ -376,6 +376,7 @@ const ClientList = () => {
         </Stack>
       </Stack>
       
+      
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
