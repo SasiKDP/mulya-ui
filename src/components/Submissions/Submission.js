@@ -5,7 +5,6 @@ import {
   Tooltip,
   CircularProgress,
   Drawer,
-  Link,
   Typography,
   Skeleton,
   Snackbar,
@@ -15,20 +14,15 @@ import {
   Tabs,
   Tab,
   ButtonGroup,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
 } from "@mui/material";
 import { Download, Edit, Delete } from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
-import BusinessIcon from "@mui/icons-material/Business";
-import EmailIcon from "@mui/icons-material/Email";
-import PhoneIcon from "@mui/icons-material/Phone";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import Chip from "@mui/material/Chip";
-import Button from "@mui/material/Button";
+import BusinessIcon from '@mui/icons-material/Business';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import Chip from '@mui/material/Chip';
+import Button from '@mui/material/Button';
 import DataTable from "../muiComponents/DataTabel";
 import CandidateSubmissionDrawer from "../Assigned/CandidateSubmissionDrawer";
 import ScheduleInterviewForm from "./ScheduleInterviewForm";
@@ -36,7 +30,12 @@ import httpService from "../../Services/httpService";
 import { useDispatch, useSelector } from "react-redux";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { fetchSubmissionsTeamLead } from "../../redux/submissionSlice";
-import { ro } from "date-fns/locale";
+
+import { showToast } from "../../utils/ToastNotification";
+import { downloadFile } from "../../utils/downloadUtils";
+
+
+
 
 const Submission = () => {
   const [data, setData] = useState([]);
@@ -46,51 +45,55 @@ const Submission = () => {
   const [candidateData, setCandidateData] = useState(null);
   const [mode, setMode] = useState("add");
   const [moveToBenchLoading, setMoveToBenchLoading] = useState(false);
-  const [processingCandidateId, setProcessingCandidateId] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  // Move to bench dialog state
-  const [moveToBenchDialog, setMoveToBenchDialog] = useState({
-    open: false,
-    candidate: null,
-  });
-
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState(null);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-  const { filteredSubmissionsForRecruiter } = useSelector(
-    (state) => state.submission
-  );
-  const [isTeamData, setIsTeamData] = useState(false);
+  const { filteredSubmissionsForRecruiter } = useSelector((state) => state.submission);
+  const [isTeamData, setIsTeamData] = useState(false)
 
-  console.log("Filtered Recruiter Data: ", filteredSubmissionsForRecruiter);
-  const { selfSubmissionsTL, teamSubmissionsTL } = useSelector(
-    (state) => state.submission
-  );
+  const { selfSubmissionsTL, teamSubmissionsTL } = useSelector((state) => state.submission)
 
-  const { userId, role, userName } = useSelector((state) => state.auth);
+  const { userId, role } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [tabValue, setTabValue] = useState(0);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [userId]);
+
+  useEffect(() => {
+    if (role === "TEAMLEAD") {
+      dispatch(fetchSubmissionsTeamLead());
+    }
+  }, [dispatch])
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      if (role === "TEAMLEAD") {
-        dispatch(fetchSubmissionsTeamLead());
+  
+      let response;
+  
+      if (role === "SUPERADMIN") {
+        response = await httpService.get("/candidate/submissions");
       } else {
-        const response = await httpService.get(
-          `/candidate/submissions/${userId}`
-        );
-        setData(response.data);
+        response = await httpService.get(`/candidate/submissionsByUserId/${userId}`);
       }
+  
+      const submissions = response.data.data || response.data || [];
+  
+      // Sort by latest first (assuming there's a `createdAt` field)
+      const sortedSubmissions = submissions.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+  
+      setData(sortedSubmissions);
+      
     } catch (error) {
       console.error("Error fetching candidate submissions:", error);
       showSnackbar("Failed to fetch submissions", "error");
@@ -98,170 +101,149 @@ const Submission = () => {
       setLoading(false);
     }
   };
+  
+  
 
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
+    showToast(message, severity); // Use the imported showToast function
   };
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  // Open move to bench dialog
-  const openMoveToBenchDialog = (row, e) => {
+  const handleMoveToBench = async (row, e) => {
     e.stopPropagation();
-    setMoveToBenchDialog({
-      open: true,
-      candidate: row,
-    });
-  };
 
-  // Close move to bench dialog
-  const closeMoveToBenchDialog = () => {
-    setMoveToBenchDialog({
-      open: false,
-      candidate: null,
-    });
-  };
-
-  const handleMoveToBench = async () => {
-    const row = moveToBenchDialog.candidate;
-    if (!row) return;
-
-    try {
-      setMoveToBenchLoading(true);
-      setProcessingCandidateId(row.candidateId);
-
-      // Create FormData for the bench request
-      const formData = new FormData();
-      formData.append("fullName", row.fullName);
-      formData.append("email", row.emailId);
-      formData.append("contactNumber", row.contactNumber);
-      formData.append("relevantExperience", row.relevantExperience || "");
-      formData.append("totalExperience", row.totalExperience || "");
-
-      // Convert skills array to JSON string if needed
-      if (Array.isArray(row.skills)) {
-        formData.append("skills", JSON.stringify(row.skills));
-      } else if (typeof row.skills === "string") {
-        // If skills is already a string, split it and convert to JSON
-        const skillsArray = row.skills
-          .split(",")
-          .map((skill) => skill.trim());
-        formData.append("skills", JSON.stringify(skillsArray));
-      } else {
-        // If skills is null or undefined, send empty array
-        formData.append("skills", JSON.stringify([]));
-      }
-
-      formData.append("linkedin", row.linkedin || "");
-      formData.append("referredBy", userName || "");
-
-      // Fetch resume using the correct endpoint
+    if (window.confirm(`Are you sure you want to move ${row.fullName} to the bench?`)) {
       try {
-        const response = await httpService.get(
-          `/candidate/download-resume/${row.candidateId}`,
-          {
+        setMoveToBenchLoading(true);
+
+        // Create FormData for the bench request
+        const formData = new FormData();
+        formData.append("fullName", row.fullName);
+        formData.append("email", row.emailId || row.candidateEmailId);
+        formData.append("contactNumber", row.contactNumber);
+        formData.append("relevantExperience", row.relevantExperience || "");
+        formData.append("totalExperience", row.totalExperience || "");
+
+        // Convert skills array to JSON string if needed
+        if (Array.isArray(row.skills)) {
+          formData.append("skills", JSON.stringify(row.skills));
+        } else if (typeof row.skills === 'string') {
+          // If skills is already a string, split it and convert to JSON
+          const skillsArray = row.skills.split(',').map(skill => skill.trim());
+          formData.append("skills", JSON.stringify(skillsArray));
+        } else {
+          // If skills is null or undefined, send empty array
+          formData.append("skills", JSON.stringify([]));
+        }
+
+        formData.append("linkedin", row.linkedin || "");
+        formData.append("referredBy", row.userEmail || "");
+        
+        // Fetch resume using the correct endpoint with both jobId and candidateId
+        try {
+          const response = await httpService.get(`/candidate/download-resume/${row.jobId}/${row.candidateId}`, {
             responseType: "blob",
+          });
+
+          // Get file name from content-disposition or create a default one
+          const fileName = response.headers["content-disposition"]
+            ? response.headers["content-disposition"].split("filename=")[1]
+            : `resume_${row.candidateId}.pdf`;
+
+          // Create a file from the blob
+          const contentType = response.headers["content-type"];
+          const file = new File([response.data], fileName, { type: contentType });
+
+          // Use the correct field name for the API
+          formData.append("resumeFiles", file);
+        } catch (error) {
+          console.error("Error fetching resume:", error);
+          // Continue with the bench submission even if resume fetch fails
+        }
+
+        // Send to bench endpoint
+        await httpService.post('/candidate/bench/save', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
           }
-        );
-
-        // Get file name from content-disposition or create a default one
-        const fileName = response.headers["content-disposition"]
-          ? response.headers["content-disposition"].split("filename=")[1]
-          : `resume_${row.candidateId}.pdf`;
-
-        // Create a file from the blob
-        const contentType = response.headers["content-type"];
-        const file = new File([response.data], fileName, {
-          type: contentType,
         });
 
-        // Use the correct field name for the API
-        formData.append("resumeFiles", file);
+        // Remove from current list
+        setData(data.filter(item => item.submissionId !== row.submissionId));
+        
+        showSnackbar(`${row.fullName} has been moved to the bench successfully!`);
       } catch (error) {
-        console.error("Error fetching resume:", error);
-        // Continue with the bench submission even if resume fetch fails
+        console.error("Error moving candidate to bench:", error);
+        showSnackbar("Failed to move candidate to bench. Please try again.", "error");
+      } finally {
+        setMoveToBenchLoading(false);
       }
-
-      // Send to bench endpoint
-      await httpService.post("/candidate/bench/save", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      // Remove from current list
-      setData(data.filter((item) => item.candidateId !== row.candidateId));
-
-      showSnackbar(
-        `${row.fullName} has been moved to the bench successfully!`
-      );
-      closeMoveToBenchDialog();
-    } catch (error) {
-      console.error("Error moving candidate to bench:", error);
-      const errorMessage =
-        error?.response?.data?.message || error.message || "Something went wrong!";
-      showSnackbar(errorMessage, "error");
-    } finally {
-      setMoveToBenchLoading(false);
-      setProcessingCandidateId(null);
     }
   };
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-    const selected = event.target.id;
-    if (selected === "team") {
-      setIsTeamData(true);
-      return;
-    }
-    setIsTeamData(false);
-  };
-
-  const downloadResume = async (candidateId, e) => {
+  const downloadResume = async (jobId, candidateId, e) => {
     e.stopPropagation();
-
+    
     try {
       setDownloadLoading(true);
-
+  
+      // Make the request with proper responseType
       const response = await httpService.get(
-        `/candidate/download-resume/${candidateId}`,
+        `/candidate/download-resume/${candidateId}/${jobId}`,
         {
-          responseType: "blob",
+          responseType: 'arraybuffer', // Use arraybuffer instead of blob
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Accept': 'application/pdf' // or whatever file type you expect
+          }
         }
       );
-
-      if (!response || !response.data) {
-        throw new Error("No resume file received.");
+  
+      // Check for empty response
+      if (!response.data || response.data.byteLength === 0) {
+        throw new Error('Empty file received');
       }
-
-      // Detect content type and assign proper extension
-      const contentType = response.headers["content-type"];
-      const extension =
-        contentType === "application/pdf"
-          ? ".pdf"
-          : contentType === "application/msword"
-          ? ".doc"
-          : contentType ===
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          ? ".docx"
-          : ".pdf"; // fallback
-
-      const filename = `resume_${candidateId}${extension}`;
+  
+      // Get filename from headers or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `resume_${candidateId}.pdf`;
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename\*?=['"]?(?:UTF-\d['"]*)?([^;\r\n"']*)['"]?;?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1]);
+        }
+      }
+  
+      // Determine content type from headers or default to PDF
+      const contentType = response.headers['content-type'] || 'application/pdf';
+  
+      // Create the blob
       const blob = new Blob([response.data], { type: contentType });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
+  
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
       link.href = url;
-      link.setAttribute("download", filename);
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+  
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+  
+      showSnackbar('Resume downloaded successfully');
     } catch (error) {
-      console.error("Error downloading resume:", error);
-      showSnackbar("Failed to download resume", "error");
+      console.error('Download failed:', error);
+      showSnackbar('Failed to download resume', 'error');
     } finally {
       setDownloadLoading(false);
     }
@@ -274,16 +256,26 @@ const Submission = () => {
     setOpenDrawer(true);
   };
 
-  const handleDelete = async (candidateId, e) => {
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    const selected = event.target.id;
+    if(selected === "team"){
+      setIsTeamData(true);
+      return;
+    }
+    setIsTeamData(false)
+  };
+
+  const handleDelete = async (submissionId, e) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this candidate?")) {
+    if (window.confirm("Are you sure you want to delete this candidate submission?")) {
       try {
-        await httpService.delete(`/candidate/${candidateId}`);
+        await httpService.delete(`/candidate/deletesubmission/${submissionId}`);
         fetchData();
-        showSnackbar("Candidate deleted successfully");
+        showSnackbar("Candidate submission deleted successfully");
       } catch (error) {
-        console.error("Error deleting candidate:", error);
-        showSnackbar("Failed to delete candidate", "error");
+        console.error("Error deleting candidate submission:", error);
+        showSnackbar("Failed to delete candidate submission", "error");
       }
     }
   };
@@ -308,6 +300,7 @@ const Submission = () => {
     setScheduleDrawerOpen(false);
   };
 
+
   const generateColumns = (loading = false) => [
     {
       key: "candidateId",
@@ -316,20 +309,38 @@ const Submission = () => {
       sortable: true,
       filterable: true,
       width: 120,
-      render: loading
-        ? () => <Skeleton variant="text" width={80} />
-        : (row) => (
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 500,
-                color: "primary.main",
-                fontFamily: "monospace",
-              }}
-            >
-              {row.candidateId}
-            </Typography>
-          ),
+      render: loading ? () => <Skeleton variant="text" width={80} /> : (row) => (
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: 500,
+            color: 'primary.main',
+            fontFamily: 'monospace'
+          }}
+        >
+          {row.candidateId}
+        </Typography>
+      )
+    },
+    {
+      key: "submissionId",
+      label: "Submission ID",
+      type: "text",
+      sortable: true,
+      filterable: true,
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={120} /> : (row) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontWeight: 500,
+            color: 'text.secondary',
+            fontFamily: 'monospace'
+          }}
+        >
+          {row.submissionId}
+        </Typography>
+      )
     },
     {
       key: "fullName",
@@ -338,21 +349,19 @@ const Submission = () => {
       sortable: true,
       filterable: true,
       width: 180,
-      render: loading
-        ? () => <Skeleton variant="text" width={120} />
-        : (row) => (
-            <Typography
-              variant="body1"
-              sx={{
-                fontWeight: 450,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {row.fullName}
-            </Typography>
-          ),
+      render: loading ? () => <Skeleton variant="text" width={120} /> : (row) => (
+        <Typography
+          variant="body1"
+          sx={{
+            fontWeight: 450,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}
+        >
+          {row.fullName}
+        </Typography>
+      )
     },
     {
       key: "clientName",
@@ -361,22 +370,18 @@ const Submission = () => {
       sortable: true,
       filterable: true,
       width: 180,
-      render: loading
-        ? () => <Skeleton variant="text" width={100} />
-        : (row) => (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <BusinessIcon fontSize="small" color="action" />
-              <Typography variant="body2" sx={{ fontStyle: "italic" }}>
-                {row.clientName}
-              </Typography>
-            </Box>
-          ),
+      render: loading ? () => <Skeleton variant="text" width={100} /> : (row) => (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <BusinessIcon fontSize="small" color="action" />
+          <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+            {row.clientName}
+          </Typography>
+        </Box>
+      )
     },
     {
       key: "emailId",
@@ -385,31 +390,27 @@ const Submission = () => {
       sortable: true,
       filterable: true,
       width: 220,
-      render: loading
-        ? () => <Skeleton variant="text" width={180} />
-        : (row) => (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <EmailIcon fontSize="small" color="action" />
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "secondary.main",
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                  "&:hover": { color: "secondary.dark" },
-                }}
-                onClick={() => (window.location.href = `mailto:${row.emailId}`)}
-              >
-                {row.emailId}
-              </Typography>
-            </Box>
-          ),
+      render: loading ? () => <Skeleton variant="text" width={180} /> : (row) => (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <EmailIcon fontSize="small" color="action" />
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'secondary.main',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              '&:hover': { color: 'secondary.dark' }
+            }}
+            onClick={() => window.location.href = `mailto:${row.emailId || row.candidateEmailId}`}
+          >
+            {row.emailId || row.candidateEmailId}
+          </Typography>
+        </Box>
+      )
     },
     {
       key: "contactNumber",
@@ -418,20 +419,18 @@ const Submission = () => {
       sortable: true,
       filterable: true,
       width: 120,
-      render: loading
-        ? () => <Skeleton variant="text" width={80} />
-        : (row) => (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <PhoneIcon fontSize="small" color="action" />
-              <Typography variant="body2">{row.contactNumber}</Typography>
-            </Box>
-          ),
+      render: loading ? () => <Skeleton variant="text" width={80} /> : (row) => (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <PhoneIcon fontSize="small" color="action" />
+          <Typography variant="body2">
+            {row.contactNumber}
+          </Typography>
+        </Box>
+      )
     },
     {
       key: "jobId",
@@ -440,62 +439,17 @@ const Submission = () => {
       sortable: true,
       filterable: true,
       width: 100,
-      render: loading
-        ? () => <Skeleton variant="text" width={60} />
-        : (row) => (
-            <Chip
-              label={row.jobId}
-              size="small"
-              color="info"
-              variant="outlined"
-              sx={{ fontWeight: 500 }}
-            />
-          ),
+      render: loading ? () => <Skeleton variant="text" width={60} /> : (row) => (
+        <Chip
+          label={row.jobId}
+          size="small"
+          color="info"
+          variant="outlined"
+          sx={{ fontWeight: 500 }}
+        />
+      )
     },
-    {
-      key: "interviewStatus",
-      label: "Status",
-      type: "select",
-      sortable: true,
-      filterable: true,
-      width: 120,
-      options: [
-        "selected",
-        "rejected",
-        "pending",
-        "interviewed",
-        "cancelled",
-        "not scheduled",
-      ],
-      render: loading
-        ? () => <Skeleton variant="text" width={80} />
-        : (row) => {
-            const statusColors = {
-              selected: { bg: "#e8f5e9", color: "#2e7d32" },
-              rejected: { bg: "#ffebee", color: "#c62828" },
-              pending: { bg: "#fff8e1", color: "#f57f17" },
-              interviewed: { bg: "#e3f2fd", color: "#1565c0" },
-              cancelled: { bg: "#efebe9", color: "#4e342e" },
-              "not scheduled": { bg: "#f5f5f5", color: "#424242" },
-            };
-
-            return (
-              <Chip
-                label={row.interviewStatus}
-                size="small"
-                sx={{
-                  backgroundColor:
-                    statusColors[row.interviewStatus]?.bg || "#f5f5f5",
-                  color: statusColors[row.interviewStatus]?.color || "#424242",
-                  fontWeight: 500,
-                  textTransform: "capitalize",
-                  width: "100%",
-                  maxWidth: "100px",
-                }}
-              />
-            );
-          },
-    },
+    
     {
       key: "moveToBench",
       label: "Move to Bench",
@@ -503,33 +457,27 @@ const Submission = () => {
       filterable: false,
       width: 130,
       align: "center",
-      render: loading
-        ? () => <Skeleton variant="text" width={100} />
-        : (row) => (
-            <Button
-              variant="outlined"
-              size="small"
-              color="secondary"
-              onClick={(e) => openMoveToBenchDialog(row, e)}
-              disabled={moveToBenchLoading && processingCandidateId === row.candidateId}
-              sx={{
-                textTransform: "none",
-                borderRadius: 2,
-                px: 2,
-                py: 0.5,
-                "&:hover": {
-                  backgroundColor: "secondary.light",
-                  color: "secondary.contrastText",
-                },
-              }}
-            >
-              {moveToBenchLoading && processingCandidateId === row.candidateId ? (
-                <CircularProgress size={20} />
-              ) : (
-                "To Bench"
-              )}
-            </Button>
-          ),
+      render: loading ? () => <Skeleton variant="text" width={100} /> : (row) => (
+        <Button
+          variant="outlined"
+          size="small"
+          color="secondary"
+          onClick={(e) => handleMoveToBench(row, e)}
+          disabled={moveToBenchLoading}
+          sx={{
+            textTransform: 'none',
+            borderRadius: 2,
+            px: 2,
+            py: 0.5,
+            '&:hover': {
+              backgroundColor: 'secondary.light',
+              color: 'secondary.contrastText'
+            }
+          }}
+        >
+          {moveToBenchLoading ? <CircularProgress size={20} /> : 'To Bench'}
+        </Button>
+      ),
     },
     {
       key: "schedule",
@@ -538,25 +486,23 @@ const Submission = () => {
       filterable: false,
       width: 160,
       align: "center",
-      render: loading
-        ? () => <Skeleton variant="text" width={120} />
-        : (row) => (
-            <Button
-              variant="outlined"
-              size="small"
-              color="primary"
-              startIcon={<CalendarTodayIcon fontSize="small" />}
-              onClick={(e) => openScheduleDrawer(row, e)}
-              sx={{
-                textTransform: "none",
-                borderRadius: 2,
-                px: 2,
-                py: 0.5,
-              }}
-            >
-              Schedule
-            </Button>
-          ),
+      render: loading ? () => <Skeleton variant="text" width={120} /> : (row) => (
+        <Button
+          variant="outlined"
+          size="small"
+          color="primary"
+          startIcon={<CalendarTodayIcon fontSize="small" />}
+          onClick={(e) => openScheduleDrawer(row, e)}
+          sx={{
+            textTransform: 'none',
+            borderRadius: 2,
+            px: 2,
+            py: 0.5
+          }}
+        >
+          Schedule
+        </Button>
+      ),
     },
     {
       key: "actions",
@@ -565,121 +511,104 @@ const Submission = () => {
       filterable: false,
       width: 150,
       align: "center",
-      render: loading
-        ? () => (
-            <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} variant="circular" width={32} height={32} />
-              ))}
-            </Box>
-          )
-        : (row) => (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                gap: 1,
-                "& .MuiIconButton-root": {
-                  backgroundColor: "action.hover",
-                  "&:hover": {
-                    backgroundColor: "action.selected",
-                  },
-                },
-              }}
-              onClick={(e) => e.stopPropagation()}
+      render: loading ? () => (
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} variant="circular" width={32} height={32} />
+          ))}
+        </Box>
+      ) : (row) => (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 1,
+            '& .MuiIconButton-root': {
+              backgroundColor: 'action.hover',
+              '&:hover': {
+                backgroundColor: 'action.selected'
+              }
+            }
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Tooltip title="Download Resume">
+            <IconButton
+              size="small"
+              onClick={(e) => downloadResume(row.jobId, row.candidateId, e)}
+              disabled={downloadLoading}
+              sx={{ color: 'success.main' }}
             >
-              <Tooltip title="Download Resume">
-                <IconButton
-                  size="small"
-                  onClick={(e) => downloadResume(row.candidateId, e)}
-                  disabled={downloadLoading}
-                  sx={{ color: "success.main" }}
-                >
-                  {downloadLoading ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <Download fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Edit Candidate">
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleEdit(row, e)}
-                  sx={{ color: "info.main" }}
-                >
-                  <Edit fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete Candidate">
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleDelete(row.candidateId, e)}
-                  sx={{ color: "error.main" }}
-                >
-                  <Delete fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          ),
+              {downloadLoading ? (
+                <CircularProgress size={16} />
+              ) : (
+                <Download fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit Candidate">
+            <IconButton
+              size="small"
+              onClick={(e) => handleEdit(row, e)}
+              sx={{ color: 'info.main' }}
+            >
+              <Edit fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete Candidate">
+            <IconButton
+              size="small"
+              onClick={(e) => handleDelete(row.submissionId, e)}
+              sx={{ color: 'error.main' }}
+            >
+              <Delete fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      ),
     },
   ];
-
+  
   const columns = generateColumns(loading);
 
   return (
     <div>
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={2}
+      <Stack direction="row" alignItems="center" spacing={2}
         sx={{
-          flexWrap: "wrap",
+          flexWrap: 'wrap',
           mb: 3,
-          justifyContent: "space-between",
+          justifyContent: 'space-between',
           p: 2,
-          backgroundColor: "#f9f9f9",
+          backgroundColor: '#f9f9f9',
           borderRadius: 2,
           boxShadow: 1,
-        }}
-      >
-        <Typography variant="h6" color="primary">
-          Submissions List
-        </Typography>
+
+        }}>
+
+        <Typography variant='h6' color='primary'>Submissions List</Typography>
 
         <DateRangeFilter component="RecruiterSubmission" />
       </Stack>
-      
-      {role === "TEAMLEAD" && (
-        <Paper sx={{ mb: 3 }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab id="self" label="Self Submissions" />
-            <Tab id="team" label="Team Submissions" />
-          </Tabs>
-        </Paper>
-      )}
 
+      {role === "TEAMLEAD" &&
+       <Paper sx={{ mb: 3 }}>
+       <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+         <Tab id="self" label="Self Submissions" />
+         <Tab id="team" label="Team Submissions" />
+       </Tabs>
+     </Paper>
+      }
       <DataTable
-        data={
-          isFilteredDataRequested
-            ? filteredSubmissionsForRecruiter
-            : role === "TEAMLEAD"
-            ? isTeamData
-              ? teamSubmissionsTL
-              : selfSubmissionsTL
-            : data || []
-        }
+        data={isFilteredDataRequested ? filteredSubmissionsForRecruiter :
+          role === "TEAMLEAD" ? isTeamData ? teamSubmissionsTL : selfSubmissionsTL :
+            data || []}
         columns={columns}
         title="Candidate Submissions"
         enableSelection={false}
-        defaultSortColumn="candidateId"
+        defaultSortColumn="submissionId"
         defaultSortDirection="desc"
         defaultRowsPerPage={10}
+        
         refreshData={fetchData}
         primaryColor="#00796b"
         secondaryColor="#e0f2f1"
@@ -689,52 +618,8 @@ const Submission = () => {
           selectedRow: "#b2dfdb",
         }}
         onAddNew={openNewCandidateDrawer}
-        uniqueId="candidateId"
+        uniqueId="submissionId"
       />
-
-      {/* Move to Bench Confirmation Dialog */}
-      <Dialog
-        open={moveToBenchDialog.open}
-        onClose={closeMoveToBenchDialog}
-        aria-labelledby="move-to-bench-dialog-title"
-        aria-describedby="move-to-bench-dialog-description"
-        PaperProps={{
-          sx: {
-            borderRadius: 2,
-            p: 1,
-          },
-        }}
-      >
-        <DialogTitle id="move-to-bench-dialog-title">
-          Move to Bench
-          
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText id="move-to-bench-dialog-description">
-            Are you sure you want to move{" "}
-            <strong>{moveToBenchDialog.candidate?.fullName}</strong> to the bench?
-            This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={closeMoveToBenchDialog}
-            color="primary"
-            variant="outlined"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleMoveToBench}
-            color="secondary"
-            variant="contained"
-            disabled={moveToBenchLoading}
-            startIcon={moveToBenchLoading && <CircularProgress size={16} />}
-          >
-            {moveToBenchLoading ? "Processing..." : "Move to Bench"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       <Drawer anchor="right" open={openDrawer} onClose={closeDrawer}>
         <CandidateSubmissionDrawer
@@ -753,7 +638,7 @@ const Submission = () => {
         onClose={closeScheduleDrawer}
         PaperProps={{
           sx: {
-            width: { xs: "100%", sm: 500, md: 500, lg: 600 },
+            width: { xs: "100%", sm:'50%', md:'50%', lg: '50%' },
             p: 2,
             pt: 0,
             borderTopLeftRadius: 12,
@@ -779,33 +664,25 @@ const Submission = () => {
           </IconButton>
         </Box>
 
-        <Box
-          sx={{
-            px: 2,
-            pb: 4,
-            pt: 1,
-            overflowY: "auto",
-            height: "calc(100% - 60px)",
-          }}
-        >
+       
           <ScheduleInterviewForm
             data={scheduleData}
             onClose={closeScheduleDrawer}
             refreshData={fetchData}
           />
-        </Box>
+       
       </Drawer>
 
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>

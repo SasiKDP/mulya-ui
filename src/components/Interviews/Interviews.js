@@ -25,50 +25,78 @@ import { useDispatch, useSelector } from "react-redux";
 import { useConfirm } from "../../hooks/useConfirm"; // Create this hook or use a dialog component
 import ScheduleInterviewForm from "../Submissions/ScheduleInterviewForm";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
-import { getStatusChip } from "../../utils/statusUtils";
+import { getInterviewLevelChip, getStatusChip } from "../../utils/statusUtils";
 import { fetchInterviewsTeamLead } from "../../redux/interviewSlice";
+import ConfirmDialog from "../muiComponents/ConfirmDialog";
+import EditInterviewForm from "./EditInterviewForm"; // Make sure this import is correct
+
 
 const Interviews = () => {
+
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    interview: null,
+  });
 
   const { filterInterviewsForRecruiter } = useSelector(
     (state) => state.interview
   );
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
 
-  // Edit drawer state
-  const [editDrawer, setEditDrawer] = useState({
-    open: false,
-    data: null,
-  });
   const [isTeamData, setIsTeamData] = useState(false);
-  const { selfInterviewsTL, teamInterviewsTL } = useSelector(
-    (state) => state.interview
-  );
+  const { selfInterviewsTL, teamInterviewsTL } = useSelector((state) => state.interview)
 
   const { userId, role } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [tabValue, setTabValue] = useState(0);
 
-  // Confirmation dialog hook (implement this or use a dialog component)
+  const [editDrawer, setEditDrawer] = useState({
+    open: false,
+    data: null,
+  });
+
   const { confirm } = useConfirm();
 
-  // Fetch interviews
+  const processInterviewData = (data) => {
+    return data.map((interview) => {
+      const status = interview.latestInterviewStatus || "SCHEDULED";
+      const candidateName =
+        interview.candidateFullName ||
+        interview.candidateEmailId?.split("@")[0] ||
+        "Unknown Candidate";
+
+      return {
+        ...interview,
+        candidateFullName: candidateName,
+        interviewStatus: status,
+      };
+    });
+  };
+
   const fetchInterviews = async () => {
     try {
-      if (role === "TEAMLEAD") {
-
-        dispatch(fetchInterviewsTeamLead());
+      setLoading(true);
+      let response;
+  
+      // If role is SUPERADMIN, fetch all interviews
+      if (role === "SUPERADMIN") {
+        response = await httpService.get("/candidate/allInterviews");
       } else {
-        setLoading(true);
-        const response = await httpService.get(
-          `/candidate/interviews/${userId}`
-        );
-        setInterviews(response.data);
-        setError(null);
+        response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
       }
+  
+      // If role is SUPERADMIN, access the response.data.data (for the 'data' key)
+      const interviewData = role === "SUPERADMIN" ? response.data.data : response.data || [];
+  
+      // Process the interview data (this function will be used to format the data)
+      const processedData = processInterviewData(interviewData);
+  
+      // Set the processed data in the state
+      setInterviews(processedData);
+      setError(null); // Clear any previous errors
     } catch (err) {
       setError("Failed to fetch interview data");
       console.error("Error fetching interviews:", err);
@@ -76,17 +104,77 @@ const Interviews = () => {
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     fetchInterviews();
-  }, []);
+  }, [userId, role]);
 
-  // Handle edit interview
-  const handleEdit = (interview) => {
+  useEffect(() => {
+    if (role === "TEAMLEAD") {
+      console.log("Team lead...");
+      
+      dispatch(fetchInterviewsTeamLead());
+    }
+  }, [dispatch, role])
+
+  const handleEdit = (interview, isReschedule = false) => {
     setEditDrawer({
       open: true,
-      data: interview,
+      data: {
+        ...interview,
+        isReschedule, // Pass this flag to the form
+        // Ensure we keep the original userId for editing
+        userId: interview.userId || userId
+      },
     });
+  };
+
+  const handleConfirmDelete = async () => {
+    const interview = confirmDialog.interview;
+    if (!interview) return;
+
+    try {
+      await httpService.delete(
+        `/candidate/deleteinterview/${interview.candidateId}/${interview.jobId}`
+      );
+
+      fetchInterviews();
+    } catch (err) {
+      console.error("Error deleting interview:", err);
+    } finally {
+      setConfirmDialog({ open: false, interview: null });
+    }
+  };
+
+  const handleCloseEditDrawer = () => {
+    setEditDrawer({
+      open: false,
+      data: null,
+    });
+  };
+
+  const handleInterviewUpdated = () => {
+    fetchInterviews();
+    handleCloseEditDrawer();
+  };
+
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) return "N/A";
+    try {
+      const date = new Date(dateTimeString);
+      return date.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (e) {
+      console.error("Error formatting date", e);
+      return "Invalid Date";
+    }
   };
 
   const handleTabChange = (event, newValue) => {
@@ -96,62 +184,33 @@ const Interviews = () => {
       setIsTeamData(true);
       return;
     }
-    setIsTeamData(false);
+    setIsTeamData(false)
   };
 
-  // Handle delete interview
-  const handleDelete = async (interview) => {
-    const confirmed = await confirm({
-      title: "Delete Interview",
-      message: `Are you sure you want to delete the interview for ${interview.candidateFullName}?`,
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
-    });
 
-    if (confirmed) {
-      try {
-        await httpService.delete(
-          `/candidate/deleteinterview/${interview.candidateId}`
-        );
-        fetchInterviews();
-      } catch (err) {
-        console.error("Error deleting interview:", err);
-      }
-    }
-  };
-
-  // Close edit drawer
-  const handleCloseEditDrawer = () => {
-    setEditDrawer({
-      open: false,
-      data: null,
-    });
-  };
-
-  // Handle successful interview update
-  const handleInterviewUpdated = () => {
-    fetchInterviews();
-    handleCloseEditDrawer();
-  };
-
-  // Format date/time for display
-  const formatDateTime = (dateTimeString) => {
-    const date = new Date(dateTimeString);
-    return date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // Table columns
   const columns = [
-    { key: "jobId", label: "Job ID", width: 100 },
-    { key: "candidateFullName", label: "Candidate", width: 180 },
+    
+    { key: "interviewId", label: "Interview ID", width: 100 },
+    {
+      key: "candidateFullName",
+      label: "Candidate",
+      width: 180,
+      render: (row) => (
+        <Box>
+          <Typography>{row.candidateFullName}</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {row.candidateEmailId}
+          </Typography>
+        </Box>
+      ),
+    },
     { key: "clientName", label: "Client", width: 150 },
-    { key: "interviewLevel", label: "Level", width: 100 },
+    {
+      key: "interviewLevel",
+      label: "Level",
+      width: 120,
+      render: (row) => getInterviewLevelChip(row.interviewLevel),
+    },
     {
       key: "interviewDateTime",
       label: "Interview Date & Time",
@@ -165,6 +224,7 @@ const Interviews = () => {
       width: 140,
       render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
     },
+   
     {
       key: "zoomLink",
       label: "Meeting",
@@ -192,29 +252,73 @@ const Interviews = () => {
     {
       key: "actions",
       label: "Actions",
-      width: 120,
-      render: (row) => (
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <IconButton
-            onClick={() => handleEdit(row)}
-            color="primary"
-            size="small"
-            title="Edit Interview"
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton
-            onClick={() => handleDelete(row)}
-            color="error"
-            size="small"
-            title="Delete Interview"
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ),
+      width: 200,
+      render: (row) => {
+        const status = row.interviewStatus?.toUpperCase();
+        const showReschedule = [
+          "CANCELLED",
+          "RESCHEDULED",
+          "SELECTED",
+          "NO_SHOW",
+        ].includes(status);
+
+        const getButtonText = () => {
+          switch (status) {
+            case "SELECTED":
+              return "Schedule Joining";
+            case "CANCELLED":
+            case "RESCHEDULED":
+            case "NO_SHOW":
+              return "Reschedule";
+            default:
+              return "Update";
+          }
+        };
+
+        return (
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <IconButton
+              onClick={() => handleEdit(row)}
+              color="primary"
+              size="small"
+              title="Edit Interview"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              onClick={() => setConfirmDialog({ open: true, interview: row })}
+              color="error"
+              size="small"
+              title="Delete Interview"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+            {showReschedule && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleEdit(row, true)} // true for reschedule or joining
+                sx={{ px: 1, py: 0.5 }}
+              >
+                {getButtonText()}
+              </Button>
+            )}
+          </Box>
+        );
+      },
     },
   ];
+
+  // Determine which title to display based on role
+  const getTableTitle = () => {
+    if (role === "SUPERADMIN") {
+      return "All Interviews";
+    } else if (role === "TEAMLEAD") {
+      return isTeamData ? "Team Interviews" : "Self Interviews";
+    } else {
+      return "Scheduled Interviews";
+    }
+  };
 
   return (
     <Box sx={{ p: 1 }}>
@@ -241,88 +345,80 @@ const Interviews = () => {
         </Box>
       ) : (
         <>
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={2}
+          <Stack direction="row" alignItems="center" spacing={2}
             sx={{
-              flexWrap: "wrap",
+              flexWrap: 'wrap',
               mb: 3,
-              justifyContent: "space-between",
+              justifyContent: 'space-between',
               p: 2,
-              backgroundColor: "#f9f9f9",
+              backgroundColor: '#f9f9f9',
               borderRadius: 2,
               boxShadow: 1,
-            }}
-          >
-            <Typography variant="h6" color="primary">
-              Interviews List
+            }}>
+
+            <Typography variant='h6' color='primary'>
+              {role === "SUPERADMIN" ? "All Interviews" : "Interviews List"}
             </Typography>
 
             <DateRangeFilter component="InterviewsForRecruiter" />
           </Stack>
-          {role === "TEAMLEAD" && (
+
+          {role === "TEAMLEAD" &&
             <Paper sx={{ mb: 3 }}>
-              <Tabs
-                value={tabValue}
-                onChange={handleTabChange}
-                variant="scrollable"
-                scrollButtons="auto"
-              >
+              <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
                 <Tab id="self" label="Self Interviews" />
                 <Tab id="team" label="Team Interviews" />
               </Tabs>
             </Paper>
-          )}
+          }
 
           <DataTable
-            data={
-              isFilteredDataRequested
-                ? filterInterviewsForRecruiter
-                : role === "TEAMLEAD"
-                ? isTeamData
-                  ? teamInterviewsTL
-                  : selfInterviewsTL
-                : interviews || []
-            }
+            data={isFilteredDataRequested ? filterInterviewsForRecruiter :
+              role === "TEAMLEAD" ? isTeamData ? teamInterviewsTL : selfInterviewsTL :
+              interviews || []}
             columns={columns}
-            title="Scheduled Interviews"
-            loading={loading}
+            title={getTableTitle()}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="asc"
-            defaultRowsPerPage={10}
-            customTableHeight={650}
+            defaultRowsPerPage={20}
             refreshData={fetchInterviews}
-            // primaryColor="#00796b"
-            secondaryColor="#e0f2f1"
             customStyles={{
-              // headerBackground: "#00796b",
               rowHover: "#e0f2f1",
               selectedRow: "#b2dfdb",
             }}
           />
 
-          {/* Edit Interview Drawer */}
           <Drawer
             anchor="right"
             open={editDrawer.open}
             onClose={handleCloseEditDrawer}
             PaperProps={{
-              sx: { width: { xs: "60%", sm: "40%", md: "35%" } },
+              sx: { width: { xs: "60%", sm: "50%", md: "50%" } },
             }}
           >
             {editDrawer.data && (
-              <ScheduleInterviewForm
+              <EditInterviewForm
                 data={editDrawer.data}
                 onClose={handleCloseEditDrawer}
-                mode="edit"
                 onSuccess={handleInterviewUpdated}
               />
             )}
           </Drawer>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title="Delete Interview?"
+        content={`Do you really want to delete the interview for ${
+          confirmDialog.interview?.candidateFullName ||
+          confirmDialog.interview?.candidateEmailId ||
+          "this candidate"
+        }? This action cannot be undone.`}
+        onClose={() => setConfirmDialog({ open: false, interview: null })}
+        onConfirm={handleConfirmDelete}
+      />
     </Box>
   );
 };
