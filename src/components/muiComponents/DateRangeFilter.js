@@ -30,6 +30,8 @@ const componentToActionMap = {
   InterviewsForRecruiter: filterInterviewsByRecruiter,
   Clients:filterClientsByDateRange,
   placements:filterPlacementByDateRange,
+  allSubmissions:filterSubmissionsByDateRange,
+  allInterviews:filterInterviewsByDateRange,
 };
 
 

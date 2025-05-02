@@ -89,7 +89,7 @@ const submissionSlice =  createSlice({
           })
           .addCase(filterSubmissionsByDateRange.fulfilled, (state, action) => {
             state.loading = false;
-            state.filteredSubmissionsList = action.payload;
+            state.filteredSubmissionsForRecruiter = action.payload;
           })
           .addCase(filterSubmissionsByDateRange.rejected, (state, action) => {
             state.loading = false;

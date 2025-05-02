@@ -300,6 +300,8 @@ const Submission = () => {
     setScheduleDrawerOpen(false);
   };
 
+  const componentName = role === 'SUPERADMIN' ? 'allSubmissions' : 'RecruiterSubmission';
+
 
   const generateColumns = (loading = false) => [
     {
@@ -384,7 +386,7 @@ const Submission = () => {
       )
     },
     {
-      key: "emailId",
+      key: "candidateEmail",
       label: "Email",
       type: "text",
       sortable: true,
@@ -405,9 +407,9 @@ const Submission = () => {
               cursor: 'pointer',
               '&:hover': { color: 'secondary.dark' }
             }}
-            onClick={() => window.location.href = `mailto:${row.emailId || row.candidateEmailId}`}
+            onClick={() => window.location.href = `mailto:${row.candidateEmail || row.candidateEmail}`}
           >
-            {row.emailId || row.candidateEmailId}
+            {row.emailId || row.candidateEmail}
           </Typography>
         </Box>
       )
@@ -586,8 +588,9 @@ const Submission = () => {
         }}>
 
         <Typography variant='h6' color='primary'>Submissions List</Typography>
+        
 
-        <DateRangeFilter component="RecruiterSubmission" />
+        <DateRangeFilter component={componentName}/>
       </Stack>
 
       {role === "TEAMLEAD" &&
