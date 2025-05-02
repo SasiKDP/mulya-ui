@@ -40,9 +40,13 @@ import DateRangeFilter from "../muiComponents/DateRangeFilter";
 const PlacementsList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { placements,dateRangeFilterPlacements, loading, error, selectedPlacement } = useSelector(
-    (state) => state.placement
-  );
+  const {
+    placements,
+    dateRangeFilterPlacements,
+    loading,
+    error,
+    selectedPlacement,
+  } = useSelector((state) => state.placement);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
 
@@ -380,7 +384,7 @@ const PlacementsList = () => {
         columns={generateColumns()}
         pageLimit={20}
         title=""
-        onRefresh={() => dispatch(fetchPlacements())}
+        refreshData={() => dispatch(fetchPlacements())}
         isRefreshing={loading}
         enableSelection={false}
         defaultSortColumn="id"
