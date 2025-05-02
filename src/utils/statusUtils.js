@@ -27,15 +27,15 @@ export const getStatusColor = (status) => {
 
 export const getStatusChip = (status, row, dispatch) => {
   const normalized = status?.trim().toUpperCase();
-  const isMovedToPlacement =row.placed; // Get the value from the row object
+  const isMovedToPlacement =row.isPlaced || row.placed; // Get the value from the row object
   const { bg, text } = getStatusColor(status);
   const label = normalized || "SCHEDULED";
-  const isPlaced = normalized === "PLACED";
+  const isPlacedWord = normalized === "PLACED";
 
   // Check if the status is 'PLACED' and isMovedToPlacement is false to enable the button
-  const canAddToPlacement = isPlaced && !isMovedToPlacement;
+  const canAddToPlacement = isPlacedWord && !isMovedToPlacement;
 
-  if (isMovedToPlacement && isPlaced) {
+  if (isMovedToPlacement && isPlacedWord) {
     // If moved to placement, show success icon and "Moved to Placement" message
     return (
       <Chip
@@ -95,8 +95,8 @@ export const getStatusChip = (status, row, dispatch) => {
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         fontSize: "0.75rem",
-        cursor: isPlaced ? "pointer" : "default",
-        "&:hover": isPlaced ? { opacity: 0.9 } : {},
+        cursor: isPlacedWord ? "pointer" : "default",
+        "&:hover": isPlacedWord ? { opacity: 0.9 } : {},
       }}
     />
   );

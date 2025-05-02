@@ -13,6 +13,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  MenuItem,
 } from "@mui/material";
 import { Close } from "@mui/icons-material";
 import httpService from "../../Services/httpService";
@@ -32,6 +33,8 @@ const BenchCandidateForm = ({
   const [resumeFileName, setResumeFileName] = useState("");
   const [errors, setErrors] = useState({});
   
+
+
   const formInitialValues = {
     id: "",
     fullName: "",
@@ -43,6 +46,7 @@ const BenchCandidateForm = ({
     linkedin: "",
     referredBy: "",
     resumeFile: null,
+    technology: "",
     resumeAvailable: false
   };
 
@@ -79,6 +83,7 @@ const BenchCandidateForm = ({
         linkedin: initialData.linkedin || "",
         referredBy: initialData.referredBy || "",
         resumeFile: null,
+        technology: initialData.technology || "",
         resumeAvailable: initialData.resumeAvailable || false
       });
       setLoading(false);
@@ -109,6 +114,7 @@ const BenchCandidateForm = ({
             linkedin: candidateData.linkedin || "",
             referredBy: candidateData.referredBy || "",
             resumeFile: null,
+            technology: candidateData.technology || "",
             resumeAvailable: candidateData.resumeAvailable || false
           });
           
@@ -165,6 +171,7 @@ const BenchCandidateForm = ({
     skills: Yup.array()
       .min(1, "At least one skill is required")
       .of(Yup.string().required("Skill cannot be empty")),
+    technology: Yup.string().required("Technology is required"),
   });
 
   const handleChange = (e) => {
@@ -246,6 +253,11 @@ const BenchCandidateForm = ({
               )
           });
           break;
+        case "technology":
+          schema = Yup.object().shape({
+            technology: Yup.string().required("Technology is required")
+          });
+          break;
         default:
           return; // No validation for other fields
       }
@@ -303,6 +315,7 @@ const BenchCandidateForm = ({
       formData.append("linkedin", formValues.linkedin || "");
       formData.append("referredBy", formValues.referredBy || "");
       formData.append("skills", JSON.stringify(formValues.skills));
+      formData.append("technology", formValues.technology);
 
       if (formValues.resumeFile) {
         formData.append("resumeFiles", formValues.resumeFile);
@@ -438,6 +451,21 @@ const BenchCandidateForm = ({
               disabled={submitting}
             />
           </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="technology"
+              label="Technology"
+              value={formValues.technology}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              required
+              fullWidth
+              error={!!errors.technology}
+              helperText={errors.technology}
+              disabled={submitting}
+            />
+          </Grid>
+          
           <Grid item xs={12} sm={6}>
             <TextField
               name="relevantExperience"

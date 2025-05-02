@@ -108,7 +108,7 @@ const interviewSlice =  createSlice({
           })
           .addCase(filterInterviewsByRecruiter.fulfilled, (state, action) => {
             state.loading = false;
-            state.filterInterviewsForRecruiter = action.payload;
+            state.filterInterviewsForRecruiter = action.payload.data;
           })
           .addCase(filterInterviewsByRecruiter.rejected, (state, action) => {
             state.loading = false;
