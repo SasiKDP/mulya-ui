@@ -793,12 +793,16 @@ const Requirements = () => {
     ];
   };
 
+ 
+
   const processedData = data.map((row) => ({
     ...row,
     expandContent: renderExpandedContent,
     expanded: row.jobId === expandedRowId,
   }));
 
+  console.log("Processed data",processedData)
+   
   // if (error) {
   //   return (
   //     <Box sx={{ p: 3, textAlign: "center" }}>

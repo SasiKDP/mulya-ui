@@ -20,6 +20,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Menu,
+  MenuItem
 } from "@mui/material";
 import { Download, Edit, Delete } from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -75,6 +77,10 @@ const Submission = () => {
   const { userId, role, userName } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [tabValue, setTabValue] = useState(0);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const menuOpen = Boolean(anchorEl);
+  const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+
 
   useEffect(() => {
     fetchData();
@@ -219,39 +225,79 @@ const Submission = () => {
     setIsTeamData(false);
   };
 
-  const downloadResume = async (candidateId, e) => {
-    e.stopPropagation();
+  
+  // const downloadResume = async (candidateId, e) => {
+  //   e.stopPropagation();
 
+  //   try {
+  //     setDownloadLoading(true);
+
+  //     const response = await httpService.get(
+  //       `/candidate/download-resume/${candidateId}`,
+  //       {
+  //         responseType: "blob",
+  //       }
+  //     );
+
+  //     if (!response || !response.data) {
+  //       throw new Error("No resume file received.");
+  //     }
+
+  //     // Detect content type and assign proper extension
+  //     const contentType = response.headers["content-type"];
+  //     const extension =
+  //       contentType === "application/pdf"
+  //         ? ".pdf"
+  //         : contentType === "application/msword"
+  //         ? ".doc"
+  //         : contentType ===
+  //           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  //         ? ".docx"
+  //         : ".pdf"; // fallback
+
+  //     const filename = `resume_${candidateId}${extension}`;
+  //     const blob = new Blob([response.data], { type: contentType });
+  //     const url = URL.createObjectURL(blob);
+
+  //     const link = document.createElement("a");
+  //     link.href = url;
+  //     link.setAttribute("download", filename);
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //     URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error("Error downloading resume:", error);
+  //     showSnackbar("Failed to download resume", "error");
+  //   } finally {
+  //     setDownloadLoading(false);
+  //   }
+  // };
+  const downloadResume = async (candidateId, format) => {
     try {
       setDownloadLoading(true);
-
+  
       const response = await httpService.get(
-        `/candidate/download-resume/${candidateId}`,
-        {
-          responseType: "blob",
-        }
+        `/candidate/download-resume/${candidateId}?format=${format}`,
+        { responseType: "blob" }
       );
-
+  
       if (!response || !response.data) {
         throw new Error("No resume file received.");
       }
-
-      // Detect content type and assign proper extension
+  
       const contentType = response.headers["content-type"];
       const extension =
-        contentType === "application/pdf"
+        format === "pdf"
           ? ".pdf"
-          : contentType === "application/msword"
-          ? ".doc"
-          : contentType ===
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          : format === "word"
           ? ".docx"
           : ".pdf"; // fallback
-
+  
       const filename = `resume_${candidateId}${extension}`;
       const blob = new Blob([response.data], { type: contentType });
       const url = URL.createObjectURL(blob);
-
+  
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename);
@@ -266,6 +312,7 @@ const Submission = () => {
       setDownloadLoading(false);
     }
   };
+  
 
   const handleEdit = (row, e) => {
     e.stopPropagation();
@@ -588,7 +635,7 @@ const Submission = () => {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <Tooltip title="Download Resume">
+              {/* <Tooltip title="Download Resume">
                 <IconButton
                   size="small"
                   onClick={(e) => downloadResume(row.candidateId, e)}
@@ -601,7 +648,55 @@ const Submission = () => {
                     <Download fontSize="small" />
                   )}
                 </IconButton>
-              </Tooltip>
+              </Tooltip> */}
+              <Tooltip title="Download Resume">
+              <IconButton
+               size="small"
+               onClick={(e) => {
+              setAnchorEl(e.currentTarget);
+              setSelectedCandidateId(row.candidateId);
+               }}
+              disabled={downloadLoading}
+              sx={{ color: "success.main" }}
+              >
+              {downloadLoading ? (
+              <CircularProgress size={16} />
+              ) : (
+              <Download fontSize="small" />
+              )}
+            </IconButton>
+            </Tooltip>
+
+            <Menu            
+            anchorEl={anchorEl}
+            open={menuOpen}
+            onClose={() => setAnchorEl(null)}
+            PaperProps={{
+              sx:{
+                transform: 'none !important',
+                mt: 0.5,
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)', // softer shadow
+              },
+            }}
+            >
+            <MenuItem
+             onClick={async () => {
+            setAnchorEl(null);
+            await downloadResume(selectedCandidateId, "pdf");
+            }}
+            >
+            PDF
+           </MenuItem>
+           <MenuItem
+           onClick={async () => {
+           setAnchorEl(null);
+           await downloadResume(selectedCandidateId, "word");
+           }}
+           >
+          Word
+          </MenuItem>
+          </Menu>
+
               <Tooltip title="Edit Candidate">
                 <IconButton
                   size="small"
