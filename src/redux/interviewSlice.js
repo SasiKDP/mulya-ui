@@ -92,7 +92,7 @@ const interviewSlice =  createSlice({
           })
           .addCase(filterInterviewsByDateRange.fulfilled, (state, action) => {
             state.loading = false;
-            state.filteredInterviewList = action.payload;
+            state.filterInterviewsForRecruiter = action.payload.data;
           })
           .addCase(filterInterviewsByDateRange.rejected, (state, action) => {
             state.loading = false;

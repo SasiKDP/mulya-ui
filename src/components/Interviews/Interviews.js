@@ -309,6 +309,9 @@ const Interviews = () => {
     },
   ];
 
+
+  const componentName = role === 'SUPERADMIN' ? 'allInterviews' : 'InterviewsForRecruiter';
+
   // Determine which title to display based on role
   const getTableTitle = () => {
     if (role === "SUPERADMIN") {
@@ -360,7 +363,7 @@ const Interviews = () => {
               {role === "SUPERADMIN" ? "All Interviews" : "Interviews List"}
             </Typography>
 
-            <DateRangeFilter component="InterviewsForRecruiter" />
+            <DateRangeFilter component={componentName} />
           </Stack>
 
           {role === "TEAMLEAD" &&
