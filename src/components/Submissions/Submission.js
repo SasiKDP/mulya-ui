@@ -386,7 +386,7 @@ const Submission = () => {
       )
     },
     {
-      key: "candidateEmail",
+      key: "candidateEmailId",
       label: "Email",
       type: "text",
       sortable: true,
@@ -407,7 +407,7 @@ const Submission = () => {
               cursor: 'pointer',
               '&:hover': { color: 'secondary.dark' }
             }}
-            onClick={() => window.location.href = `mailto:${row.candidateEmail || row.candidateEmail}`}
+            onClick={() => window.location.href = `mailto:${row.candidateEmailId || row.candidateEmailId}`}
           >
             {row.emailId || row.candidateEmail}
           </Typography>

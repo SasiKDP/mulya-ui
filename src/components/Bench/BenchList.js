@@ -279,6 +279,15 @@ const BenchList = () => {
       render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
     },
     {
+      key: 'technology',
+      label: 'Technology',
+      type: 'text',
+      sortable: true,
+      filterable: true,
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
+    },
+    {
       key: 'totalExperience',
       label: 'Total Exp (Yrs)',
       type: 'text',

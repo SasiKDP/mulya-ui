@@ -190,7 +190,7 @@ const Interviews = () => {
 
   const columns = [
     
-    { key: "interviewId", label: "Interview ID", width: 100 },
+    
     {
       key: "candidateFullName",
       label: "Candidate",
@@ -249,6 +249,7 @@ const Interviews = () => {
           </Typography>
         ),
     },
+    { key: "interviewId", label: "Interview ID", width: 100 },
     {
       key: "actions",
       label: "Actions",

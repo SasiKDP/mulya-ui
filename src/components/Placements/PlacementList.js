@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  DialogContentText,
   CircularProgress,
   Stack,
 } from "@mui/material";
@@ -29,6 +30,7 @@ import DataTable from "../muiComponents/DataTabel";
 import ComponentTitle from "../../utils/ComponentTitle";
 import PlacementForm from "./PlacementForm";
 import PlacementCard from "./PlacementCard";
+import ConfirmDialog from "../muiComponents/ConfirmDialog";
 import {
   fetchPlacements,
   deletePlacement,
@@ -49,6 +51,8 @@ const PlacementsList = () => {
   } = useSelector((state) => state.placement);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [placementToDelete, setPlacementToDelete] = React.useState(null);
 
   useEffect(() => {
     dispatch(fetchPlacements());
@@ -78,6 +82,16 @@ const PlacementsList = () => {
     dispatch(setSelectedPlacement(null));
   };
 
+  const handleOpenDeleteDialog = (row) => {
+    setPlacementToDelete(row);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setPlacementToDelete(null);
+  };
+
   const handleView = (row) => {
     handleOpenDetailsDialog(row);
   };
@@ -86,8 +100,11 @@ const PlacementsList = () => {
     handleOpenDrawer(row);
   };
 
-  const handleDelete = async (row) => {
-    dispatch(deletePlacement(row.id));
+  const handleDelete = () => {
+    if (placementToDelete) {
+      dispatch(deletePlacement(placementToDelete.id));
+      handleCloseDeleteDialog();
+    }
   };
 
   const getColor = (status) => {
@@ -310,7 +327,7 @@ const PlacementsList = () => {
               <IconButton
                 color="error"
                 size="small"
-                onClick={() => handleDelete(row)}
+                onClick={() => handleOpenDeleteDialog(row)}
               >
                 <Delete fontSize="small" />
               </IconButton>
@@ -321,28 +338,26 @@ const PlacementsList = () => {
     ];
   };
 
+  // Create the delete confirmation content with placement details
+  const getDeleteConfirmationContent = () => {
+    if (!placementToDelete) return "This action cannot be undone.";
+
+    return (
+      <>
+        Are you sure you want to delete this placement? This action cannot be
+        undone.
+        <Typography variant="body2">
+          <strong>ID:</strong> {placementToDelete.id}
+        </Typography>
+        <Typography variant="body2">
+          <strong>Consultant:</strong> {placementToDelete.candidateFullName}
+        </Typography>
+      </>
+    );
+  };
+
   return (
     <>
-      {/* <ComponentTitle title="Placement Management" variant='h6'>
-        <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={() => dispatch(fetchPlacements())}
-          disabled={loading}
-          sx={{ mr: 2 }}
-        >
-          Refresh
-        </Button>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<Add />}
-          onClick={() => handleOpenDrawer()}
-        >
-          Add Placement
-        </Button>
-      </ComponentTitle> */}
-
       <Stack
         direction="row"
         alignItems="center"
@@ -509,6 +524,15 @@ const PlacementsList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Using the ConfirmDialog component instead of the old Delete dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Confirm Deletion"
+        content={getDeleteConfirmationContent()}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleDelete}
+      />
     </>
   );
 };

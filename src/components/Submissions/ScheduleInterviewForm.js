@@ -33,7 +33,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
 
       return {
         contactNumber: data.contactNumber || data.candidateContactNo || "",
-        candidateEmailId: data.emailId || data.candidateEmailId || "",
+        candidateEmailId: data.emailId || data.candidateEmail || "",
         fullName: data.fullName || data.candidateFullName || "",
         candidateId: data.candidateId || "",
         clientEmail: data.clientEmail || [],
