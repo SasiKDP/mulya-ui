@@ -20,9 +20,6 @@ import {
   Cancel as CancelIcon,
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -136,13 +133,13 @@ const PlacementForm = ({
       id: "startDate",
       label: "Start Date",
       required: true,
-      isDate: true,
+      type: "date",
       grid: { xs: 12, sm: 6 },
     },
     {
       id: "endDate",
       label: "End Date",
-      isDate: true,
+      type: "date",
       grid: { xs: 12, sm: 6 },
     },
   ];
@@ -238,13 +235,13 @@ const PlacementForm = ({
   ];
 
   // Format date for the form
-  const formatDate = (dateStr) => {
-    if (!dateStr) return null;
+  const formatDateForInput = (dateStr) => {
+    if (!dateStr) return "";
     try {
-      return dayjs(dateStr);
+      return dayjs(dateStr).format("YYYY-MM-DD");
     } catch (error) {
       console.error("Error formatting date:", error);
-      return null;
+      return "";
     }
   };
 
@@ -271,8 +268,8 @@ const PlacementForm = ({
       technology: initialValues.technology || "",
       clientName: initialValues.clientName || "",
       vendorName: initialValues.vendorName || "",
-      startDate: formatDate(initialValues.startDate) || null,
-      endDate: formatDate(initialValues.endDate) || null,
+      startDate: formatDateForInput(initialValues.startDate) || "",
+      endDate: formatDateForInput(initialValues.endDate) || "",
       billRate: initialValues.billRate || "",
       payRate: initialValues.payRate || "",
       grossProfit: initialValues.grossProfit || "",
@@ -441,6 +438,9 @@ const PlacementForm = ({
             ...inputProps,
             readOnly: readOnly,
           }}
+          InputLabelProps={{
+            shrink: type === "date" ? true : undefined,
+          }}
         >
           {select &&
             options.map((option) => (
@@ -453,171 +453,145 @@ const PlacementForm = ({
     );
   };
 
-  // Function to render date pickers
-  const renderDatePicker = (field) => {
-    const { id, label, required = false, grid } = field;
-
-    return (
-      <Grid item {...grid} key={id}>
-        <DatePicker
-          label={`${label}${required ? ' *' : ''}`}
-          value={formik.values[id]}
-          onChange={(newValue) => {
-            formik.setFieldValue(id, newValue);
-          }}
-          slotProps={{
-            textField: {
-              fullWidth: true,
-              error: formik.touched[id] && Boolean(formik.errors[id]),
-              helperText: formik.touched[id] && formik.errors[id],
-            },
-          }}
-        />
-      </Grid>
-    );
-  };
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" sx={{ mb: 3 }}>
-          {isEdit ? 'Edit Placement' : 'Create New Placement'}
-        </Typography>
+    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+      <Typography variant="h5" sx={{ mb: 3 }}>
+        {isEdit ? 'Edit Placement' : 'Create New Placement'}
+      </Typography>
 
-        {/* Status messages */}
-        {submitStatus.error && (
-          <ErrorAlert severity="error" sx={{ mb: 2 }}>
-            {submitStatus.error}
-          </ErrorAlert>
-        )}
-        {submitStatus.success && (
-          <SuccessAlert severity="success" sx={{ mb: 2 }}>
-            {submitStatus.response?.message}
-          </SuccessAlert>
-        )}
+      {/* Status messages */}
+      {submitStatus.error && (
+        <ErrorAlert severity="error" sx={{ mb: 2 }}>
+          {submitStatus.error}
+        </ErrorAlert>
+      )}
+      {submitStatus.success && (
+        <SuccessAlert severity="success" sx={{ mb: 2 }}>
+          {submitStatus.response?.message}
+        </SuccessAlert>
+      )}
 
-        <form onSubmit={formik.handleSubmit}>
-          <Grid container spacing={2}>
-            {/* Consultant Information */}
-            <Grid item xs={12}>
-              <Typography
-                variant="subtitle1"
-                sx={{ mb: 1, fontWeight: "medium" }}
-              >
-                Consultant Information
-              </Typography>
-            </Grid>
-            {consultantFields.map((field) =>
-              renderTextField(field)
-            )}
-
-            {/* Client Information */}
-            <Grid item xs={12} sx={{ mt: 2 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ mb: 1, fontWeight: "medium" }}
-              >
-                Client Information
-              </Typography>
-            </Grid>
-            {clientFields.map((field) =>
-              renderTextField(field)
-            )}
-
-            {/* Date Information */}
-            <Grid item xs={12} sx={{ mt: 2 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ mb: 1, fontWeight: "medium" }}
-              >
-                Date Information
-              </Typography>
-            </Grid>
-            {dateFields.map((field) =>
-              field.isDate ? renderDatePicker(field) : renderTextField(field)
-            )}
-
-            {/* Financial Information */}
-            <Grid item xs={12} sx={{ mt: 2 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ mb: 1, fontWeight: "medium" }}
-              >
-                Financial Information (INR)
-              </Typography>
-            </Grid>
-            {financialFields.map((field) =>
-              renderTextField(field)
-            )}
-
-            {/* Employment Information */}
-            <Grid item xs={12} sx={{ mt: 2 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ mb: 1, fontWeight: "medium" }}
-              >
-                Employment Information
-              </Typography>
-            </Grid>
-            {employmentFields.map((field) =>
-              renderTextField(field)
-            )}
-
-            {/* Internal Information */}
-            <Grid item xs={12} sx={{ mt: 2 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ mb: 1, fontWeight: "medium" }}
-              >
-                Internal Information
-              </Typography>
-            </Grid>
-            {internalFields.map((field) =>
-              renderTextField(field)
-            )}
-
-            {/* Form Actions */}
-            <Grid
-              item
-              xs={12}
-              sx={{
-                mt: 3,
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 2
-              }}
+      <form onSubmit={formik.handleSubmit}>
+        <Grid container spacing={2}>
+          {/* Consultant Information */}
+          <Grid item xs={12}>
+            <Typography
+              variant="subtitle1"
+              sx={{ mb: 1, fontWeight: "medium" }}
             >
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<CancelIcon />}
-                onClick={onCancel}
-                disabled={loading || formik.isSubmitting}
-              >
-                Close
-              </Button>
-
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                startIcon={<SaveIcon />}
-                disabled={loading || formik.isSubmitting}
-              >
-                {loading || formik.isSubmitting ? (
-                  <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    {isEdit ? 'Updating...' : 'Creating...'}
-                  </>
-                ) : (
-                  isEdit ? 'Update Placement' : 'Create Placement'
-                )}
-              </Button>
-            </Grid>
+              Consultant Information
+            </Typography>
           </Grid>
-        </form>
-      </Paper>
-    </LocalizationProvider>
+          {consultantFields.map((field) =>
+            renderTextField(field)
+          )}
+
+          {/* Client Information */}
+          <Grid item xs={12} sx={{ mt: 2 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ mb: 1, fontWeight: "medium" }}
+            >
+              Client Information
+            </Typography>
+          </Grid>
+          {clientFields.map((field) =>
+            renderTextField(field)
+          )}
+
+          {/* Date Information */}
+          <Grid item xs={12} sx={{ mt: 2 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ mb: 1, fontWeight: "medium" }}
+            >
+              Date Information
+            </Typography>
+          </Grid>
+          {dateFields.map((field) =>
+            renderTextField(field)
+          )}
+
+          {/* Financial Information */}
+          <Grid item xs={12} sx={{ mt: 2 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ mb: 1, fontWeight: "medium" }}
+            >
+              Financial Information (INR)
+            </Typography>
+          </Grid>
+          {financialFields.map((field) =>
+            renderTextField(field)
+          )}
+
+          {/* Employment Information */}
+          <Grid item xs={12} sx={{ mt: 2 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ mb: 1, fontWeight: "medium" }}
+            >
+              Employment Information
+            </Typography>
+          </Grid>
+          {employmentFields.map((field) =>
+            renderTextField(field)
+          )}
+
+          {/* Internal Information */}
+          <Grid item xs={12} sx={{ mt: 2 }}>
+            <Typography
+              variant="subtitle1"
+              sx={{ mb: 1, fontWeight: "medium" }}
+            >
+              Internal Information
+            </Typography>
+          </Grid>
+          {internalFields.map((field) =>
+            renderTextField(field)
+          )}
+
+          {/* Form Actions */}
+          <Grid
+            item
+            xs={12}
+            sx={{
+              mt: 3,
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 2
+            }}
+          >
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<CancelIcon />}
+              onClick={onCancel}
+              disabled={loading || formik.isSubmitting}
+            >
+              Close
+            </Button>
+
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              startIcon={<SaveIcon />}
+              disabled={loading || formik.isSubmitting}
+            >
+              {loading || formik.isSubmitting ? (
+                <>
+                  <CircularProgress size={20} sx={{ mr: 1 }} />
+                  {isEdit ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                isEdit ? 'Update Placement' : 'Create Placement'
+              )}
+            </Button>
+          </Grid>
+        </Grid>
+      </form>
+    </Paper>
   );
 };
 

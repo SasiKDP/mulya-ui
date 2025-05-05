@@ -15,10 +15,18 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogActions,
   Grid,
   Stack,
 } from "@mui/material";
-import { Refresh, Delete, Edit, PersonAdd, Close } from "@mui/icons-material";
+import { 
+  Refresh, 
+  Delete, 
+  Edit, 
+  PersonAdd, 
+  Close, 
+  Visibility 
+} from "@mui/icons-material";
 import { useSelector, useDispatch } from "react-redux";
 import {
   fetchEmployees,
@@ -126,6 +134,181 @@ const ExpandedUserContent = ({ row }) => {
   );
 };
 
+// User Details Dialog Component
+const UserDetailsDialog = ({ open, onClose, user }) => {
+  if (!user) return null;
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  return (
+    <Dialog 
+      open={open} 
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: 2 }
+      }}
+    >
+      <DialogTitle 
+        sx={{ 
+          backgroundColor: "#1976d2", 
+          color: "white", 
+          display: "flex", 
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}
+      >
+        <Typography variant="h6">User Details</Typography>
+        <IconButton color="inherit" onClick={onClose} size="small">
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ p: 3, mt: 2 }}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
+            <Paper 
+              elevation={1}
+              sx={{
+                p: 3,
+                backgroundColor: "#f8f9fa",
+                borderRadius: 2,
+                mb: 3,
+                border: "1px solid #e0e0e0"
+              }}
+            >
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    {user.userName}
+                  </Typography>
+                  <Chip
+                    label={user.status}
+                    color={user.status === "ACTIVE" ? "success" : "error"}
+                    size="small"
+                    sx={{ mb: 2 }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    {user.designation || "Software Engineer"}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} sx={{ textAlign: { sm: 'right' } }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Employee ID
+                  </Typography>
+                  <Typography variant="body1" fontWeight="500">
+                    {user.employeeId}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Typography variant="subtitle2" sx={{ color: "#757575", mb: 1 }}>
+              Personal Information
+            </Typography>
+            <Paper sx={{ p: 2, borderRadius: 2 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    Email
+                  </Typography>
+                  <Typography variant="body1">{user.email}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Date of Birth
+                  </Typography>
+                  <Typography variant="body1">{formatDate(user.dob)}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Gender
+                  </Typography>
+                  <Typography variant="body1">{user.gender || "-"}</Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Phone Number
+                  </Typography>
+                  <Typography variant="body1">
+                    {user.phoneNumber || "-"}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Personal Email
+                  </Typography>
+                  <Typography variant="body1">
+                    {user.personalemail || "-"}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Typography variant="subtitle2" sx={{ color: "#757575", mb: 1 }}>
+              Employment Details
+            </Typography>
+            <Paper sx={{ p: 2, borderRadius: 2 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Joining Date
+                  </Typography>
+                  <Typography variant="body1">
+                    {formatDate(user.joiningDate)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    Role
+                  </Typography>
+                  <Typography variant="body1">
+                    {Array.isArray(user.roles) ? user.roles.join(", ") : user.roles}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    Status
+                  </Typography>
+                  <Chip
+                    label={user.status}
+                    color={user.status === "ACTIVE" ? "success" : "error"}
+                    size="small"
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions sx={{ p: 2, justifyContent: 'center' }}>
+        <Button 
+          onClick={onClose} 
+          variant="contained" 
+          sx={{ 
+            minWidth: 120, 
+            textTransform: 'none',
+            borderRadius: 1
+          }}
+        >
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 const UsersList = () => {
   const [users, setUsers] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -135,9 +318,11 @@ const UsersList = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [openAddDrawer, setOpenAddDrawer] = useState(false);
+  const [openViewDialog, setOpenViewDialog] = useState(false);
+  const [userToView, setUserToView] = useState(null);
 
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-    const {filteredUsers} = useSelector((state) => state.employee);
+  const { filteredUsers } = useSelector((state) => state.employee);
 
   const dispatch = useDispatch();
   const {
@@ -165,6 +350,7 @@ const UsersList = () => {
     }
   }, [employeesList]);
 
+  // Auto-close drawer after successful update
   useEffect(() => {
     if (updateStatus === "succeeded") {
       showToast("User updated successfully!", "success");
@@ -207,6 +393,11 @@ const UsersList = () => {
     }
 
     return <Chip label={status || "Unknown"} size="small" color={color} />;
+  };
+
+  const handleViewUser = (user) => {
+    setUserToView(user);
+    setOpenViewDialog(true);
   };
 
   const handleEditUser = (user) => {
@@ -258,7 +449,7 @@ const UsersList = () => {
 
       if (response.data.success) {
         showToast("Employee registered successfully!", "success");
-        setOpenAddDrawer(false);
+        setOpenAddDrawer(false); // Auto-close drawer on success
         setRefreshTrigger((prev) => prev + 1);
       } else {
         showToast(response.data.message || "Registration failed", "error");
@@ -356,10 +547,27 @@ const UsersList = () => {
         label: "Actions",
         sortable: false,
         filterable: false,
-        width: 150,
+        width: 180,
         align: "center",
         render: (row) => (
           <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="View Details">
+              <IconButton
+                aria-label="view"
+                size="small"
+                color="info"
+                sx={{
+                  backgroundColor: "rgba(3, 169, 244, 0.08)",
+                  "&:hover": { backgroundColor: "rgba(3, 169, 244, 0.16)" },
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewUser(row);
+                }}
+              >
+                <Visibility fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Edit User">
               <IconButton
                 aria-label="edit"
@@ -442,8 +650,6 @@ const UsersList = () => {
 
   return (
     <>
-     
-
       <Stack direction="row" alignItems="center" spacing={2}
               sx={{
                 flexWrap: 'wrap',
@@ -453,23 +659,25 @@ const UsersList = () => {
                 backgroundColor: '#f9f9f9',
                 borderRadius: 2,
                 boxShadow: 1,
-      
               }}>
       
               <Typography variant='h6' color='primary'>Users Management</Typography>
               <Stack direction="row" alignItems="center" spacing={2} sx={{ ml: 'auto' }}>
-              <DateRangeFilter component="Users"/>
-      
-              
-              <Button variant="contained" color="primary" onClick={handleAddUser}>
-          Add User
-        </Button>
-        </Stack>
+                <DateRangeFilter component="Users"/>
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={handleAddUser}
+                  startIcon={<PersonAdd />}
+                  sx={buttonStyles}
+                >
+                  Add User
+                </Button>
+              </Stack>
             </Stack>
 
       <DataTable
-      
-        data={isFilteredDataRequested ?  filteredUsers : users || []}
+        data={isFilteredDataRequested ? filteredUsers : users || []}
         columns={columns}
         title=""
         loading={fetchStatus === "loading"}
@@ -486,6 +694,13 @@ const UsersList = () => {
           selectedRow: "#b2dfdb",
         }}
         uniqueId="employeeId" // Specify that employeeId should be used as the unique identifier
+      />
+
+      {/* User Details Dialog */}
+      <UserDetailsDialog 
+        open={openViewDialog}
+        onClose={() => setOpenViewDialog(false)}
+        user={userToView}
       />
 
       {/* Edit User Drawer with UserForm component */}
@@ -567,8 +782,10 @@ const UsersList = () => {
         </AppBar>
 
         <Box sx={{ p: 3, overflowY: "auto" }}>
-          {/* <UserForm onSubmit={handleSubmitNewUser} isEditMode={false} /> */}
-          <Registration />
+          {/* We're using Registration component now which needs to properly handle 
+          closing this drawer on success - make sure it calls `setOpenAddDrawer(false)` 
+          on successful registration */}
+          <Registration onRegistrationSuccess={() => setOpenAddDrawer(false)} />
         </Box>
       </Drawer>
 
