@@ -151,7 +151,7 @@ const BenchCandidateForm = ({
       .email("Invalid email format")
       .required("Email is required"),
     contactNumber: Yup.string()
-      .matches(/^(\+?\d{10}|\+?\d{12})$/, "Contact number must be 10 or 12 digits")
+      .matches(/^(\+?\d{10}|\+?\d{12}|\+?\d{15})$/, "Contact number must be 10, 12, or 15 digits")
       .required("Contact number is required"),
     relevantExperience: Yup.number()
       .typeError("Relevant experience must be a number")
@@ -172,33 +172,53 @@ const BenchCandidateForm = ({
       .min(1, "At least one skill is required")
       .of(Yup.string().required("Skill cannot be empty")),
     technology: Yup.string().required("Technology is required"),
+    linkedin: Yup.string()
+      .url("LinkedIn profile must be a valid URL")
+      .nullable()
+      .transform((value) => (value === "" ? null : value)),
+    referredBy: Yup.string().nullable(),
+    resumeFile: fileValidation,
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormValues((prev) => ({ ...prev, [name]: value }));
+    
+    // For real-time validation feedback, you can validate the field immediately
+    // Optional: Remove this if you want to validate only on blur
+    validateField(name, value);
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       // Validate file
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors((prev) => ({ ...prev, resumeFile: "File size is too large (max 5MB)" }));
-        return;
-      }
-      
-      const allowedTypes = [
-        "application/pdf", 
-        "application/msword", 
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      ];
-      
-      if (!allowedTypes.includes(file.type)) {
-        setErrors((prev) => ({ ...prev, resumeFile: "Only PDF and Word documents are allowed" }));
-        return;
-      }
-      
+      validateFileField(file);
+    }
+  };
+
+  const validateFileField = (file) => {
+    let fileError = null;
+    
+    // Check file size
+    if (file.size > 5 * 1024 * 1024) {
+      fileError = "File size is too large (max 5MB)";
+    }
+    
+    // Check file type
+    const allowedTypes = [
+      "application/pdf", 
+      "application/msword", 
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      fileError = "Only PDF and Word documents are allowed";
+    }
+    
+    if (fileError) {
+      setErrors((prev) => ({ ...prev, resumeFile: fileError }));
+    } else {
       setFormValues((prev) => ({ ...prev, resumeFile: file }));
       setResumeFileName(file.name);
       setErrors((prev) => ({ ...prev, resumeFile: undefined }));
@@ -214,7 +234,7 @@ const BenchCandidateForm = ({
         case "contactNumber":
           schema = Yup.object().shape({
             contactNumber: Yup.string()
-              .matches(/^(\+?\d{10}|\+?\d{12})$/, "Contact number must be 10 or 12 digits")
+              .matches(/^(\+?\d{10}|\+?\d{12}|\+?\d{15})$/, "Contact number must be 10, 12, or 15 digits")
               .required("Contact number is required")
           });
           break;
@@ -258,6 +278,24 @@ const BenchCandidateForm = ({
             technology: Yup.string().required("Technology is required")
           });
           break;
+        case "linkedin":
+          schema = Yup.object().shape({
+            linkedin: Yup.string()
+              .url("LinkedIn profile must be a valid URL")
+              .nullable()
+              .transform((value) => (value === "" ? null : value))
+          });
+          break;
+        case "skills":
+          schema = Yup.object().shape({
+            skills: Yup.array()
+              .min(1, "At least one skill is required")
+              .of(Yup.string().required("Skill cannot be empty"))
+          });
+          break;
+        case "referredBy":
+          // No strict validation for referredBy
+          return;
         default:
           return; // No validation for other fields
       }
@@ -278,7 +316,24 @@ const BenchCandidateForm = ({
   const handleBlur = (e) => {
     const { name, value } = e.target;
     validateField(name, value);
+    
+    // Special case for skills validation when the skills input field loses focus
+    if (name === "skills-input") {
+      validateField("skills", formValues.skills);
+    }
   };
+
+  // Validate skills array whenever it changes
+  useEffect(() => {
+    validateField("skills", formValues.skills);
+  }, [formValues.skills]);
+
+  // Validate total experience when relevant experience changes
+  useEffect(() => {
+    if (formValues.totalExperience) {
+      validateField("totalExperience", formValues.totalExperience);
+    }
+  }, [formValues.relevantExperience]);
 
   const validateForm = async () => {
     try {
@@ -447,7 +502,7 @@ const BenchCandidateForm = ({
               required
               fullWidth
               error={!!errors.contactNumber}
-              helperText={errors.contactNumber || "Must be 10 or 12 digits"}
+              helperText={errors.contactNumber || "Must be 10, 12, or 15 digits"}
               disabled={submitting}
             />
           </Grid>
@@ -503,10 +558,12 @@ const BenchCandidateForm = ({
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
+              name="skills-input"
               label="Skills (Press Enter to add)"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleSkillAdd}
+              onBlur={handleBlur}
               error={!!errors.skills}
               helperText={errors.skills || "Press Enter after typing each skill"}
               disabled={submitting}
@@ -529,7 +586,10 @@ const BenchCandidateForm = ({
               label="LinkedIn Profile URL"
               value={formValues.linkedin}
               onChange={handleChange}
+              onBlur={handleBlur}
               fullWidth
+              error={!!errors.linkedin}
+              helperText={errors.linkedin}
               disabled={submitting}
             />
           </Grid>
@@ -539,6 +599,7 @@ const BenchCandidateForm = ({
               label="Referred By"
               value={formValues.referredBy}
               onChange={handleChange}
+              onBlur={handleBlur}
               fullWidth
               disabled={submitting}
             />

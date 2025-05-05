@@ -12,7 +12,7 @@ import placementReducer from "../redux/placementSlice"
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    employee: employeesReducer, // Add the employees reducer to the store
+    employee: employeesReducer, 
     clients: clientsReducer,
     bench: benchReducer,
     requirement: requirementReducer,

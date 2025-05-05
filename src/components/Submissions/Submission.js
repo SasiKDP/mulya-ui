@@ -409,7 +409,7 @@ const Submission = () => {
             }}
             onClick={() => window.location.href = `mailto:${row.candidateEmailId || row.candidateEmailId}`}
           >
-            {row.emailId || row.candidateEmail}
+            {row.emailId || row.candidateEmailId}
           </Typography>
         </Box>
       )
