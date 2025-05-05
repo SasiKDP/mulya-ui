@@ -128,8 +128,9 @@ export const updatePlacement = createAsyncThunk(
       );
 
       if (response.data.success) {
-        ToastService.success("Placement updated successfully!");
-        // Refetch placements after updating
+        const { message, data } = response.data;
+        ToastService.success(`${message}! Candidate ID: ${data.id}, Name: ${data.candidateFullName}`);
+         // Refetch placements after updating
         dispatch(fetchPlacements());
         return response.data;
       } else {

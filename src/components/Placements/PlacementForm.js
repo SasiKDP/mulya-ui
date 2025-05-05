@@ -331,6 +331,11 @@ const PlacementForm = ({
             payload,
           },
         });
+
+        // Close the drawer on successful submission after a short delay
+        setTimeout(() => {
+          onCancel();
+        }, 1000);
       } catch (error) {
         setSubmitStatus({
           isSubmitting: false,
@@ -366,7 +371,13 @@ const PlacementForm = ({
           message: `Placement ${isEdit ? 'updated' : 'created'} successfully!`,
         },
       });
+      
+      // Close the drawer on successful submission from Redux state change
+      setTimeout(() => {
+        onCancel(); 
+      }, 1000);
     }
+    
     if (error) {
       setSubmitStatus({
         isSubmitting: false,
@@ -375,7 +386,7 @@ const PlacementForm = ({
         response: null,
       });
     }
-  }, [success, error, isEdit]);
+  }, [success, error, isEdit, onCancel]);
 
   // Function to render text fields
   const renderTextField = (field) => {
@@ -583,7 +594,7 @@ const PlacementForm = ({
                 onClick={onCancel}
                 disabled={loading || formik.isSubmitting}
               >
-                Cancel
+                Close
               </Button>
 
               <Button
