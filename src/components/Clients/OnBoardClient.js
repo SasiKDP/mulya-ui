@@ -143,7 +143,7 @@ const ClientForm = ({
   const contactFields = [
     { name: "clientSpocName", label: "Contact Name", icon: <Person color="primary" /> },
     { name: "clientSpocEmailid", label: "Contact Email", icon: <Email color="primary" /> },
-    { name: "clientSpocMobileNumber", label: "Contact Mobile", placeholder: "10-digit number", icon: <Phone color="primary" /> },
+    { name: "clientSpocMobileNumber", label: "Contact Mobile", icon: <Phone color="primary" /> },
     { name: "clientSpocLinkedin", label: "Contact LinkedIn", placeholder: "https://linkedin.com/in/", icon: <LinkedIn color="primary" /> },
   ];
 
@@ -161,7 +161,11 @@ const ClientForm = ({
     clientLinkedInUrl: Yup.string().url("Must be a valid URL").nullable().transform((value) => (value === "" ? null : value)),
     clientSpocName: Yup.array().of(Yup.string().nullable()),
     clientSpocEmailid: Yup.array().of(Yup.string().email("Invalid email format").nullable()),
-    clientSpocMobileNumber: Yup.array().of(Yup.string().matches(/^[0-9]{10}$/, "Phone number must be 10 digits").nullable()),
+    clientSpocMobileNumber: Yup.array().of(
+      Yup.string()
+        .matches(/^[0-9]{10}$|^[0-9]{15}$/, "Phone number must be either 10 or 15 digits")
+        .nullable()
+    ),
     clientSpocLinkedin: Yup.array().of(Yup.string().url("Must be a valid LinkedIn URL").nullable().transform((value) => (value === "" ? null : value))),
     supportingDocuments: Yup.array().of(Yup.string().nullable()).nullable(),
     onBoardedBy: Yup.string().nullable(),

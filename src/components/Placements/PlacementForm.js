@@ -51,7 +51,7 @@ const validationSchema = Yup.object({
     .email("Invalid email format")
     .required("Email is required"),
   candidateContactNo: Yup.string()
-    .matches(/^\d{10}$/, "Phone number must be exactly 10 digits")
+    .matches(/^(\+?\d{10}|\+?\d{12}|\+?\d{15})$/, "Contact number must be 10, 12, or 15 digits")
     .required("Phone number is required"),
   technology: Yup.string().required("Technology is required"),
   clientName: Yup.string().required("Client name is required"),
