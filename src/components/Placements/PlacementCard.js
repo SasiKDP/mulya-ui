@@ -218,7 +218,7 @@ const PlacementCard = ({ data }) => {
               <Grid item xs={12} md={4}>
                 <FinancialCard
                   label="Bill Rate "
-                  value={formatCurrency(data.billRateUSD)}
+                  value={formatCurrency(data.billRate)}
                   color={theme.palette.success.main}
                 />
               </Grid>
