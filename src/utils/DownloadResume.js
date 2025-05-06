@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { IconButton, Menu, MenuItem } from "@mui/material";
 import { Download } from "@mui/icons-material";
+import ToastService from "../Services/toastService";
 
-const DownloadResume = ({ candidate, baseUrl }) => {
+const DownloadResume = ({ candidate, getDownloadUrl }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleClick = (event) => {
@@ -13,32 +14,50 @@ const DownloadResume = ({ candidate, baseUrl }) => {
     setAnchorEl(null);
   };
 
-  const handleDownload = async (format) => {
+  const handleDownload = async (format, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
     
-    if (!candidate?.id) return;
-  
-    const url = `${baseUrl}/candidate/bench/download/${candidate.id}?format=${format}`;
-  
+    if (!candidate?.candidateId || !candidate?.jobId) {
+      console.error('Missing required candidate data:', candidate);
+      ToastService.error("Cannot download resume: missing candidate information");
+      handleClose();
+      return;
+    }
+
+    const url = getDownloadUrl(candidate, format);
+    console.log(`Downloading from URL: ${url}`); // Debug URL
+
     try {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Accept': 'application/octet-stream',
+          'Accept': format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         },
+        credentials: 'include', // Include cookies if authentication is needed
       });
-  
+
       if (!response.ok) {
-        throw new Error('Download failed');
+        console.error('Download failed with status:', response.status);
+        throw new Error(`Download failed with status ${response.status}`);
       }
-  
+
+      // Check content type to ensure we're getting the right format
+      const contentType = response.headers.get('content-type');
+      console.log(`Received content type: ${contentType}`); // Debug content type
+      
+      
       const blob = await response.blob();
-  
-      // Default filename: use full name with spaces and extension
-      let filename = `${candidate.fullName}.${
-        format === 'pdf' ? 'pdf' : 'docx'
-      }`;
-  
-      // Override with backend-provided filename if present
+      
+      // Set appropriate extension based on actual content type
+      let extension = 'pdf';
+      if (format === 'word') {
+        extension = 'docx';
+      }
+
+      let filename = `${candidate.fullName}.${extension}`;
+
       const contentDisposition = response.headers.get('content-disposition');
       if (contentDisposition) {
         const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
@@ -46,7 +65,7 @@ const DownloadResume = ({ candidate, baseUrl }) => {
           filename = match[1].replace(/['"]/g, '');
         }
       }
-  
+
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
       link.setAttribute('download', filename);
@@ -55,36 +74,33 @@ const DownloadResume = ({ candidate, baseUrl }) => {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Resume download failed', error);
-      alert('Download failed. Please try again.');
+      ToastService.error("Download failed. Please try again.");
     }
-  
+
     handleClose();
   };
-  
 
   return (
     <>
-       <IconButton
-              color="success"
-              size="small"
-              onClick={handleClick}
-              // disabled={downloadingResume}
-        >
+      <IconButton 
+        color="success" 
+        size="small" 
+        onClick={handleClick}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <Download fontSize="small" />
-        </IconButton>
-        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleClose} 
-          anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-          }}
-          transformOrigin={{
-           vertical: 'top',
-           horizontal: 'right',
-          }}
-          PopperProps={{ disablePortal: true }}
-        >
-        <MenuItem onClick={() => handleDownload("pdf")}>PDF</MenuItem>
-        <MenuItem onClick={() => handleDownload("word")}>Word</MenuItem>
+      </IconButton>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        PopperProps={{ disablePortal: true }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <MenuItem onClick={(e) => handleDownload("pdf", e)}>PDF</MenuItem>
+        <MenuItem onClick={(e) => handleDownload("word", e)}>Word</MenuItem>
       </Menu>
     </>
   );

@@ -6,16 +6,20 @@ import benchReducer from '../redux/benchSlice'
 import requirementReducer from '../redux/requirementSlice'
 import interviewReducer from '../redux/interviewSlice'
 import submissionReducer from '../redux/submissionSlice'
+import commonReducer from '../redux/commonSlice'
+import placementReducer from "../redux/placementSlice"
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    employee: employeesReducer, // Add the employees reducer to the store
+    employee: employeesReducer, 
     clients: clientsReducer,
     bench: benchReducer,
     requirement: requirementReducer,
     interview: interviewReducer,
-    submission: submissionReducer
+    submission: submissionReducer,
+    common: commonReducer,
+    placement:placementReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

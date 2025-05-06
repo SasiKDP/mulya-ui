@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import httpService from '../../Services/httpService';
+import httpService, { API_BASE_URL } from '../../Services/httpService';
 import DataTable from '../muiComponents/DataTabel';
 import DownloadResume from '../../utils/DownloadResume';
 
@@ -284,6 +284,15 @@ const BenchList = () => {
       render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
     },
     {
+      key: 'technology',
+      label: 'Technology',
+      type: 'text',
+      sortable: true,
+      filterable: true,
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
+    },
+    {
       key: 'totalExperience',
       label: 'Total Exp (Yrs)',
       type: 'text',
@@ -349,7 +358,7 @@ const BenchList = () => {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Download Resume"> 
+          {/* <Tooltip title="Download Resume"> 
            <IconButton
            color="success"
            size="small"
@@ -379,7 +388,19 @@ const BenchList = () => {
          Word
         </MenuItem>
         </Menu>
-        </Tooltip>
+        </Tooltip> */}
+        <DownloadResume
+        candidate={{
+        candidateId: row?.id ?? 'NO_ID',
+        jobId: row?.jobId ?? 'NO_JOB_ID',
+        fullName: row?.fullName ?? 'NO_NAME',
+        }}
+        getDownloadUrl={(candidate, format) => {
+        console.log("Resolved candidate for download:", candidate, format);
+         return `${API_BASE_URL}/candidate/bench/download/${candidate.candidateId}?format=${format}`;
+       }}
+       />
+
         </Box>
       ),
     },

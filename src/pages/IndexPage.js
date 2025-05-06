@@ -67,16 +67,6 @@ export default function HomePage() {
         console.error('Error fetching dashboard data:', error);
         ToastService.error('Failed to load dashboard data');
         setLoading(false);
-        setStats({
-          requirements: 0,
-          candidates: 0,
-          assigned: 0,
-          interviews: 0,
-          clients: 0,
-          placements: 0,
-          users: 0,
-          bench: 0,
-        });
       }
     };
 
@@ -88,8 +78,8 @@ export default function HomePage() {
       title: 'Requirements',
       key: 'requirements',
       subtitle: 'Active',
-      color: '#3B82F6', // Blue-500
-      bg: '#EFF6FF',   // Blue-50
+      color: '#3B82F6',
+      bg: '#EFF6FF',
       icon: <FileText size={24} />,
       buttonText: 'View Requirements',
       path: '/dashboard/requirements',
@@ -98,8 +88,8 @@ export default function HomePage() {
       title: 'Candidates',
       key: 'candidates',
       subtitle: 'Total',
-      color: '#10B981', // Emerald-500
-      bg: '#ECFDF5',   // Emerald-50
+      color: '#10B981',
+      bg: '#ECFDF5',
       icon: <Users size={24} />,
       buttonText: 'View Candidates',
       path: '/dashboard/submissions',
@@ -108,8 +98,8 @@ export default function HomePage() {
       title: 'Assigned',
       key: 'assigned',
       subtitle: 'Candidates',
-      color: '#8B5CF6', // Violet-500
-      bg: '#F5F3FF',   // Violet-50
+      color: '#8B5CF6',
+      bg: '#F5F3FF',
       icon: <ClipboardCheck size={24} />,
       buttonText: 'View Assignments',
       path: '/dashboard/assigned',
@@ -118,8 +108,8 @@ export default function HomePage() {
       title: 'Interviews',
       key: 'interviews',
       subtitle: 'Scheduled',
-      color: '#F59E0B', // Amber-500
-      bg: '#FFFBEB',   // Amber-50
+      color: '#F59E0B',
+      bg: '#FFFBEB',
       icon: <Calendar size={24} />,
       buttonText: 'View Interviews',
       path: '/dashboard/interviews',
@@ -128,8 +118,8 @@ export default function HomePage() {
       title: 'Clients',
       key: 'clients',
       subtitle: 'Active',
-      color: '#EF4444', // Red-500
-      bg: '#FEF2F2',   // Red-50
+      color: '#EF4444',
+      bg: '#FEF2F2',
       icon: <Briefcase size={24} />,
       buttonText: 'View Clients',
       path: '/dashboard/clients',
@@ -138,8 +128,8 @@ export default function HomePage() {
       title: 'Placements',
       key: 'placements',
       subtitle: 'This Month',
-      color: '#6366F1', // Indigo-500
-      bg: '#EEF2FF',   // Indigo-50
+      color: '#6366F1',
+      bg: '#EEF2FF',
       icon: <Award size={24} />,
       buttonText: 'View Placements',
       path: '/dashboard/placements',
@@ -148,8 +138,8 @@ export default function HomePage() {
       title: 'Employees',
       key: 'users',
       subtitle: 'Available',
-      color: '#06B6D4', // Cyan-500
-      bg: '#ECFEFF',   // Cyan-50
+      color: '#06B6D4',
+      bg: '#ECFEFF',
       icon: <UserCheck size={24} />,
       buttonText: 'View Employees',
       path: '/dashboard/users',
@@ -158,13 +148,21 @@ export default function HomePage() {
       title: 'Bench',
       key: 'bench',
       subtitle: 'Available',
-      color: '#14B8A6', // Teal-500
-      bg: '#F0FDFA',   // Teal-50
+      color: '#14B8A6',
+      bg: '#F0FDFA',
       icon: <UserCheck size={24} />,
       buttonText: 'View Bench',
       path: '/dashboard/bench-users',
     },
   ];
+
+  // ✅ Only show "Assigned" card for EMPLOYEE role
+  const filteredCards = cards.filter((card) => {
+    if (role === 'EMPLOYEE') {
+      return card.key === 'assigned';
+    }
+    return card.key !== 'assigned';
+  });
 
   const handleCardClick = (cardKey, path) => {
     if (cardPermissions[cardKey]?.includes(role)) {
@@ -183,7 +181,7 @@ export default function HomePage() {
       <ComponentTitle title="Dashboard" sx={{ mb: 2 }} />
 
       <Grid container spacing={3}>
-        {cards.map((card, index) => (
+        {filteredCards.map((card, index) => (
           <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
             <Card elevation={3}>
               <CardContent>

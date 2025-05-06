@@ -27,7 +27,7 @@ export const navItems = [
     text: "Submissions",
     path: "submissions",
     icon: <SendIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN"],
   },
 
   {
@@ -46,7 +46,7 @@ export const navItems = [
     text: "Interviews",
     path: "interviews",
     icon: <EventNoteIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN"],
   },
 
   {
@@ -73,23 +73,24 @@ export const navItems = [
   //     icon: <PersonAddIcon />,
   //     roles: [ 'SUPERADMIN', 'BDM'],
   //   },
-  {
-    text: "Submissions",
-    path: "submissions-all",
-    icon: <AssignmentTurnedInIcon />,
-    roles: ["SUPERADMIN"],
-  },
-  {
-    text: "Interviews",
-    path: "interviews-all",
-    icon: <EventNoteIcon />,
-    roles: ["SUPERADMIN"],
-  },
+  // {
+  //   text: "Submissions",
+  //   path: "submissions-all",
+  //   icon: <AssignmentTurnedInIcon />,
+  //   roles: ["SUPERADMIN"],
+  // },
+  // {
+  //   text: "Interviews",
+  //   path: "interviews-all",
+  //   // path: "interviews",
+  //   icon: <EventNoteIcon />,
+  //   roles: ["SUPERADMIN"],
+  // },
   {
     text: "Placements",
     path: "placements",
     icon: <PersonAddIcon />,
-    roles: ["SUPERADMIN", "PARTNER"],
+    roles: ["SUPERADMIN", "PARTNER","ADMIN"],
   },
   {
     text: "Bench",
