@@ -7,6 +7,10 @@ import * as Yup from "yup";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc); // extend dayjs with utc plugin
+
 
 const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   const [notification, setNotification] = useState({
@@ -26,10 +30,24 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   const getInitialValues = () => {
     if (data) {
       let dateTimeValue = "";
+      // if (data.interviewDateTime) {
+      //   const date = new Date(data.interviewDateTime);
+      //   dateTimeValue = date.toISOString().slice(0, 16);
+      // }
       if (data.interviewDateTime) {
         const date = new Date(data.interviewDateTime);
-        dateTimeValue = date.toISOString().slice(0, 16);
+        
+        // Get UTC time using getUTC* methods
+        const utcYear = date.getUTCFullYear();
+        const utcMonth = String(date.getUTCMonth() + 1).padStart(2, '0'); // Month is 0-based
+        const utcDay = String(date.getUTCDate()).padStart(2, '0');
+        const utcHour = String(date.getUTCHours()).padStart(2, '0');
+        const utcMinute = String(date.getUTCMinutes()).padStart(2, '0');
+    
+        // Format it as "YYYY-MM-DDTHH:mm:00+00:00"
+        dateTimeValue = `${utcYear}-${utcMonth}-${utcDay}T${utcHour}:${utcMinute}:00+00:00`;
       }
+      
 
       return {
         contactNumber: data.contactNumber || data.candidateContactNo || "",
@@ -70,7 +88,8 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       skipNotification: false,
     };
   };
-
+   
+  
   // Define field configurations for the dynamic form
   const getFormFields = (values) => {
     const fields = [
@@ -282,7 +301,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         candidateEmailId: values.candidateEmailId,
         fullName: values.fullName,
         contactNumber: values.contactNumber,
-        interviewDateTime: dayjs(values.interviewDateTime).format(),
+        interviewDateTime: dayjs(values.interviewDateTime).utc().format("YYYY-MM-DDTHH:mm:ssZ"),
         interviewScheduledTimestamp: dayjs(values.interviewDateTime).valueOf(),
         duration: values.duration,
         zoomLink: values.zoomLink,

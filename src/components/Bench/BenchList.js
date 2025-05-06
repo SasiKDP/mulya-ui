@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import httpService from '../../Services/httpService';
+import httpService, { API_BASE_URL } from '../../Services/httpService';
 import DataTable from '../muiComponents/DataTabel';
+import DownloadResume from '../../utils/DownloadResume';
 
 import {
   Box,
@@ -16,7 +17,9 @@ import {
   Button,
   Skeleton,
   Chip,
-  Stack
+  Stack,
+  Menu,
+  MenuItem
 } from '@mui/material';
 import {
   Edit,
@@ -52,6 +55,11 @@ const BenchList = () => {
   const [editCandidateId, setEditCandidateId] = useState(null);
 
   const { isFilteredDataRequested, filteredBenchList } = useSelector((state) => state.bench);
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+
   const dispatch = useDispatch();
 
   const fetchBenchList = async () => {
@@ -102,6 +110,8 @@ const BenchList = () => {
     }
   };
 
+
+
   const handleAdd = () => {
     setEditCandidateId(null);
     setIsFormOpen(true);
@@ -139,41 +149,43 @@ const BenchList = () => {
       console.error("Error deleting candidate:", error);
     }
   };
-
-  const downloadResume = async (id, candidateName) => {
+  
+  const downloadResume = async (id, candidateName, format = "pdf") => {
     if (downloadingResume) return;
   
     setDownloadingResume(true);
     const toastId = ToastService.loading("Preparing resume download...");
   
     try {
-      const response = await fetch(`https://mymulya.com/candidate/bench/download/${id}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/octet-stream',
-        },
-      });
+      const response = await fetch(
+        `https://mymulya.com/candidate/bench/download/${id}?format=${format}`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/octet-stream",
+          },
+        }
+      );
   
-      if (!response.ok) {
-        throw response;
-      }
+      if (!response.ok) throw response;
   
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
   
-      let filename = `${candidateName.replace(/\s+/g, '_')}_Resume`;
+      let filename = `${candidateName}.${format === "word" ? "docx" : "pdf"}`;
+
   
-      const contentDisposition = response.headers.get('content-disposition');
+      const contentDisposition = response.headers.get("content-disposition");
       if (contentDisposition) {
         const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
         if (match && match[1]) {
-          filename = match[1].replace(/['"]/g, '');
+          filename = match[1].replace(/['"]/g, "");
         }
       }
   
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', filename);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
   
@@ -183,24 +195,17 @@ const BenchList = () => {
       }, 100);
   
       ToastService.update(toastId, "Resume downloaded successfully!", "success");
-  
     } catch (error) {
       console.error("Download error:", error);
-  
       let errorMessage = "Failed to download resume";
-      if (error.status === 404) {
-        errorMessage = "Resume not found for this candidate";
-      } else if (error.status === 500) {
-        errorMessage = "Server error while processing download";
-      }
-  
+      if (error.status === 404) errorMessage = "Resume not found for this candidate";
+      else if (error.status === 500) errorMessage = "Server error while processing download";
       ToastService.update(toastId, errorMessage, "error");
-  
     } finally {
       setDownloadingResume(false);
+      handleMenuClose();
     }
   };
-  
   
   
 
@@ -353,16 +358,49 @@ const BenchList = () => {
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Download Resume">
-            <IconButton
-              color="success"
-              size="small"
-              onClick={() => downloadResume(row.id, row.fullName)}
-              disabled={downloadingResume}
-            >
-              <Download fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {/* <Tooltip title="Download Resume"> 
+           <IconButton
+           color="success"
+           size="small"
+           onClick={handleMenuOpen}
+           disabled={downloadingResume}
+           >
+           <Download fontSize="small" />
+           </IconButton>
+
+          <Menu 
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{
+          sx: {
+          boxShadow: "0px 2px 4px rgba(0,0,0,0.1)", // lighter shadow
+  
+          },
+         }}
+         >
+        <MenuItem onClick={() => downloadResume(row.id, row.fullName, "pdf")}>
+         PDF
+        </MenuItem>
+        <MenuItem onClick={() => downloadResume(row.id, row.fullName, "word")}>
+         Word
+        </MenuItem>
+        </Menu>
+        </Tooltip> */}
+        <DownloadResume
+        candidate={{
+        candidateId: row?.id ?? 'NO_ID',
+        jobId: row?.jobId ?? 'NO_JOB_ID',
+        fullName: row?.fullName ?? 'NO_NAME',
+        }}
+        getDownloadUrl={(candidate, format) => {
+        console.log("Resolved candidate for download:", candidate, format);
+         return `${API_BASE_URL}/candidate/bench/download/${candidate.candidateId}?format=${format}`;
+       }}
+       />
+
         </Box>
       ),
     },

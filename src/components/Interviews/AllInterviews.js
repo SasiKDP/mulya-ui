@@ -109,23 +109,35 @@ const AllInterviews = () => {
     }
   };
 
+  // const formatDateTime = (dateTimeString) => {
+  //   if (!dateTimeString) return "N/A";
+  //   try {
+  //     const date = new Date(dateTimeString);
+  //     return date.toLocaleString("en-IN", {
+  //       timeZone: "Asia/Kolkata",
+  //       year: "numeric",
+  //       month: "short",
+  //       day: "numeric",
+  //       hour: "2-digit",
+  //       minute: "2-digit",
+  //     });
+  //   } catch (e) {
+  //     console.error("Error formatting date", e);
+  //     return "Invalid Date";
+  //   }
+  // };
   const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) return "N/A";
-    try {
-      const date = new Date(dateTimeString);
-      return date.toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch (e) {
-      console.error("Error formatting date", e);
-      return "Invalid Date";
-    }
-  };
+  if (!dateTimeString) return "N/A";
+  try {
+    const date = new Date(dateTimeString);
+    // Convert to UTC ISO string and replace Z with +00:00
+    return date.toISOString().replace(".000Z", "+00:00");
+  } catch (e) {
+    console.error("Error formatting date", e);
+    return "Invalid Date";
+  }
+};
+
 
   const handleEdit = (row, isReschedule = false) => {
     setEditDrawer({

@@ -33,6 +33,8 @@ import { fetchSubmissionsTeamLead } from "../../redux/submissionSlice";
 
 import { showToast } from "../../utils/ToastNotification";
 import { downloadFile } from "../../utils/downloadUtils";
+import DownloadResume from "../../utils/DownloadResume";
+import {API_BASE_URL} from '../../Services/httpService'
 
 
 
@@ -62,6 +64,10 @@ const Submission = () => {
   const { userId, role } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [tabValue, setTabValue] = useState(0);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const menuOpen = Boolean(anchorEl);
+  const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+
 
   useEffect(() => {
     fetchData();
@@ -193,14 +199,7 @@ const Submission = () => {
   
       // Make the request with proper responseType
       const response = await httpService.get(
-        `/candidate/download-resume/${candidateId}/${jobId}`,
-        {
-          responseType: 'arraybuffer', // Use arraybuffer instead of blob
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'Accept': 'application/pdf' // or whatever file type you expect
-          }
-        }
+        `/candidate/download-resume/${candidateId}/${jobId}`
       );
   
       // Check for empty response
@@ -248,6 +247,7 @@ const Submission = () => {
       setDownloadLoading(false);
     }
   };
+  
 
   const handleEdit = (row, e) => {
     e.stopPropagation();
@@ -255,6 +255,8 @@ const Submission = () => {
     setMode("edit");
     setOpenDrawer(true);
   };
+
+
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -279,6 +281,9 @@ const Submission = () => {
       }
     }
   };
+
+
+
 
   const openNewCandidateDrawer = () => {
     setCandidateData(null);
@@ -324,26 +329,7 @@ const Submission = () => {
         </Typography>
       )
     },
-    {
-      key: "submissionId",
-      label: "Submission ID",
-      type: "text",
-      sortable: true,
-      filterable: true,
-      width: 180,
-      render: loading ? () => <Skeleton variant="text" width={120} /> : (row) => (
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            fontWeight: 500,
-            color: 'text.secondary',
-            fontFamily: 'monospace'
-          }}
-        >
-          {row.submissionId}
-        </Typography>
-      )
-    },
+    ,
     {
       key: "fullName",
       label: "Full Name",
@@ -383,6 +369,44 @@ const Submission = () => {
             {row.clientName}
           </Typography>
         </Box>
+      )
+    },
+    {    
+
+         key:"recruiterName",
+         label:"Recruiter",
+         type:"text",
+         sortable:true,
+         filterable:true,
+         width:180,
+         render: loading ? () => <Skeleton variant="text" width={100} /> : (row) => (
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}>
+            <BusinessIcon fontSize="small" color="action" />
+            <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+              {row.recruiterName}
+            </Typography>
+          </Box>
+        )
+    },
+    {
+      key: "jobId",
+      label: "Job ID",
+      type: "text",
+      sortable: true,
+      filterable: true,
+      width: 100,
+      render: loading ? () => <Skeleton variant="text" width={60} /> : (row) => (
+        <Chip
+          label={row.jobId}
+          size="small"
+          color="info"
+          variant="outlined"
+          sx={{ fontWeight: 500 }}
+        />
       )
     },
     {
@@ -435,23 +459,25 @@ const Submission = () => {
       )
     },
     {
-      key: "jobId",
-      label: "Job ID",
+      key: "submissionId",
+      label: "Submission ID",
       type: "text",
       sortable: true,
       filterable: true,
-      width: 100,
-      render: loading ? () => <Skeleton variant="text" width={60} /> : (row) => (
-        <Chip
-          label={row.jobId}
-          size="small"
-          color="info"
-          variant="outlined"
-          sx={{ fontWeight: 500 }}
-        />
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={120} /> : (row) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontWeight: 500,
+            color: 'text.secondary',
+            fontFamily: 'monospace'
+          }}
+        >
+          {row.submissionId}
+        </Typography>
       )
     },
-    
     {
       key: "moveToBench",
       label: "Move to Bench",
@@ -534,7 +560,7 @@ const Submission = () => {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <Tooltip title="Download Resume">
+          {/* <Tooltip title="Download Resume">
             <IconButton
               size="small"
               onClick={(e) => downloadResume(row.jobId, row.candidateId, e)}
@@ -547,7 +573,14 @@ const Submission = () => {
                 <Download fontSize="small" />
               )}
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
+          <DownloadResume
+          candidate={{...row,jobId:row.jobId}} // ✅ Combine row and jobId
+          getDownloadUrl={(candidate, format) =>
+          `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
+          }
+          />
+
           <Tooltip title="Edit Candidate">
             <IconButton
               size="small"
@@ -559,7 +592,7 @@ const Submission = () => {
           </Tooltip>
           <Tooltip title="Delete Candidate">
             <IconButton
-              size="small"
+              size="small"j
               onClick={(e) => handleDelete(row.submissionId, e)}
               sx={{ color: 'error.main' }}
             >

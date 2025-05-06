@@ -176,6 +176,18 @@ const Interviews = () => {
       return "Invalid Date";
     }
   };
+  // const formatDateTime = (dateTimeString) => {
+  //   if (!dateTimeString) return "N/A";
+  //   try {
+  //     const date = new Date(dateTimeString);
+  //     // Convert to UTC ISO string and replace Z with +00:00
+  //     return date.toISOString().replace(".000Z", "+00:00");
+  //   } catch (e) {
+  //     console.error("Error formatting date", e);
+  //     return "Invalid Date";
+  //   }
+  // };
+  
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -189,7 +201,16 @@ const Interviews = () => {
 
 
   const columns = [
-    
+    {
+      key:"candidateId",
+      label:"Candidate Id",
+      width:180,
+      render:(row)=>(
+          <Box>
+            <Typography variant="body2">{row.candidateId}</Typography>
+          </Box>
+      ),
+    },
     
     {
       key: "candidateFullName",
@@ -205,6 +226,23 @@ const Interviews = () => {
       ),
     },
     { key: "clientName", label: "Client", width: 150 },
+    {
+      key:"recruiterName",
+      label:"Recruiter",
+      width:180,
+      render:(row)=>(
+         <Typography variant="body2">{row.recruiterName}</Typography>
+      ),
+    },
+    {
+      key:"jobId",
+      label:"Job Id",
+      width:180,
+      render:(row)=>(
+        <Typography variant="body2">{row.jobId}</Typography>
+      )
+    }
+    ,
     {
       key: "interviewLevel",
       label: "Level",
@@ -249,7 +287,7 @@ const Interviews = () => {
           </Typography>
         ),
     },
-    { key: "interviewId", label: "Interview ID", width: 100 },
+    // { key: "interviewId", label: "Interview ID", width: 100 },
     {
       key: "actions",
       label: "Actions",
