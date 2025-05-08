@@ -133,7 +133,7 @@ const routeConfig = [
             element: (
               <ProtectedRoute allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD",'SUPERADMIN']} />
             ),
-            children: [{ index: true, element: Loadable(Interviews) }],
+            children: [{ index: true, element: Loadable(InterviewsRouter) }],
           },
           {
             path: "interviews-all",
