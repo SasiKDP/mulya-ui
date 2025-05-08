@@ -140,7 +140,7 @@ export const placementFormFields = {
   
   internalFields: [
     {
-      id: "recruiter",
+      id: "recruiterName",
       label: "Recruiter",
       type: "text",
       grid: { xs: 12, sm: 6 },

@@ -211,7 +211,7 @@ const PlacementForm = ({
 
   const internalFields = [
     {
-      id: "recruiter",
+      id: "recruiterName",
       label: "Recruiter",
       grid: { xs: 12, sm: 6 },
     },
@@ -274,7 +274,7 @@ const PlacementForm = ({
       payRate: initialValues.payRate || "",
       grossProfit: initialValues.grossProfit || "",
       employmentType: initialValues.employmentType || "",
-      recruiter: initialValues.recruiter || "",
+      recruiterName: initialValues.recruiterName || "",
       sales: initialValues.sales || "",
       status: initialValues.status || "",
       statusMessage: initialValues.statusMessage || "",

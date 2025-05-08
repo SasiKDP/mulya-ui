@@ -26,6 +26,33 @@ import ConfirmDialog from "../muiComponents/ConfirmDialog";
 import EditInterviewForm from "./EditInterviewForm";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 
+import { formatDateTime } from "../../utils/dateformate";
+
+/**
+ * Process interview data to ensure consistency and prepare for display
+ * @param {Array} interviews - Raw interview data from API
+ * @returns {Array} - Processed interview data
+ */
+const processInterviewData = (interviews) => {
+  if (!Array.isArray(interviews)) return [];
+
+  return interviews.map((interview) => {
+    // Ensure we're using the correct interview status property
+    const interviewStatus =
+      interview.interviewStatus ||
+      interview.latestInterviewStatus ||
+      "SCHEDULED";
+
+    return {
+      ...interview,
+      interviewId:
+        interview.interviewId || `${interview.candidateId}_${interview.jobId}`,
+      interviewStatus,
+      // Add any other processing needed for consistency
+    };
+  });
+};
+
 /**
  * Component for regular recruiters to view and manage their interviews
  */
@@ -46,12 +73,16 @@ const RecruiterInterviews = () => {
   const dispatch = useDispatch();
   const { userId } = useSelector((state) => state.auth);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-  const { filterInterviewsForRecruiter } = useSelector((state) => state.interview);
+  const { filterInterviewsForRecruiter } = useSelector(
+    (state) => state.interview
+  );
 
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
+      const response = await httpService.get(
+        `/candidate/interviews/interviewsByUserId/${userId}`
+      );
       const processedData = processInterviewData(response.data || []);
       setInterviews(processedData);
       setError(null);
@@ -64,47 +95,13 @@ const RecruiterInterviews = () => {
     }
   };
 
-  const processInterviewData = (data) => {
-    return data.map((interview) => {
-      const status = interview.latestInterviewStatus || interview.interviewStatus || "SCHEDULED";
-      const candidateName = interview.candidateFullName || 
-        interview.candidateEmailId?.split("@")[0] || 
-        "Unknown Candidate";
-
-      return {
-        ...interview,
-        candidateFullName: candidateName,
-        interviewStatus: status,
-        interviewId: interview.interviewId || `temp-${Math.random().toString(36).substr(2, 9)}`,
-      };
-    });
-  };
-
-  const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) return "N/A";
-    try {
-      const date = new Date(dateTimeString);
-      return date.toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch (e) {
-      console.error("Error formatting date", e);
-      return "Invalid Date";
-    }
-  };
-
   const handleEdit = (interview, isReschedule = false) => {
     setEditDrawer({
       open: true,
       data: {
         ...interview,
         isReschedule,
-        userId: interview.userId || userId
+        userId: interview.userId || userId,
       },
     });
   };
@@ -131,7 +128,7 @@ const RecruiterInterviews = () => {
 
     try {
       const toastId = ToastService.loading("Deleting interview...");
-      
+
       // Determine the correct API endpoint based on available data
       let deleteEndpoint;
       if (interview.candidateId && interview.jobId) {
@@ -139,7 +136,7 @@ const RecruiterInterviews = () => {
       } else {
         deleteEndpoint = `/interview/${interview.interviewId}`;
       }
-      
+
       await httpService.delete(deleteEndpoint);
       await fetchInterviews();
       ToastService.update(toastId, "Interview deleted successfully", "success");
@@ -202,10 +199,15 @@ const RecruiterInterviews = () => {
               fallback: "-",
               format: (value) => `${value} minutes`,
             },
-            { 
-              label: "Level", 
-              key: "interviewLevel", 
-              fallback: "-" 
+            {
+              label: "Level",
+              key: "interviewLevel",
+              fallback: "-",
+            },
+            {
+              label: "Status",
+              key: "interviewStatus",
+              fallback: "-",
             },
           ],
         },
@@ -381,7 +383,7 @@ const RecruiterInterviews = () => {
       },
     },
   ];
-  
+
   // Process data to include expanded content
   const processedData = loading
     ? []
@@ -390,10 +392,12 @@ const RecruiterInterviews = () => {
         expandContent: renderExpandedContent,
         isExpanded: expandedRows[row.interviewId],
       }));
-      
+
   // Use filtered data if available
-  const displayData = isFilteredDataRequested ? filterInterviewsForRecruiter : processedData;
-  
+  const displayData = isFilteredDataRequested
+    ? filterInterviewsForRecruiter
+    : processedData;
+
   useEffect(() => {
     fetchInterviews();
   }, [userId]);
@@ -456,7 +460,7 @@ const RecruiterInterviews = () => {
             primaryColor="#1976d2"
             secondaryColor="#e3f2fd"
             customStyles={{
-              headerBackground: "#1976d2", 
+              headerBackground: "#1976d2",
               rowHover: "#f5f5f5",
               selectedRow: "#e3f2fd",
             }}
@@ -468,6 +472,7 @@ const RecruiterInterviews = () => {
           <Drawer
             anchor="right"
             open={editDrawer.open}
+            s
             onClose={handleCloseEditDrawer}
             PaperProps={{
               sx: { width: { xs: "60%", sm: "50%", md: "50%" } },
@@ -497,6 +502,6 @@ const RecruiterInterviews = () => {
       )}
     </Box>
   );
-}
+};
 
 export default RecruiterInterviews;

@@ -451,7 +451,7 @@ const TeamLeadInterviews = () => {
           indicatorColor="primary"
           textColor="primary"
         >
-          <Tab label="My Interviews" id="self" />
+          <Tab label="Interviews" id="self" />
           <Tab label="Team Interviews" id="team" />
         </Tabs>
       </Paper>
