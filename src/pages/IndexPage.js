@@ -17,10 +17,11 @@ import {
 import ComponentTitle from '../utils/ComponentTitle';
 import httpService from '../Services/httpService';
 import ToastService from '../Services/toastService';
+import { API_BASE_URL } from '../Services/httpService';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { role } = useSelector((state) => state.auth);
+  const { role,userId } = useSelector((state) => state.auth);
 
   const cardPermissions = {
     requirements: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD'],
@@ -51,7 +52,14 @@ export default function HomePage() {
   useEffect(() => {
     const fetchDashboardCounts = async () => {
       try {
-        const response = await httpService.get('/candidate/dashboardcounts');
+        let url = `/candidate/dashboardcounts`; // Default API for SUPERADMIN
+  
+        // If the user is not SUPERADMIN, add recruiterId to the URL
+        if (role !== 'SUPERADMIN') {
+          url = `/candidate/dashboardcounts?recruiterId=${userId}`;
+        }
+  
+        const response = await httpService.get(url);
         setStats({
           requirements: response.data.requirements || 0,
           candidates: response.data.candidates || 0,
@@ -69,9 +77,10 @@ export default function HomePage() {
         setLoading(false);
       }
     };
-
+  
     fetchDashboardCounts();
-  }, []);
+  }, [userId, role]); // Add role as a dependency to re-fetch if it changes
+  
 
   const cards = [
     {
