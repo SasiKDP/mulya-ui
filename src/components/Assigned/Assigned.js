@@ -79,7 +79,7 @@ const Assigned = () => {
       return;
     }
     
-    setSelectedJob({ userId: userId, jobId: row.jobId });
+    setSelectedJob({ userId: userId, jobId: row.jobId, clientName:row.clientName});
     setMode("create");
     setSelectedCandidate(null);
     setOpenDrawer(true);
@@ -410,6 +410,7 @@ const Assigned = () => {
           <CandidateSubmissionDrawer
             userId={selectedJob?.userId}
             jobId={selectedJob?.jobId}
+            clientName={selectedJob?.clientName}
             candidateData={selectedCandidate}
             mode={mode}
             onClose={closeDrawer}

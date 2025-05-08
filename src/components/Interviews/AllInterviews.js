@@ -142,7 +142,9 @@ const AllInterviews = () => {
     }
   };
 
+
   const toggleRowExpansion = (interviewId) =>
+
     setExpandedRows((prev) => ({
       ...prev,
       [interviewId]: !prev[interviewId],
