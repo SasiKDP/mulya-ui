@@ -185,7 +185,7 @@ const PlacementsList = () => {
         width: 130,
       },
       { key: "sales", label: "Sales", width: 130 },
-      { key: "recruiter", label: "Recruiter", width: 130 },
+      { key: "recruiterName", label: "Recruiter", width: 130 },
       {
         key: "clientName",
         label: "Client",
