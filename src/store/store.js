@@ -8,6 +8,7 @@ import interviewReducer from '../redux/interviewSlice'
 import submissionReducer from '../redux/submissionSlice'
 import commonReducer from '../redux/commonSlice'
 import placementReducer from "../redux/placementSlice"
+import dashboardReducer from '../redux/dashboardSlice'
 
 export const store = configureStore({
   reducer: {
@@ -19,7 +20,8 @@ export const store = configureStore({
     interview: interviewReducer,
     submission: submissionReducer,
     common: commonReducer,
-    placement:placementReducer
+    placement:placementReducer,
+    dashboard:dashboardReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
