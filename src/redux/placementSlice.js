@@ -181,13 +181,7 @@ export const filterPlacementByDateRange = createAsyncThunk(
   "placement/filterByDateRange",
   async ({ startDate, endDate }, thunkAPI) => {
     try {
-      const response = await httpService.get(
-        `/candidate/placement/filterByDate`,
-        {
-          params: { startDate, endDate },
-        }
-      );
-
+      const response = await httpService.get(`/candidate/placement/filterByDate?startDate=${startDate}&endDate=${endDate}`)
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(

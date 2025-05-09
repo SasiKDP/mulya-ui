@@ -227,7 +227,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   
       const payload = {
         ...data,
-        interviewLevel: data.interviewLevel, // Use original interview level value
+        interviewLevel: values.interviewLevel, // Use original interview level value
         interviewStatus: values.interviewStatus,
         skipNotification: values.skipNotification,
         userId: data.userId,

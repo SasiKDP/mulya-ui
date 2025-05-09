@@ -14,6 +14,7 @@ import { filterUsersByDateRange } from '../../redux/employeesSlice';
 import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../../redux/submissionSlice';
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
 import { filterPlacementByDateRange } from '../../redux/placementSlice';
+import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
 
 
 
@@ -32,6 +33,7 @@ const componentToActionMap = {
   placements:filterPlacementByDateRange,
   allSubmissions:filterSubmissionsByDateRange,
   allInterviews:filterInterviewsByDateRange,
+  dashboard:filterDashBoardCountByDateRange
 };
 
 
@@ -68,6 +70,7 @@ const DateRangeFilter = ({ component, labelPrefix = '' }) => {
       }
     }
   }, [startDate, endDate, component, dispatch]);
+
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>

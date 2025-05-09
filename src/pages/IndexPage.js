@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, Users, ClipboardCheck, Calendar, Briefcase, Award, UserCheck,
@@ -13,16 +13,37 @@ import {
   Button,
   Avatar,
   Skeleton,
+  Stack
 } from '@mui/material';
 import ComponentTitle from '../utils/ComponentTitle';
 import httpService from '../Services/httpService';
 import ToastService from '../Services/toastService';
 import { API_BASE_URL } from '../Services/httpService';
+import DateRangeFilter from '../components/muiComponents/DateRangeFilter';
+import { filterDashBoardCountByDateRange } from '../redux/dashboardSlice';
 
-export default function HomePage() {
+const HomePage = () => {
   const navigate = useNavigate();
-  const { role,userId } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const { role, userId } = useSelector((state) => state.auth);
+  const { statsByFilter: dashboardStats } = useSelector((state) => state.dashboard);
 
+  const [isFiltered, setIsFiltered] = useState(false);
+  const [defaultStats, setDefaultStats] = useState({});
+  const [filteredStats, setFilteredStats] = useState(null);
+  const [stats, setStats] = useState({
+    requirements: 0,
+    candidates: 0,
+    assigned: 0,
+    interviews: 0,
+    clients: 0,
+    placements: 0,
+    users: 0,
+    bench: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Card permission mapping
   const cardPermissions = {
     requirements: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD'],
     candidates: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD'],
@@ -36,40 +57,31 @@ export default function HomePage() {
 
   const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER'];
 
-  const [stats, setStats] = useState({
-    requirements: 0,
-    candidates: 0,
-    assigned: 0,
-    interviews: 0,
-    clients: 0,
-    placements: 0,
-    users: 0,
-    bench: 0,
-  });
-
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchDashboardCounts = async () => {
       try {
-        let url = `/candidate/dashboardcounts`; // Default API for SUPERADMIN
-  
-        // If the user is not SUPERADMIN, add recruiterId to the URL
+        let url = `/candidate/dashboardcounts`;
         if (role !== 'SUPERADMIN') {
           url = `/candidate/dashboardcounts?recruiterId=${userId}`;
         }
-  
+
         const response = await httpService.get(url);
-        setStats({
+        setDefaultStats({
           requirements: response.data.requirements || 0,
           candidates: response.data.candidates || 0,
           assigned: response.data.assigned || 0,
           interviews: response.data.interviews || 0,
+          internalInterviews: response.data.internalInterviews || 0,
+          externalInterviews: response.data.externalInterviews || 0,
           clients: response.data.clients || 0,
           placements: response.data.placements || 0,
           users: response.data.users || 0,
           bench: response.data.bench || 0,
         });
+
+        // if (!isFiltered) {
+        //   setStats(response.data); // Set stats only if not filtered
+        // }
         setLoading(false);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -77,10 +89,15 @@ export default function HomePage() {
         setLoading(false);
       }
     };
-  
+
     fetchDashboardCounts();
-  }, [userId, role]); // Add role as a dependency to re-fetch if it changes
-  
+  }, [userId, role]);
+
+  // useEffect(() => {
+  //   if (isFiltered) {
+  //     setStats(dashboardStats); // Update stats with filtered data
+  //   }
+  // }, [dashboardStats, isFiltered]);
 
   const cards = [
     {
@@ -121,6 +138,26 @@ export default function HomePage() {
       bg: '#FFFBEB',
       icon: <Calendar size={24} />,
       buttonText: 'View Interviews',
+      path: '/dashboard/interviews',
+    },
+    {
+      title: 'Internal Interviews',
+      key: 'internalInterviews',
+      subtitle: 'Scheduled',
+      color: '#1D4ED8',
+      bg: '#E0F2FE',
+      icon: <Calendar size={24} />,
+      buttonText: 'View Internal Interviews',
+      path: '/dashboard/interviews',
+    },
+    {
+      title: 'External Interviews',
+      key: 'externalInterviews',
+      subtitle: 'Scheduled',
+      color: '#D97706',
+      bg: '#FEF3C7',
+      icon: <Calendar size={24} />,
+      buttonText: 'View External Interviews',
       path: '/dashboard/interviews',
     },
     {
@@ -165,13 +202,31 @@ export default function HomePage() {
     },
   ];
 
-  // ✅ Only show "Assigned" card for EMPLOYEE role
   const filteredCards = cards.filter((card) => {
     if (role === 'EMPLOYEE') {
       return card.key === 'assigned';
     }
     return card.key !== 'assigned';
   });
+
+  const handleDateFilterApply = async (startDate, endDate) => {
+  if (startDate && endDate) {
+    try {
+       const response = await dispatch(filterDashBoardCountByDateRange({ startDate, endDate })).unwrap();
+      setFilteredStats(response);
+      ToastService.success("Filter applied successfully");
+    } catch (error) {
+      ToastService.error("Failed to apply filter");
+    }
+  }
+};
+
+
+  console.log("filter apply",handleDateFilterApply())
+
+  const handleClearFilter = () => {
+    setFilteredStats(null); // Reset to original stats
+  };
 
   const handleCardClick = (cardKey, path) => {
     if (cardPermissions[cardKey]?.includes(role)) {
@@ -185,9 +240,33 @@ export default function HomePage() {
     return navigate('/access');
   }
 
+  const currentStats = filteredStats ? filteredStats : defaultStats;
+
   return (
     <Box p={4} bgcolor="#FFF" sx={{ minHeight: '85vh' }}>
-      <ComponentTitle title="Dashboard" sx={{ mb: 2 }} />
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={2}
+        sx={{
+          flexWrap: 'wrap',
+          mb: 3,
+          justifyContent: 'space-between',
+          p: 2,
+          backgroundColor: '#f9f9f9',
+          borderRadius: 2,
+          boxShadow: 1,
+        }}
+      >
+        <Typography variant="h6" color="primary">
+          Dashboard
+        </Typography>
+        <DateRangeFilter
+          component="dashboard"
+          onDateChange={handleDateFilterApply}
+          onClear={handleClearFilter}
+        />
+      </Stack>
 
       <Grid container spacing={3}>
         {filteredCards.map((card, index) => (
@@ -216,8 +295,11 @@ export default function HomePage() {
                 ) : (
                   <>
                     <Typography variant="h5" fontWeight="bold">
-                      {stats[card.key]}
+                       {currentStats[card.key] || 0}
                     </Typography>
+                    {/* <Typography variant="h5" fontWeight="bold">
+                      {dashboardStats[card.key] || 0 }
+                    </Typography> */}
                     <Typography variant="caption" color="textSecondary">
                       {card.subtitle}
                     </Typography>
@@ -233,8 +315,7 @@ export default function HomePage() {
                     sx={{
                       backgroundColor: card.color,
                       '&:hover': {
-                        backgroundColor: card.color,
-                        filter: 'brightness(0.9)',
+                        backgroundColor: card.bg,
                       },
                     }}
                   >
@@ -248,4 +329,6 @@ export default function HomePage() {
       </Grid>
     </Box>
   );
-}
+};
+
+export default HomePage;

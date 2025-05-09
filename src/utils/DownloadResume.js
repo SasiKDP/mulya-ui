@@ -107,3 +107,4 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
 };
 
 export default DownloadResume;
+
