@@ -77,29 +77,17 @@ const Interviews = () => {
   };
 
   const fetchInterviews = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      let response;
-  
-      // If role is SUPERADMIN, fetch all interviews
       if (role === "SUPERADMIN") {
-        response = await httpService.get("/candidate/allInterviews");
+        const response = await httpService.get("/candidate/allInterviews");
+        setInterviews(response.data.data || []);
       } else {
-        response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
+        const response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
+        setInterviews(response.data || []);
       }
-  
-      // If role is SUPERADMIN, access the response.data.data (for the 'data' key)
-      const interviewData = role === "SUPERADMIN" ? response.data.data : response.data || [];
-  
-      // Process the interview data (this function will be used to format the data)
-      const processedData = processInterviewData(interviewData);
-  
-      // Set the processed data in the state
-      setInterviews(processedData);
-      setError(null); // Clear any previous errors
     } catch (err) {
       setError("Failed to fetch interview data");
-      console.error("Error fetching interviews:", err);
     } finally {
       setLoading(false);
     }
@@ -110,13 +98,13 @@ const Interviews = () => {
     fetchInterviews();
   }, [userId, role]);
 
-  useEffect(() => {
-    if (role === "TEAMLEAD") {
-      console.log("Team lead...");
+  // useEffect(() => {
+  //   if (role === "TEAMLEAD") {
+  //     console.log("Team lead...");
       
-      dispatch(fetchInterviewsTeamLead());
-    }
-  }, [dispatch, role])
+  //     dispatch(fetchInterviewsTeamLead());
+  //   }
+  // }, [dispatch, role])
 
   const handleEdit = (interview, isReschedule = false) => {
     setEditDrawer({

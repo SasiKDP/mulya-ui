@@ -26,8 +26,8 @@ const HomePage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { role, userId } = useSelector((state) => state.auth);
-  const { statsByFilter: dashboardStats } = useSelector((state) => state.dashboard);
-
+  const { statsByFilter } = useSelector((state) => state.dashboard);
+ 
   const [isFiltered, setIsFiltered] = useState(false);
   const [defaultStats, setDefaultStats] = useState({});
   const [filteredStats, setFilteredStats] = useState(null);
@@ -58,46 +58,39 @@ const HomePage = () => {
   const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER'];
 
   useEffect(() => {
-    const fetchDashboardCounts = async () => {
-      try {
-        let url = `/candidate/dashboardcounts`;
-        if (role !== 'SUPERADMIN') {
-          url = `/candidate/dashboardcounts?recruiterId=${userId}`;
-        }
-
-        const response = await httpService.get(url);
-        setDefaultStats({
-          requirements: response.data.requirements || 0,
-          candidates: response.data.candidates || 0,
-          assigned: response.data.assigned || 0,
-          interviews: response.data.interviews || 0,
-          internalInterviews: response.data.internalInterviews || 0,
-          externalInterviews: response.data.externalInterviews || 0,
-          clients: response.data.clients || 0,
-          placements: response.data.placements || 0,
-          users: response.data.users || 0,
-          bench: response.data.bench || 0,
-        });
-
-        // if (!isFiltered) {
-        //   setStats(response.data); // Set stats only if not filtered
-        // }
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        ToastService.error('Failed to load dashboard data');
-        setLoading(false);
+  const fetchDashboardCounts = async () => {
+    try {
+      let url = `/candidate/dashboardcounts`;
+      if (role !== 'SUPERADMIN') {
+        url = `/candidate/dashboardcounts?recruiterId=${userId}`;
       }
-    };
 
-    fetchDashboardCounts();
-  }, [userId, role]);
+      const response = await httpService.get(url);
+      setDefaultStats({
+        requirements: response.data.requirements || 0,
+        candidates: response.data.candidates || 0,
+        assigned: response.data.assigned || 0,
+        interviews: response.data.interviews || 0,
+        internalInterviews: response.data.internalInterviews || 0,
+        externalInterviews: response.data.externalInterviews || 0,
+        clients: response.data.clients || 0,
+        placements: response.data.placements || 0,
+        users: response.data.users || 0,
+        bench: response.data.bench || 0,
+      });
+      setStats(response.data); // Initialize stats with default
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      ToastService.error('Failed to load dashboard data');
+      setLoading(false);
+    }
+  };
 
-  // useEffect(() => {
-  //   if (isFiltered) {
-  //     setStats(dashboardStats); // Update stats with filtered data
-  //   }
-  // }, [dashboardStats, isFiltered]);
+  fetchDashboardCounts();
+}, [userId, role]);
+
+  
 
   const cards = [
     {
@@ -209,25 +202,6 @@ const HomePage = () => {
     return card.key !== 'assigned';
   });
 
-  const handleDateFilterApply = async (startDate, endDate) => {
-  if (startDate && endDate) {
-    try {
-       const response = await dispatch(filterDashBoardCountByDateRange({ startDate, endDate })).unwrap();
-      setFilteredStats(response);
-      ToastService.success("Filter applied successfully");
-    } catch (error) {
-      ToastService.error("Failed to apply filter");
-    }
-  }
-};
-
-
-  console.log("filter apply",handleDateFilterApply())
-
-  const handleClearFilter = () => {
-    setFilteredStats(null); // Reset to original stats
-  };
-
   const handleCardClick = (cardKey, path) => {
     if (cardPermissions[cardKey]?.includes(role)) {
       navigate(path);
@@ -239,8 +213,9 @@ const HomePage = () => {
   if (!allowedRoles.includes(role)) {
     return navigate('/access');
   }
+ 
 
-  const currentStats = filteredStats ? filteredStats : defaultStats;
+ const currentStats = isFiltered && filteredStats ? filteredStats : defaultStats;
 
   return (
     <Box p={4} bgcolor="#FFF" sx={{ minHeight: '85vh' }}>
@@ -263,8 +238,6 @@ const HomePage = () => {
         </Typography>
         <DateRangeFilter
           component="dashboard"
-          onDateChange={handleDateFilterApply}
-          onClear={handleClearFilter}
         />
       </Stack>
 
@@ -316,6 +289,7 @@ const HomePage = () => {
                       backgroundColor: card.color,
                       '&:hover': {
                         backgroundColor: card.bg,
+                        color:card.color
                       },
                     }}
                   >

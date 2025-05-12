@@ -20,10 +20,16 @@ export const fetchInterviewsTeamLead = createAsyncThunk(
 
 export const filterInterviewsByDateRange = createAsyncThunk(
   'interviews/filterByDateRange',
-  async ({ startDate, endDate }, { rejectWithValue }) => {
+  async ({ startDate, endDate, userId, role }, { rejectWithValue }) => {
     try {
-
-      const response = await httpService.get(`/candidate/interviews/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+      let response;
+      if (role === 'TEAMLEAD') {
+        // Using the correct API endpoint for TeamLead role
+        response = await httpService.get(`/candidate/interviews/teamlead/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+      } else {
+        // Fallback API endpoint if role isn't TEAMLEAD
+        response = await httpService.get(`/candidate/interviews/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+      }
 
       return response.data;
     } catch (error) {
@@ -31,7 +37,8 @@ export const filterInterviewsByDateRange = createAsyncThunk(
       return rejectWithValue(error);
     }
   }
-)
+);
+
 
 
 // Filter interviews for employee

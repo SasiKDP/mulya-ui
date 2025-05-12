@@ -61,8 +61,10 @@ const TeamLeadInterviews = () => {
       dispatch(fetchInterviewsTeamLead());
       
       // For immediate display, also fetch self interviews directly
-      const response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
+      const response = await httpService.get(`/candidate/interviews/teamlead/${userId}`);
+      console.log("response",response.data)
       const processedData = processInterviewData(response.data || []);
+    
       setInterviews(processedData);
       setError(null);
     } catch (err) {
