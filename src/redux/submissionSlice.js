@@ -51,6 +51,21 @@ export const filterSubmissionssByRecruiter = createAsyncThunk(
      }
 )
 
+export const filterSubmissionsByTeamlead=createAsyncThunk(
+  'teamlead/submissions/filterByDateRange',
+  async({startDate, endDate},{getState, rejectWithValue})=>{
+    try{
+      const state=getState();
+      const submissionId=state.auth.userId;
+      const response = await httpService.get(`/candidate/submissions/teamlead/${submissionId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+      return response.data; 
+    }
+    catch(error){
+      return rejectWithValue(error);
+    }
+  }
+)
+
 
 const submissionSlice =  createSlice({
     name: "submission",
@@ -60,6 +75,7 @@ const submissionSlice =  createSlice({
         teamSubmissionsTL: [],
         filteredSubmissionsList: [],
         filteredSubmissionsForRecruiter: [],
+        filterSubmissionsByTeamlead:[],
         error: null
     },
     reducers: {
@@ -111,6 +127,19 @@ const submissionSlice =  createSlice({
             state.loading = false;
             state.error = action.payload.message;
             
+          })
+
+          .addCase(filterSubmissionsByTeamlead.pending,(state)=>{
+            state.loading=true;
+            state.error=null;
+          })
+          .addCase(filterSubmissionsByTeamlead.fulfilled,(state,action)=>{
+             state.filterSubmissionsByTeamlead=action.payload;
+             state.loading=false;
+          })
+          .addCase(filterSubmissionsByTeamlead.rejected,(state,action)=>{
+             state.loading=false;
+             state.error=action.message;
           })
         }
 })
