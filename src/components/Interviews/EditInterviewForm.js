@@ -1,5 +1,19 @@
 import React, { useState } from "react";
-import { Box, Typography, Alert, Snackbar, IconButton, Divider, Stack } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Alert,
+  Snackbar,
+  IconButton,
+  Divider,
+  Stack,
+  Card,
+  CardContent,
+  Table,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import DynamicForm from "../FormContainer/DynamicForm";
 import * as Yup from "yup";
@@ -7,6 +21,7 @@ import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
 import httpService from "../../Services/httpService";
+import { formatDateTime } from '../../utils/dateformate';
 
 
 const EditInterviewForm = ({ data, onClose, onSuccess }) => {
@@ -49,7 +64,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       jobId: data.jobId || "",
       skipNotification: data.skipNotification || false,
       userId: data.userId || userId || "",
-      userEmail: data.email||email || "",
+      userEmail: data.email || email || "",
       zoomLink: data.zoomLink || "",
       candidateEmailId: data.emailId || data.candidateEmailId || "",
       contactNumber: data.contactNumber || data.candidateContactNo || "",
@@ -61,7 +76,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   // Define field configurations for the dynamic form
   const getFormFields = (values) => {
     const commonGridProps = { xs: 12, md: 6, lg: 6, xl: 4 };
-  
+
     if (!isReschedule) {
       return [
         {
@@ -100,6 +115,14 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           ],
           disabled: true,
           gridProps: commonGridProps,
+        },
+        {
+          name: "externalInterviewDetails",
+          label: "Interview Details / Notes",
+          type: "textarea",
+          placeholder: "Add any additional interview details or notes here",
+          gridProps: { xs: 12 },
+          rows: 4,
         },
         {
           name: "skipNotification",
@@ -160,6 +183,15 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           gridProps: commonGridProps,
         },
         {
+          name: "externalInterviewDetails",
+          label: "Interview Details / Notes",
+          type: "textarea",
+          placeholder:
+            "Add any additional interview details, requirements, or notes here",
+          gridProps: { xs: 12 },
+          rows: 4,
+        },
+        {
           name: "skipNotification",
           label: "Skip Email Notification",
           type: "checkbox",
@@ -169,7 +201,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       ];
     }
   };
-  
 
   // Validation schema - simplified for edit mode
   const validationSchema = () => {
@@ -189,6 +220,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           ],
           "Invalid interview status"
         ),
+      externalInterviewDetails: Yup.string().nullable(),
       skipNotification: Yup.boolean(),
     };
 
@@ -224,25 +256,30 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       setSubmitting(true);
-  
+
       const payload = {
         ...data,
         interviewLevel: values.interviewLevel, // Use original interview level value
         interviewStatus: values.interviewStatus,
+        externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
         userId: data.userId,
         userEmail: data.userEmail,
         ...(isReschedule && {
           interviewDateTime: dayjs(values.interviewDateTime).utc().format(),
-          interviewScheduledTimestamp: dayjs(values.interviewDateTime).valueOf(),
+          interviewScheduledTimestamp: dayjs(
+            values.interviewDateTime
+          ).valueOf(),
           duration: values.duration,
           zoomLink: values.zoomLink,
         }),
       };
-  
-      const url = `/candidate/interview-update/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
+
+      const url = `/candidate/interview-update/${data.userId || userId}/${
+        data.candidateId
+      }/${data.jobId}`;
       const responseData = await httpService.put(url, payload);
-  
+
       setInterviewResponse(responseData);
       setSubmissionSuccess(true);
       setNotification({
@@ -252,7 +289,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           : "Interview updated successfully",
         severity: "success",
       });
-  
+
       setTimeout(() => {
         if (onSuccess) onSuccess();
         onClose(true);
@@ -271,8 +308,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
     }
   };
 
-  
-
   const SuccessMessage = () => {
     if (!submissionSuccess || !interviewResponse) return null;
 
@@ -290,99 +325,101 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   const initialValues = getInitialValues();
 
   return (
-    <Box sx={{ width: "100%", p: { xs: 1, sm: 2 }, overflow: "auto" }}>
+    <Box sx={{ width: "100%", p: { xs: 2, sm: 3 }, bgcolor: "#f9fafc" }}>
+      {/* Header */}
       <Box
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        sx={{ mb: 2 }}
+        mb={3}
       >
-        <Typography variant="h6" color="primary" fontWeight="medium">
+        <Typography variant="h5" fontWeight={600} color="primary">
           {isReschedule ? "Reschedule Interview" : "Update Interview Status"}
         </Typography>
-        <IconButton onClick={onClose}>
+        <IconButton onClick={onClose} aria-label="close">
           <CloseIcon />
         </IconButton>
       </Box>
 
-      {/* Display candidate info as read-only */}
-      <Box
-        sx={{
-          mb: 3,
-          p: 3,
-          bgcolor: "#ffffff",
-          borderRadius: 3,
-          boxShadow: "0px 2px 10px rgba(0,0,0,0.08)",
-          transition: "all 0.3s ease",
-          "&:hover": {
-            boxShadow: "0px 4px 16px rgba(0,0,0,0.12)",
-          },
-        }}
-      >
+      {/* Candidate Info Card */}
+      <Card elevation={2} sx={{ borderRadius: 3, mb: 3, p: 3 }}>
         <Typography
           variant="subtitle1"
-          color="primary"
+          fontWeight={600}
+          color="text.primary"
           gutterBottom
-          sx={{ fontWeight: 600 }}
         >
           Candidate Information
         </Typography>
-
         <Divider sx={{ mb: 2 }} />
 
-        <Stack spacing={1.2}>
-          <Typography variant="body1">
-            <strong>Name:</strong>{" "}
-            <span style={{ fontWeight: 500 }}>
-              {data.fullName || data.candidateFullName}
-            </span>
-          </Typography>
+        <Table>
+          <TableBody>
+            <TableRow sx={{ bgcolor: "grey.100" }}>
+              <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
+                Name
+              </TableCell>
+              <TableCell>{data.fullName || data.candidateFullName}</TableCell>
+            </TableRow>
 
-          <Typography variant="body2" color="text.secondary">
-            <strong>Email:</strong>{" "}
-            <span style={{ fontWeight: 500 }}>
-              {data.emailId || data.candidateEmailId}
-            </span>
-          </Typography>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
+                Email
+              </TableCell>
+              <TableCell>{data.emailId || data.candidateEmailId}</TableCell>
+            </TableRow>
 
-          <Typography variant="body2" color="text.secondary">
-            <strong>Job ID:</strong>{" "}
-            <span style={{ fontWeight: 500 }}>{data.jobId}</span>
-          </Typography>
+            <TableRow sx={{ bgcolor: "grey.100" }}>
+              <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
+                Job ID
+              </TableCell>
+              <TableCell>{data.jobId}</TableCell>
+            </TableRow>
 
-          <Typography variant="body2" color="text.secondary">
-            <strong>Client:</strong>{" "}
-            <span style={{ fontWeight: 500 }}>{data.clientName}</span>
-          </Typography>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
+                Client
+              </TableCell>
+              <TableCell>{data.clientName}</TableCell>
+            </TableRow>
 
-          <Typography variant="body2" color="text.secondary">
-            <strong>Interview Level:</strong>{" "}
-            <span style={{ fontWeight: 500 }}>{data.interviewLevel}</span>
-          </Typography>
+            <TableRow sx={{ bgcolor: "grey.100" }}>
+              <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
+                Interview Level
+              </TableCell>
+              <TableCell>{data.interviewLevel}</TableCell>
+            </TableRow>
 
-          {!isReschedule && data.interviewDateTime && (
-            <Typography variant="body2" color="text.secondary">
-              <strong>Scheduled:</strong>{" "}
-              <span style={{ fontWeight: 500 }}>
-                {new Date(data.interviewDateTime).toLocaleString()}
-              </span>
-            </Typography>
-          )}
-        </Stack>
-      </Box>
+            {!isReschedule && data.interviewDateTime && (
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
+                  Scheduled
+                </TableCell>
 
+                <TableCell>{formatDateTime(data.interviewDateTime)}</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
+      {/* Success Message */}
       <SuccessMessage />
 
-      <DynamicForm
-        fields={getFormFields(initialValues)}
-        initialValues={initialValues}
-        validationSchema={validationSchema()}
-        onSubmit={handleSubmit}
-        submitButtonText={isReschedule ? "Reschedule" : "Update Status"}
-        cancelButtonText="Cancel"
-        onCancel={onClose}
-      />
+      {/* Dynamic Form */}
+      <Card elevation={2} sx={{ borderRadius: 3, p: 3 }}>
+        <DynamicForm
+          fields={getFormFields(initialValues)}
+          initialValues={initialValues}
+          validationSchema={validationSchema()}
+          onSubmit={handleSubmit}
+          submitButtonText={isReschedule ? "Reschedule" : "Update Status"}
+          cancelButtonText="Cancel"
+          onCancel={onClose}
+        />
+      </Card>
 
+      {/* Snackbar for notifications */}
       <Snackbar
         open={notification.open}
         autoHideDuration={4000}
@@ -393,7 +430,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           onClose={handleCloseNotification}
           severity={notification.severity}
           variant="filled"
-          sx={{ width: "80%" }}
+          sx={{ width: "100%" }}
         >
           {notification.message}
         </Alert>
