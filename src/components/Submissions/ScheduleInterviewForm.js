@@ -219,6 +219,14 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         gridProps: { xs: 12 },
       },
       {
+        name: "externalInterviewDetails",
+        label: "Interview Details / Notes",
+        type: "textarea",
+        rows: 4,
+        placeholder: "Add further interview details, requirements, or any other important notes",
+        gridProps: { xs: 12 },
+      },
+      {
         name: "skipNotification",
         label: "Skip Email Notification",
         type: "checkbox",
@@ -226,23 +234,6 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         gridProps: { xs: 12 },
       },
     ];
-
-    // Add External Interview Details field if needed based on interviewLevel
-    if (
-      ["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(
-        values.interviewLevel
-      )
-    ) {
-      fields.push({
-        name: "externalInterviewDetails",
-        label: "Interview Details",
-        type: "textarea",
-        rows: 4,
-        required: true,
-        placeholder: "Enter details about the external interview",
-        gridProps: { xs: 12 },
-      });
-    }
 
     return fields;
   };
@@ -279,12 +270,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         ["INTERNAL", "EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"],
         "Invalid interview level"
       ),
-    externalInterviewDetails: Yup.string().when("interviewLevel", {
-      is: (level) =>
-        ["EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"].includes(level),
-      then: Yup.string().required("External interview details are required"),
-      otherwise: Yup.string().nullable(),
-    }),
+    externalInterviewDetails: Yup.string().nullable(),
     skipNotification: Yup.boolean(),
   });
 
@@ -396,7 +382,6 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         submitButtonText="Schedule"
         cancelButtonText="Cancel"
         onCancel={onClose}
-        watchFields={["interviewLevel"]} // Watch this field for conditional rendering
       />
 
       <Snackbar
