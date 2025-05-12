@@ -87,7 +87,11 @@ const Submission = () => {
   
       if (role === "SUPERADMIN") {
         response = await httpService.get("/candidate/submissions");
-      } else {
+      } 
+      else if(role === "TEAMLEAD"){
+        response = await httpService.get(`/candidate/submissions/teamlead/${userId}`);
+      }
+      else {
         response = await httpService.get(`/candidate/submissionsByUserId/${userId}`);
       }
   
