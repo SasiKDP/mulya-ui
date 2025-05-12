@@ -49,48 +49,69 @@ const TeamLeadInterviews = () => {
   const [tabValue, setTabValue] = useState(0);
   const [isTeamData, setIsTeamData] = useState(false);
 
+  const [activeTab, setActiveTab] = useState("self");
+
   const dispatch = useDispatch();
   const { userId } = useSelector((state) => state.auth);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-  const { selfInterviewsTL, teamInterviewsTL } = useSelector((state) => state.interview);
+  const { selfInterviewsTL, teamInterviewsTL,filterInterviewsForTeamLead} = useSelector((state) => state.interview);
 
-  const fetchInterviews = async () => {
-    try {
-      setLoading(true);
-      // Fetch both self and team interviews
-      dispatch(fetchInterviewsTeamLead());
       
-      // For immediate display, also fetch self interviews directly
-      const response = await httpService.get(`/candidate/interviews/teamlead/${userId}`);
-      console.log("response",response.data)
-      const processedData = processInterviewData(response.data || []);
+  
+
+// Updated fetchInterviews Function
+const fetchInterviews = async () => {
+  try {
+    setLoading(true);
+    // Fetching team lead interviews
+    // dispatch(fetchInterviewsTeamLead());
+
+    // Fetching interviews data for the user (self)
+    const response = await httpService.get(`/candidate/interviews/teamlead/${userId}`);
+    console.log("API Response:", response.data);
+
+    const { selfInterviews ,teamInterviews  } = response.data;
+ 
     
-      setInterviews(processedData);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch interview data");
-      console.error("Error fetching interviews:", err);
-      ToastService.error("Failed to load interviews");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const processInterviewData = (data) => {
-    return data.map((interview) => {
-      const status = interview.latestInterviewStatus || interview.interviewStatus || "SCHEDULED";
-      const candidateName = interview.candidateFullName || 
-        interview.candidateEmailId?.split("@")[0] || 
-        "Unknown Candidate";
+    const processedSelfInterviews = processInterviewData(selfInterviews);
+    const processedTeamInterviews = processInterviewData(teamInterviews);
 
-      return {
-        ...interview,
-        candidateFullName: candidateName,
-        interviewStatus: status,
-        interviewId: interview.interviewId || `temp-${Math.random().toString(36).substr(2, 9)}`,
-      };
+    // Setting state with both self and team interviews
+    setInterviews({
+      self: processedSelfInterviews,
+      team: processedTeamInterviews,
     });
-  };
+
+    setError(null);
+  } catch (err) {
+    setError("Failed to fetch interview data");
+    console.error("Error fetching interviews:", err);
+    ToastService.error("Failed to load interviews");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Updated processInterviewData Function
+const processInterviewData = (interviews) => {
+  if (!Array.isArray(interviews)) return [];
+
+  return interviews.map((interview) => {
+    const status = interview.latestInterviewStatus || interview.interviewStatus || "SCHEDULED";
+    const candidateName = interview.candidateFullName || 
+      interview.candidateEmailId?.split("@")[0] || 
+      "Unknown Candidate";
+
+    return {
+      ...interview,
+      candidateFullName: candidateName,
+      interviewStatus: status,
+      interviewId: interview.interviewId || `temp-${Math.random().toString(36).substr(2, 9)}`,
+    };
+  });
+};
+
 
   const formatDateTime = (dateTimeString) => {
     if (!dateTimeString) return "N/A";
@@ -327,7 +348,8 @@ const TeamLeadInterviews = () => {
       ),
     },
   ];
-
+  
+  console.log("columns",columns)
   // Add meeting and actions columns to whichever view is active
   const finalColumns = [
     ...(isTeamData ? teamColumns : columns),
@@ -428,11 +450,15 @@ const TeamLeadInterviews = () => {
     fetchInterviews();
   }, [userId, isFilteredDataRequested]);
 
+ const displayData = tabValue === 0 ? interviews.self : interviews.team;
+
+ 
+
   return (
     <Box sx={{ p: 3 }}>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
         <DateRangeFilter 
-          onFilter={fetchInterviews} 
+          onFilter={filterInterviewsForTeamLead} 
           disabled={loading}
         />
         
@@ -448,6 +474,7 @@ const TeamLeadInterviews = () => {
 
       <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
         <Tabs 
+          
           value={tabValue} 
           onChange={handleTabChange}
           indicatorColor="primary"
@@ -468,14 +495,18 @@ const TeamLeadInterviews = () => {
         </Typography>
       ) : (
         <DataTable
+          data={displayData}
           columns={finalColumns}
-          rows={interviews}
+          title={activeTab === "self" ? "My Interviews" : "Team Interviews"}
+          enableSelection={false}
+          // rows={displayData || []}
           loading={loading}
           expandedRows={expandedRows}
           onRowToggle={toggleRowExpansion}
           renderExpandedContent={renderExpandedContent}
           getRowId={(row) => row.interviewId}
           sx={{ mt: 2 }}
+         
         />
       )}
 

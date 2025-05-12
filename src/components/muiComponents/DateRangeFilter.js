@@ -29,6 +29,7 @@ const componentToActionMap = {
   AssignedList: filterRequirementsByRecruiter,
   RecruiterSubmission: filterSubmissionssByRecruiter,
   InterviewsForRecruiter: filterInterviewsByRecruiter,
+  InterviewsForTeamLead:filterInterviewsByDateRange,
   Clients:filterClientsByDateRange,
   placements:filterPlacementByDateRange,
   allSubmissions:filterSubmissionsByDateRange,
