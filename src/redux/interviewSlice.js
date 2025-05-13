@@ -56,11 +56,12 @@ export const filterInterviewsByRecruiter = createAsyncThunk(
 
 export const filterInterviewsByTeamLead=createAsyncThunk(
   'teamlead/interviews/filterByDateRange',
-  async({startDate,endDate,userId},{getState, rejectWithValue})=>{
+  async({startDate,endDate},{getState, rejectWithValue})=>{
     try{
-      const state=getState();
+     const state = getState();
+        const userId = state.auth.userId
      
-      const response =await httpService.get(`/candidate/teamlead/interviews/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+      const response =await httpService.get(`/candidate/interviews/teamlead/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
       return response.data;
     }catch(error){
       return rejectWithValue(error);
@@ -76,7 +77,8 @@ const interviewSlice =  createSlice({
       teamInterviewsTL: [],
       filteredInterviewList: [],
       filterInterviewsForRecruiter: [],
-      filterInterviewsForTeamLead:[],
+      filterInterviewsForTeamLeadTeam:[],
+      filterInterviewsForTeamLeadSelf:[],
       error: null
     },
     reducers: {
@@ -141,7 +143,8 @@ const interviewSlice =  createSlice({
           })
           .addCase(filterInterviewsByTeamLead.fulfilled,(state,action)=>{
             state.loading=false;
-            state.filterInterviewsForTeamLead=state.payload.data;
+            state.filterInterviewsForTeamLeadSelf=action.payload.selfInterviews;
+            state.filterInterviewsForTeamLeadTeam=action.payload.teamInterviews;
           })
           .addCase(filterInterviewsByTeamLead.rejected,(state,action)=>{
             state.loading=false;
