@@ -13,14 +13,15 @@ import { Link } from 'react-router-dom';
 export const getStatusColor = (status) => {
   const normalized = status?.trim().toUpperCase();
   const statusColors = {
-    SCHEDULED: { bg: "#EDF4FF", text: "#1E40AF" },
-    COMPLETED: { bg: "#E9FBE5", text: "#2E7D32" },
-    CANCELLED: { bg: "#FAEDED", text: "#B91C1C" },
-    RESCHEDULED: { bg: "#FFF4E5", text: "#C2410C" },
-    PLACED: { bg: "#F3E8FF", text: "#7E22CE" },
-    SELECTED: { bg: "#E0F2F1", text: "#00695C" },
-    REJECTED: { bg: "#FFEBEE", text: "#D32F2F" }, // <-- Added this line
-  };
+  SCHEDULED: { bg: "#EDF4FF", text: "#1E40AF" },
+  COMPLETED: { bg: "#E9FBE5", text: "#2E7D32" },
+  CANCELLED: { bg: "#FAEDED", text: "#B91C1C" },
+  RESCHEDULED: { bg: "#FFF4E5", text: "#C2410C" },
+  PLACED: { bg: "#F3E8FF", text: "#7E22CE" },
+  SELECTED: { bg: "#E0F2F1", text: "#00695C" },
+  REJECTED: { bg: "#FFEBEE", text: "#D32F2F" },
+  FEEDBACK_PENDING: { bg: "#FFFDE7", text: "#F9A825" } // <-- Added this line
+};
 
   return statusColors[normalized] || { bg: "#F3F4F6", text: "#374151" };
 };
