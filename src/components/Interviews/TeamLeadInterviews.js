@@ -7,10 +7,9 @@ import {
   CircularProgress,
   Drawer,
   Stack,
-  Paper,
+  Tooltip,
   Tabs,
   Tab,
-  Tooltip,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -18,6 +17,8 @@ import {
   VideoCall as VideoCallIcon,
   Refresh as RefreshIcon,
   Visibility,
+  People,
+  Person,
 } from "@mui/icons-material";
 import DataTable from "../muiComponents/DataTabel";
 import httpService from "../../Services/httpService";
@@ -28,13 +29,40 @@ import { getStatusChip, getInterviewLevelChip } from "../../utils/statusUtils";
 import ConfirmDialog from "../muiComponents/ConfirmDialog";
 import EditInterviewForm from "./EditInterviewForm";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
-import { fetchInterviewsTeamLead } from "../../redux/interviewSlice";
+import { formatDateTime } from "../../utils/dateformate";
+import {
+  fetchInterviewsTeamLead,
+  filterInterviewsForTeamLead,
+} from "../../redux/interviewSlice";
 
 /**
- * Component for team leads to view and manage both their own interviews and their team's interviews
+ * Process interview data to ensure consistency and prepare for display
+ * @param {Array} interviews - Raw interview data from API
+ * @returns {Array} - Processed interview data
+ */
+const processInterviewData = (interviews) => {
+  if (!Array.isArray(interviews)) return [];
+
+  return interviews.map((interview) => {
+    const interviewStatus =
+      interview.interviewStatus ||
+      interview.latestInterviewStatus ||
+      "SCHEDULED";
+
+    return {
+      ...interview,
+      interviewId:
+        interview.interviewId || `${interview.candidateId}_${interview.jobId}`,
+      interviewStatus,
+    };
+  });
+};
+
+/**
+ * Component for team leads to view and manage their own and team interviews
  */
 const TeamLeadInterviews = () => {
-  const [interviews, setInterviews] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
@@ -46,89 +74,34 @@ const TeamLeadInterviews = () => {
     open: false,
     data: null,
   });
-  const [tabValue, setTabValue] = useState(0);
-  const [isTeamData, setIsTeamData] = useState(false);
-
-  const [activeTab, setActiveTab] = useState("self");
 
   const dispatch = useDispatch();
   const { userId } = useSelector((state) => state.auth);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-  const { selfInterviewsTL, teamInterviewsTL,filterInterviewsForTeamLead} = useSelector((state) => state.interview);
+  const {
+    selfInterviewsTL,
+    teamInterviewsTL,
+    filterInterviewsForTeamLeadTeam,
+    filterInterviewsForTeamLeadSelf,
+    loading: reduxLoading,
+  } = useSelector((state) => state.interview);
 
-      
-  
-
-// Updated fetchInterviews Function
-const fetchInterviews = async () => {
-  try {
-    setLoading(true);
-    // Fetching team lead interviews
-    // dispatch(fetchInterviewsTeamLead());
-
-    // Fetching interviews data for the user (self)
-    const response = await httpService.get(`/candidate/interviews/teamlead/${userId}`);
-    console.log("API Response:", response.data);
-
-    const { selfInterviews ,teamInterviews  } = response.data;
- 
-    
-
-    const processedSelfInterviews = processInterviewData(selfInterviews);
-    const processedTeamInterviews = processInterviewData(teamInterviews);
-
-    // Setting state with both self and team interviews
-    setInterviews({
-      self: processedSelfInterviews,
-      team: processedTeamInterviews,
-    });
-
-    setError(null);
-  } catch (err) {
-    setError("Failed to fetch interview data");
-    console.error("Error fetching interviews:", err);
-    ToastService.error("Failed to load interviews");
-  } finally {
-    setLoading(false);
-  }
-};
-
-// Updated processInterviewData Function
-const processInterviewData = (interviews) => {
-  if (!Array.isArray(interviews)) return [];
-
-  return interviews.map((interview) => {
-    const status = interview.latestInterviewStatus || interview.interviewStatus || "SCHEDULED";
-    const candidateName = interview.candidateFullName || 
-      interview.candidateEmailId?.split("@")[0] || 
-      "Unknown Candidate";
-
-    return {
-      ...interview,
-      candidateFullName: candidateName,
-      interviewStatus: status,
-      interviewId: interview.interviewId || `temp-${Math.random().toString(36).substr(2, 9)}`,
-    };
-  });
-};
-
-
-  const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) return "N/A";
+  const fetchInterviews = async () => {
     try {
-      const date = new Date(dateTimeString);
-      return date.toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch (e) {
-      console.error("Error formatting date", e);
-      return "Invalid Date";
+      setLoading(true);
+      await dispatch(fetchInterviewsTeamLead()).unwrap();
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch interview data");
+      console.error("Error fetching interviews:", err);
+      ToastService.error("Failed to load interviews");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
   };
 
   const handleEdit = (interview, isReschedule = false) => {
@@ -137,7 +110,7 @@ const processInterviewData = (interviews) => {
       data: {
         ...interview,
         isReschedule,
-        userId: interview.userId || userId
+        userId: interview.userId || userId,
       },
     });
   };
@@ -164,15 +137,14 @@ const processInterviewData = (interviews) => {
 
     try {
       const toastId = ToastService.loading("Deleting interview...");
-      
-      // Determine the correct API endpoint based on available data
+
       let deleteEndpoint;
       if (interview.candidateId && interview.jobId) {
         deleteEndpoint = `/candidate/deleteinterview/${interview.candidateId}/${interview.jobId}`;
       } else {
         deleteEndpoint = `/interview/${interview.interviewId}`;
       }
-      
+
       await httpService.delete(deleteEndpoint);
       await fetchInterviews();
       ToastService.update(toastId, "Interview deleted successfully", "success");
@@ -189,16 +161,6 @@ const processInterviewData = (interviews) => {
       ...prev,
       [interviewId]: !prev[interviewId],
     }));
-  };
-
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-    const selected = event.target.id;
-    if (selected === "team") {
-      setIsTeamData(true);
-      return;
-    }
-    setIsTeamData(false);
   };
 
   const getExpandedContentConfig = () => {
@@ -245,10 +207,15 @@ const processInterviewData = (interviews) => {
               fallback: "-",
               format: (value) => `${value} minutes`,
             },
-            { 
-              label: "Level", 
-              key: "interviewLevel", 
-              fallback: "-" 
+            {
+              label: "Level",
+              key: "interviewLevel",
+              fallback: "-",
+            },
+            {
+              label: "Status",
+              key: "interviewStatus",
+              fallback: "-",
             },
           ],
         },
@@ -332,27 +299,6 @@ const processInterviewData = (interviews) => {
       width: 140,
       render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
     },
-  ];
-
-  // Add recruiter column for team view
-  const teamColumns = [
-    ...columns,
-    {
-      key: "userEmail",
-      label: "Recruiter",
-      width: 150,
-      render: (row) => (
-        <Typography variant="body2">
-          {row.userEmail || "Unknown"}
-        </Typography>
-      ),
-    },
-  ];
-  
-  console.log("columns",columns)
-  // Add meeting and actions columns to whichever view is active
-  const finalColumns = [
-    ...(isTeamData ? teamColumns : columns),
     {
       key: "zoomLink",
       label: "Meeting",
@@ -434,7 +380,7 @@ const processInterviewData = (interviews) => {
               <Button
                 variant="outlined"
                 size="small"
-                onClick={() => handleEdit(row, true)} // true for reschedule or joining
+                onClick={() => handleEdit(row, true)}
                 sx={{ px: 1, py: 0.5 }}
               >
                 {getButtonText()}
@@ -446,95 +392,185 @@ const processInterviewData = (interviews) => {
     },
   ];
 
+  // Process data for each tab
+  const processedSelfInterviews = processInterviewData(selfInterviewsTL || []);
+  const processedTeamInterviews = processInterviewData(teamInterviewsTL || []);
+  
+  // Process filtered data if available
+  const processedFilteredSelfInterviews = processInterviewData(filterInterviewsForTeamLeadSelf || []);
+  const processedFilteredTeamInterviews = processInterviewData(filterInterviewsForTeamLeadTeam || []);
+
+  // Map data with expanded content
+  const selfInterviewData = processedSelfInterviews.map((row) => ({
+    ...row,
+    expandContent: renderExpandedContent,
+    isExpanded: expandedRows[row.interviewId],
+  }));
+
+  const teamInterviewData = processedTeamInterviews.map((row) => ({
+    ...row,
+    expandContent: renderExpandedContent,
+    isExpanded: expandedRows[row.interviewId],
+  }));
+
+  // Map filtered data with expanded content
+  const filteredSelfInterviewData = processedFilteredSelfInterviews.map((row) => ({
+    ...row,
+    expandContent: renderExpandedContent,
+    isExpanded: expandedRows[row.interviewId],
+  }));
+
+  const filteredTeamInterviewData = processedFilteredTeamInterviews.map((row) => ({
+    ...row,
+    expandContent: renderExpandedContent,
+    isExpanded: expandedRows[row.interviewId],
+  }));
+
+  // Determine which data to display based on filtering and tab selection
+  let displayData = [];
+  if (isFilteredDataRequested) {
+    displayData = activeTab === 0 ? filteredSelfInterviewData : filteredTeamInterviewData;
+  } else {
+    displayData = activeTab === 0 ? selfInterviewData : teamInterviewData;
+  }
+
+  // Set title based on filtering and tab selection
+  let tableTitle = isFilteredDataRequested
+    ? activeTab === 0 ? "Filtered My Interviews" : "Filtered Team Interviews"
+    : activeTab === 0 ? "My Interviews" : "Team Interviews";
+
   useEffect(() => {
     fetchInterviews();
-  }, [userId, isFilteredDataRequested]);
-
- const displayData = tabValue === 0 ? interviews.self : interviews.team;
-
- 
+  }, [userId]);
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
-        <DateRangeFilter 
-          onFilter={filterInterviewsForTeamLead} 
-          disabled={loading}
-        />
-        
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchInterviews}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
-      </Stack>
-
-      <Paper elevation={3} sx={{ p: 2, mb: 3 }}>
-        <Tabs 
-          
-          value={tabValue} 
-          onChange={handleTabChange}
-          indicatorColor="primary"
-          textColor="primary"
-        >
-          <Tab label="Interviews" id="self" />
-          <Tab label="Team Interviews" id="team" />
-        </Tabs>
-      </Paper>
-
-      {loading && !interviews.length ? (
+    <Box sx={{ p: 1 }}>
+      {loading &&
+      selfInterviewsTL.length === 0 &&
+      teamInterviewsTL.length === 0 ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-          <CircularProgress />
+          <CircularProgress sx={{ color: "#1976d2" }} />
         </Box>
       ) : error ? (
-        <Typography color="error" sx={{ mt: 2 }}>
-          {error}
-        </Typography>
+        <Box sx={{ textAlign: "center", mt: 4 }}>
+          <Typography color="error">{error}</Typography>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={fetchInterviews}
+            sx={{
+              mt: 2,
+              color: "#1976d2",
+              borderColor: "#1976d2",
+              "&:hover": { borderColor: "#1565c0", backgroundColor: "#e3f2fd" },
+            }}
+          >
+            Retry
+          </Button>
+        </Box>
       ) : (
-        <DataTable
-          data={displayData}
-          columns={finalColumns}
-          title={activeTab === "self" ? "My Interviews" : "Team Interviews"}
-          enableSelection={false}
-          // rows={displayData || []}
-          loading={loading}
-          expandedRows={expandedRows}
-          onRowToggle={toggleRowExpansion}
-          renderExpandedContent={renderExpandedContent}
-          getRowId={(row) => row.interviewId}
-          sx={{ mt: 2 }}
-         
-        />
-      )}
+        <>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={2}
+            sx={{
+              flexWrap: "wrap",
+              mb: 3,
+              justifyContent: "space-between",
+              p: 2,
+              backgroundColor: "#f9f9f9",
+              borderRadius: 2,
+              boxShadow: 1,
+            }}
+          >
+            <Typography variant="h6" color="primary">
+              Team Lead Interviews
+            </Typography>
 
-      {/* Edit Interview Drawer */}
-      <Drawer
-        anchor="right"
-        open={editDrawer.open}
-        onClose={handleCloseEditDrawer}
-        PaperProps={{ sx: { width: "40%", minWidth: 400 } }}
-      >
-        {editDrawer.data && (
-          <EditInterviewForm
-            interview={editDrawer.data}
-            onSuccess={handleInterviewUpdated}
-            onCancel={handleCloseEditDrawer}
-            isReschedule={editDrawer.data.isReschedule}
+            <DateRangeFilter component="InterviewsForTeamLead" />
+          </Stack>
+
+          <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
+            <Tabs value={activeTab} onChange={handleTabChange}>
+              <Tab
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Person fontSize="small" />
+                    <span>
+                      My Interviews ({isFilteredDataRequested 
+                        ? filteredSelfInterviewData.length 
+                        : selfInterviewsTL.length})
+                    </span>
+                  </Box>
+                }
+              />
+              <Tab
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <People fontSize="small" />
+                    <span>
+                      Team Interviews ({isFilteredDataRequested 
+                        ? filteredTeamInterviewData.length 
+                        : teamInterviewsTL.length})
+                    </span>
+                  </Box>
+                }
+              />
+            </Tabs>
+          </Box>
+
+          <DataTable
+            data={displayData}
+            columns={columns}
+            title={tableTitle}
+            enableSelection={false}
+            defaultSortColumn="interviewDateTime"
+            defaultSortDirection="desc"
+            defaultRowsPerPage={10}
+            refreshData={fetchInterviews}
+            primaryColor="#1976d2"
+            secondaryColor="#e3f2fd"
+            customStyles={{
+              headerBackground: "#1976d2",
+              rowHover: "#f5f5f5",
+              selectedRow: "#e3f2fd",
+            }}
+            uniqueId="interviewId"
+            enableRowExpansion={true}
+            onRowExpandToggle={toggleRowExpansion}
           />
-        )}
-      </Drawer>
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={confirmDialog.open}
-        onClose={() => setConfirmDialog({ open: false, interview: null })}
-        onConfirm={handleConfirmDelete}
-        title="Confirm Delete"
-        content="Are you sure you want to delete this interview? This action cannot be undone."
-      />
+          <Drawer
+            anchor="right"
+            open={editDrawer.open}
+            onClose={handleCloseEditDrawer}
+            PaperProps={{
+              sx: { width: { xs: "60%", sm: "50%", md: "50%" } },
+            }}
+          >
+            {editDrawer.data && (
+              <EditInterviewForm
+                data={editDrawer.data}
+                onClose={handleCloseEditDrawer}
+                onSuccess={handleInterviewUpdated}
+              />
+            )}
+          </Drawer>
+
+          <ConfirmDialog
+            open={confirmDialog.open}
+            title="Delete Interview?"
+            content={`Do you really want to delete the interview for ${
+              confirmDialog.interview?.candidateFullName ||
+              confirmDialog.interview?.candidateEmailId ||
+              "this candidate"
+            }? This action cannot be undone.`}
+            onClose={() => setConfirmDialog({ open: false, interview: null })}
+            onConfirm={handleConfirmDelete}
+          />
+        </>
+      )}
     </Box>
   );
 };
