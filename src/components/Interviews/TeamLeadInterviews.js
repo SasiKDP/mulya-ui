@@ -32,7 +32,7 @@ import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import { formatDateTime } from "../../utils/dateformate";
 import {
   fetchInterviewsTeamLead,
-  filterInterviewsForTeamLead,
+  filterInterviewsByTeamLead,
 } from "../../redux/interviewSlice";
 
 /**
@@ -392,39 +392,27 @@ const TeamLeadInterviews = () => {
     },
   ];
 
-  // Process data for each tab
+  // Process data for each tab - ensuring we handle empty arrays properly
   const processedSelfInterviews = processInterviewData(selfInterviewsTL || []);
   const processedTeamInterviews = processInterviewData(teamInterviewsTL || []);
   
-  // Process filtered data if available
+  // Process filtered data if available - ensuring we handle empty arrays properly
   const processedFilteredSelfInterviews = processInterviewData(filterInterviewsForTeamLeadSelf || []);
   const processedFilteredTeamInterviews = processInterviewData(filterInterviewsForTeamLeadTeam || []);
 
   // Map data with expanded content
-  const selfInterviewData = processedSelfInterviews.map((row) => ({
-    ...row,
-    expandContent: renderExpandedContent,
-    isExpanded: expandedRows[row.interviewId],
-  }));
+  const mapDataWithExpandedContent = (data) => {
+    return data.map((row) => ({
+      ...row,
+      expandContent: renderExpandedContent,
+      isExpanded: expandedRows[row.interviewId],
+    }));
+  };
 
-  const teamInterviewData = processedTeamInterviews.map((row) => ({
-    ...row,
-    expandContent: renderExpandedContent,
-    isExpanded: expandedRows[row.interviewId],
-  }));
-
-  // Map filtered data with expanded content
-  const filteredSelfInterviewData = processedFilteredSelfInterviews.map((row) => ({
-    ...row,
-    expandContent: renderExpandedContent,
-    isExpanded: expandedRows[row.interviewId],
-  }));
-
-  const filteredTeamInterviewData = processedFilteredTeamInterviews.map((row) => ({
-    ...row,
-    expandContent: renderExpandedContent,
-    isExpanded: expandedRows[row.interviewId],
-  }));
+  const selfInterviewData = mapDataWithExpandedContent(processedSelfInterviews);
+  const teamInterviewData = mapDataWithExpandedContent(processedTeamInterviews);
+  const filteredSelfInterviewData = mapDataWithExpandedContent(processedFilteredSelfInterviews);
+  const filteredTeamInterviewData = mapDataWithExpandedContent(processedFilteredTeamInterviews);
 
   // Determine which data to display based on filtering and tab selection
   let displayData = [];

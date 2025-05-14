@@ -267,7 +267,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         userId: data.userId,
         userEmail: data.userEmail,
         ...(isReschedule && {
-          interviewDateTime: dayjs(values.interviewDateTime).utc().format(),
+          interviewDateTime: dayjs(values.interviewDateTime).format(),
           interviewScheduledTimestamp: dayjs(
             values.interviewDateTime
           ).valueOf(),
