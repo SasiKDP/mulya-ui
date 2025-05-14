@@ -9,7 +9,7 @@ import ToastService from '../../Services/toastService';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import { validateDateRange } from '../../utils/validateDateRange';
 import { filterRequirementsByDateRange, filterRequirementsByRecruiter } from '../../redux/requirementSlice';
-import { filterInterviewsByDateRange, filterInterviewsByRecruiter } from '../../redux/interviewSlice';
+import { filterInterviewsByDateRange, filterInterviewsByRecruiter ,filterInterviewsByTeamLead} from '../../redux/interviewSlice';
 import { filterUsersByDateRange } from '../../redux/employeesSlice';
 import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../../redux/submissionSlice';
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
@@ -29,7 +29,7 @@ const componentToActionMap = {
   AssignedList: filterRequirementsByRecruiter,
   RecruiterSubmission: filterSubmissionssByRecruiter,
   InterviewsForRecruiter: filterInterviewsByRecruiter,
-  InterviewsForTeamLead:filterInterviewsByDateRange,
+  InterviewsForTeamLead: filterInterviewsByTeamLead,
   Clients:filterClientsByDateRange,
   placements:filterPlacementByDateRange,
   allSubmissions:filterSubmissionsByDateRange,

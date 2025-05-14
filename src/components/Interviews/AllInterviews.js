@@ -7,9 +7,6 @@ import {
   Typography,
   Stack,
   Button,
-  Paper,
-  Tabs,
-  Tab,
   CircularProgress,
   Drawer,
 } from "@mui/material";
@@ -29,8 +26,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { getStatusChip, getInterviewLevelChip } from "../../utils/statusUtils";
 import ConfirmDialog from "../muiComponents/ConfirmDialog";
 import EditInterviewForm from "./EditInterviewForm";
-import { fetchInterviewsTeamLead } from "../../redux/interviewSlice";
-import {formatDateTime} from "../../utils/dateformate"
+import { filterInterviewsByDateRange } from "../../redux/interviewSlice";
+import { formatDateTime } from "../../utils/dateformate";
 
 const AllInterviews = () => {
   const [interviews, setInterviews] = useState([]);
@@ -42,18 +39,10 @@ const AllInterviews = () => {
     interview: null,
   });
   const [editDrawer, setEditDrawer] = useState({ open: false, data: null });
-  const [tabValue, setTabValue] = useState(0);
-  const [isTeamData, setIsTeamData] = useState(false);
 
   const dispatch = useDispatch();
-  const { userId, role } = useSelector((state) => state.auth);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-  const {
-    filteredInterviewList,
-    selfInterviewsTL,
-    teamInterviewsTL,
-    filterInterviewsForRecruiter,
-  } = useSelector((state) => state.interview);
+  const { filteredInterviewList } = useSelector((state) => state.interview);
 
   const processInterviewData = (data) =>
     data.map((interview) => ({
@@ -68,31 +57,13 @@ const AllInterviews = () => {
         "SCHEDULED",
     }));
 
-  
-
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      let response;
-
-      if (role === "SUPERADMIN") {
-        response = await httpService.get("/candidate/allInterviews");
-        setInterviews(
-          processInterviewData(response.data.data || response.data || [])
-        );
-      } else if (role === "TEAMLEAD") {
-        dispatch(fetchInterviewsTeamLead());
-        response = await httpService.get(
-          `/candidate/interviews/interviewsByUserId/${userId}`
-        );
-        setInterviews(processInterviewData(response.data || []));
-      } else {
-        response = await httpService.get(
-          `/candidate/interviews/interviewsByUserId/${userId}`
-        );
-        setInterviews(processInterviewData(response.data || []));
-      }
-
+      const response = await httpService.get("/candidate/allInterviews");
+      setInterviews(
+        processInterviewData(response.data.data || response.data || [])
+      );
       setError(null);
     } catch (error) {
       console.error("Error fetching interviews:", error);
@@ -106,7 +77,7 @@ const AllInterviews = () => {
   const handleEdit = (row, isReschedule = false) =>
     setEditDrawer({
       open: true,
-      data: { ...row, isReschedule, userId: row.userId || userId },
+      data: { ...row, isReschedule },
     });
 
   const handleCloseEditDrawer = () =>
@@ -142,9 +113,7 @@ const AllInterviews = () => {
     }
   };
 
-
   const toggleRowExpansion = (interviewId) =>
-
     setExpandedRows((prev) => ({
       ...prev,
       [interviewId]: !prev[interviewId],
@@ -226,232 +195,198 @@ const AllInterviews = () => {
       <ReusableExpandedContent row={row} config={expandedContentConfig} />
     );
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-    setIsTeamData(event.target.id === "team");
-  };
-
-  const getTableColumns = () => {
-    const commonColumns = [
-     
-      {
-        key: "candidateFullName",
-        label: "Candidate",
-        width: 180,
-        render: (row) =>
-          loading ? (
-            <Skeleton width={120} height={24} />
-          ) : (
-            <Box>
-              <Typography>{row.candidateFullName}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {row.candidateEmailId}
-              </Typography>
-            </Box>
-          ),
-      },
-      {
-        key: "candidateContactNo",
-        label: "Contact No",
-        width: 120,
-        render: (row) =>
-          loading ? (
-            <Skeleton width={100} height={24} />
-          ) : (
-            row.candidateContactNo
-          ),
-      },
-      ...(role === "SUPERADMIN"
-        ? [
-            {
-              key: "recruiterName",
-              label: "Recruiter",
-              width: 150,
-              render: (row) =>
-                loading ? (
-                  <Skeleton width={120} height={24} />
-                ) : (
-                  <Tooltip title={row.recruiterEmail || ""}>
-                    <Typography>
-                      {row.recruiterName || "Unknown"}
-                      {row.recruiterEmail && (
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          color="text.secondary"
-                        >
-                          {row.recruiterEmail}
-                        </Typography>
-                      )}
-                    </Typography>
-                  </Tooltip>
-                ),
-            },
-          ]
-        : []),
-      {
-        key: "clientName",
-        label: "Client Name",
-        width: 150,
-        render: (row) =>
-          loading ? <Skeleton width={120} height={24} /> : row.clientName,
-      },
-      {
-        key: "interviewLevel",
-        label: "Level",
-        width: 120,
-        render: (row) =>
-          loading ? (
-            <Skeleton variant="rectangular" width={100} height={24} />
-          ) : (
-            getInterviewLevelChip(row.interviewLevel)
-          ),
-      },
-      {
-        key: "interviewDateTime",
-        label: "Date & Time",
-        width: 180,
-        render: (row) =>
-          loading ? (
-            <Skeleton width={150} height={24} />
-          ) : (
-            formatDateTime(row.interviewDateTime)
-          ),
-      },
-      {
-        key: "duration",
-        label: "Duration (min)",
-        width: 120,
-        align: "center",
-        render: (row) =>
-          loading ? <Skeleton width={50} height={24} /> : row.duration,
-      },
-      {
-        key: "interviewStatus",
-        label: "Status",
-        width: 140,
-        render: (row) =>
-          loading ? (
-            <Skeleton variant="rectangular" width={100} height={24} />
-          ) : (
-            getStatusChip(row.interviewStatus, row, dispatch)
-          ),
-      },
-      {
-        key: "zoomLink",
-        label: "Meeting",
-        width: 120,
-        render: (row) =>
-          loading ? (
-            <Skeleton variant="rectangular" width={120} height={24} />
-          ) : row.zoomLink ? (
-            <Button
-              size="small"
-              variant="outlined"
-              color="primary"
-              startIcon={<VideoCallIcon />}
-              href={row.zoomLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ px: 1, py: 0.5 }}
-            >
-              Join
-            </Button>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              No link
+  const getTableColumns = () => [
+    {
+      key: "candidateFullName",
+      label: "Candidate",
+      width: 180,
+      render: (row) =>
+        loading ? (
+          <Skeleton width={120} height={24} />
+        ) : (
+          <Box>
+            <Typography>{row.candidateFullName}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {row.candidateEmailId}
             </Typography>
-          ),
-      },
-    ];
-
-    return [
-      ...commonColumns,
-      {
-        key: "actions",
-        label: "Actions",
-        width: 200,
-        align: "center",
-        render: (row) => {
-          const status = row.interviewStatus?.toUpperCase();
-          const showReschedule = [
-            "CANCELLED",
-            "RESCHEDULED",
-            "SELECTED",
-            "NO_SHOW",
-          ].includes(status);
-          const buttonText =
-            status === "SELECTED"
-              ? "Schedule Joining"
-              : ["CANCELLED", "RESCHEDULED", "NO_SHOW"].includes(status)
-              ? "Reschedule"
-              : "Update";
-
-          return (
-            <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-              <Tooltip title="View Details">
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={() => toggleRowExpansion(row.interviewId)}
-                  disabled={loading}
+          </Box>
+        ),
+    },
+    {
+      key: "candidateContactNo",
+      label: "Contact No",
+      width: 120,
+      render: (row) =>
+        loading ? <Skeleton width={100} height={24} /> : row.candidateContactNo,
+    },
+    {
+      key: "recruiterName",
+      label: "Recruiter",
+      width: 150,
+      render: (row) =>
+        loading ? (
+          <Skeleton width={120} height={24} />
+        ) : (
+          <Tooltip title={row.recruiterEmail || ""}>
+            <Typography>
+              {row.recruiterName || "Unknown"}
+              {row.recruiterEmail && (
+                <Typography
+                  variant="caption"
+                  display="block"
+                  color="text.secondary"
                 >
-                  <Visibility fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Edit">
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={() => handleEdit(row)}
-                  disabled={loading}
-                >
-                  <Edit fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete">
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDelete(row)}
-                  disabled={loading}
-                >
-                  <Delete fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              {showReschedule && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => handleEdit(row, true)}
-                  sx={{ px: 1, py: 0.5 }}
-                >
-                  {buttonText}
-                </Button>
+                  {row.recruiterEmail}
+                </Typography>
               )}
-            </Box>
-          );
-        },
-      },
-    ];
-  };
+            </Typography>
+          </Tooltip>
+        ),
+    },
+    {
+      key: "clientName",
+      label: "Client Name",
+      width: 150,
+      render: (row) =>
+        loading ? <Skeleton width={120} height={24} /> : row.clientName,
+    },
+    {
+      key: "interviewLevel",
+      label: "Level",
+      width: 120,
+      render: (row) =>
+        loading ? (
+          <Skeleton variant="rectangular" width={100} height={24} />
+        ) : (
+          getInterviewLevelChip(row.interviewLevel)
+        ),
+    },
+    {
+      key: "interviewDateTime",
+      label: "Date & Time",
+      width: 180,
+      render: (row) =>
+        loading ? (
+          <Skeleton width={150} height={24} />
+        ) : (
+          formatDateTime(row.interviewDateTime)
+        ),
+    },
+    {
+      key: "duration",
+      label: "Duration (min)",
+      width: 120,
+      align: "center",
+      render: (row) =>
+        loading ? <Skeleton width={50} height={24} /> : row.duration,
+    },
+    {
+      key: "interviewStatus",
+      label: "Status",
+      width: 140,
+      render: (row) =>
+        loading ? (
+          <Skeleton variant="rectangular" width={100} height={24} />
+        ) : (
+          getStatusChip(row.interviewStatus, row, dispatch)
+        ),
+    },
+    {
+      key: "zoomLink",
+      label: "Meeting",
+      width: 120,
+      render: (row) =>
+        loading ? (
+          <Skeleton variant="rectangular" width={120} height={24} />
+        ) : row.zoomLink ? (
+          <Button
+            size="small"
+            variant="outlined"
+            color="primary"
+            startIcon={<VideoCallIcon />}
+            href={row.zoomLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ px: 1, py: 0.5 }}
+          >
+            Join
+          </Button>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            No link
+          </Typography>
+        ),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      width: 200,
+      align: "center",
+      render: (row) => {
+        const status = row.interviewStatus?.toUpperCase();
+        const showReschedule = [
+          "CANCELLED",
+          "RESCHEDULED",
+          "SELECTED",
+          "NO_SHOW",
+        ].includes(status);
+        const buttonText =
+          status === "SELECTED"
+            ? "Schedule Joining"
+            : ["CANCELLED", "RESCHEDULED", "NO_SHOW"].includes(status)
+            ? "Reschedule"
+            : "Update";
 
-  const getTableTitle = () => {
-    if (role === "SUPERADMIN") return "All System Interviews";
-    if (role === "TEAMLEAD")
-      return isTeamData ? "Team Interviews" : "Self Interviews";
-    return "My Scheduled Interviews";
-  };
+        return (
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+            <Tooltip title="View Details">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => toggleRowExpansion(row.interviewId)}
+                disabled={loading}
+              >
+                <Visibility fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Edit">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => handleEdit(row)}
+                disabled={loading}
+              >
+                <Edit fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDelete(row)}
+                disabled={loading}
+              >
+                <Delete fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            {showReschedule && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleEdit(row, true)}
+                sx={{ px: 1, py: 0.5 }}
+              >
+                {buttonText}
+              </Button>
+            )}
+          </Box>
+        );
+      },
+    },
+  ];
 
   const getDisplayData = () => {
-    if (isFilteredDataRequested) {
-      return role === "SUPERADMIN"
-        ? filteredInterviewList
-        : filterInterviewsForRecruiter;
-    }
-    if (role === "TEAMLEAD")
-      return isTeamData ? teamInterviewsTL : selfInterviewsTL;
-    return interviews;
+    return isFilteredDataRequested ? filteredInterviewList : interviews;
   };
 
   const processedData = getDisplayData().map((row) => ({
@@ -462,7 +397,7 @@ const AllInterviews = () => {
 
   useEffect(() => {
     fetchInterviews();
-  }, [userId, role]);
+  }, []);
 
   return (
     <>
@@ -481,15 +416,9 @@ const AllInterviews = () => {
         }}
       >
         <Typography variant="h6" color="primary">
-          {role === "SUPERADMIN"
-            ? "Interviews Management (Admin)"
-            : "Interviews Management"}
+          Interviews Management
         </Typography>
-        <DateRangeFilter
-          component={
-            role === "SUPERADMIN" ? "allInterviews" : "InterviewsForRecruiter"
-          }
-        />
+        <DateRangeFilter component="allInterviews" />
       </Stack>
 
       {loading && !interviews.length ? (
@@ -515,24 +444,10 @@ const AllInterviews = () => {
         </Box>
       ) : (
         <>
-          {role === "TEAMLEAD" && (
-            <Paper sx={{ mb: 3 }}>
-              <Tabs
-                value={tabValue}
-                onChange={handleTabChange}
-                variant="scrollable"
-                scrollButtons="auto"
-              >
-                <Tab id="self" label="Self Interviews" />
-                <Tab id="team" label="Team Interviews" />
-              </Tabs>
-            </Paper>
-          )}
-
           <DataTable
             data={processedData}
             columns={getTableColumns()}
-            title={getTableTitle()}
+            title=""
             loading={loading}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
