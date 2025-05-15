@@ -56,8 +56,8 @@ export const filterSubmissionsByTeamlead=createAsyncThunk(
   async({startDate, endDate},{getState, rejectWithValue})=>{
     try{
       const state=getState();
-      const submissionId=state.auth.userId;
-      const response = await httpService.get(`/candidate/submissions/teamlead/${submissionId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+      const userId=state.auth.userId;
+      const response = await httpService.get(`/candidate/submissions/teamlead/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
       return response.data; 
     }
     catch(error){
@@ -128,13 +128,16 @@ const submissionSlice =  createSlice({
             state.error = action.payload.message;
             
           })
-
+      
+          // Filter Submissions List By date Range For Teamlead
           .addCase(filterSubmissionsByTeamlead.pending,(state)=>{
             state.loading=true;
             state.error=null;
           })
           .addCase(filterSubmissionsByTeamlead.fulfilled,(state,action)=>{
-             state.filterSubmissionsByTeamlead=action.payload;
+             state.filterSubmissionsByTeamlead=action.payload || [];
+             state.selfSubmissionsTL=action.payload.selfSubmissions||[];
+             state.teamSubmissionsTL=action.payload.teamSubmissions||[];
              state.loading=false;
           })
           .addCase(filterSubmissionsByTeamlead.rejected,(state,action)=>{
