@@ -245,10 +245,10 @@ const Interviews = () => {
     },
     { key: "duration", label: "Duration (min)", width: 120, align: "center" },
     {
-      key: "interviewStatus",
+      key: "latestInterviewStatus",
       label: "Status",
       width: 140,
-      render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
+      render: (row) => getStatusChip(row.latestInterviewStatus, row, dispatch),
     },
    
     {

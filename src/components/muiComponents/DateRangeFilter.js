@@ -9,14 +9,14 @@ import ToastService from '../../Services/toastService';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import { validateDateRange } from '../../utils/validateDateRange';
 import { filterRequirementsByDateRange, filterRequirementsByRecruiter } from '../../redux/requirementSlice';
-import { filterInterviewsByDateRange, filterInterviewsByRecruiter } from '../../redux/interviewSlice';
+import { filterInterviewsByDateRange, filterInterviewsByRecruiter ,filterInterviewsByTeamLead} from '../../redux/interviewSlice';
 import { filterUsersByDateRange } from '../../redux/employeesSlice';
 import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../../redux/submissionSlice';
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
 import { filterPlacementByDateRange } from '../../redux/placementSlice';
 import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
 import {filterSubmissionsByTeamlead} from '../../redux/submissionSlice'
-import {filterInterviewsByTeamLead} from '../../redux/interviewSlice'
+
 
 
 
