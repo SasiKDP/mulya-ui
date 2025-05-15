@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import httpService from "../Services/httpService";
+import { Satellite } from "lucide-react";
 
 export const fetchInterviewsTeamLead = createAsyncThunk(
   'interviews/teamlead',
@@ -55,12 +56,12 @@ export const filterInterviewsByRecruiter = createAsyncThunk(
 )
 
 export const filterInterviewsByTeamLead=createAsyncThunk(
-  'teamlead/interviews/filterByDateRange',
-  async({startDate,endDate,userId},{getState, rejectWithValue})=>{
+  'interviews/teamlead/filterByDateRange',
+  async({startDate,endDate},{getState, rejectWithValue})=>{
     try{
       const state=getState();
-     
-      const response =await httpService.get(`/candidate/teamlead/interviews/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
+      const userId = state.auth.userId
+      const response =await httpService.get(`/candidate/interviews/teamlead/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`);
       return response.data;
     }catch(error){
       return rejectWithValue(error);
@@ -141,7 +142,9 @@ const interviewSlice =  createSlice({
           })
           .addCase(filterInterviewsByTeamLead.fulfilled,(state,action)=>{
             state.loading=false;
-            state.filterInterviewsForTeamLead=state.payload.data;
+            state.filterInterviewsForTeamLead=action.payload.data;
+            state.selfInterviewsTL=action.payload.selfInterviews || [];
+            state.teamInterviewsTL=action.payload.teamInterviews || [];
           })
           .addCase(filterInterviewsByTeamLead.rejected,(state,action)=>{
             state.loading=false;

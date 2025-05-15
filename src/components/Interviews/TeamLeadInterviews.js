@@ -50,6 +50,8 @@ const TeamLeadInterviews = () => {
   const [isTeamData, setIsTeamData] = useState(false);
 
   const [activeTab, setActiveTab] = useState("self");
+  const [isFiltering, setIsFiltering] = useState(false);
+
 
   const dispatch = useDispatch();
   const { userId } = useSelector((state) => state.auth);
@@ -63,27 +65,30 @@ const TeamLeadInterviews = () => {
 const fetchInterviews = async () => {
   try {
     setLoading(true);
-    // Fetching team lead interviews
-    // dispatch(fetchInterviewsTeamLead());
+    setError(null); // reset error on new fetch
 
-    // Fetching interviews data for the user (self)
     const response = await httpService.get(`/candidate/interviews/teamlead/${userId}`);
-    console.log("API Response:", response.data);
 
-    const { selfInterviews ,teamInterviews  } = response.data;
- 
-    
+    // If API returns a message saying no interviews found
+    if (
+      response.data?.message &&
+      response.data.message.toLowerCase().includes("no interviews found")
+    ) {
+      setError("No interviews found");
+      setInterviews({ self: [], team: [] }); // clear interviews data
+      return;
+    }
+
+    const { selfInterviews, teamInterviews } = response.data;
 
     const processedSelfInterviews = processInterviewData(selfInterviews);
     const processedTeamInterviews = processInterviewData(teamInterviews);
 
-    // Setting state with both self and team interviews
     setInterviews({
       self: processedSelfInterviews,
       team: processedTeamInterviews,
     });
 
-    setError(null);
   } catch (err) {
     setError("Failed to fetch interview data");
     console.error("Error fetching interviews:", err);
@@ -283,6 +288,8 @@ const processInterviewData = (interviews) => {
     };
   };
 
+
+
   const renderExpandedContent = (row) => {
     if (loading) {
       return (
@@ -450,7 +457,19 @@ const processInterviewData = (interviews) => {
     fetchInterviews();
   }, [userId, isFilteredDataRequested]);
 
- const displayData = tabValue === 0 ? interviews.self : interviews.team;
+   useEffect(() => {
+  setIsFiltering(isFilteredDataRequested);
+}, [isFilteredDataRequested]);
+
+const displayData = error?[]:
+  tabValue === 0
+    ? (isFiltering ? selfInterviewsTL : interviews.self || [])
+    : (isFiltering ? teamInterviewsTL : interviews.team || []);
+
+const handleRefresh = () => {
+  setIsFiltering(false);          
+  fetchInterviews();            
+};
 
  
 
@@ -458,14 +477,13 @@ const processInterviewData = (interviews) => {
     <Box sx={{ p: 3 }}>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
         <DateRangeFilter 
-          onFilter={filterInterviewsForTeamLead} 
-          disabled={loading}
+          component="InterviewsForTeamLead"
         />
         
         <Button
           variant="outlined"
           startIcon={<RefreshIcon />}
-          onClick={fetchInterviews}
+          onClick={handleRefresh}
           disabled={loading}
         >
           Refresh
