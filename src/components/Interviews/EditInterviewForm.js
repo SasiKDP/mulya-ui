@@ -97,7 +97,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             { value: "NO_SHOW", label: "No Show / Not Attended" },
             { value: "SELECTED", label: "Selected" },
             { value: "PLACED", label: "Placed" },
-            { value: "FEEDBACK_PENDING", label: "feedback-Pending" },
+            { value: "FEEDBACK_PENDING", label: "Feedback-Pending" },
           ],
           gridProps: commonGridProps,
         },
