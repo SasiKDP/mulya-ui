@@ -14,7 +14,7 @@ import { filterUsersByDateRange } from '../../redux/employeesSlice';
 import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../../redux/submissionSlice';
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
 import { filterPlacementByDateRange } from '../../redux/placementSlice';
-import { filterDashBoardCou3ntByDateRange } from '../../redux/dashboardSlice';
+import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
 
 import { filterTeamMetricsByDateRange, clearFilters } from '../../redux/teamMetricsSlice';
 
@@ -32,7 +32,7 @@ const componentToActionMap = {
   AssignedList: filterRequirementsByRecruiter,
   RecruiterSubmission: filterSubmissionssByRecruiter,
   InterviewsForRecruiter: filterInterviewsByRecruiter,
-
+  dashboard:filterDashBoardCountByDateRange,
   InterviewsForTeamLead: filterInterviewsByDateRange,
   Clients: filterClientsByDateRange,
   placements: filterPlacementByDateRange,
