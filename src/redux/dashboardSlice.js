@@ -27,7 +27,7 @@ export const filterDashBoardCountByDateRange = createAsyncThunk(
 const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState: {
-    statsByFilter: {},
+    statsByFilter: [],
     loading: false,
     error: null,
   },
@@ -36,6 +36,7 @@ const dashboardSlice = createSlice({
     builder
       .addCase(filterDashBoardCountByDateRange.pending, (state) => {
         state.loading = true;
+        state.error=null;
       })
       .addCase(filterDashBoardCountByDateRange.fulfilled, (state, action) => {
         state.loading = false;
@@ -43,7 +44,7 @@ const dashboardSlice = createSlice({
       })
       .addCase(filterDashBoardCountByDateRange.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.message;
       });
   },
 });

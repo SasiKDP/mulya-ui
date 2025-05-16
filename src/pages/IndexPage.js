@@ -57,7 +57,7 @@ const HomePage = () => {
 
   const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER'];
 
-  useEffect(() => {
+useEffect(() => {
   const fetchDashboardCounts = async () => {
     try {
       let url = `/candidate/dashboardcounts`;
@@ -79,6 +79,8 @@ const HomePage = () => {
         bench: response.data.bench || 0,
       });
       setStats(response.data); // Initialize stats with default
+      setFilteredStats(null); // Clear filtered stats on reload
+      setIsFiltered(false);   // Reset isFiltered on reload
       setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -90,7 +92,17 @@ const HomePage = () => {
   fetchDashboardCounts();
 }, [userId, role]);
 
-  
+
+useEffect(() => {
+  if (statsByFilter) {
+    setFilteredStats(statsByFilter);
+    setIsFiltered(true);
+  } else {
+    setFilteredStats(null);
+    setIsFiltered(false);
+  }
+}, [statsByFilter]);
+
 
   const cards = [
     {
