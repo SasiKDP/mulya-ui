@@ -2,7 +2,7 @@ import React from "react";
 import { useSelector } from "react-redux";
 import AllInterviews from "./AllInterviews";
 import TeamLeadInterviews from "./TeamLeadInterviews";
-import RecruiterInterviews from "./Interviews";
+import RecruiterInterviews from "./RecruiterInterviews";
 
 /**
  * Router component that renders the appropriate interviews component based on user role

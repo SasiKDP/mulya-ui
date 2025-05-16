@@ -9,13 +9,18 @@ import ToastService from '../../Services/toastService';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import { validateDateRange } from '../../utils/validateDateRange';
 import { filterRequirementsByDateRange, filterRequirementsByRecruiter } from '../../redux/requirementSlice';
-import { filterInterviewsByDateRange, filterInterviewsByRecruiter } from '../../redux/interviewSlice';
+import { filterInterviewsByDateRange, filterInterviewsByRecruiter ,filterInterviewsByTeamLead} from '../../redux/interviewSlice';
 import { filterUsersByDateRange } from '../../redux/employeesSlice';
 import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../../redux/submissionSlice';
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
 import { filterPlacementByDateRange } from '../../redux/placementSlice';
-import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
+import { filterDashBoardCou3ntByDateRange } from '../../redux/dashboardSlice';
+
 import { filterTeamMetricsByDateRange, clearFilters } from '../../redux/teamMetricsSlice';
+
+import {filterSubmissionsByTeamlead} from '../../redux/submissionSlice'
+
+
 
 const componentToActionMap = {
   BenchList: filterBenchListByDateRange,
@@ -23,9 +28,11 @@ const componentToActionMap = {
   Interviews: filterInterviewsByDateRange,
   Users: filterUsersByDateRange,
   Submissions: filterSubmissionsByDateRange,
+  SubmissionsForTeamLead:filterSubmissionsByTeamlead,
   AssignedList: filterRequirementsByRecruiter,
   RecruiterSubmission: filterSubmissionssByRecruiter,
   InterviewsForRecruiter: filterInterviewsByRecruiter,
+
   InterviewsForTeamLead: filterInterviewsByDateRange,
   Clients: filterClientsByDateRange,
   placements: filterPlacementByDateRange,
@@ -33,6 +40,7 @@ const componentToActionMap = {
   allInterviews: filterInterviewsByDateRange,
   dashboard: filterDashBoardCountByDateRange,
   TeamMetrics: filterTeamMetricsByDateRange
+
 };
 
 const componentToClearActionsMap = {

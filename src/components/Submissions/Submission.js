@@ -35,6 +35,7 @@ import { showToast } from "../../utils/ToastNotification";
 import { downloadFile } from "../../utils/downloadUtils";
 import DownloadResume from "../../utils/DownloadResume";
 import {API_BASE_URL} from '../../Services/httpService'
+import {filterSubmissionsByTeamlead} from "../../redux/submissionSlice"
 
 
 
@@ -56,10 +57,9 @@ const Submission = () => {
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState(null);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
-  const { filteredSubmissionsForRecruiter } = useSelector((state) => state.submission);
+  const { filteredSubmissionsForRecruiter,selfSubmissionsTL, teamSubmissionsTL} = useSelector((state) => state.submission);
   const [isTeamData, setIsTeamData] = useState(false)
 
-  const { selfSubmissionsTL, teamSubmissionsTL } = useSelector((state) => state.submission)
 
   const { userId, role } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
@@ -73,47 +73,44 @@ const Submission = () => {
     fetchData();
   }, [userId]);
 
-  useEffect(() => {
-    if (role === "TEAMLEAD") {
-      dispatch(fetchSubmissionsTeamLead());
-    }
-  }, [dispatch])
-
   const fetchData = async () => {
-    try {
-      setLoading(true);
-  
-      let response;
-  
-      if (role === "SUPERADMIN") {
-        response = await httpService.get("/candidate/submissions");
-      } 
-      // else if(role === "TEAMLEAD"){
-      //   response = await httpService.get(`/candidate/submissions/teamlead/${userId}`);
-      // }
-      else {
-        response = await httpService.get(`/candidate/submissionsByUserId/${userId}`);
-      }
-  
-      const submissions = response.data.data || response.data || [];
-  
-      // Sort by latest first (assuming there's a `createdAt` field)
-      const sortedSubmissions = submissions.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-  
-      setData(sortedSubmissions);
-      
-    } catch (error) {
-      console.error("Error fetching candidate submissions:", error);
-      showSnackbar("Failed to fetch submissions", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  
+  try {
+    setLoading(true);
 
+    let submissions = [];
+
+    if (role === "SUPERADMIN") {
+      const response = await httpService.get("/candidate/submissions");
+      submissions = response?.data?.data || response?.data || [];
+    } 
+    else if (role === "TEAMLEAD") {
+      // Using Redux for TEAMLEAD
+      dispatch(fetchSubmissionsTeamLead());
+      return; // Exit the function here as Redux will handle data
+    } 
+    else if (role === "EMPLOYEE" || role === "BDM") {
+      const response = await httpService.get(`/candidate/submissionsByUserId/${userId}`);
+      submissions = response?.data?.data || response?.data || [];
+    }
+
+    console.log("submissions", submissions);
+
+    // Set data only if submissions were fetched
+    if (submissions.length) {
+      setData(submissions);
+    } else {
+      setData([]);
+    }
+  } catch (error) {
+    console.error("Error fetching candidate submissions:", error);
+    showSnackbar("Failed to fetch submissions", "error");
+  } finally {
+    setLoading(false);
+  }
+};
+
+  
+console.log("sl",selfSubmissionsTL)
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
     showToast(message, severity); // Use the imported showToast function
@@ -287,8 +284,6 @@ const Submission = () => {
   };
 
 
-
-
   const openNewCandidateDrawer = () => {
     setCandidateData(null);
     setMode("add");
@@ -309,7 +304,15 @@ const Submission = () => {
     setScheduleDrawerOpen(false);
   };
 
-  const componentName = role === 'SUPERADMIN' ? 'allSubmissions' : 'RecruiterSubmission';
+  // const componentName = role === 'SUPERADMIN' ? 'allSubmissions' : 'RecruiterSubmission';
+  // Dynamically determine componentName based on role
+const componentName = (() => {
+  if (role === "SUPERADMIN") return "allSubmissions";
+  if (role === "TEAMLEAD") return "SubmissionsForTeamLead";
+  if (role === "EMPLOYEE" || role === "BDM") return "RecruiterSubmission";
+  return ""; // Fallback for other roles (optional)
+})();
+
 
 
   const generateColumns = (loading = false) => [
@@ -639,9 +642,16 @@ const Submission = () => {
      </Paper>
       }
       <DataTable
-        data={isFilteredDataRequested ? filteredSubmissionsForRecruiter :
-          role === "TEAMLEAD" ? isTeamData ? teamSubmissionsTL : selfSubmissionsTL :
-            data || []}
+        data={
+        isFilteredDataRequested
+        ? (role === "TEAMLEAD" 
+        ? (isTeamData ? teamSubmissionsTL : selfSubmissionsTL) 
+        : filteredSubmissionsForRecruiter)
+        : (role === "TEAMLEAD" 
+        ? (isTeamData ? teamSubmissionsTL : selfSubmissionsTL) 
+        : data || [])
+        }
+
         columns={columns}
         title="Candidate Submissions"
         enableSelection={false}

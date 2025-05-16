@@ -21,8 +21,7 @@ import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
 import httpService from "../../Services/httpService";
-import { formatDateTime } from '../../utils/dateformate';
-
+import { formatDateTime } from "../../utils/dateformate";
 
 const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   console.log(data);
@@ -98,6 +97,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             { value: "NO_SHOW", label: "No Show / Not Attended" },
             { value: "SELECTED", label: "Selected" },
             { value: "PLACED", label: "Placed" },
+            { value: "FEEDBACK_PENDING", label: "feedback-Pending" },
           ],
           gridProps: commonGridProps,
         },
@@ -116,14 +116,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           disabled: true,
           gridProps: commonGridProps,
         },
-        {
-          name: "externalInterviewDetails",
-          label: "Interview Details / Notes",
-          type: "textarea",
-          placeholder: "Add any additional interview details or notes here",
-          gridProps: { xs: 12 },
-          rows: 4,
-        },
+       
         {
           name: "skipNotification",
           label: "Skip Email Notification",
@@ -146,6 +139,14 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           type: "datetime",
           required: true,
           gridProps: commonGridProps,
+        },
+        {
+          name: "clientEmail",
+          label: "Client Email",
+          type: "chipInput",
+          description:
+            "Enter client email addresses and press Enter after each",
+          gridProps: { xs: 12, sm: 6 },
         },
         {
           name: "duration",
@@ -266,7 +267,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         userId: data.userId,
         userEmail: data.userEmail,
         ...(isReschedule && {
-          interviewDateTime: dayjs(values.interviewDateTime).utc().format(),
+          interviewDateTime: dayjs(values.interviewDateTime).format(),
           interviewScheduledTimestamp: dayjs(
             values.interviewDateTime
           ).valueOf(),
@@ -359,14 +360,14 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
               <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
                 Name
               </TableCell>
-              <TableCell>{data.fullName || data.candidateFullName}</TableCell>
+              <TableCell>{data.candidateFullName}</TableCell>
             </TableRow>
 
             <TableRow>
               <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
                 Email
               </TableCell>
-              <TableCell>{data.emailId || data.candidateEmailId}</TableCell>
+              <TableCell>{data.candidateEmailId}</TableCell>
             </TableRow>
 
             <TableRow sx={{ bgcolor: "grey.100" }}>
