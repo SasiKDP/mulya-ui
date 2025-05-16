@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, Tab, Box, CircularProgress, Stack, Typography, Alert, Button } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
 import UserTable from './UserTable';
-import httpService from '../../Services/httpService';
 import DateRangeFilter from '../muiComponents/DateRangeFilter';
+import { 
+  fetchBdmUsers,
+  fetchTeamLeadUsers, 
+  fetchEmployeeUsers 
+} from '../../redux/teamMetricsSlice';
 
 const TeamMetrics = () => {
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [userData, setUserData] = useState({
-    BDM: [],
-    TEAMLEAD: [],
-    EMPLOYEE: []
-  });
+  
+  const { 
+    filteredBdmUsers, 
+    filteredTeamLeadUsers, 
+    filteredEmployeeUsers,
+    isLoading, 
+    error 
+  } = useSelector(state => state.teamMetrics);
 
   const tabsConfig = [
     { role: 'BDM', title: 'BDM Users' },
@@ -20,79 +27,58 @@ const TeamMetrics = () => {
     { role: 'EMPLOYEE', title: 'Employee Users' }
   ];
 
-  useEffect(() => {
-    fetchData(tabsConfig[activeTab].role);
-  }, [activeTab]);
-
-  const fetchData = async (role) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      let endpoint = '';
-      let processResponse = null;
-      
-      switch(role) {
-        case 'BDM':
-          endpoint = '/users/bdmlist';
-          processResponse = data => data;
-          break;
-        case 'TEAMLEAD':
-          endpoint = '/requirements/stats';
-          processResponse = data => {
-            if (data?.userStats?.length) {
-              return data.userStats.filter(user => 
-                user.role && user.role.toUpperCase() === 'TEAMLEAD'
-              );
-            }
-            return [];
-          };
-          break;
-        case 'EMPLOYEE':
-          endpoint = '/requirements/stats';
-          processResponse = data => {
-            if (data?.userStats?.length) {
-              return data.userStats.filter(user => 
-                user.role && user.role.toUpperCase() === 'EMPLOYEE'
-              );
-            }
-            return [];
-          };
-          break;
-        default:
-          endpoint = '/requirements/stats';
-          processResponse = data => data.userStats || [];
-      }
-  
-      const response = await httpService.get(endpoint);
-      console.log(`${role} API Response:`, response);
-  
-      if (response.data) {
-        const processedData = processResponse(response.data);
-        setUserData(prev => ({
-          ...prev,
-          [role]: processedData
-        }));
-      } else {
-        throw new Error('Invalid data format received from server');
-      }
-    } catch (error) {
-      console.error(`Error fetching ${role} data:`, error);
-      setError(`Failed to load ${role} data. Please try again later.`);
-    } finally {
-      setIsLoading(false);
+  // Memoize the fetch function to prevent it from being recreated on every render
+  const fetchDataForActiveTab = useCallback(() => {
+    const currentRole = tabsConfig[activeTab].role;
+    
+    switch(currentRole) {
+      case 'BDM':
+        dispatch(fetchBdmUsers());
+        break;
+      case 'TEAMLEAD':
+        dispatch(fetchTeamLeadUsers());
+        break;
+      case 'EMPLOYEE':
+        dispatch(fetchEmployeeUsers());
+        break;
+      default:
+        console.warn(`Unknown role: ${currentRole}`);
     }
-  };
+  }, [activeTab, dispatch]); // Include only the dependencies that should trigger a refetch
+
+  // Only fetch data when the active tab changes or component mounts
+  useEffect(() => {
+    fetchDataForActiveTab();
+  }, [fetchDataForActiveTab]);
 
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
   };
 
-  const handleRefresh = () => {
-    fetchData(tabsConfig[activeTab].role);
-  };
+  // Memoize the refresh handler
+  const handleRefresh = useCallback(() => {
+    fetchDataForActiveTab();
+  }, [fetchDataForActiveTab]);
+
+  // Memoize the function to get current role data
+  const getCurrentRoleData = useCallback(() => {
+    const currentRole = tabsConfig[activeTab].role;
+    
+    switch(currentRole) {
+      case 'BDM':
+        return filteredBdmUsers;
+      case 'TEAMLEAD':
+        return filteredTeamLeadUsers;
+      case 'EMPLOYEE':
+        return filteredEmployeeUsers;
+      default:
+        return [];
+    }
+  }, [activeTab, filteredBdmUsers, filteredTeamLeadUsers, filteredEmployeeUsers]);
 
   const renderTabContent = () => {
     const currentRole = tabsConfig[activeTab].role;
+    const currentData = getCurrentRoleData();
     
     if (isLoading) {
       return (
@@ -122,7 +108,8 @@ const TeamMetrics = () => {
       <UserTable 
         role={currentRole} 
         title={tabsConfig[activeTab].title} 
-        employeesList={userData[currentRole]} 
+        employeesList={currentData} 
+        loading={isLoading}
       />
     );
   };
@@ -144,7 +131,10 @@ const TeamMetrics = () => {
         }}
       >
         <Typography variant="h6" color="primary">Team Metrics</Typography>
-        <DateRangeFilter component="TeamMetrics" onDateChange={handleRefresh} />
+        <DateRangeFilter 
+          component="TeamMetrics" 
+          onDateChange={handleRefresh}
+        />
       </Stack>
 
       <Box sx={{ width: '100%', height: '100vh', mt: -1.5 }}>

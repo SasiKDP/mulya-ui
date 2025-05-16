@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Stack, IconButton, Tooltip, TextField } from '@mui/material';
+import { Stack, IconButton, Tooltip } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -15,10 +15,7 @@ import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
 import { filterPlacementByDateRange } from '../../redux/placementSlice';
 import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
-
-
-
-
+import { filterTeamMetricsByDateRange, clearFilters } from '../../redux/teamMetricsSlice';
 
 const componentToActionMap = {
   BenchList: filterBenchListByDateRange,
@@ -29,17 +26,20 @@ const componentToActionMap = {
   AssignedList: filterRequirementsByRecruiter,
   RecruiterSubmission: filterSubmissionssByRecruiter,
   InterviewsForRecruiter: filterInterviewsByRecruiter,
-  InterviewsForTeamLead:filterInterviewsByDateRange,
-  Clients:filterClientsByDateRange,
-  placements:filterPlacementByDateRange,
-  allSubmissions:filterSubmissionsByDateRange,
-  allInterviews:filterInterviewsByDateRange,
-  dashboard:filterDashBoardCountByDateRange
+  InterviewsForTeamLead: filterInterviewsByDateRange,
+  Clients: filterClientsByDateRange,
+  placements: filterPlacementByDateRange,
+  allSubmissions: filterSubmissionsByDateRange,
+  allInterviews: filterInterviewsByDateRange,
+  dashboard: filterDashBoardCountByDateRange,
+  TeamMetrics: filterTeamMetricsByDateRange
 };
 
+const componentToClearActionsMap = {
+  TeamMetrics: clearFilters
+};
 
-
-const DateRangeFilter = ({ component, labelPrefix = '' }) => {
+const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
   const dispatch = useDispatch();
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -48,6 +48,17 @@ const DateRangeFilter = ({ component, labelPrefix = '' }) => {
     setStartDate(null);
     setEndDate(null);
     dispatch(setFilteredDataRequested(false));
+    
+    // Use component-specific clear action if available
+    const clearAction = componentToClearActionsMap[component];
+    if (clearAction) {
+      dispatch(clearAction());
+    }
+    
+    // Call the onDateChange callback if provided
+    if (onDateChange) {
+      onDateChange();
+    }
   };
 
   useEffect(() => {
@@ -65,13 +76,21 @@ const DateRangeFilter = ({ component, labelPrefix = '' }) => {
 
       const actionCreator = componentToActionMap[component];
       if (actionCreator) {
-        dispatch(actionCreator({ startDate: formattedStart, endDate: formattedEnd }));
+        dispatch(actionCreator({ startDate: formattedStart, endDate: formattedEnd }))
+          .then(() => {
+            // Call the onDateChange callback if provided
+            if (onDateChange) {
+              onDateChange();
+            }
+          })
+          .catch(error => {
+            ToastService.error(`Error applying date filter: ${error.message}`);
+          });
       } else {
         console.warn(`No action mapped for component: ${component}`);
       }
     }
-  }, [startDate, endDate, component, dispatch]);
-
+  }, [startDate, endDate, component, dispatch, onDateChange]);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>

@@ -9,6 +9,8 @@ import submissionReducer from '../redux/submissionSlice'
 import commonReducer from '../redux/commonSlice'
 import placementReducer from "../redux/placementSlice"
 import dashboardReducer from '../redux/dashboardSlice'
+import teamMetricsReducer from '../redux/teamMetricsSlice';
+
 
 export const store = configureStore({
   reducer: {
@@ -21,7 +23,8 @@ export const store = configureStore({
     submission: submissionReducer,
     common: commonReducer,
     placement:placementReducer,
-    dashboard:dashboardReducer
+    dashboard:dashboardReducer,
+    teamMetrics: teamMetricsReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
