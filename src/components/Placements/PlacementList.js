@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   Chip,
   Box,
@@ -11,23 +11,20 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText,
   CircularProgress,
   Stack,
+  TextField,
 } from "@mui/material";
 import {
-  MoreVert,
   Edit,
   Visibility,
   Delete,
   Add,
-  Refresh,
   Close,
+  LockOpen,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import DataTable from "../muiComponents/DataTabel";
-import ComponentTitle from "../../utils/ComponentTitle";
 import PlacementForm from "./PlacementForm";
 import PlacementCard from "./PlacementCard";
 import ConfirmDialog from "../muiComponents/ConfirmDialog";
@@ -38,21 +35,232 @@ import {
   resetPlacementState,
 } from "../../redux/placementSlice";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import CryptoJS from "crypto-js";
+import httpService from "../../Services/httpService";
+import ToastService from "../../Services/toastService";
+
+const FINANCIAL_SECRET_KEY = 'financial-data-encryption-key-2024';
+const VERIFICATION_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+const decryptFinancialValue = (encryptedValue) => {
+  if (!encryptedValue) return 0;
+  try {
+    if (!isNaN(parseFloat(encryptedValue))) {
+      return parseFloat(encryptedValue);
+    }
+    
+    const bytes = CryptoJS.AES.decrypt(encryptedValue, FINANCIAL_SECRET_KEY);
+    const decryptedValue = bytes.toString(CryptoJS.enc.Utf8);
+    return parseFloat(decryptedValue) || 0;
+  } catch (error) {
+    console.error("Decryption failed:", error);
+    return 0;
+  }
+};
 
 const PlacementsList = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const {
     placements,
-    dateRangeFilterPlacements,
     loading,
-    error,
     selectedPlacement,
   } = useSelector((state) => state.placement);
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [detailsDialogOpen, setDetailsDialogOpen] = React.useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [placementToDelete, setPlacementToDelete] = React.useState(null);
+  const { userId } = useSelector((state) => state.auth);
+  
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [placementToDelete, setPlacementToDelete] = useState(null);
+  
+  // OTP related state
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState(null);
+  const [otpGenerated, setOtpGenerated] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [isGlobalVerification, setIsGlobalVerification] = useState(false);
+  
+  // Initialize verification state
+  const initializeVerificationState = () => {
+    const savedState = localStorage.getItem('verificationState');
+    if (!savedState) {
+      return {
+        global: { verified: false, timestamp: null },
+        records: {}
+      };
+    }
+    
+    try {
+      const parsed = JSON.parse(savedState);
+      const now = Date.now();
+      let needsUpdate = false;
+      
+      // Check if global verification has expired
+      if (parsed.global?.verified && parsed.global?.timestamp && 
+          now - parsed.global.timestamp > VERIFICATION_TIMEOUT) {
+        parsed.global = { verified: false, timestamp: null };
+        needsUpdate = true;
+      }
+      
+      // Clean expired record verifications
+      const cleanRecords = {};
+      if (parsed.records) {
+        Object.keys(parsed.records).forEach(id => {
+          const record = parsed.records[id];
+          if (record?.timestamp && now - record.timestamp <= VERIFICATION_TIMEOUT) {
+            cleanRecords[id] = record;
+          } else {
+            needsUpdate = true;
+          }
+        });
+      }
+      parsed.records = cleanRecords;
+      
+      // Update localStorage if any changes were made
+      if (needsUpdate) {
+        localStorage.setItem('verificationState', JSON.stringify(parsed));
+      }
+      
+      return parsed;
+    } catch (error) {
+      console.error('Error parsing verification state:', error);
+      return {
+        global: { verified: false, timestamp: null },
+        records: {}
+      };
+    }
+  };
+
+  const [verificationState, setVerificationState] = useState(initializeVerificationState);
+
+  // Timer references for cleanup
+  const globalTimerRef = useRef(null);
+  const recordTimersRef = useRef({});
+
+  // Process placements data to decrypt financial fields
+  const processedPlacements = React.useMemo(() => {
+    return placements.map(placement => {
+      const decryptedBillRate = decryptFinancialValue(placement.billRate);
+      const decryptedPayRate = decryptFinancialValue(placement.payRate);
+      const calculatedGrossProfit = decryptFinancialValue(decryptedBillRate - decryptedPayRate);
+      
+      return {
+        ...placement,
+        _originalBillRate: placement.billRate,
+        _originalPayRate: placement.payRate,
+        _originalGrossProfit: placement.grossProfit,
+        billRate: decryptedBillRate,
+        payRate: decryptedPayRate,
+        grossProfit: calculatedGrossProfit
+      };
+    });
+  }, [placements]);
+
+  // Function to clear verification and update state
+  const clearVerification = useCallback((type, recordId = null) => {
+    setVerificationState(prev => {
+      const newState = { ...prev };
+      
+      if (type === 'global') {
+        newState.global = { verified: false, timestamp: null };
+        console.log('Global verification cleared');
+        ToastService.info("Global verification has expired. Please verify again to view financial data.");
+      } else if (type === 'record' && recordId) {
+        const updatedRecords = { ...prev.records };
+        delete updatedRecords[recordId];
+        newState.records = updatedRecords;
+        console.log(`Record ${recordId} verification cleared`);
+      }
+      
+      localStorage.setItem('verificationState', JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
+
+  // Function to set up verification timers
+  const setupVerificationTimers = useCallback(() => {
+    const now = Date.now();
+    
+    // Clear existing timers first
+    if (globalTimerRef.current) {
+      clearTimeout(globalTimerRef.current);
+      globalTimerRef.current = null;
+    }
+    
+    Object.keys(recordTimersRef.current).forEach(id => {
+      if (recordTimersRef.current[id]) {
+        clearTimeout(recordTimersRef.current[id]);
+        delete recordTimersRef.current[id];
+      }
+    });
+    
+    // Set global timer if verification is active
+    if (verificationState.global?.verified && verificationState.global?.timestamp) {
+      const timeLeft = VERIFICATION_TIMEOUT - (now - verificationState.global.timestamp);
+      if (timeLeft > 0) {
+        console.log(`Setting global timer for ${Math.round(timeLeft / 1000)} seconds`);
+        globalTimerRef.current = setTimeout(() => {
+          clearVerification('global');
+        }, timeLeft);
+      } else {
+        // Already expired, clear immediately
+        clearVerification('global');
+      }
+    }
+    
+    // Set individual record timers
+    if (verificationState.records) {
+      Object.keys(verificationState.records).forEach(id => {
+        const record = verificationState.records[id];
+        if (record?.timestamp) {
+          const timeLeft = VERIFICATION_TIMEOUT - (now - record.timestamp);
+          if (timeLeft > 0) {
+            console.log(`Setting record timer for ${id} - ${Math.round(timeLeft / 1000)} seconds`);
+            recordTimersRef.current[id] = setTimeout(() => {
+              clearVerification('record', id);
+            }, timeLeft);
+          } else {
+            // Already expired, clear immediately
+            clearVerification('record', id);
+          }
+        }
+      });
+    }
+  }, [verificationState, clearVerification]);
+
+  // Set up timers whenever verification state changes
+  useEffect(() => {
+    setupVerificationTimers();
+    
+    // Cleanup function
+    return () => {
+      if (globalTimerRef.current) {
+        clearTimeout(globalTimerRef.current);
+        globalTimerRef.current = null;
+      }
+      Object.keys(recordTimersRef.current).forEach(id => {
+        if (recordTimersRef.current[id]) {
+          clearTimeout(recordTimersRef.current[id]);
+          delete recordTimersRef.current[id];
+        }
+      });
+    };
+  }, [setupVerificationTimers]);
+
+  // Cleanup timers on component unmount
+  useEffect(() => {
+    return () => {
+      if (globalTimerRef.current) {
+        clearTimeout(globalTimerRef.current);
+      }
+      Object.keys(recordTimersRef.current).forEach(id => {
+        if (recordTimersRef.current[id]) {
+          clearTimeout(recordTimersRef.current[id]);
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     dispatch(fetchPlacements());
@@ -60,7 +268,13 @@ const PlacementsList = () => {
 
   const handleOpenDrawer = (placement = null) => {
     if (placement) {
-      dispatch(setSelectedPlacement(placement));
+      const originalPlacement = {
+        ...placement,
+        billRate: placement._originalBillRate || placement.billRate,
+        payRate: placement._originalPayRate || placement.payRate,
+        grossProfit: placement._originalGrossProfit || placement.grossProfit
+      };
+      dispatch(setSelectedPlacement(originalPlacement));
     } else {
       dispatch(setSelectedPlacement(null));
     }
@@ -92,18 +306,101 @@ const PlacementsList = () => {
     setPlacementToDelete(null);
   };
 
-  const handleView = (row) => {
-    handleOpenDetailsDialog(row);
-  };
-
-  const handleEdit = (row) => {
-    handleOpenDrawer(row);
-  };
-
   const handleDelete = () => {
     if (placementToDelete) {
       dispatch(deletePlacement(placementToDelete.id));
       handleCloseDeleteDialog();
+    }
+  };
+
+  const handleOpenOtpDialog = (row = null, isGlobal = false) => {
+    setCurrentRecord(row);
+    setIsGlobalVerification(isGlobal);
+    setOtpGenerated(false);
+    setEnteredOtp("");
+    setOtpError("");
+    setOtpDialogOpen(true);
+  };
+
+  const handleCloseOtpDialog = () => {
+    setOtpDialogOpen(false);
+    setCurrentRecord(null);
+    setIsGlobalVerification(false);
+    setOtpGenerated(false);
+    setEnteredOtp("");
+    setOtpError("");
+  };
+
+  const handleGenerateOtp = async () => {
+    setIsLoading(true);
+    try {
+      const payload = {
+        userId: userId,
+        placementId: currentRecord?.id || null,
+        newPlacement: false
+      };
+      const response = await httpService.post(`/candidate/sendOtp`, payload);
+
+      if (response.data) {
+        ToastService.success("OTP has been sent to your email.");
+        setOtpGenerated(true);
+      } else {
+        ToastService.error(response.data.message || "Failed to send OTP.");
+      }
+    } catch (error) {
+      ToastService.error(
+        error.response?.data?.message || "Failed to send OTP. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setIsLoading(true);
+    setOtpError("");
+
+    try {
+      const payload = {
+        placementId: currentRecord?.id || null,
+        userId: userId,
+        otp: enteredOtp,
+      };
+      
+      const response = await httpService.post("/candidate/verifyOtp", payload);
+
+      if (response.data) {
+        const now = Date.now();
+        
+        setVerificationState(prev => {
+          const newState = { ...prev };
+          
+          if (isGlobalVerification) {
+            newState.global = { verified: true, timestamp: now };
+            console.log('Global verification set at:', new Date(now));
+          } else {
+            newState.records = {
+              ...prev.records,
+              [currentRecord.id]: { verified: true, timestamp: now }
+            };
+            console.log(`Record ${currentRecord.id} verification set at:`, new Date(now));
+          }
+          
+          localStorage.setItem('verificationState', JSON.stringify(newState));
+          return newState;
+        });
+
+        setOtpDialogOpen(false);
+        ToastService.success("OTP verified successfully! Access will expire in 2 minutes.");
+      } else {
+        setOtpError(response.data.message || "Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      setOtpError(
+        error.response?.data?.message || "OTP verification failed. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -123,6 +420,7 @@ const PlacementsList = () => {
         return "primary";
     }
   };
+
   const getColorForEmployeement = (type) => {
     switch (type) {
       case "W2":
@@ -141,6 +439,25 @@ const PlacementsList = () => {
         return "default";
     }
   };
+
+  const renderSensitiveField = useCallback((row, fieldName) => {
+    const isGlobalVerified = verificationState.global?.verified;
+    const isRecordVerified = verificationState.records?.[row.id]?.verified;
+    
+    if (isGlobalVerified || isRecordVerified) {
+      const value = row[fieldName];
+      if (typeof value === 'number' && !isNaN(value)) {
+        return `₹${value.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+      }
+      return value ? `₹${parseFloat(value).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : "-";
+    } else {
+      return (
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          ***
+        </Typography>
+      );
+    }
+  }, [verificationState]);
 
   const generateColumns = () => {
     return [
@@ -225,9 +542,7 @@ const PlacementsList = () => {
         sortable: true,
         filterable: true,
         width: 130,
-        render: (row) =>
-          row.billRate?.toLocaleString("en-IN", { maximumFractionDigits: 2 }) ||
-          "-",
+        render: (row) => renderSensitiveField(row, "billRate"),
       },
       {
         key: "payRate",
@@ -236,9 +551,7 @@ const PlacementsList = () => {
         sortable: true,
         filterable: true,
         width: 130,
-        render: (row) =>
-          row.payRate?.toLocaleString("en-IN", { maximumFractionDigits: 2 }) ||
-          "-",
+        render: (row) => renderSensitiveField(row, "payRate"),
       },
       {
         key: "grossProfit",
@@ -247,10 +560,7 @@ const PlacementsList = () => {
         sortable: true,
         filterable: true,
         width: 130,
-        render: (row) =>
-          row.grossProfit?.toLocaleString("en-IN", {
-            maximumFractionDigits: 2,
-          }) || "-",
+        render: (row) => renderSensitiveField(row, "grossProfit"),
       },
       {
         key: "employmentType",
@@ -261,7 +571,6 @@ const PlacementsList = () => {
         width: 150,
         render: (row) => {
           const type = row.employmentType;
-
           return (
             <Chip
               label={type}
@@ -292,7 +601,6 @@ const PlacementsList = () => {
           );
         },
       },
-
       {
         key: "actions",
         label: "Actions",
@@ -309,7 +617,7 @@ const PlacementsList = () => {
               <IconButton
                 color="info"
                 size="small"
-                onClick={() => handleView(row)}
+                onClick={() => handleOpenDetailsDialog(row)}
               >
                 <Visibility fontSize="small" />
               </IconButton>
@@ -318,7 +626,7 @@ const PlacementsList = () => {
               <IconButton
                 color="primary"
                 size="small"
-                onClick={() => handleEdit(row)}
+                onClick={() => handleOpenDrawer(row)}
               >
                 <Edit fontSize="small" />
               </IconButton>
@@ -338,7 +646,6 @@ const PlacementsList = () => {
     ];
   };
 
-  // Create the delete confirmation content with placement details
   const getDeleteConfirmationContent = () => {
     if (!placementToDelete) return "This action cannot be undone.";
 
@@ -385,6 +692,24 @@ const PlacementsList = () => {
           <DateRangeFilter component="placements" />
           <Button
             variant="contained"
+            color="secondary"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleOpenOtpDialog(null, true);
+            }}
+            startIcon={<LockOpen />}
+            sx={{ 
+              bgcolor: verificationState.global?.verified ? 'success.main' : 'secondary.main',
+              '&:hover': {
+                bgcolor: verificationState.global?.verified ? 'success.dark' : 'secondary.dark'
+              }
+            }}
+          >
+            {verificationState.global?.verified ? 'OTP Verified' : 'Verify OTP'}
+          </Button>
+          <Button
+            variant="contained"
             color="primary"
             startIcon={<Add />}
             onClick={() => handleOpenDrawer()}
@@ -395,11 +720,30 @@ const PlacementsList = () => {
       </Stack>
 
       <DataTable
-        data={placements}
+        data={processedPlacements}
         columns={generateColumns()}
         pageLimit={20}
         title=""
-        refreshData={() => dispatch(fetchPlacements())}
+        refreshData={() => {
+          // Clear all timers when refreshing
+          if (globalTimerRef.current) {
+            clearTimeout(globalTimerRef.current);
+            globalTimerRef.current = null;
+          }
+          Object.keys(recordTimersRef.current).forEach(id => {
+            if (recordTimersRef.current[id]) {
+              clearTimeout(recordTimersRef.current[id]);
+              delete recordTimersRef.current[id];
+            }
+          });
+          
+          localStorage.removeItem('verificationState');
+          setVerificationState({
+            global: { verified: false, timestamp: null },
+            records: {}
+          });
+          dispatch(fetchPlacements());
+        }}
         isRefreshing={loading}
         enableSelection={false}
         defaultSortColumn="id"
@@ -525,7 +869,100 @@ const PlacementsList = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Using the ConfirmDialog component instead of the old Delete dialog */}
+      {/* OTP Verification Dialog */}
+      <Dialog 
+        open={otpDialogOpen} 
+        onClose={handleCloseOtpDialog}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            maxWidth: "400px",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "1px solid #eee",
+            pb: 2,
+          }}
+        >
+          <Typography variant="h6">
+            {isGlobalVerification ? "Global Access Verification" : "Verify Access"}
+          </Typography>
+          <IconButton
+            onClick={handleCloseOtpDialog}
+            aria-label="close"
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+              "&:hover": {
+                backgroundColor: (theme) => theme.palette.action.hover,
+              },
+            }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Typography variant="body2" sx={{ mb: 3 }}>
+            {isGlobalVerification 
+              ? "To view all sensitive financial information across all records, please generate and verify an OTP. Access will expire after 2 minutes."
+              : "To view sensitive financial information, please generate and verify an OTP. Access will expire after 2 minutes."
+            }
+          </Typography>
+          
+          {otpGenerated ? (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                An OTP has been sent to your registered device. Please enter it below:
+              </Typography>
+              <TextField
+                fullWidth
+                label="Enter OTP"
+                value={enteredOtp}
+                onChange={(e) => setEnteredOtp(e.target.value)}
+                error={!!otpError}
+                helperText={otpError}
+                margin="normal"
+                inputProps={{ maxLength: 6 }}
+                placeholder="6-digit OTP"
+              />
+            </Box>
+          ) : (
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Click the button below to generate a one-time password.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ borderTop: "1px solid #eee", py: 2, px: 3 }}>
+          {otpGenerated ? (
+            <Button 
+              onClick={handleVerifyOtp} 
+              color="primary" 
+              variant="contained"
+              disabled={isLoading || enteredOtp.length !== 6}
+            >
+              {isLoading ? <CircularProgress size={24} /> : "Verify OTP"}
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleGenerateOtp} 
+              color="primary" 
+              variant="contained"
+              disabled={isLoading}
+            >
+              {isLoading ? <CircularProgress size={24} /> : "Generate OTP"}
+            </Button>
+          )}
+          <Button onClick={handleCloseOtpDialog} color="inherit">
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteDialogOpen}
         title="Confirm Deletion"
