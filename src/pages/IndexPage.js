@@ -74,7 +74,7 @@ useEffect(() => {
         internalInterviews: response.data.internalInterviews || 0,
         externalInterviews: response.data.externalInterviews || 0,
         clients: response.data.clients || 0,
-        placements:`${response.data.fulltimePlacements}/${response.data.parttimePlacements}/${response.data.contractPlacements}` || 0,
+        placements:`${response.data.contractPlacements}/${response.data.fulltimePlacements}` || 0,
         users: response.data.users || 0,
         bench: response.data.bench || 0,
       });
@@ -187,7 +187,7 @@ useEffect(() => {
     {
       title: 'Placements',
       key: 'placements',
-      subtitle: 'Full Time/Part Time/Contract',
+      subtitle: 'Contract/Full Time',
      
       color: '#6366F1',
       bg: '#EEF2FF',
