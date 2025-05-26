@@ -570,7 +570,7 @@ const PlacementsList = () => {
         filterable: true,
         width: 150,
         render: (row) => {
-          const type = row.employmentType ;
+          const type = row.employmentType;
           return (
             <Chip
               label={type}
