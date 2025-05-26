@@ -57,6 +57,7 @@ const encryptFinancialValue = (value) => {
   if (!value) return value;
   try {
     const stringValue = value.toString();
+    console.log(stringValue);
     return CryptoJS.AES.encrypt(stringValue, FINANCIAL_SECRET_KEY).toString();
   } catch (error) {
     console.error("Encryption failed:", error);

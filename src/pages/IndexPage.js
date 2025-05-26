@@ -57,6 +57,16 @@ const HomePage = () => {
 
   const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER'];
 
+  // Helper function to format placements data
+  const formatPlacements = (data) => {
+    if (data && typeof data === 'object') {
+      const contract = data.contractPlacements || 0;
+      const fulltime = data.fulltimePlacements || 0;
+      return `${contract}/${fulltime}`;
+    }
+    return data || '0/0';
+  };
+
 useEffect(() => {
   const fetchDashboardCounts = async () => {
     try {
@@ -74,7 +84,7 @@ useEffect(() => {
         internalInterviews: response.data.internalInterviews || 0,
         externalInterviews: response.data.externalInterviews || 0,
         clients: response.data.clients || 0,
-        placements: `${response.data.contractPlacements}/${response.data.fulltimePlacements}`||0,
+        placements: `${response.data.contractPlacements||0}/${response.data.fulltimePlacements||0}`,
         users: response.data.users || 0,
         bench: response.data.bench || 0,
       });
@@ -92,26 +102,20 @@ useEffect(() => {
   fetchDashboardCounts();
 }, [userId, role]);
 
-
-//   useEffect(() => {
-//   if (statsByFilter) {
-//     setFilteredStats(statsByFilter);
-//     setIsFiltered(true);
-//   } else {
-//     setFilteredStats(null);
-//     setIsFiltered(false);
-//   }
-// }, [statsByFilter]);
 useEffect(() => {
   if (statsByFilter) {
-    setFilteredStats(statsByFilter);
+    // Format the filtered stats, especially placements
+    const formattedFilteredStats = {
+      ...statsByFilter,
+      placements: formatPlacements(statsByFilter)
+    };
+    setFilteredStats(formattedFilteredStats);
     setIsFiltered(true);
   } else {
     setFilteredStats(null);
     setIsFiltered(false);
   }
 }, [statsByFilter]);
-
 
   const cards = [
     {
@@ -188,7 +192,6 @@ useEffect(() => {
       title: 'Placements',
       key: 'placements',
       subtitle: 'Contract/Full Time',
-     
       color: '#6366F1',
       bg: '#EEF2FF',
       icon: <Award size={24} />,
@@ -236,8 +239,7 @@ useEffect(() => {
     return navigate('/access');
   }
  
-
- const currentStats = isFiltered && filteredStats ? filteredStats : defaultStats;
+  const currentStats = isFiltered && filteredStats ? filteredStats : defaultStats;
 
   return (
     <Box p={4} bgcolor="#FFF" sx={{ minHeight: '85vh' }}>
@@ -290,11 +292,8 @@ useEffect(() => {
                 ) : (
                   <>
                     <Typography variant="h5" fontWeight="bold">
-                       {currentStats[card.key] || 0}
+                       {currentStats[card.key] || (card.key === 'placements' ? '0/0' : 0)}
                     </Typography>
-                    {/* <Typography variant="h5" fontWeight="bold">
-                      {dashboardStats[card.key] || 0 }
-                    </Typography> */}
                     <Typography variant="caption" color="textSecondary">
                       {card.subtitle}
                     </Typography>
