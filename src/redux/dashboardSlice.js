@@ -7,7 +7,7 @@ export const filterDashBoardCountByDateRange = createAsyncThunk(
   async ({ startDate, endDate }, { rejectWithValue, getState }) => {
     try {
       const { role, userId } = getState().auth; // Access role and userId
-      let url = `/candidate/dashboardcounts?startDate=${startDate}&endDate=${endDate}`;
+      let url = `/candidate/dashboardcounts/filterByDate?startDate=${startDate}&endDate=${endDate}`;
 
       // Modify the URL based on the role
       if (role !== 'SUPERADMIN') {
