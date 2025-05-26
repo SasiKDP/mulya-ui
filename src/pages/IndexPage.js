@@ -74,7 +74,7 @@ useEffect(() => {
         internalInterviews: response.data.internalInterviews || 0,
         externalInterviews: response.data.externalInterviews || 0,
         clients: response.data.clients || 0,
-        placements:`${response.data.contractPlacements}/${response.data.fulltimePlacements}` || 0,
+        placements: `${response.data.contractPlacements}/${response.data.fulltimePlacements}`,
         users: response.data.users || 0,
         bench: response.data.bench || 0,
       });
