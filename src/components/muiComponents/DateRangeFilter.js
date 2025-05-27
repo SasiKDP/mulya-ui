@@ -33,7 +33,7 @@ const componentToActionMap = {
   RecruiterSubmission: filterSubmissionssByRecruiter,
   InterviewsForRecruiter: filterInterviewsByRecruiter,
   dashboard:filterDashBoardCountByDateRange,
-  InterviewsForTeamLead: filterInterviewsByDateRange,
+  InterviewsForTeamLead: filterInterviewsByTeamLead,
   Clients: filterClientsByDateRange,
   placements: filterPlacementByDateRange,
   allSubmissions: filterSubmissionsByDateRange,

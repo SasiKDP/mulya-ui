@@ -197,6 +197,8 @@ const PlacementForm = ({
     },
   ];
 
+  
+
   const dateFields = [
     {
       id: "startDate",
@@ -204,12 +206,14 @@ const PlacementForm = ({
       required: true,
       type: "date",
       grid: { xs: 12, sm: 6 },
+       render: (row) => formatDateForDisplay(row.startDate),
     },
     {
       id: "endDate",
       label: "End Date",
       type: "date",
       grid: { xs: 12, sm: 6 },
+       render: (row) => formatDateForDisplay(row.endDate),
     },
   ];
 
@@ -303,16 +307,79 @@ const PlacementForm = ({
     },
   ];
 
-  // Format date for the form
-  const formatDateForInput = (dateStr) => {
-    if (!dateStr) return "";
-    try {
-      return dayjs(dateStr).format("YYYY-MM-DD");
-    } catch (error) {
-      console.error("Error formatting date:", error);
+ 
+const formatDateForDisplay = (dateStr) => {
+  if (!dateStr) return "";
+  try {
+    // Handle various date formats that might come from the backend
+    let date;
+    
+    // If it's already a dayjs object
+    if (dayjs.isDayjs(dateStr)) {
+      date = dateStr;
+    } else {
+      // Parse the date string - dayjs is quite flexible with formats
+      date = dayjs.utc(dateStr);
+    }
+    
+    if (!date.isValid()) {
+      console.warn("Invalid date for display:", dateStr);
       return "";
     }
-  };
+    
+    // Format consistently as MM/DD/YYYY for display
+    return date.format("MM/DD/YYYY");
+  } catch (error) {
+    console.error("Error formatting date for display:", error, dateStr);
+    return "";
+  }
+};
+
+const formatDateForInput = (dateStr) => {
+  if (!dateStr) return "";
+  try {
+    let date;
+    
+    // If it's already a dayjs object
+    if (dayjs.isDayjs(dateStr)) {
+      date = dateStr;
+    } else {
+      // Parse the date string
+      date = dayjs(dateStr);
+    }
+    
+    // Ensure we have a valid date
+    if (!date.isValid()) {
+      console.warn("Invalid date for input:", dateStr);
+      return "";
+    }
+    
+    // HTML date inputs expect YYYY-MM-DD format
+    // Use UTC to avoid timezone issues
+    return date.format("YYYY-MM-DD");
+  } catch (error) {
+    console.error("Error formatting date for input:", error, dateStr);
+    return "";
+  }
+};
+
+const formatDateForSubmission = (dateStr) => {
+  if (!dateStr) return null;
+  try {
+    // When submitting, the dateStr should be in YYYY-MM-DD format from the HTML input
+    const date = dayjs(dateStr);
+    if (!date.isValid()) {
+      console.warn("Invalid date for submission:", dateStr);
+      return null;
+    }
+    
+    // Return ISO format for consistent backend storage
+    return date.format("YYYY-MM-DD");
+  } catch (error) {
+    console.error("Error formatting date for submission:", error, dateStr);
+    return null;
+  }
+};
 
   const formatNumberWithCommas = (value) => {
     if (!value) return "";
@@ -388,9 +455,13 @@ const PlacementForm = ({
 
     console.log("encryptedGrossProfit",encryptedGrossProfit)
 
+
+
     // Prepare the payload with encrypted financial data
     const payload = {
       ...values,
+       startDate: formatDateForSubmission(values.startDate),
+       endDate: formatDateForSubmission(values.endDate),
       billRate: encryptedBillRate,
       payRate: encryptedPayRate,
       grossProfit: encryptedGrossProfit, // Now properly encrypted
