@@ -1,42 +1,84 @@
-// src/redux/slices/placementSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import httpService from "../Services/httpService";
 import ToastService from "../Services/toastService";
 
-// Format date for API
+
 const formatDateForAPI = (dateStr) => {
   if (!dateStr) return null;
 
+  // If already in YYYY-MM-DD format, return as-is
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     return dateStr;
   }
 
   try {
-    return new Date(dateStr).toISOString().split("T")[0];
+    // Handle MM/DD/YYYY format from UI
+    if (dateStr.includes("/")) {
+      const [month, day, year] = dateStr.split("/");
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    
+    // For other formats, use UTC to avoid timezone issues
+    const date = new Date(dateStr + 'T00:00:00');
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   } catch (e) {
+    console.error("Error formatting date for API:", e, dateStr);
     return null;
   }
 };
 
-// Format date for UI
 const formatDateForUI = (isoDate) => {
   if (!isoDate) return "";
 
-  if (isoDate.includes("-")) {
-    const [year, month, day] = isoDate.split("-");
-    return `${month}/${day}/${year}`;
-  } else if (isoDate.includes("/")) {
-    return isoDate;
-  }
-
   try {
-    const date = new Date(isoDate);
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const year = date.getFullYear();
+    // Handle YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+      const [year, month, day] = isoDate.split("-");
+      return `${month}/${day}/${year}`;
+    }
+    
+    // Handle MM/DD/YYYY format (already formatted)
+    if (isoDate.includes("/")) {
+      return isoDate;
+    }
+
+    // For ISO datetime strings, extract date part and avoid timezone conversion
+    const dateStr = isoDate.split("T")[0];
+    const [year, month, day] = dateStr.split("-");
     return `${month}/${day}/${year}`;
   } catch (error) {
-    console.error("Error formatting date:", error);
+    console.error("Error formatting date for UI:", error, isoDate);
+    return "";
+  }
+};
+
+
+const formatDateForFormInput = (dateStr) => {
+  if (!dateStr) return "";
+
+  try {
+    // If already in YYYY-MM-DD format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr;
+    }
+
+    // Handle MM/DD/YYYY format from display
+    if (dateStr.includes("/")) {
+      const [month, day, year] = dateStr.split("/");
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
+    // For other formats, extract date components without timezone conversion
+    const date = new Date(dateStr + 'T00:00:00');
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error("Error formatting date for form input:", error, dateStr);
     return "";
   }
 };
@@ -210,17 +252,31 @@ const placementSlice = createSlice({
       state.error = null;
       state.actionType = null;
     },
+    // FIXED: setSelectedPlacement - properly formats dates for form input
     setSelectedPlacement: (state, action) => {
-      // Format dates for edit mode
       if (action.payload) {
         const placement = action.payload;
+        console.log("Original placement dates:", {
+          startDate: placement.startDate,
+          endDate: placement.endDate
+        });
+        
         state.selectedPlacement = {
           ...placement,
+          // Use formatDateForFormInput instead of formatDateForAPI
+          // This ensures dates are in YYYY-MM-DD format for HTML date inputs
           startDate: placement.startDate
-            ? formatDateForAPI(placement.startDate)
+            ? formatDateForFormInput(placement.startDate)
             : "",
-          endDate: placement.endDate ? formatDateForAPI(placement.endDate) : "",
+          endDate: placement.endDate 
+            ? formatDateForFormInput(placement.endDate) 
+            : "",
         };
+        
+        console.log("Formatted placement dates:", {
+          startDate: state.selectedPlacement.startDate,
+          endDate: state.selectedPlacement.endDate
+        });
       } else {
         state.selectedPlacement = null;
       }
