@@ -11,6 +11,7 @@ const initialState = {
   logoutTimestamp: null,
   status: "idle",
   error: null,
+  encryptionKey:null
 };
 
 // ✅ Login thunk using httpService
@@ -24,7 +25,7 @@ export const loginAsync = createAsyncThunk(
         { withCredentials: true }
       );
 
-      const { userId, userName, email: userEmail, roleType, loginTimestamp } = response.data.payload;
+      const { userId, userName, email: userEmail, roleType, loginTimestamp,encryptionKey} = response.data.payload;
 
       return {
         isAuthenticated: true,
@@ -33,6 +34,7 @@ export const loginAsync = createAsyncThunk(
         email: userEmail,     // ✅ now stored
         role: roleType,
         logInTimeStamp: loginTimestamp,
+        encryptionKey:encryptionKey
       };
     } catch (error) {
       if (error.response) {
@@ -83,6 +85,7 @@ const authSlice = createSlice({
       state.logoutTimestamp = null;
       state.error = null;
       state.status = "idle";
+      state.encryptionKey=null;
     },
   },
   extraReducers: (builder) => {
@@ -99,6 +102,7 @@ const authSlice = createSlice({
         state.email = action.payload.email;       // ✅ set
         state.role = action.payload.role;
         state.logInTimeStamp = action.payload.logInTimeStamp;
+        state.encryptionKey=action.payload.encryptionKey
       })
       .addCase(loginAsync.rejected, (state, action) => {
         state.status = "failed";

@@ -39,8 +39,37 @@ import CryptoJS from "crypto-js";
 import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
 
-const FINANCIAL_SECRET_KEY = 'financial-data-encryption-key-2024';
+
+const PlacementsList = () => {
+  const dispatch = useDispatch();
+  const {
+    placements,
+    loading,
+    selectedPlacement,
+  } = useSelector((state) => state.placement);
+  const { userId,encryptionKey } = useSelector((state) => state.auth);
+
+  console.log("encryption from backend",encryptionKey);
+  
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [placementToDelete, setPlacementToDelete] = useState(null);
+  
+  // OTP related state
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState(null);
+  const [otpGenerated, setOtpGenerated] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [isGlobalVerification, setIsGlobalVerification] = useState(false);
+
+const decoded=atob(encryptionKey);
+
+const FINANCIAL_SECRET_KEY = decoded
 const VERIFICATION_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
+
 
 const decryptFinancialValue = (encryptedValue) => {
   if (!encryptedValue) return 0;
@@ -57,29 +86,6 @@ const decryptFinancialValue = (encryptedValue) => {
     return 0;
   }
 };
-
-const PlacementsList = () => {
-  const dispatch = useDispatch();
-  const {
-    placements,
-    loading,
-    selectedPlacement,
-  } = useSelector((state) => state.placement);
-  const { userId } = useSelector((state) => state.auth);
-  
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [placementToDelete, setPlacementToDelete] = useState(null);
-  
-  // OTP related state
-  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
-  const [currentRecord, setCurrentRecord] = useState(null);
-  const [otpGenerated, setOtpGenerated] = useState(false);
-  const [enteredOtp, setEnteredOtp] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [otpError, setOtpError] = useState("");
-  const [isGlobalVerification, setIsGlobalVerification] = useState(false);
   
   // Initialize verification state
   const initializeVerificationState = () => {
@@ -339,7 +345,7 @@ const PlacementsList = () => {
         placementId: currentRecord?.id || null,
         newPlacement: false
       };
-      const response = await httpService.post(`/candidate/sendOtp`, payload);
+      const response = await httpService.post(`/candidate/generateOtp`, payload);
 
       if (response.data) {
         ToastService.success("OTP has been sent to your email.");

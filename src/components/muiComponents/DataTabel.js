@@ -339,56 +339,71 @@ const DataTable = ({
   };
 
   // Apply filters, search and sorting
-  useEffect(() => {
-    let result = [...data];
+ useEffect(() => {
+  let result = [...data];
+  const previousFilteredLength = filteredData.length;
 
-    // Search functionality
-    if (searchQuery) {
-      const lowercasedQuery = searchQuery.toLowerCase();
+  // Search functionality
+  if (searchQuery) {
+    const lowercasedQuery = searchQuery.toLowerCase();
+    result = result.filter((row) => {
+      return columns.some((column) => {
+        if (!column.visible) return false;
+        const value = row[column.key];
+        if (value === null || value === undefined) return false;
+        return String(value).toLowerCase().includes(lowercasedQuery);
+      });
+    });
+  }
+
+  // Filter functionality
+  Object.keys(filters).forEach((key) => {
+    if (
+      filters[key] !== "" &&
+      filters[key] !== null &&
+      filters[key] !== undefined
+    ) {
       result = result.filter((row) => {
-        return columns.some((column) => {
-          if (!column.visible) return false;
-          const value = row[column.key];
-          if (value === null || value === undefined) return false;
-          return String(value).toLowerCase().includes(lowercasedQuery);
-        });
+        const rowValue = row[key];
+        const filterValue = filters[key];
+
+        if (rowValue === null || rowValue === undefined) return false;
+
+        if (typeof rowValue === "number") {
+          return rowValue === Number(filterValue);
+        }
+
+        if (Array.isArray(filterValue)) {
+          return filterValue.includes(String(rowValue).toLowerCase());
+        }
+
+        return String(rowValue)
+          .toLowerCase()
+          .includes(String(filterValue).toLowerCase());
       });
     }
+  });
 
-    // Filter functionality
-    Object.keys(filters).forEach((key) => {
-      if (
-        filters[key] !== "" &&
-        filters[key] !== null &&
-        filters[key] !== undefined
-      ) {
-        result = result.filter((row) => {
-          const rowValue = row[key];
-          const filterValue = filters[key];
+  // Sorting
+  result = result.sort(getComparator(order, orderBy));
 
-          if (rowValue === null || rowValue === undefined) return false;
-
-          if (typeof rowValue === "number") {
-            return rowValue === Number(filterValue);
-          }
-
-          if (Array.isArray(filterValue)) {
-            return filterValue.includes(String(rowValue).toLowerCase());
-          }
-
-          return String(rowValue)
-            .toLowerCase()
-            .includes(String(filterValue).toLowerCase());
-        });
-      }
-    });
-
-    // Sorting
-    result = result.sort(getComparator(order, orderBy));
-
-    setFilteredData(result);
+  setFilteredData(result);
+  
+  // Only reset page if the filtered data length has changed due to search/filter
+  // OR if the current page would be out of bounds
+  if (result.length !== previousFilteredLength || 
+      (page > 0 && page * rowsPerPage >= result.length)) {
     setPage(0);
-  }, [searchQuery, filters, data, order, orderBy, columns]);
+  }
+}, [searchQuery, filters, data, order, orderBy, columns]);
+
+useEffect(() => {
+  if (filteredData.length > 0) {
+    const sortedData = [...filteredData].sort(getComparator(order, orderBy));
+    setFilteredData(sortedData);
+  }
+}, [order, orderBy]);
+
 
   // Find column options for filtering if not explicitly provided
   const getColumnFilterOptions = (columnKey) => {
@@ -674,11 +689,11 @@ const DataTable = ({
                 : alpha(primaryColor, 0.03),
             }}
           >
-            {columns
-              .filter((col) => col.filterable && col.visible !== false)
-              .slice(0, advancedFiltersOpen ? columns.length : 3) // Show limited filters unless advanced is open
-              .map((column) => (
-                <FormControl
+           {columns
+            .filter((col) => col.filterable && col.visible !== false)
+            .slice(0, advancedFiltersOpen ? columns.length : 3)
+            .map((column) => (
+        <FormControl
                   key={column.key}
                   size="small"
                   sx={{
@@ -697,74 +712,72 @@ const DataTable = ({
                       "&.Mui-focused fieldset": { borderColor: primaryColor },
                     },
                   }}
-                >
-                  <InputLabel id={`filter-${column.key}-label`}>
-                    {column.label}
-                  </InputLabel>
-                  {column.type === "select" ? (
-                    <Select
-                      labelId={`filter-${column.key}-label`}
-                      id={`filter-${column.key}`}
-                      value={filters[column.key] || ""}
-                      label={column.label}
-                      onChange={(e) =>
-                        handleFilterChange(column.key, e.target.value)
-                      }
-                      MenuProps={{
-                        PaperProps: {
-                          sx: {
-                            maxHeight: 300,
-                            backgroundColor: darkMode ? "#444" : "#fff",
-                            color: darkMode ? "#fff" : "#333",
-                          },
-                        },
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>None</em>
-                      </MenuItem>
-                      {getColumnFilterOptions(column.key).map((option) => (
-                        <MenuItem
-                          key={option}
-                          value={option}
-                          sx={{
-                            backgroundColor: darkMode ? "#444" : "#fff",
-                            color: darkMode ? "#fff" : "#333",
-                            "&:hover": {
-                              backgroundColor: darkMode ? "#555" : "#f5f5f5",
-                            },
-                          }}
-                        >
-                          {option}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  ) : column.type === "date" ? (
-                    <TextField
-                      id={`filter-${column.key}`}
-                      label={column.label}
-                      type="date"
-                      value={filters[column.key] || ""}
-                      onChange={(e) =>
-                        handleFilterChange(column.key, e.target.value)
-                      }
-                      size="small"
-                      InputLabelProps={{ shrink: true }}
-                    />
-                  ) : (
-                    <TextField
-                      id={`filter-${column.key}`}
-                      label={column.label}
-                      type={column.type}
-                      value={filters[column.key] || ""}
-                      onChange={(e) =>
-                        handleFilterChange(column.key, e.target.value)
-                      }
-                      size="small"
-                    />
-                  )}
-                </FormControl>
-              ))}
+         >
+      {column.type === "select" ? (
+        <>
+          <InputLabel id={`filter-${column.key}-label`}>
+            {column.label}
+          </InputLabel>
+          <Select
+            labelId={column.key}
+            id={`filter-${column.key}`}
+            value={filters[column.key] || ""}
+            label={column.label}
+            onChange={(e) => handleFilterChange(column.key, e.target.value)}
+            displayEmpty
+            renderValue={(selected) => selected || ''}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  maxHeight: 300,
+                  backgroundColor: darkMode ? "#444" : "#fff",
+                  color: darkMode ? "#fff" : "#333",
+                },
+              },
+            }}
+          >
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            {getColumnFilterOptions(column.key).map((option) => (
+              <MenuItem
+                key={option}
+                value={option}
+                sx={{
+                  backgroundColor: darkMode ? "#444" : "#fff",
+                  color: darkMode ? "#fff" : "#333",
+                  "&:hover": {
+                    backgroundColor: darkMode ? "#555" : "#f5f5f5",
+                  },
+                }}
+              >
+                {option}
+              </MenuItem>
+            ))}
+          </Select>
+        </>
+         ) : (
+          <TextField
+          id={column.key}
+          label={column.label}
+          type={column.type}
+          value={filters[column.key] || ""}
+          onChange={(e) => handleFilterChange(column.key, e.target.value)}
+          size="small"
+          variant="outlined"
+          InputLabelProps={{ 
+            shrink: column.type === "date" ? true : undefined 
+          }}
+          placeholder={
+            column.type === "date" 
+              ? undefined 
+              : column.label
+          }
+         />
+         )}
+         </FormControl>
+        ))}
+
 
             <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
               <Button

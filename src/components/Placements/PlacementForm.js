@@ -33,6 +33,7 @@ import * as Yup from "yup";
 import { createPlacement, updatePlacement } from "../../redux/placementSlice";
 import CryptoJS from "crypto-js";
 import httpService from "../../Services/httpService";
+import { error } from "pdf-lib";
 
 const SuccessAlert = styled(Alert)(({ theme }) => ({
   borderLeft: `4px solid ${theme.palette.success.main}`,
@@ -51,36 +52,7 @@ const ErrorAlert = styled(Alert)(({ theme }) => ({
 }));
 
 // Encryption/Decryption utilities
-const FINANCIAL_SECRET_KEY = 'financial-data-encryption-key-2024'; // Use a strong key in production
 
-const encryptFinancialValue = (value) => {
-  if (!value) return value;
-  try {
-    const stringValue = value.toString();
-    console.log(stringValue);
-    return CryptoJS.AES.encrypt(stringValue, FINANCIAL_SECRET_KEY).toString();
-  } catch (error) {
-    console.error("Encryption failed:", error);
-    return value; // Return original value if encryption fails
-  }
-};
-
-const decryptFinancialValue = (encryptedValue) => {
-  if (!encryptedValue) return encryptedValue;
-  try {
-    // Check if the value is already decrypted (for backward compatibility)
-    if (!isNaN(parseFloat(encryptedValue))) {
-      return encryptedValue; // Already a number, return as is
-    }
-    
-    const bytes = CryptoJS.AES.decrypt(encryptedValue, FINANCIAL_SECRET_KEY);
-    const decryptedValue = bytes.toString(CryptoJS.enc.Utf8);
-    return decryptedValue || encryptedValue; // Return original if decryption fails
-  } catch (error) {
-    console.error("Decryption failed:", error);
-    return encryptedValue; // Return original value if decryption fails
-  }
-};
 
 // Validation schema using Yup
 const validationSchema = Yup.object().shape({
@@ -147,7 +119,40 @@ const PlacementForm = ({
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [otpError, setOtpError] = useState(null);
   const [otpSuccess, setOtpSuccess] = useState(null);
-  const {userId} =useSelector((state)=>state.auth)
+  const {userId,encryptionKey} =useSelector((state)=>state.auth)
+
+const decryptionKey=atob(encryptionKey);
+
+const FINANCIAL_SECRET_KEY = decryptionKey; 
+
+const encryptFinancialValue = (value) => {
+  if (!value) return value;
+  try {
+    const stringValue = value.toString();
+    console.log(stringValue);
+    return CryptoJS.AES.encrypt(stringValue, FINANCIAL_SECRET_KEY).toString();
+  } catch (error) {
+    console.error("Encryption failed:", error);
+    return value; // Return original value if encryption fails
+  }
+};
+
+const decryptFinancialValue = (encryptedValue) => {
+  if (!encryptedValue) return encryptedValue;
+  try {
+    // Check if the value is already decrypted (for backward compatibility)
+    if (!isNaN(parseFloat(encryptedValue))) {
+      return encryptedValue; // Already a number, return as is
+    }
+    
+    const bytes = CryptoJS.AES.decrypt(encryptedValue, FINANCIAL_SECRET_KEY);
+    const decryptedValue = bytes.toString(CryptoJS.enc.Utf8);
+    return decryptedValue || encryptedValue; // Return original if decryption fails
+  } catch (error) {
+    console.error("Decryption failed:", error);
+    return encryptedValue; // Return original value if decryption fails
+  }
+};
 
   // Form field configurations organized in arrays for better maintainability
   const consultantFields = [
@@ -435,7 +440,7 @@ const formatDateForSubmission = (dateStr) => {
     validationSchema: validationSchema,
     enableReinitialize: isEdit,
    onSubmit: async (values, { setSubmitting }) => {
-  setSubmitStatus({
+   setSubmitStatus({
     isSubmitting: true,
     success: null,
     error: null,
@@ -446,7 +451,16 @@ const formatDateForSubmission = (dateStr) => {
     // Parse and convert values
     const billRate = parseFloat(parseNumberFromFormatted(values.billRate)) || 0;
     const payRate = parseFloat(parseNumberFromFormatted(values.payRate)) || 0;
-    const grossProfit = Math.round(billRate - payRate) ;
+     if(payRate > billRate){
+      setSubmitStatus({
+        isSubmitting: false,
+        success: false,
+        error: "Pay rate cannot be greater than bill rate",
+        response: null,
+      });
+      return;
+    }
+    const grossProfit = billRate - payRate ;
 
     // Encrypt financial data before sending to backend
     const encryptedBillRate = encryptFinancialValue(Math.round(billRate));
@@ -483,6 +497,8 @@ const formatDateForSubmission = (dateStr) => {
     } else {
       dispatch(createPlacement(payload)); 
     }
+
+   
 
     setSubmitStatus({
       isSubmitting: false,
@@ -589,7 +605,7 @@ const handleGenerateOtp = async () => {
     
     console.log('Generate OTP Payload:', payload); // Debug log
     
-    const response = await httpService.post('/candidate/sendOtp', payload);
+    const response = await httpService.post('/candidate/generateOtp', payload);
     await new Promise(resolve => setTimeout(resolve, 1000));
     setOtpSuccess("OTP sent successfully to your registered mobile number");
   } catch (error) {
@@ -980,6 +996,7 @@ const handleVerifyOtp = async () => {
             ) : (
               'Verify OTP'
             )}
+            
           </Button>
         </DialogActions>
       </Dialog>
