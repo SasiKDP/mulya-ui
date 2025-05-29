@@ -119,6 +119,9 @@ const DataTable = ({
   primaryColor = "#1976d2",
   secondaryColor = "#f5f5f5",
   uniqueId = "id",
+  enableFinancialValidation = false,
+  onRequestOtpVerification, // callback to trigger OTP verification
+  isFinancialVerified, // boolean to check if financial data is verified
 }) => {
   const theme = useTheme();
 
@@ -304,19 +307,29 @@ const DataTable = ({
   };
 
   const handleExportData = (format = "csv") => {
-    if (format === "csv") {
-      exportToCsv(
-        filteredData,
-        columns.filter((col) => col.visible !== false)
-      );
-    } else {
-      exportToExcel(
-        filteredData,
-        columns.filter((col) => col.visible !== false)
-      );
-    }
-    handleOptionsMenuClose();
-  };
+  // Check if financial validation is required and not verified
+  if (enableFinancialValidation && !isFinancialVerified) {
+    // Trigger OTP verification flow from parent
+    onRequestOtpVerification(() => {
+      // This callback will be executed after successful verification
+      performExport(format);
+    });
+    return;
+  }
+  
+  performExport(format);
+};
+const performExport = (format) => {
+  const visibleColumns = columns.filter((col) => col.visible !== false);
+  
+  if (format === "csv") {
+    exportToCsv(filteredData, visibleColumns);
+  } else {
+    exportToExcel(filteredData, visibleColumns);
+  }
+  
+  handleOptionsMenuClose();
+};
 
   const handleRowExpand = (id) => {
     setExpandedRow(expandedRow === id ? null : id);
@@ -583,6 +596,7 @@ useEffect(() => {
                   width: 200,
                   backgroundColor: darkMode ? "#444" : "#fff",
                   color: darkMode ? "#fff" : "#333",
+                  
                 },
               }}
             >
@@ -642,24 +656,40 @@ useEffect(() => {
                 Compact Mode
               </MenuItem>
               <Divider />
-              <MenuItem onClick={() => handleExportData("csv")}>
-                <ListItemIcon>
-                  <CloudDownload
-                    fontSize="small"
-                    sx={{ color: darkMode ? "#fff" : "#333" }}
-                  />
-                </ListItemIcon>
-                Export to CSV
-              </MenuItem>
-              <MenuItem onClick={() => handleExportData("excel")}>
-                <ListItemIcon>
-                  <CloudDownload
-                    fontSize="small"
-                    sx={{ color: darkMode ? "#fff" : "#333" }}
-                  />
-                </ListItemIcon>
-                Export to Excel
-              </MenuItem>
+              <MenuItem 
+  onClick={() => handleExportData("csv")}
+  disabled={enableFinancialValidation && !isFinancialVerified}
+>
+  <ListItemIcon>
+    <CloudDownload fontSize="small" />
+  </ListItemIcon>
+  Export to CSV
+  {/* {enableFinancialValidation && !isFinancialVerified && (
+    // <Chip 
+    //   // label="Verify OTP" 
+    //   size="small" 
+    //   color="error" 
+    //   sx={{ ml: 1 }}
+    // />
+  )} */}
+</MenuItem>
+<MenuItem 
+  onClick={() => handleExportData("excel")}
+  disabled={enableFinancialValidation && !isFinancialVerified}
+>
+  <ListItemIcon>
+    <CloudDownload fontSize="small" />
+  </ListItemIcon>
+  Export to Excel
+  {/* {enableFinancialValidation && !isFinancialVerified && (
+    <Chip 
+      label="Verify OTP" 
+      size="small" 
+      color="error" 
+      sx={{ ml: 1 }}
+    />
+  )} */}
+</MenuItem>
               <Divider />
               <MenuItem onClick={resetAllSettings}>
                 <ListItemIcon>
@@ -675,148 +705,146 @@ useEffect(() => {
         </Toolbar>
 
         {/* Basic Filters */}
-        <Collapse in={showFilters}>
-          <Box
-            sx={{
-              p: 2,
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              borderBottom: 1,
-              borderColor: "divider",
-              backgroundColor: darkMode
-                ? alpha(primaryColor, 0.05)
-                : alpha(primaryColor, 0.03),
-            }}
-          >
-           {columns
-            .filter((col) => col.filterable && col.visible !== false)
-            .slice(0, advancedFiltersOpen ? columns.length : 3)
-            .map((column) => (
+       <Collapse in={showFilters}>
+    <Box
+    sx={{
+      p: 2,
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 2,
+      borderBottom: 1,
+      borderColor: "divider",
+      backgroundColor: darkMode
+        ? alpha(primaryColor, 0.05)
+        : alpha(primaryColor, 0.03),
+    }}
+    >
+    {columns
+      .filter((col) => col.filterable && col.visible !== false)
+      .slice(0, advancedFiltersOpen ? columns.length : 3)
+      .map((column) => (
         <FormControl
-                  key={column.key}
-                  size="small"
-                  sx={{
-                    minWidth: 150,
-                    "& .MuiInputLabel-root": {
-                      color: alpha(tableStyles.paper.color, 0.7),
-                    },
-                    "& .MuiOutlinedInput-root": {
-                      color: tableStyles.paper.color,
-                      "& fieldset": {
-                        borderColor: alpha(tableStyles.paper.color, 0.5),
-                      },
-                      "&:hover fieldset": {
-                        borderColor: alpha(tableStyles.paper.color, 0.7),
-                      },
-                      "&.Mui-focused fieldset": { borderColor: primaryColor },
-                    },
-                  }}
-         >
-      {column.type === "select" ? (
-        <>
-          <InputLabel id={`filter-${column.key}-label`}>
-            {column.label}
-          </InputLabel>
-          <Select
-            labelId={column.key}
-            id={`filter-${column.key}`}
-            value={filters[column.key] || ""}
-            label={column.label}
-            onChange={(e) => handleFilterChange(column.key, e.target.value)}
-            displayEmpty
-            renderValue={(selected) => selected || ''}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  maxHeight: 300,
-                  backgroundColor: darkMode ? "#444" : "#fff",
-                  color: darkMode ? "#fff" : "#333",
-                },
-              },
-            }}
-          >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {getColumnFilterOptions(column.key).map((option) => (
-              <MenuItem
-                key={option}
-                value={option}
-                sx={{
-                  backgroundColor: darkMode ? "#444" : "#fff",
-                  color: darkMode ? "#fff" : "#333",
-                  "&:hover": {
-                    backgroundColor: darkMode ? "#555" : "#f5f5f5",
-                  },
-                }}
-              >
-                {option}
-              </MenuItem>
-            ))}
-          </Select>
-        </>
-         ) : (
-          <TextField
-          id={column.key}
-          label={column.label}
-          type={column.type}
-          value={filters[column.key] || ""}
-          onChange={(e) => handleFilterChange(column.key, e.target.value)}
+          key={column.key}
           size="small"
           variant="outlined"
-          InputLabelProps={{ 
-            shrink: column.type === "date" ? true : undefined 
+          sx={{
+            minWidth: 150,
+            "& .MuiInputLabel-outlined": {
+              color: alpha(tableStyles.paper.color, 0.7),
+              "&.Mui-focused": {
+                color: primaryColor,
+              },
+            },
+            "& .MuiOutlinedInput-root": {
+              color: tableStyles.paper.color,
+              "& fieldset": {
+                borderColor: alpha(tableStyles.paper.color, 0.5),
+              },
+              "&:hover fieldset": {
+                borderColor: alpha(tableStyles.paper.color, 0.7),
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: primaryColor,
+              },
+            },
           }}
-          placeholder={
-            column.type === "date" 
-              ? undefined 
-              : column.label
-          }
-         />
-         )}
-         </FormControl>
-        ))}
-
-
-            <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-              <Button
-                size="small"
-                onClick={clearAllFilters}
-                startIcon={<Clear />}
-                variant="outlined"
-                sx={{
-                  ml: 1,
-                  borderColor: alpha(tableStyles.paper.color, 0.5),
-                  color: tableStyles.paper.color,
-                  "&:hover": {
-                    borderColor: alpha(tableStyles.paper.color, 0.7),
-                    backgroundColor: alpha(tableStyles.paper.color, 0.05),
+        >
+          {column.type === "select" ? (
+            <>
+              <InputLabel id={`filter-${column.key}-label`}>
+                {column.label}
+              </InputLabel>
+              <Select
+                labelId={`filter-${column.key}-label`}
+                id={`filter-${column.key}`}
+                value={filters[column.key] || ""}
+                label={column.label}
+                onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      maxHeight: 300,
+                      backgroundColor: darkMode ? "#444" : "#fff",
+                      color: darkMode ? "#fff" : "#333",
+                    },
                   },
                 }}
               >
-                Clear
-              </Button>
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {getColumnFilterOptions(column.key).map((option) => (
+                  <MenuItem
+                    key={option}
+                    value={option}
+                    sx={{
+                      backgroundColor: darkMode ? "#444" : "#fff",
+                      color: darkMode ? "#fff" : "#333",
+                      "&:hover": {
+                        backgroundColor: darkMode ? "#555" : "#f5f5f5",
+                      },
+                    }}
+                  >
+                    {option}
+                  </MenuItem>
+                ))}
+              </Select>
+            </>
+          ) : (
+            <TextField
+              id={column.key}
+              label={column.label}
+              type={column.type}
+              value={filters[column.key] || ""}
+              onChange={(e) => handleFilterChange(column.key, e.target.value)}
+              size="small"
+              variant="outlined"
+              placeholder={
+                column.type === "date" ? undefined : column.label
+              }
+            />
+          )}
+        </FormControl>
+      ))}
 
-              {columns.filter((col) => col.filterable && col.visible !== false)
-                .length > 3 && (
-                <Button
-                  size="small"
-                  onClick={toggleAdvancedFilters}
-                  endIcon={
-                    advancedFiltersOpen ? <ExpandLess /> : <ExpandMore />
-                  }
-                  sx={{
-                    ml: 1,
-                    color: tableStyles.paper.color,
-                  }}
-                >
-                  {advancedFiltersOpen ? "Less" : "More"}
-                </Button>
-              )}
-            </Box>
-          </Box>
-        </Collapse>
+    <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+      <Button
+        size="small"
+        onClick={clearAllFilters}
+        startIcon={<Clear />}
+        variant="outlined"
+        sx={{
+          ml: 1,
+          borderColor: alpha(tableStyles.paper.color, 0.5),
+          color: tableStyles.paper.color,
+          "&:hover": {
+            borderColor: alpha(tableStyles.paper.color, 0.7),
+            backgroundColor: alpha(tableStyles.paper.color, 0.05),
+          },
+        }}
+      >
+        Clear
+      </Button>
+
+      {columns.filter((col) => col.filterable && col.visible !== false)
+        .length > 3 && (
+        <Button
+          size="small"
+          onClick={toggleAdvancedFilters}
+          endIcon={
+            advancedFiltersOpen ? <ExpandLess /> : <ExpandMore />
+          }
+          sx={{
+            ml: 1,
+            color: tableStyles.paper.color,
+          }}
+        >
+          {advancedFiltersOpen ? "Less" : "More"}
+        </Button>
+      )}
+    </Box>
+  </Box>
+</Collapse>
 
         {/* Main Table */}
         <TableContainer

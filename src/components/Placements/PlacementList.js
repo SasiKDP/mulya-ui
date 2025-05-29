@@ -65,10 +65,17 @@ const PlacementsList = () => {
   const [otpError, setOtpError] = useState("");
   const [isGlobalVerification, setIsGlobalVerification] = useState(false);
 
+  const [exportCallback, setExportCallback] = useState(null);
+
+const handleRequestExportVerification = (callback) => {
+  setExportCallback(() => callback);
+  handleOpenOtpDialog(null, true); // Open global verification
+};
+
 const decoded=atob(encryptionKey);
 
 const FINANCIAL_SECRET_KEY = decoded
-const VERIFICATION_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
+const VERIFICATION_TIMEOUT = 5 * 60 * 1000; // 2 minutes in milliseconds
 
 
 const decryptFinancialValue = (encryptedValue) => {
@@ -391,13 +398,18 @@ const decryptFinancialValue = (encryptedValue) => {
             };
             console.log(`Record ${currentRecord.id} verification set at:`, new Date(now));
           }
+
+          if (exportCallback) {
+      exportCallback();
+      setExportCallback(null);
+    }
           
           localStorage.setItem('verificationState', JSON.stringify(newState));
           return newState;
         });
 
         setOtpDialogOpen(false);
-        ToastService.success("OTP verified successfully! Access will expire in 2 minutes.");
+        ToastService.success("OTP verified successfully! Access will expire in 5 minutes.");
       } else {
         setOtpError(response.data.message || "Invalid OTP. Please try again.");
       }
@@ -772,6 +784,9 @@ const decryptFinancialValue = (encryptedValue) => {
           },
         }}
         uniqueId="id"
+        enableFinancialValidation={true}
+        isFinancialVerified={verificationState.global?.verified}
+        onRequestOtpVerification={handleRequestExportVerification}
       />
 
       {/* Form Drawer */}
@@ -914,8 +929,8 @@ const decryptFinancialValue = (encryptedValue) => {
         <DialogContent sx={{ pt: 3 }}>
           <Typography variant="body2" sx={{ mb: 3 }}>
             {isGlobalVerification 
-              ? "To view all sensitive financial information across all records, please generate and verify an OTP. Access will expire after 2 minutes."
-              : "To view sensitive financial information, please generate and verify an OTP. Access will expire after 2 minutes."
+              ? "To view all sensitive financial information across all records, please generate and verify an OTP."
+              : "To view sensitive financial information, please generate and verify an OTP."
             }
           </Typography>
           
