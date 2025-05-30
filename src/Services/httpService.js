@@ -9,8 +9,7 @@ export const API_BASE_URL = DEV_API_BASE_URL
 
 //  const PROD_API_BASE_URL = 'https://mymulya.com'; // Replace with your actual API URL
 // export const API_BASE_URL = PROD_API_BASE_URL
-//  const PROD_API_BASE_URL = 'https://mymulya.com'; // Replace with your actual API URL
-// export const API_BASE_URL = PROD_API_BASE_URL
+
 
 
 const httpService = {
