@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import httpService from "../Services/httpService"; // use your axios wrapper
+import httpService from "../Services/httpService"; // your axios wrapper
 
 const initialState = {
   isAuthenticated: false,
   userId: null,
-  userName: null, // ✅ added
-  email: null,     // ✅ added
+  userName: null,
+  email: null,
   role: null,
   logInTimeStamp: null,
   logoutTimestamp: null,
@@ -13,7 +13,7 @@ const initialState = {
   error: null,
 };
 
-// ✅ Login thunk using httpService
+// Login thunk - sends credentials, gets user info, JWT handled via cookie automatically
 export const loginAsync = createAsyncThunk(
   "auth/loginAsync",
   async ({ email, password }, { rejectWithValue }) => {
@@ -21,7 +21,7 @@ export const loginAsync = createAsyncThunk(
       const response = await httpService.post(
         `/users/login`,
         { email, password },
-        { withCredentials: true }
+        { withCredentials: true } // important to send cookies cross-origin
       );
 
       const { userId, userName, email: userEmail, roleType, loginTimestamp } = response.data.payload;
@@ -29,8 +29,8 @@ export const loginAsync = createAsyncThunk(
       return {
         isAuthenticated: true,
         userId,
-        userName,             // ✅ now stored
-        email: userEmail,     // ✅ now stored
+        userName,
+        email: userEmail,
         role: roleType,
         logInTimeStamp: loginTimestamp,
       };
@@ -57,11 +57,12 @@ export const loginAsync = createAsyncThunk(
   }
 );
 
+// Logout thunk - calls backend to clear session/cookie, no token param needed
 export const logoutAsync = createAsyncThunk(
   "auth/logoutAsync",
   async (userId, { rejectWithValue }) => {
     try {
-      await httpService.put(`/users/logout/${userId}`);
+      await httpService.put(`/users/logout/${userId}`, null, { withCredentials: true });
       return { logoutTimestamp: new Date().toISOString() };
     } catch (error) {
       return rejectWithValue("Logout failed. Please try again.");
@@ -76,8 +77,8 @@ const authSlice = createSlice({
     logout: (state) => {
       state.isAuthenticated = false;
       state.userId = null;
-      state.userName = null; // ✅ reset
-      state.email = null;     // ✅ reset
+      state.userName = null;
+      state.email = null;
       state.role = null;
       state.logInTimeStamp = null;
       state.logoutTimestamp = null;
@@ -95,8 +96,8 @@ const authSlice = createSlice({
         state.status = "succeeded";
         state.isAuthenticated = true;
         state.userId = action.payload.userId;
-        state.userName = action.payload.userName; // ✅ set
-        state.email = action.payload.email;       // ✅ set
+        state.userName = action.payload.userName;
+        state.email = action.payload.email;
         state.role = action.payload.role;
         state.logInTimeStamp = action.payload.logInTimeStamp;
       })

@@ -55,7 +55,7 @@ const Header = ({
 
   const theme = useTheme();
   const dispatch = useDispatch();
-  const { userId, userName, email, role, logInTimeStamp } = useSelector(
+  const { userId, userName, token,email, role, logInTimeStamp } = useSelector(
     (state) => state.auth
   );
 
@@ -126,7 +126,7 @@ const Header = ({
   };
 
   const handleLogout = () => {
-    dispatch(logoutAsync(userId));
+    dispatch(logoutAsync(userId,token));
     handleMenuClose();
   };
 

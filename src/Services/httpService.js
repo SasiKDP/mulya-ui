@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 // DEV
@@ -7,7 +8,7 @@ import axios from 'axios';
 
 //Prod
 
- const PROD_API_BASE_URL = 'https://mymulya.com'; // Replace with your actual API URL
+ const PROD_API_BASE_URL = 'http://192.168.0.246:8080'; // Replace with your actual API URL
 export const API_BASE_URL = PROD_API_BASE_URL
 
 
