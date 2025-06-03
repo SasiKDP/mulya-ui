@@ -39,8 +39,44 @@ import CryptoJS from "crypto-js";
 import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
 
-const FINANCIAL_SECRET_KEY = 'financial-data-encryption-key-2024';
-const VERIFICATION_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+const PlacementsList = () => {
+  const dispatch = useDispatch();
+  const {
+    placements,
+    loading,
+    selectedPlacement,
+  } = useSelector((state) => state.placement);
+  const { userId,encryptionKey } = useSelector((state) => state.auth);
+
+  console.log("encryption from backend",encryptionKey);
+  
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [placementToDelete, setPlacementToDelete] = useState(null);
+  
+  // OTP related state
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [currentRecord, setCurrentRecord] = useState(null);
+  const [otpGenerated, setOtpGenerated] = useState(false);
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [isGlobalVerification, setIsGlobalVerification] = useState(false);
+
+  const [exportCallback, setExportCallback] = useState(null);
+
+const handleRequestExportVerification = (callback) => {
+  setExportCallback(() => callback);
+  handleOpenOtpDialog(null, true); // Open global verification
+};
+
+const decoded=atob(encryptionKey);
+
+const FINANCIAL_SECRET_KEY = decoded
+const VERIFICATION_TIMEOUT = 5 * 60 * 1000; // 2 minutes in milliseconds
+
 
 const decryptFinancialValue = (encryptedValue) => {
   if (!encryptedValue) return 0;
@@ -57,29 +93,6 @@ const decryptFinancialValue = (encryptedValue) => {
     return 0;
   }
 };
-
-const PlacementsList = () => {
-  const dispatch = useDispatch();
-  const {
-    placements,
-    loading,
-    selectedPlacement,
-  } = useSelector((state) => state.placement);
-  const { userId } = useSelector((state) => state.auth);
-  
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [placementToDelete, setPlacementToDelete] = useState(null);
-  
-  // OTP related state
-  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
-  const [currentRecord, setCurrentRecord] = useState(null);
-  const [otpGenerated, setOtpGenerated] = useState(false);
-  const [enteredOtp, setEnteredOtp] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [otpError, setOtpError] = useState("");
-  const [isGlobalVerification, setIsGlobalVerification] = useState(false);
   
   // Initialize verification state
   const initializeVerificationState = () => {
@@ -339,7 +352,7 @@ const PlacementsList = () => {
         placementId: currentRecord?.id || null,
         newPlacement: false
       };
-      const response = await httpService.post(`/candidate/sendOtp`, payload);
+      const response = await httpService.post(`/candidate/generateOtp`, payload);
 
       if (response.data) {
         ToastService.success("OTP has been sent to your email.");
@@ -385,13 +398,18 @@ const PlacementsList = () => {
             };
             console.log(`Record ${currentRecord.id} verification set at:`, new Date(now));
           }
+
+          if (exportCallback) {
+      exportCallback();
+      setExportCallback(null);
+    }
           
           localStorage.setItem('verificationState', JSON.stringify(newState));
           return newState;
         });
 
         setOtpDialogOpen(false);
-        ToastService.success("OTP verified successfully! Access will expire in 2 minutes.");
+        ToastService.success("OTP verified successfully! Access will expire in 5 minutes.");
       } else {
         setOtpError(response.data.message || "Invalid OTP. Please try again.");
       }
@@ -766,6 +784,9 @@ const PlacementsList = () => {
           },
         }}
         uniqueId="id"
+        enableFinancialValidation={true}
+        isFinancialVerified={verificationState.global?.verified}
+        onRequestOtpVerification={handleRequestExportVerification}
       />
 
       {/* Form Drawer */}
@@ -908,8 +929,8 @@ const PlacementsList = () => {
         <DialogContent sx={{ pt: 3 }}>
           <Typography variant="body2" sx={{ mb: 3 }}>
             {isGlobalVerification 
-              ? "To view all sensitive financial information across all records, please generate and verify an OTP. Access will expire after 2 minutes."
-              : "To view sensitive financial information, please generate and verify an OTP. Access will expire after 2 minutes."
+              ? "To view all sensitive financial information across all records, please generate and verify an OTP."
+              : "To view sensitive financial information, please generate and verify an OTP."
             }
           </Typography>
           

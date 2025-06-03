@@ -17,6 +17,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^2.29.3",
     "dayjs": "^1.11.13",
+    "docx": "^9.5.0",
     "formik": "^2.4.6",
     "framer-motion": "^12.6.3",
     "jspdf": "^3.0.1",
