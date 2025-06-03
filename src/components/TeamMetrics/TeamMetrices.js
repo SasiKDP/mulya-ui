@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, Tab, Box, CircularProgress, Stack, Typography, Alert, Button } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useSearchParams } from 'react-router-dom'; // Add these imports
 import UserTable from './UserTable';
 import DateRangeFilter from '../muiComponents/DateRangeFilter';
 import { 
@@ -11,7 +12,32 @@ import {
 
 const TeamMetrics = () => {
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState(0);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Initialize activeTab from URL params or default to 0
+  const initialTab = searchParams.get('activeTab');
+ const getTabIndex = (tabName) => {
+  switch(tabName?.toLowerCase()) {
+    case 'bdm': return 0;
+    case 'teamlead': return 1;
+    case 'employee': return 2;
+    default: return 0;
+  }
+};
+
+const getTabKey = (index) => {
+  switch(index) {
+    case 0: return 'bdm';
+    case 1: return 'teamlead';
+    case 2: return 'employee';
+    default: return 'bdm';
+  }
+};
+  
+  const [activeTab, setActiveTab] = useState(
+    initialTab ? getTabIndex(initialTab) : 0
+  );
   
   const { 
     filteredBdmUsers, 
@@ -22,10 +48,49 @@ const TeamMetrics = () => {
   } = useSelector(state => state.teamMetrics);
 
   const tabsConfig = [
-    { role: 'BDM', title: 'BDM Users' },
-    { role: 'TEAMLEAD', title: 'Team Lead Users' },
-    { role: 'EMPLOYEE', title: 'Employee Users' }
+    { role: 'BDM', title: 'BDM Users', key: 'bdm' },
+    { role: 'TEAMLEAD', title: 'Team Lead Users', key: 'teamlead' },
+    { role: 'EMPLOYEE', title: 'Employee Users', key: 'employee' }
   ];
+
+  // Update activeTab when URL params change
+ useEffect(() => {
+  const tabFromUrl = searchParams.get('activeTab');
+  if (tabFromUrl && ['bdm', 'teamlead', 'employee'].includes(tabFromUrl)) {
+    const newTabIndex = getTabIndex(tabFromUrl);
+    setActiveTab(newTabIndex);
+  }
+}, [searchParams]);
+
+  // Navigation handlers for different roles
+  const handleBdmEmployeeClick = (employeeId) => {
+    navigate(`/dashboard/team-metrics/bdmstatus/${employeeId}?tab=bdm`);
+  };
+
+// Update navigation handlers to use consistent parameter names
+const handleTeamLeadEmployeeClick = (employeeId) => {
+  navigate(`/dashboard/team-metrics/employeestatus/${employeeId}?source=teamlead`);
+};
+
+const handleEmployeeClick = (employeeId) => {
+  navigate(`/dashboard/team-metrics/employeestatus/${employeeId}?source=employee`);
+};
+
+  // Get the appropriate navigation handler based on current tab
+  const getNavigationHandler = useCallback(() => {
+    const currentRole = tabsConfig[activeTab].role;
+    
+    switch(currentRole) {
+      case 'BDM':
+        return handleBdmEmployeeClick;
+      case 'TEAMLEAD':
+        return handleTeamLeadEmployeeClick;
+      case 'EMPLOYEE':
+        return handleEmployeeClick;
+      default:
+        return handleBdmEmployeeClick;
+    }
+  }, [activeTab]);
 
   // Memoize the fetch function to prevent it from being recreated on every render
   const fetchDataForActiveTab = useCallback(() => {
@@ -44,7 +109,7 @@ const TeamMetrics = () => {
       default:
         console.warn(`Unknown role: ${currentRole}`);
     }
-  }, [activeTab, dispatch]); // Include only the dependencies that should trigger a refetch
+  }, [activeTab, dispatch]);
 
   // Only fetch data when the active tab changes or component mounts
   useEffect(() => {
@@ -53,6 +118,10 @@ const TeamMetrics = () => {
 
   const handleChange = (event, newValue) => {
     setActiveTab(newValue);
+    
+    // Update URL params to maintain state
+    const tabKey = getTabKey(newValue);
+    navigate(`/dashboard/team-metrics?activeTab=${tabKey}`, { replace: true });
   };
 
   // Memoize the refresh handler
@@ -110,6 +179,7 @@ const TeamMetrics = () => {
         title={tabsConfig[activeTab].title} 
         employeesList={currentData} 
         loading={isLoading}
+        onEmployeeClick={getNavigationHandler()} // Pass the navigation handler
       />
     );
   };

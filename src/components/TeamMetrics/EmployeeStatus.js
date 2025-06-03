@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import httpService from '../../Services/httpService';
 import { 
   Box, 
@@ -17,20 +17,26 @@ import {
   CircularProgress,
   Card, 
   CardContent, 
-  Grid
+  Grid,
+  Button,
+  IconButton
 } from '@mui/material';
 import { 
   Work, 
   People, 
   EventNote, 
   CheckCircle, 
-  Error 
+  Error,
+  ArrowBack
 } from '@mui/icons-material';
 import DataTable from '../muiComponents/DataTabel';
 import { generateClientColumns } from '../TableColumns/ClientColumns';
 import { generateJobDetailsColumns } from '../TableColumns/JobDetailsColumnsTL';
 import { generateCandidateColumns } from '../TableColumns/CandidateColumns';
 import { generateInterviewColumns, generateInterviewColumnsTeamLead } from '../TableColumns/InterviewsColumnsTM';
+import {fetchTeamLeadUsers} from '../../redux/teamMetricsSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import employeesList from '../TeamMetrics/UserTable'
 
 // TabPanel component for tab content
 function TabPanel(props) {
@@ -65,8 +71,48 @@ const EmployeeStatus = () => {
     placements: 0
   });
 
-  // Get employeeId from URL params
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Get employeeId from URL params and source tab from search params
   const { employeeId } = useParams();
+
+  
+  const { teamLeadUsers, employeeUsers } = useSelector((state) => state.teamMetrics);
+  const { role } = useSelector((state) => state.auth);
+
+  // FIX 1: Better source determination with more explicit fallback
+  const source = searchParams.get('source');
+  
+  // FIX 2: Determine source based on which array contains the employee if not explicitly set
+  const actualSource = source || (() => {
+    const isInEmployeeUsers = employeeUsers.some(user => user.employeeId === employeeId);
+    const isInTeamLeadUsers = teamLeadUsers.some(user => user.employeeId === employeeId);
+    
+    if (isInEmployeeUsers && !isInTeamLeadUsers) return 'employee';
+    if (isInTeamLeadUsers && !isInEmployeeUsers) return 'teamlead';
+    
+    // If found in both or neither, default to teamlead
+    return 'teamlead';
+  })();
+
+  useEffect(() => {
+    dispatch(fetchTeamLeadUsers());
+  }, [dispatch]);
+
+  // FIX 3: Enhanced back click handler with better logic
+  const handleBackClick = () => {
+    console.log('Back click - actualSource:', actualSource); // Debug log
+    navigate(`/dashboard/team-metrics?activeTab=${actualSource}`);
+  };
+
+  // FIX 4: More robust name finding logic
+  const Name = (() => {
+    const allUsers = [...teamLeadUsers, ...employeeUsers];
+    const user = allUsers.find(user => user.employeeId === employeeId);
+    return user ? user.employeeName : 'Unknown Employee';
+  })();
 
   useEffect(() => {
     const fetchRequirements = async () => {
@@ -203,26 +249,26 @@ const EmployeeStatus = () => {
       });
     });
 
-    
+    console.log("requirements", requirements);
     
     return (
       <DataTable
-      data={allCandidates || []}
-      columns={generateCandidateColumns()}
-      title={`Candidate Details `}
-      enableSelection={false}
-      defaultSortColumn="clientName"
-      defaultSortDirection="asc"
-      defaultRowsPerPage={10}
-      primaryColor="#1976d2"
-      secondaryColor="#e0f2f1"
-      customStyles={{
-        headerBackground: "#1976d2",
-        rowHover: "#e0f2f1",
-        selectedRow: "#b2dfdb",
-      }}
-      uniqueId="candidateId"
-    />
+        data={allCandidates || []}
+        columns={generateCandidateColumns()}
+        title={`Candidate Details `}
+        enableSelection={false}
+        defaultSortColumn="clientName"
+        defaultSortDirection="asc"
+        defaultRowsPerPage={10}
+        primaryColor="#1976d2"
+        secondaryColor="#e0f2f1"
+        customStyles={{
+          headerBackground: "#1976d2",
+          rowHover: "#e0f2f1",
+          selectedRow: "#b2dfdb",
+        }}
+        uniqueId="candidateId"
+      />
     );
   };
 
@@ -241,26 +287,24 @@ const EmployeeStatus = () => {
       });
     });
     
- 
-    
     return (
       <DataTable
-      data={allInterviews || []}
-      columns={generateInterviewColumnsTeamLead()}
-      title={`Interview Details `}
-      enableSelection={false}
-      defaultSortColumn="clientName"
-      defaultSortDirection="asc"
-      defaultRowsPerPage={10}
-      primaryColor="#1976d2"
-      secondaryColor="#e0f2f1"
-      customStyles={{
-        headerBackground: "#1976d2",
-        rowHover: "#e0f2f1",
-        selectedRow: "#b2dfdb",
-      }}
-      uniqueId="candidateId"
-    />
+        data={allInterviews || []}
+        columns={generateInterviewColumnsTeamLead()}
+        title={`Interview Details `}
+        enableSelection={false}
+        defaultSortColumn="clientName"
+        defaultSortDirection="asc"
+        defaultRowsPerPage={10}
+        primaryColor="#1976d2"
+        secondaryColor="#e0f2f1"
+        customStyles={{
+          headerBackground: "#1976d2",
+          rowHover: "#e0f2f1",
+          selectedRow: "#b2dfdb",
+        }}
+        uniqueId="candidateId"
+      />
     );
   };
 
@@ -278,34 +322,41 @@ const EmployeeStatus = () => {
         });
       });
     });
-
-    console.log("All Placements", allPlacements);
-    
     
     return (
       <DataTable
-      data={allPlacements || []}
-      columns={generateInterviewColumnsTeamLead()}
-      title={`Placement Details `}
-      enableSelection={false}
-      defaultSortColumn="clientName"
-      defaultSortDirection="asc"
-      defaultRowsPerPage={10}
-      primaryColor="#1976d2"
-      secondaryColor="#e0f2f1"
-      customStyles={{
-        headerBackground: "#1976d2",
-        rowHover: "#e0f2f1",
-        selectedRow: "#b2dfdb",
-      }}
-      uniqueId="candidateId"
-    />
+        data={allPlacements || []}
+        columns={generateInterviewColumnsTeamLead()}
+        title={`Placement Details `}
+        enableSelection={false}
+        defaultSortColumn="clientName"
+        defaultSortDirection="asc"
+        defaultRowsPerPage={10}
+        primaryColor="#1976d2"
+        secondaryColor="#e0f2f1"
+        customStyles={{
+          headerBackground: "#1976d2",
+          rowHover: "#e0f2f1",
+          selectedRow: "#b2dfdb",
+        }}
+        uniqueId="candidateId"
+      />
     );
   };
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
-    
+      {/* FIX 5: Enhanced back button with better text logic */}
+      <Button
+        startIcon={<ArrowBack />}
+        onClick={handleBackClick}
+        sx={{ mb: 2 }}
+        variant="outlined"
+      >
+        Back to {actualSource === 'employee' ? 'Employee Users' : 'Team Lead Users'}
+      </Button>
+     
+      <Typography variant='h4'>{Name}</Typography>
       
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mt: 1, mb: 3 }}>
