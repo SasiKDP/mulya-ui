@@ -5,7 +5,7 @@ import axios from 'axios';
 // const API_BASE_URL = DEV_API_BASE_URL
 
 // PROD
-const PROD_API_BASE_URL = 'http://localhost:8080'; // Replace with your actual API URL
+const PROD_API_BASE_URL = 'http://localhost:8081'; // Replace with your actual API URL
 export const API_BASE_URL = PROD_API_BASE_URL
 
 // Set axios default to send cookies on all requests
