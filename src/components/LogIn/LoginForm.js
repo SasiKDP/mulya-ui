@@ -70,7 +70,7 @@ const LoginForm = ({ onSwitchView }) => {
 // src/api/axios.js
 
 
-const PROD_API_BASE_URL = 'http://192.168.0.246:8080';
+const PROD_API_BASE_URL = 'http://localhost:8080';
 
 const api = axios.create({
   baseURL: PROD_API_BASE_URL,
