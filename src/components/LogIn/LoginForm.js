@@ -25,7 +25,7 @@ import {
 } from "@mui/icons-material";
 import MuiTextField from "../muiComponents/MuiTextField";
 import MuiButton from "../muiComponents/MuiButton";
-
+import axios from 'axios';
 
 const LoginForm = ({ onSwitchView }) => {
   const navigate = useNavigate();
@@ -42,24 +42,43 @@ const LoginForm = ({ onSwitchView }) => {
     password: Yup.string().required("Password is required"),
   });
 
-  const handleSubmit = async (values, { setSubmitting }) => {
-    setError(null);
-    try {
-      const resultAction = await dispatch(loginAsync(values));
+ const handleSubmit = async (values, { setSubmitting }) => {
+  setError(null);
+  try {
+    const resultAction = await dispatch(loginAsync(values));
 
-      if (loginAsync.fulfilled.match(resultAction)) {
-        navigate("/dashboard");
-      } else {
-        setError(
-          resultAction.payload || resultAction.error.message || "Login failed"
-        );
-      }
-    } catch (err) {
-      setError(err.message || "Login failed");
-    } finally {
-      setSubmitting(false);
+    if (loginAsync.fulfilled.match(resultAction)) {
+      // const token = resultAction.payload?.token;
+      // if (token) {
+      //   localStorage.setItem("token", token);
+      // }
+      navigate("/dashboard");
+    } else {
+      setError(
+        resultAction.payload || resultAction.error?.message || "Login failed"
+      );
     }
-  };
+  } catch (err) {
+    setError(err.message || "Login failed");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+
+
+// src/api/axios.js
+
+
+const PROD_API_BASE_URL = 'http://localhost:8080';
+
+const api = axios.create({
+  baseURL: PROD_API_BASE_URL,
+  withCredentials: true, // 🔥 This ensures cookies are sent with every request
+});
+
+
+
 
   return (
     <Paper
