@@ -63,6 +63,7 @@ const routeConfig = [
           "BDM",
           "TEAMLEAD",
           "PARTNER",
+          "INVOICE"
         ]}
       />
     ),
@@ -82,6 +83,7 @@ const routeConfig = [
                   "BDM",
                   "TEAMLEAD",
                   "PARTNER",
+                  "INVOICE"
                 ]}
               />
             ),
@@ -142,7 +144,7 @@ const routeConfig = [
           },
           {
             path: "users",
-            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN","INVOICE"]} />,
             children: [{ index: true, element: Loadable(UsersList) }],
           },
           {
@@ -157,7 +159,7 @@ const routeConfig = [
           },
           {
             path: "placements",
-            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]} />,
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE","INVOICE"]} />,
             children: [{ index: true, element: Loadable(PlacementsList) }],
           },
           {
