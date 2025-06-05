@@ -43,6 +43,11 @@
   // Use version 2.16.105 which is widely available
   window.pdfjsWorkerPath = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 </script>
+ <script>
+      if (performance.navigation.type === 1) {
+    document.cookie = "authtoken=; Path=/; Max-Age=0";
+  }
+    </script>
   </body>
 </html>
 
