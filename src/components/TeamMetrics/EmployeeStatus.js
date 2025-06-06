@@ -36,7 +36,6 @@ import { generateCandidateColumns } from '../TableColumns/CandidateColumns';
 import { generateInterviewColumns, generateInterviewColumnsTeamLead } from '../TableColumns/InterviewsColumnsTM';
 import {fetchTeamLeadUsers} from '../../redux/teamMetricsSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import employeesList from '../TeamMetrics/UserTable'
 
 // TabPanel component for tab content
 function TabPanel(props) {
@@ -78,14 +77,17 @@ const EmployeeStatus = () => {
   // Get employeeId from URL params and source tab from search params
   const { employeeId } = useParams();
 
+  // FIX: Get date parameters from URL
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
   
   const { teamLeadUsers, employeeUsers } = useSelector((state) => state.teamMetrics);
   const { role } = useSelector((state) => state.auth);
 
-  // FIX 1: Better source determination with more explicit fallback
+  // Better source determination with more explicit fallback
   const source = searchParams.get('source');
   
-  // FIX 2: Determine source based on which array contains the employee if not explicitly set
+  // Determine source based on which array contains the employee if not explicitly set
   const actualSource = source || (() => {
     const isInEmployeeUsers = employeeUsers.some(user => user.employeeId === employeeId);
     const isInTeamLeadUsers = teamLeadUsers.some(user => user.employeeId === employeeId);
@@ -101,13 +103,19 @@ const EmployeeStatus = () => {
     dispatch(fetchTeamLeadUsers());
   }, [dispatch]);
 
-  // FIX 3: Enhanced back click handler with better logic
+  // Enhanced back click handler with better logic
   const handleBackClick = () => {
-    console.log('Back click - actualSource:', actualSource); // Debug log
-    navigate(`/dashboard/team-metrics?activeTab=${actualSource}`);
+    console.log('Back click - actualSource:', actualSource);
+    // FIX: Preserve date parameters when navigating back
+    const params = new URLSearchParams();
+    params.set('activeTab', actualSource);
+    if (startDate) params.set('startDate', startDate);
+    if (endDate) params.set('endDate', endDate);
+    
+    navigate(`/dashboard/team-metrics?${params.toString()}`);
   };
 
-  // FIX 4: More robust name finding logic
+  // More robust name finding logic
   const Name = (() => {
     const allUsers = [...teamLeadUsers, ...employeeUsers];
     const user = allUsers.find(user => user.employeeId === employeeId);
@@ -118,7 +126,16 @@ const EmployeeStatus = () => {
     const fetchRequirements = async () => {
       try {
         setIsLoading(true);
-        const response = await httpService.get(`/requirements/list/${employeeId}`);
+        
+        // FIX: Build API URL with date parameters if they exist
+        let apiUrl = `/requirements/list/${employeeId}`;
+        if (startDate && endDate) {
+          apiUrl += `/filterByDate?startDate=${startDate}&endDate=${endDate}`;
+        }
+        
+        console.log('Fetching from API:', apiUrl); // Debug log
+        
+        const response = await httpService.get(apiUrl);
         setRequirements(response.data);
         
         // Calculate statistics
@@ -158,7 +175,7 @@ const EmployeeStatus = () => {
     if (employeeId) {
       fetchRequirements();
     }
-  }, [employeeId]);
+  }, [employeeId, startDate, endDate]); // FIX: Add date dependencies
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -346,7 +363,7 @@ const EmployeeStatus = () => {
 
   return (
     <Box sx={{ width: '100%', p: 3 }}>
-      {/* FIX 5: Enhanced back button with better text logic */}
+      {/* Enhanced back button with better text logic */}
       <Button
         startIcon={<ArrowBack />}
         onClick={handleBackClick}
@@ -356,7 +373,9 @@ const EmployeeStatus = () => {
         Back to {actualSource === 'employee' ? 'Employee Users' : 'Team Lead Users'}
       </Button>
      
-      <Typography variant='h4'>{Name}</Typography>
+      <Typography variant='h5'>{Name}[{employeeId}]</Typography>
+      
+  
       
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mt: 1, mb: 3 }}>

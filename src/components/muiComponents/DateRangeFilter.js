@@ -5,6 +5,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import ClearIcon from '@mui/icons-material/Clear';
 import dayjs from 'dayjs';
 import { useDispatch } from 'react-redux';
+import { useSearchParams } from 'react-router-dom';
 import ToastService from '../../Services/toastService'; 
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import { validateDateRange } from '../../utils/validateDateRange';
@@ -15,12 +16,8 @@ import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
 import { filterPlacementByDateRange } from '../../redux/placementSlice';
 import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
-
 import { filterTeamMetricsByDateRange, clearFilters } from '../../redux/teamMetricsSlice';
-
-import {filterSubmissionsByTeamlead} from '../../redux/submissionSlice'
-
-
+import {filterSubmissionsByTeamlead} from '../../redux/submissionSlice';
 
 const componentToActionMap = {
   BenchList: filterBenchListByDateRange,
@@ -38,9 +35,7 @@ const componentToActionMap = {
   placements: filterPlacementByDateRange,
   allSubmissions: filterSubmissionsByDateRange,
   allInterviews: filterInterviewsByDateRange,
-  dashboard: filterDashBoardCountByDateRange,
-  TeamMetrics: filterTeamMetricsByDateRange
-
+  TeamMetrics: filterTeamMetricsByDateRange,
 };
 
 const componentToClearActionsMap = {
@@ -49,12 +44,51 @@ const componentToClearActionsMap = {
 
 const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
   const dispatch = useDispatch();
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Initialize dates from URL parameters
+  const [startDate, setStartDate] = useState(() => {
+    const urlStartDate = searchParams.get('startDate');
+    return urlStartDate ? dayjs(urlStartDate) : null;
+  });
+  
+  const [endDate, setEndDate] = useState(() => {
+    const urlEndDate = searchParams.get('endDate');
+    return urlEndDate ? dayjs(urlEndDate) : null;
+  });
+
+  // Update URL parameters when dates change
+  const updateUrlParams = (newStartDate, newEndDate) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    
+    if (newStartDate && newEndDate) {
+      newSearchParams.set('startDate', dayjs(newStartDate).format('YYYY-MM-DD'));
+      newSearchParams.set('endDate', dayjs(newEndDate).format('YYYY-MM-DD'));
+    } else {
+      newSearchParams.delete('startDate');
+      newSearchParams.delete('endDate');
+    }
+    
+    setSearchParams(newSearchParams, { replace: true });
+  };
+
+  const handleStartDateChange = (date) => {
+    setStartDate(date);
+    updateUrlParams(date, endDate);
+  };
+
+  const handleEndDateChange = (date) => {
+    setEndDate(date);
+    updateUrlParams(startDate, date);
+  };
 
   const handleClearFilter = () => {
     setStartDate(null);
     setEndDate(null);
+    
+    // Clear URL parameters
+    updateUrlParams(null, null);
+    
     dispatch(setFilteredDataRequested(false));
     
     // Use component-specific clear action if available
@@ -65,7 +99,7 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
     
     // Call the onDateChange callback if provided
     if (onDateChange) {
-      onDateChange();
+      onDateChange(null, null);
     }
   };
 
@@ -88,7 +122,7 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
           .then(() => {
             // Call the onDateChange callback if provided
             if (onDateChange) {
-              onDateChange();
+              onDateChange(formattedStart, formattedEnd);
             }
           })
           .catch(error => {
@@ -100,13 +134,29 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
     }
   }, [startDate, endDate, component, dispatch, onDateChange]);
 
+  // Load dates from URL on component mount or when URL changes
+  useEffect(() => {
+    const urlStartDate = searchParams.get('startDate');
+    const urlEndDate = searchParams.get('endDate');
+    
+    if (urlStartDate && urlEndDate) {
+      const startDateObj = dayjs(urlStartDate);
+      const endDateObj = dayjs(urlEndDate);
+      
+      if (startDateObj.isValid() && endDateObj.isValid()) {
+        setStartDate(startDateObj);
+        setEndDate(endDateObj);
+      }
+    }
+  }, [searchParams]);
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ flexWrap: 'wrap' }}>
         <DatePicker
           label={`${labelPrefix} Start Date`}
           value={startDate}
-          onChange={(date) => setStartDate(date)}
+          onChange={handleStartDateChange}
           slotProps={{
             textField: {
               size: 'small',
@@ -117,7 +167,7 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
         <DatePicker
           label={`${labelPrefix} End Date`}
           value={endDate}
-          onChange={(date) => setEndDate(date)}
+          onChange={handleEndDateChange}
           slotProps={{
             textField: {
               size: 'small',
