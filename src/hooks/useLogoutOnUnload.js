@@ -1,23 +1,27 @@
 // src/hooks/useLogoutOnUnload.js
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
-
-const API_BASE_URL = "http://182.18.177.16"; // Adjust for prod
+import httpService from "../Services/httpService"; // adjust the path if needed
 
 export default function useLogoutOnUnload() {
   const { userId: reduxUserId } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const handleUnload = async () => {
       const userId = reduxUserId || localStorage.getItem("userId");
       if (!userId) return;
 
-      const url = `${API_BASE_URL}/users/logout/${userId}`;
-      const blob = new Blob([], { type: "application/json" });
-      navigator.sendBeacon(url, blob);
+      try {
+        // Using axios PUT instead of navigator.sendBeacon
+        await httpService.put(`/users/logout/${userId}`, {});
+      } catch (err) {
+        console.error("Logout failed during unload:", err);
+      }
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    // Fires on tab close, refresh, or navigation
+    window.addEventListener("unload", handleUnload);
+
+    return () => window.removeEventListener("unload", handleUnload);
   }, [reduxUserId]);
 }
