@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 
-const API_BASE_URL = "http://localhost:8081"; // Adjust for prod
+const API_BASE_URL = "http://182.18.177.16"; // Adjust for prod
 
 export default function useLogoutOnUnload() {
   const { userId: reduxUserId } = useSelector((state) => state.auth);
