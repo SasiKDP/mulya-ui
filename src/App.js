@@ -4,10 +4,17 @@ import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
 import routeConfig from "./routes/routeConfig";
+import { useAutoRefreshToken } from './hooks/useAutoRefreshToken';
+import useLogoutOnUnload from './hooks/useLogoutOnUnload';
+import useLogoutOnReload from "./hooks/useLogoutOnReload";
 
 const AppRoutes = () => useRoutes(routeConfig);
 
 const App = () => {
+  useAutoRefreshToken();
+  useLogoutOnUnload(); 
+  useLogoutOnReload(); 
+
   return (
     <Router>
       <AppRoutes />

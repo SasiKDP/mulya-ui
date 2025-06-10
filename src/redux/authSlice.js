@@ -1,20 +1,20 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import httpService from "../Services/httpService"; // your axios wrapper
+import httpService from "../Services/httpService"; // Adjust path if needed
 
 const initialState = {
-  isAuthenticated: false,
-  userId: null,
-  userName: null,
-  email: null,
-  role: null,
-  logInTimeStamp: null,
+  isAuthenticated: !!localStorage.getItem("userId"),
+  userId: localStorage.getItem("userId") || null,
+  userName: localStorage.getItem("userName") || null,
+  email: localStorage.getItem("email") || null,
+  role: localStorage.getItem("role") || null,
+  logInTimeStamp: localStorage.getItem("logInTimeStamp") || null,
   logoutTimestamp: null,
   status: "idle",
   error: null,
-  encryptionKey:null
+  encryptionKey: localStorage.getItem("encryptionKey") || null
 };
 
-// Login thunk - sends credentials, gets user info, JWT handled via cookie automatically
+// Login thunk
 export const loginAsync = createAsyncThunk(
   "auth/loginAsync",
   async ({ email, password }, { rejectWithValue }) => {
@@ -22,10 +22,26 @@ export const loginAsync = createAsyncThunk(
       const response = await httpService.post(
         `/users/login`,
         { email, password },
-        { withCredentials: true } // important to send cookies cross-origin
+        { withCredentials: true }
       );
 
-      const { userId, userName, email: userEmail, roleType, loginTimestamp,encryptionKey} = response.data.payload;
+      const {
+        userId,
+        userName,
+        email: userEmail,
+        roleType,
+        loginTimestamp,
+        encryptionKey
+      } = response.data.payload;
+
+      // ✅ Persist in localStorage
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("userName", userName);
+      localStorage.setItem("email", userEmail);
+      localStorage.setItem("role", roleType);
+      localStorage.setItem("logInTimeStamp", loginTimestamp);
+      localStorage.setItem("encryptionKey", encryptionKey);
+      
 
       return {
         isAuthenticated: true,
@@ -34,39 +50,32 @@ export const loginAsync = createAsyncThunk(
         email: userEmail,
         role: roleType,
         logInTimeStamp: loginTimestamp,
-        encryptionKey:encryptionKey
+        encryptionKey
       };
     } catch (error) {
-      if (error.response) {
-        const { status, data } = error.response;
-        const errorMessage = data?.error?.errorMessage || "An unexpected error occurred.";
-
-        if (status === 403) {
-          return rejectWithValue("User is not active, please reach out to admin.");
-        } else if (status === 400) {
-          return rejectWithValue("Invalid credentials or bad request.");
-        } else if (status === 201 && data?.success === false) {
-          return rejectWithValue(errorMessage || "User is already logged in.");
-        } else {
-          return rejectWithValue(errorMessage);
-        }
-      } else if (error.request) {
-        return rejectWithValue("Network error. Please try again later.");
-      } else {
-        return rejectWithValue("An unexpected error occurred.");
-      }
+      const message = error?.response?.data?.error?.errorMessage || "Login failed.";
+      return rejectWithValue(message);
     }
   }
 );
 
-// Logout thunk - calls backend to clear session/cookie, no token param needed
+// Logout thunk
 export const logoutAsync = createAsyncThunk(
   "auth/logoutAsync",
   async (userId, { rejectWithValue }) => {
     try {
       await httpService.put(`/users/logout/${userId}`, null, { withCredentials: true });
+
+      // ✅ Clean localStorage
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userName");
+      localStorage.removeItem("email");
+      localStorage.removeItem("role");
+      localStorage.removeItem("logInTimeStamp");
+      localStorage.removeItem("encryptionKey");
+
       return { logoutTimestamp: new Date().toISOString() };
-    } catch (error) {
+    } catch {
       return rejectWithValue("Logout failed. Please try again.");
     }
   }
@@ -84,10 +93,18 @@ const authSlice = createSlice({
       state.role = null;
       state.logInTimeStamp = null;
       state.logoutTimestamp = null;
-      state.error = null;
       state.status = "idle";
-      state.encryptionKey=null;
-    },
+      state.error = null;
+      state.encryptionKey = null;
+
+      // ✅ Clean localStorage
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userName");
+      localStorage.removeItem("email");
+      localStorage.removeItem("role");
+      localStorage.removeItem("logInTimeStamp");
+      localStorage.removeItem("encryptionKey");
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -103,7 +120,7 @@ const authSlice = createSlice({
         state.email = action.payload.email;
         state.role = action.payload.role;
         state.logInTimeStamp = action.payload.logInTimeStamp;
-        state.encryptionKey=action.payload.encryptionKey
+        state.encryptionKey = action.payload.encryptionKey;
       })
       .addCase(loginAsync.rejected, (state, action) => {
         state.status = "failed";
@@ -119,8 +136,9 @@ const authSlice = createSlice({
         state.role = null;
         state.logInTimeStamp = null;
         state.logoutTimestamp = action.payload.logoutTimestamp;
+        state.encryptionKey = null;
       });
-  },
+  }
 });
 
 export const { logout } = authSlice.actions;
