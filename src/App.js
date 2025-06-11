@@ -7,6 +7,8 @@ import routeConfig from "./routes/routeConfig";
 import { useAutoRefreshToken } from './hooks/useAutoRefreshToken';
 import useLogoutOnUnload from './hooks/useLogoutOnUnload';
 import useLogoutOnReload from "./hooks/useLogoutOnReload";
+import useLogoutOnBackButton from "./hooks/useLogoutOnBackButton";
+
 
 const AppRoutes = () => useRoutes(routeConfig);
 
@@ -14,6 +16,8 @@ const App = () => {
   useAutoRefreshToken();
   useLogoutOnUnload(); 
   useLogoutOnReload(); 
+  useLogoutOnBackButton();
+
 
   return (
     <Router>

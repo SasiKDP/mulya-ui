@@ -214,7 +214,7 @@ const TeamLeadInterviews = () => {
             },
             {
               label: "Status",
-              key: "interviewStatus",
+              key: "latestInterviewStatus",
               fallback: "-",
             },
           ],
@@ -294,10 +294,10 @@ const TeamLeadInterviews = () => {
     },
     { key: "duration", label: "Duration (min)", width: 120, align: "center" },
     {
-      key: "interviewStatus",
+      key: "latestInterviewStatus",
       label: "Status",
       width: 140,
-      render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
+      render: (row) => getStatusChip(row.latestInterviewStatus, row, dispatch),
     },
     {
       key: "zoomLink",
@@ -328,7 +328,7 @@ const TeamLeadInterviews = () => {
       label: "Actions",
       width: 200,
       render: (row) => {
-        const status = row.interviewStatus?.toUpperCase();
+        const status = row.latestInterviewStatus?.toUpperCase();
         const showReschedule = [
           "CANCELLED",
           "RESCHEDULED",

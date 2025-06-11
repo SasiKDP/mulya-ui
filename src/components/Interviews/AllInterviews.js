@@ -281,14 +281,14 @@ const AllInterviews = () => {
         loading ? <Skeleton width={50} height={24} /> : row.duration,
     },
     {
-      key: "interviewStatus",
+      key: "latestInterviewStatus",
       label: "Status",
       width: 140,
       render: (row) =>
         loading ? (
           <Skeleton variant="rectangular" width={100} height={24} />
         ) : (
-          getStatusChip(row.interviewStatus, row, dispatch)
+          getStatusChip(row.latestInterviewStatus, row, dispatch)
         ),
     },
     {
@@ -323,7 +323,7 @@ const AllInterviews = () => {
       width: 200,
       align: "center",
       render: (row) => {
-        const status = row.interviewStatus?.toUpperCase();
+        const status = row.latestInterviewStatus?.toUpperCase();
         const showReschedule = [
           "CANCELLED",
           "RESCHEDULED",
