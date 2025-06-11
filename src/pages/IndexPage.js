@@ -50,12 +50,12 @@ const HomePage = () => {
     assigned: ['ADMIN', 'EMPLOYEE', 'TEAMLEAD', 'BDM'],
     interviews: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD'],
     clients: ['ADMIN', 'SUPERADMIN', 'BDM', 'PARTNER'],
-    placements: ['ADMIN', 'SUPERADMIN', 'PARTNER'],
-    users: ['ADMIN', 'SUPERADMIN', 'PARTNER'],
+    placements: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE"],
+    users: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE"],
     bench: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD', 'PARTNER', 'EMPLOYEE'],
   };
 
-  const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER'];
+  const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER','INVOICE'];
 
   // Helper function to format placements data
   const formatPlacements = (data) => {
@@ -224,7 +224,12 @@ useEffect(() => {
     if (role === 'EMPLOYEE') {
       return card.key === 'assigned';
     }
+
+    else if(role === 'INVOICE'){
+      return card.key === 'placements' || card.key ==='users'
+    }
     return card.key !== 'assigned';
+   
   });
 
   const handleCardClick = (cardKey, path) => {
