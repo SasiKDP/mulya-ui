@@ -80,7 +80,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         zoomLink: data.zoomLink || "",
         interviewStatus: "SCHEDULED",
         skipNotification: data?.skipNotification || false,
-        coordinator: data?.coordinator || "",
+        assignedTo: data?.assignedTo || data?.coordinator || "",
       };
     }
 
@@ -232,7 +232,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       ...(values?.interviewLevel === "INTERNAL"
         ? [
             {
-              name: "coordinator",
+              name: "assignedTo",
               label: "Coordinator",
               type: "select",
               required: false,
@@ -292,7 +292,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       ),
     externalInterviewDetails: Yup.string().nullable(),
     skipNotification: Yup.boolean(),
-    coordinator: Yup.string().nullable(),
+    assignedTo: Yup.string().nullable(),
   });
 
   const handleCloseNotification = () => {
@@ -321,7 +321,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         userId: values.userId,
         externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
-        coordinator: values.coordinator || null,
+        assignedTo: values.assignedTo || null,
       };
 
       const responseData = await httpService.post(

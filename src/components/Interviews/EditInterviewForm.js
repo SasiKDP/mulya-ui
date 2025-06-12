@@ -92,7 +92,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
     const showCoordinator = values?.interviewLevel === "INTERNAL";
 
     const coordinatorField = {
-      name: "coordinator",
+      name: "assignedTo",
       label: "Coordinator",
       type: "select",
       options: coordinators,
@@ -263,6 +263,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           .min(15, "Duration must be at least 15 minutes")
           .max(60, "Duration cannot exceed 60 minutes"),
         zoomLink: Yup.string().nullable(),
+        assignedTo: Yup.string().nullable(),
       });
     }
 
@@ -283,7 +284,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         interviewStatus: values.interviewStatus,
         externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
-        coordinator: values.coordinator,
+        assignedTo: values.assignedTo,
         userId: data.userId,
         userEmail: data.userEmail,
         ...(isReschedule && {
