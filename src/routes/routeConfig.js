@@ -62,7 +62,7 @@ const routeConfig = [
           "BDM",
           "TEAMLEAD",
           "PARTNER",
-          "INVOICE",
+          "PAYROLLADMIN",
           "COORDINATOR"
         ]}
       />
@@ -87,7 +87,7 @@ const routeConfig = [
                       "BDM",
                       "TEAMLEAD",
                       "PARTNER",
-                      "INVOICE",
+                      "PAYROLLADMIN",
                       "COORDINATOR"
                     ]}
                   />
