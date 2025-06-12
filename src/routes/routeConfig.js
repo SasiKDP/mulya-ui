@@ -49,8 +49,6 @@ const Unauthorized = lazy(() => import("../pages/Unauthorized"));
 const DeniedAccessCard = lazy(() => import("../pages/NotFound/DeniedAccessCard"));
 const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
 
-
-
 const routeConfig = [
   {
     path: "/dashboard",
@@ -63,7 +61,8 @@ const routeConfig = [
           "BDM",
           "TEAMLEAD",
           "PARTNER",
-          "INVOICE"
+          "INVOICE",
+          "COORDINATOR",
         ]}
       />
     ),
@@ -83,7 +82,8 @@ const routeConfig = [
                   "BDM",
                   "TEAMLEAD",
                   "PARTNER",
-                  "INVOICE"
+                  "INVOICE",
+                  "COORDINATOR",
                 ]}
               />
             ),
@@ -114,9 +114,7 @@ const routeConfig = [
           },
           {
             path: "requirements",
-            element: (
-              <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]} />
-            ),
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]} />,
             children: [
               { index: true, element: Loadable(Requirements) },
               {
@@ -133,7 +131,9 @@ const routeConfig = [
           {
             path: "interviews",
             element: (
-              <ProtectedRoute allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD",'SUPERADMIN']} />
+              <ProtectedRoute
+                allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "SUPERADMIN", "COORDINATOR"]}
+              />
             ),
             children: [{ index: true, element: Loadable(InterviewsRouter) }],
           },
@@ -144,7 +144,7 @@ const routeConfig = [
           },
           {
             path: "users",
-            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN","INVOICE"]} />,
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "COORDINATOR"]} />,
             children: [{ index: true, element: Loadable(UsersList) }],
           },
           {
@@ -159,7 +159,11 @@ const routeConfig = [
           },
           {
             path: "placements",
-            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE","INVOICE"]} />,
+            element: (
+              <ProtectedRoute
+                allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]}
+              />
+            ),
             children: [{ index: true, element: Loadable(PlacementsList) }],
           },
           {
@@ -193,37 +197,20 @@ const routeConfig = [
               />
             ),
             children: [
-              {
-                index: true,
-                element: Loadable(TeamMetrices),
-              },
+              { index: true, element: Loadable(TeamMetrices) },
               {
                 path: "bdmstatus/:employeeId",
                 element: (
-                  <ProtectedRoute
-                    allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]}
-                  />
+                  <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]} />
                 ),
-                children: [
-                  {
-                    index: true,
-                    element: Loadable(BdmStatus),
-                  },
-                ],
+                children: [{ index: true, element: Loadable(BdmStatus) }],
               },
               {
                 path: "employeestatus/:employeeId",
                 element: (
-                  <ProtectedRoute
-                    allowedRoles={["ADMIN", "SUPERADMIN", "TEAMLEAD"]}
-                  />
+                  <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "TEAMLEAD"]} />
                 ),
-                children: [
-                  {
-                    index: true,
-                    element: Loadable(EmployeeStatus),
-                  },
-                ],
+                children: [{ index: true, element: Loadable(EmployeeStatus) }],
               },
             ],
           },

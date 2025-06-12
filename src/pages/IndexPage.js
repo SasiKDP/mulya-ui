@@ -48,14 +48,14 @@ const HomePage = () => {
     requirements: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD'],
     candidates: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD'],
     assigned: ['ADMIN', 'EMPLOYEE', 'TEAMLEAD', 'BDM'],
-    interviews: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD'],
+    interviews: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD','COORDINATOR'],
     clients: ['ADMIN', 'SUPERADMIN', 'BDM', 'PARTNER'],
     placements: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE"],
-    users: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE"],
+    users: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE",'COORDINATOR'],
     bench: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD', 'PARTNER', 'EMPLOYEE'],
   };
 
-  const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER','INVOICE'];
+  const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER','INVOICE','COORDINATOR'];
 
   // Helper function to format placements data
   const formatPlacements = (data) => {
@@ -228,6 +228,9 @@ useEffect(() => {
     else if(role === 'INVOICE'){
       return card.key === 'placements' || card.key ==='users'
     }
+    else if(role === 'COORDINATOR'){
+      return card.key === 'users' || card.key === 'interviews';
+  }
     return card.key !== 'assigned';
    
   });
