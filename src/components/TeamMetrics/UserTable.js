@@ -1,28 +1,35 @@
 import React, { useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import DataTable from '../muiComponents/DataTabel';
 import { generateColumns } from './columnUtils';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const UserTable = ({ role, title, employeesList, loading = false }) => {
   const navigate = useNavigate();
+  
+
+
+  const [searchParams] = useSearchParams();
 
   const handleEmployeeClick = useCallback((employeeId) => {
     if (!employeeId) return;
     
+    // Create new URLSearchParams from current params
+    const params = new URLSearchParams(searchParams);
+    
     if (role === 'BDM') {
-      navigate(`/dashboard/team-metrics/bdmstatus/${employeeId}`);
+      navigate(`/dashboard/team-metrics/bdmstatus/${employeeId}?${params.toString()}`);
     } else if (role === 'TEAMLEAD' || role === "EMPLOYEE") {
-      navigate(`/dashboard/team-metrics/employeestatus/${employeeId}`);
+      navigate(`/dashboard/team-metrics/employeestatus/${employeeId}?${params.toString()}`);
     } else {
-      navigate(`/dashboard/team-metrics/overview/${employeeId}`);
+      navigate(`/dashboard/team-metrics/overview/${employeeId}?${params.toString()}`);
     }
-  }, [navigate, role]);
+  }, [navigate, role, searchParams]);
 
   const columns = useMemo(() => 
     generateColumns(role, handleEmployeeClick, loading), 
   [role, handleEmployeeClick, loading]);
-
+  
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>

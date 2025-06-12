@@ -281,7 +281,7 @@ const Interviews = () => {
       label: "Actions",
       width: 200,
       render: (row) => {
-        const status = row.interviewStatus?.toUpperCase();
+        const status = row.latestInterviewStatus?.toUpperCase();
         const showReschedule = [
           "CANCELLED",
           "RESCHEDULED",

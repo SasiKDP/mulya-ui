@@ -40,9 +40,8 @@ const processInterviewData = (interviews) => {
   return interviews.map((interview) => {
     // Ensure we're using the correct interview status property
     const interviewStatus =
-      interview.interviewStatus ||
-      interview.latestInterviewStatus ||
-      "SCHEDULED";
+     interview.latestInterviewStatus
+      
 
     return {
       ...interview,
@@ -81,11 +80,13 @@ const RecruiterInterviews = () => {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
+    
       const response = await httpService.get(
         `/candidate/interviews/interviewsByUserId/${userId}`
       );
       const processedData = processInterviewData(response.data || []);
-      setInterviews(processedData);
+     
+      setInterviews(processedData||[]);
       setError(null);
     } catch (err) {
       setError("Failed to fetch interview data");
@@ -207,7 +208,7 @@ const RecruiterInterviews = () => {
             },
             {
               label: "Status",
-              key: "interviewStatus",
+              key: "latestInterviewStatus",
               fallback: "-",
             },
           ],
@@ -287,10 +288,10 @@ const RecruiterInterviews = () => {
     },
     { key: "duration", label: "Duration (min)", width: 120, align: "center" },
     {
-      key: "interviewStatus",
+      key: "latestInterviewStatus",
       label: "Status",
       width: 140,
-      render: (row) => getStatusChip(row.interviewStatus, row, dispatch),
+      render: (row) => getStatusChip(row.latestInterviewStatus, row, dispatch),
     },
     {
       key: "zoomLink",
@@ -321,7 +322,7 @@ const RecruiterInterviews = () => {
       label: "Actions",
       width: 200,
       render: (row) => {
-        const status = row.interviewStatus?.toUpperCase();
+        const status = row.latestInterviewStatus?.toUpperCase();
         const showReschedule = [
           "CANCELLED",
           "RESCHEDULED",
@@ -402,6 +403,8 @@ const RecruiterInterviews = () => {
   useEffect(() => {
     fetchInterviews();
   }, [userId]);
+
+
 
   return (
     <Box sx={{ p: 1 }}>

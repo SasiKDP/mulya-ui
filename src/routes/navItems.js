@@ -15,7 +15,7 @@ export const navItems = [
     text: "Home",
     path: "home",
     icon: <HomeIcon />,
-    roles: ["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER"],
+    roles: ["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","INVOICE"],
   },
   {
     text: "Assigned",
@@ -53,7 +53,7 @@ export const navItems = [
     text: "Users",
     path: "users",
     icon: <GroupIcon />,
-    roles: ["ADMIN", "SUPERADMIN"],
+    roles: ["ADMIN", "SUPERADMIN","INVOICE"],
   },
   {
     text: "Team Metrices",
@@ -90,7 +90,7 @@ export const navItems = [
     text: "Placements",
     path: "placements",
     icon: <PersonAddIcon />,
-    roles: ["SUPERADMIN", "PARTNER","ADMIN"],
+    roles: ["SUPERADMIN", "PARTNER","ADMIN","INVOICE"],
   },
   {
     text: "Bench",
