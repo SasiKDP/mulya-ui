@@ -62,6 +62,8 @@ const routeConfig = [
           "BDM",
           "TEAMLEAD",
           "PARTNER",
+          "INVOICE",
+          "COORDINATOR"
         ]}
       />
     ),
@@ -85,6 +87,8 @@ const routeConfig = [
                       "BDM",
                       "TEAMLEAD",
                       "PARTNER",
+                      "INVOICE",
+                      "COORDINATOR"
                     ]}
                   />
                 ),
@@ -134,7 +138,7 @@ const routeConfig = [
               {
                 path: "interviews",
                 element: (
-                  <ProtectedRoute allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "SUPERADMIN"]} />
+                  <ProtectedRoute allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "SUPERADMIN","COORDINATOR"]} />
                 ),
                 children: [{ index: true, element: Loadable(InterviewsRouter) }],
               },
@@ -145,7 +149,7 @@ const routeConfig = [
               },
               {
                 path: "users",
-                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
+                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN","COORDINATOR"]} />,
                 children: [{ index: true, element: Loadable(UsersList) }],
               },
               {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -6,9 +6,7 @@ import {
   Snackbar,
   IconButton,
   Divider,
-  Stack,
   Card,
-  CardContent,
   Table,
   TableBody,
   TableRow,
@@ -24,18 +22,36 @@ import httpService from "../../Services/httpService";
 import { formatDateTime } from "../../utils/dateformate";
 
 const EditInterviewForm = ({ data, onClose, onSuccess }) => {
-  console.log(data);
   const [notification, setNotification] = useState({
     open: false,
     message: "",
     severity: "success",
   });
+
   const { userId, email } = useSelector((state) => state.auth);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [interviewResponse, setInterviewResponse] = useState(null);
+  const [coordinators, setCoordinators] = useState([]);
   const isReschedule = data?.isReschedule || false;
 
-  // Prepare initial values for form
+  useEffect(() => {
+    const fetchCoordinators = async () => {
+      try {
+        const res = await httpService.get("/users/employee?roleName=COORDINATOR");
+        setCoordinators(
+          res.data.map((emp) => ({
+            value: emp.employeeId,
+            label: emp.userName,
+          }))
+        );
+      } catch (err) {
+        console.error("Error fetching coordinators:", err);
+      }
+    };
+
+    fetchCoordinators();
+  }, []);
+
   const getInitialValues = () => {
     if (!data) return {};
 
@@ -45,12 +61,11 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       dateTimeValue = date.toISOString().slice(0, 16);
     }
 
-    // If rescheduling, we set status to RESCHEDULED
     const status = isReschedule
       ? "SCHEDULED"
       : data.latestInterviewStatus || "SCHEDULED";
 
-    const initialValues = {
+    return {
       candidateId: data.candidateId || "",
       clientEmail: data.clientEmail || [],
       clientName: data.clientName || "",
@@ -67,14 +82,23 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       zoomLink: data.zoomLink || "",
       candidateEmailId: data.emailId || data.candidateEmailId || "",
       contactNumber: data.contactNumber || data.candidateContactNo || "",
+      coordinator: data.coordinator || "",
     };
-
-    return initialValues;
   };
 
-  // Define field configurations for the dynamic form
+  // Pass form values so we can conditionally show coordinator field if interviewLevel === "INTERNAL"
   const getFormFields = (values) => {
     const commonGridProps = { xs: 12, md: 6, lg: 6, xl: 4 };
+    const showCoordinator = values?.interviewLevel === "INTERNAL";
+
+    const coordinatorField = {
+      name: "assignedTo",
+      label: "Coordinator",
+      type: "select",
+      options: coordinators,
+      required: false,
+      gridProps: commonGridProps,
+    };
 
     if (!isReschedule) {
       return [
@@ -106,6 +130,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           label: "Interview Level",
           type: "select",
           required: true,
+          disabled: true,
           options: [
             { value: "INTERNAL", label: "INTERNAL" },
             { value: "EXTERNAL", label: "EXTERNAL" },
@@ -113,10 +138,9 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
             { value: "FINAL", label: "FINAL" },
           ],
-          disabled: true,
           gridProps: commonGridProps,
         },
-       
+        ...(showCoordinator ? [coordinatorField] : []),
         {
           name: "skipNotification",
           label: "Skip Email Notification",
@@ -144,8 +168,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           name: "clientEmail",
           label: "Client Email",
           type: "chipInput",
-          description:
-            "Enter client email addresses and press Enter after each",
+          description: "Enter client email addresses and press Enter after each",
           gridProps: { xs: 12, sm: 6 },
         },
         {
@@ -173,9 +196,9 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
             { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
             { value: "FINAL", label: "FINAL" },
           ],
-          // disabled: true, // Disable interview level field
           gridProps: commonGridProps,
         },
+        ...(showCoordinator ? [coordinatorField] : []),
         {
           name: "zoomLink",
           label: "Meeting Link",
@@ -203,9 +226,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
     }
   };
 
-  // Validation schema - simplified for edit mode
   const validationSchema = () => {
-    // Interview level is no longer part of validation since it's disabled
     const baseSchema = {
       interviewStatus: Yup.string()
         .required("Interview status is required")
@@ -225,9 +246,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       skipNotification: Yup.boolean(),
     };
 
-    // For reschedule mode, add date/time validation
     if (isReschedule) {
-      // Define one month ago for validation
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
@@ -244,6 +263,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           .min(15, "Duration must be at least 15 minutes")
           .max(60, "Duration cannot exceed 60 minutes"),
         zoomLink: Yup.string().nullable(),
+        assignedTo: Yup.string().nullable(),
       });
     }
 
@@ -260,10 +280,11 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
 
       const payload = {
         ...data,
-        interviewLevel: values.interviewLevel, // Use original interview level value
+        interviewLevel: values.interviewLevel,
         interviewStatus: values.interviewStatus,
         externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
+        assignedTo: values.assignedTo,
         userId: data.userId,
         userEmail: data.userEmail,
         ...(isReschedule && {
@@ -276,9 +297,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         }),
       };
 
-      const url = `/candidate/interview-update/${data.userId || userId}/${
-        data.candidateId
-      }/${data.jobId}`;
+      const url = `/candidate/interview-update/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
       const responseData = await httpService.put(url, payload);
 
       setInterviewResponse(responseData);
@@ -327,7 +346,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
 
   return (
     <Box sx={{ width: "100%", p: { xs: 2, sm: 3 }, bgcolor: "#f9fafc" }}>
-      {/* Header */}
       <Box
         display="flex"
         justifyContent="space-between"
@@ -342,7 +360,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         </IconButton>
       </Box>
 
-      {/* Candidate Info Card */}
       <Card elevation={2} sx={{ borderRadius: 3, mb: 3, p: 3 }}>
         <Typography
           variant="subtitle1"
@@ -353,7 +370,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           Candidate Information
         </Typography>
         <Divider sx={{ mb: 2 }} />
-
         <Table>
           <TableBody>
             <TableRow sx={{ bgcolor: "grey.100" }}>
@@ -362,41 +378,35 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
               </TableCell>
               <TableCell>{data.candidateFullName}</TableCell>
             </TableRow>
-
             <TableRow>
               <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
                 Email
               </TableCell>
               <TableCell>{data.candidateEmailId}</TableCell>
             </TableRow>
-
             <TableRow sx={{ bgcolor: "grey.100" }}>
               <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
                 Job ID
               </TableCell>
               <TableCell>{data.jobId}</TableCell>
             </TableRow>
-
             <TableRow>
               <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
                 Client
               </TableCell>
               <TableCell>{data.clientName}</TableCell>
             </TableRow>
-
             <TableRow sx={{ bgcolor: "grey.100" }}>
               <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
                 Interview Level
               </TableCell>
               <TableCell>{data.interviewLevel}</TableCell>
             </TableRow>
-
             {!isReschedule && data.interviewDateTime && (
               <TableRow>
                 <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
                   Scheduled
                 </TableCell>
-
                 <TableCell>{formatDateTime(data.interviewDateTime)}</TableCell>
               </TableRow>
             )}
@@ -404,13 +414,11 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         </Table>
       </Card>
 
-      {/* Success Message */}
       <SuccessMessage />
 
-      {/* Dynamic Form */}
       <Card elevation={2} sx={{ borderRadius: 3, p: 3 }}>
         <DynamicForm
-          fields={getFormFields(initialValues)}
+          fields={getFormFields}
           initialValues={initialValues}
           validationSchema={validationSchema()}
           onSubmit={handleSubmit}
@@ -420,7 +428,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         />
       </Card>
 
-      {/* Snackbar for notifications */}
       <Snackbar
         open={notification.open}
         autoHideDuration={4000}
