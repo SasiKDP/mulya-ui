@@ -1,16 +1,21 @@
-import React, { useState } from "react";
-import { Box, Typography, Alert, Snackbar, IconButton } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Typography,
+  Alert,
+  Snackbar,
+  IconButton,
+} from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import httpService from "../../Services/httpService";
 import DynamicForm from "../FormContainer/DynamicForm";
 import * as Yup from "yup";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
-import utc from "dayjs/plugin/utc";
 
 dayjs.extend(utc); // extend dayjs with utc plugin
-
 
 const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   const [notification, setNotification] = useState({
@@ -18,36 +23,45 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
     message: "",
     severity: "success",
   });
+
   const { userId, email } = useSelector((state) => state.auth);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [interviewResponse, setInterviewResponse] = useState(null);
+  const [coordinators, setCoordinators] = useState([]);
 
   // Define one month ago for validation
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-  // Prepare initial values for form
+  useEffect(() => {
+    const fetchCoordinators = async () => {
+      try {
+        const res = await httpService.get("/users/employee?roleName=COORDINATOR");
+        const formatted = res.data.map((emp) => ({
+          value: emp.employeeId,
+          label: emp.userName,
+        }));
+        setCoordinators(formatted);
+      } catch (err) {
+        console.error("Failed to fetch coordinators", err);
+      }
+    };
+
+    fetchCoordinators();
+  }, []);
+
   const getInitialValues = () => {
     if (data) {
       let dateTimeValue = "";
-      // if (data.interviewDateTime) {
-      //   const date = new Date(data.interviewDateTime);
-      //   dateTimeValue = date.toISOString().slice(0, 16);
-      // }
       if (data.interviewDateTime) {
         const date = new Date(data.interviewDateTime);
-        
-        // Get UTC time using getUTC* methods
         const utcYear = date.getUTCFullYear();
-        const utcMonth = String(date.getUTCMonth() + 1).padStart(2, '0'); // Month is 0-based
-        const utcDay = String(date.getUTCDate()).padStart(2, '0');
-        const utcHour = String(date.getUTCHours()).padStart(2, '0');
-        const utcMinute = String(date.getUTCMinutes()).padStart(2, '0');
-    
-        // Format it as "YYYY-MM-DDTHH:mm:00+00:00"
+        const utcMonth = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const utcDay = String(date.getUTCDate()).padStart(2, "0");
+        const utcHour = String(date.getUTCHours()).padStart(2, "0");
+        const utcMinute = String(date.getUTCMinutes()).padStart(2, "0");
         dateTimeValue = `${utcYear}-${utcMonth}-${utcDay}T${utcHour}:${utcMinute}:00+00:00`;
       }
-      
 
       return {
         contactNumber: data.contactNumber || data.candidateContactNo || "",
@@ -66,6 +80,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         zoomLink: data.zoomLink || "",
         interviewStatus: "SCHEDULED",
         skipNotification: data?.skipNotification || false,
+        assignedTo: data?.assignedTo || data?.coordinator || "",
       };
     }
 
@@ -86,14 +101,12 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       zoomLink: "",
       interviewStatus: "SCHEDULED",
       skipNotification: false,
+      coordinator: "",
     };
   };
-   
-  
-  // Define field configurations for the dynamic form
+
   const getFormFields = (values) => {
     const fields = [
-      // Candidate Information Section
       {
         name: "sectionCandidate",
         type: "divider",
@@ -148,8 +161,6 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         disabled: true,
         gridProps: { xs: 12, sm: 6 },
       },
-
-      // Client Information Section
       {
         name: "sectionClient",
         type: "divider",
@@ -216,8 +227,20 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
           { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
           { value: "FINAL", label: "FINAL" },
         ],
-        gridProps: { xs: 12 },
+        gridProps: { xs: 12, sm: values?.interviewLevel === "INTERNAL" ? 6 : 12 },
       },
+      ...(values?.interviewLevel === "INTERNAL"
+        ? [
+            {
+              name: "assignedTo",
+              label: "Coordinator",
+              type: "select",
+              required: false,
+              options: coordinators,
+              gridProps: { xs: 12, sm: 6 },
+            },
+          ]
+        : []),
       {
         name: "externalInterviewDetails",
         label: "Interview Details / Notes",
@@ -238,7 +261,6 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
     return fields;
   };
 
-  // Validation schema for the form
   const validationSchema = Yup.object().shape({
     candidateId: Yup.string().required("Candidate ID is required"),
     fullName: Yup.string().required("Candidate name is required"),
@@ -250,9 +272,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       .email("Invalid email format")
       .required("User email is required"),
     clientName: Yup.string().required("Client name is required"),
-    clientEmail: Yup.array().of(
-      Yup.string().email("Invalid email format")
-    ),
+    clientEmail: Yup.array().of(Yup.string().email("Invalid email format")),
     interviewDateTime: Yup.date()
       .required("Interview date and time is required")
       .min(
@@ -272,6 +292,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       ),
     externalInterviewDetails: Yup.string().nullable(),
     skipNotification: Yup.boolean(),
+    assignedTo: Yup.string().nullable(),
   });
 
   const handleCloseNotification = () => {
@@ -281,7 +302,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       setSubmitting(true);
-  
+
       const payload = {
         candidateId: values.candidateId,
         candidateEmailId: values.candidateEmailId,
@@ -300,13 +321,14 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         userId: values.userId,
         externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
+        assignedTo: values.assignedTo || null,
       };
-  
+
       const responseData = await httpService.post(
         `/candidate/interview-schedule/${values.userId}`,
         payload
       );
-  
+
       setInterviewResponse(responseData);
       setSubmissionSuccess(true);
       setNotification({
@@ -314,7 +336,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
         message: "Interview scheduled successfully",
         severity: "success",
       });
-  
+
       setTimeout(() => {
         if (onSuccess) onSuccess();
         onClose(true);
@@ -332,7 +354,6 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       setSubmitting(false);
     }
   };
-  
 
   const SuccessMessage = () => {
     if (!submissionSuccess || !interviewResponse) return null;
@@ -350,20 +371,8 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   const initialValues = getInitialValues();
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-        p: { xs: 1, sm: 2 },
-        
-        overflow: "auto",
-      }}
-    >
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2 }}
-      >
+    <Box sx={{ width: "100%", p: { xs: 1, sm: 2 }, overflow: "auto" }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h6" color="primary" fontWeight="medium">
           Schedule Interview
         </Typography>
@@ -375,7 +384,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
       <SuccessMessage />
 
       <DynamicForm
-        fields={getFormFields(initialValues)}
+        fields={getFormFields}  
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}

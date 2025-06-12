@@ -15,7 +15,7 @@ export const navItems = [
     text: "Home",
     path: "home",
     icon: <HomeIcon />,
-    roles: ["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","INVOICE"],
+    roles: ["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","INVOICE","COORDINATOR"],
   },
   {
     text: "Assigned",
@@ -46,14 +46,14 @@ export const navItems = [
     text: "Interviews",
     path: "interviews",
     icon: <EventNoteIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN"],
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN","COORDINATOR"],
   },
 
   {
     text: "Users",
     path: "users",
     icon: <GroupIcon />,
-    roles: ["ADMIN", "SUPERADMIN","INVOICE"],
+    roles: ["ADMIN", "SUPERADMIN","INVOICE","COORDINATOR"],
   },
   {
     text: "Team Metrices",
