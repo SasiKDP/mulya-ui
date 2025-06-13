@@ -19,7 +19,7 @@ const UserTable = ({ role, title, employeesList, loading = false }) => {
     
     if (role === 'BDM') {
       navigate(`/dashboard/team-metrics/bdmstatus/${employeeId}?${params.toString()}`);
-    } else if (role === 'TEAMLEAD' || role === "EMPLOYEE") {
+    } else if (role === 'TEAMLEAD' || role === "EMPLOYEE" ) {
       navigate(`/dashboard/team-metrics/employeestatus/${employeeId}?${params.toString()}`);
     } else {
       navigate(`/dashboard/team-metrics/overview/${employeeId}?${params.toString()}`);

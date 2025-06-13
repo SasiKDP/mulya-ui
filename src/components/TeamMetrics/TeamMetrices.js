@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Tabs, Tab, Box, CircularProgress, Stack, Typography, Alert, Button } from '@mui/material';
+import { Tabs, Tab, Box, CircularProgress, Stack, Typography } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import UserTable from './UserTable';
@@ -8,6 +8,7 @@ import {
     fetchBdmUsers,
     fetchTeamLeadUsers, 
     fetchEmployeeUsers,
+    fetchCoordinators,
     filterTeamMetricsByDateRange,
     selectFilteredBdms,
     selectFilteredTeamLeads,
@@ -25,6 +26,7 @@ const TeamMetrics = () => {
     const filteredBdmUsers = useSelector(selectFilteredBdms);
     const filteredTeamLeadUsers = useSelector(selectFilteredTeamLeads);
     const filteredEmployeeUsers = useSelector(selectFilteredEmployees);
+    const coordinators = useSelector((state) => state.teamMetrics.coordinators || []);
     const isLoading = useSelector(selectIsLoading);
     
     const startDate = searchParams.get('startDate');
@@ -32,14 +34,15 @@ const TeamMetrics = () => {
     const tabFromUrl = searchParams.get('activeTab');
 
     const tabsConfig = useMemo(() => [
-        { role: 'BDM', title: 'BDM Users', key: 'bdm' },
-        { role: 'TEAMLEAD', title: 'Team Lead Users', key: 'teamlead' },
-        { role: 'EMPLOYEE', title: 'Employee Users', key: 'employee' }
+        { role: 'BDM', title: 'BDM Users', key: 'bdm', hasNavigation: true },
+        { role: 'TEAMLEAD', title: 'Team Lead Users', key: 'teamlead', hasNavigation: true },
+        { role: 'EMPLOYEE', title: 'Employee Users', key: 'employee', hasNavigation: true },
+        { role: 'COORDINATOR', title: 'Coordinators', key: 'coordinator', hasNavigation: false } // Explicitly set no navigation
     ], []);
 
     // Set initial tab from URL
     useEffect(() => {
-        if (tabFromUrl && ['bdm', 'teamlead', 'employee'].includes(tabFromUrl)) {
+        if (tabFromUrl && tabsConfig.some(tab => tab.key === tabFromUrl)) {
             const newTabIndex = tabsConfig.findIndex(tab => tab.key === tabFromUrl);
             if (newTabIndex !== -1) {
                 setActiveTab(newTabIndex);
@@ -66,8 +69,8 @@ const TeamMetrics = () => {
     }), [navigate, searchParams]);
 
     const getNavigationHandler = useCallback(() => {
-        const currentRole = tabsConfig[activeTab].role;
-        return navigationHandlers[currentRole] || navigationHandlers.BDM;
+        const currentTabConfig = tabsConfig[activeTab];
+        return currentTabConfig.hasNavigation ? navigationHandlers[currentTabConfig.role] : undefined;
     }, [activeTab, navigationHandlers, tabsConfig]);
 
     // Data fetching
@@ -88,6 +91,9 @@ const TeamMetrics = () => {
                     case 'EMPLOYEE':
                         await dispatch(fetchEmployeeUsers()).unwrap();
                         break;
+                    case 'COORDINATOR':
+                        await dispatch(fetchCoordinators()).unwrap();
+                        break;
                     default:
                         console.warn(`Unknown role: ${currentRole}`);
                 }
@@ -98,13 +104,7 @@ const TeamMetrics = () => {
     }, [activeTab, dispatch, startDate, endDate, tabsConfig]);
 
     useEffect(() => {
-        const controller = new AbortController();
-        
         fetchDataForActiveTab();
-        
-        return () => {
-            controller.abort();
-        };
     }, [fetchDataForActiveTab]);
 
     const handleTabChange = (event, newValue) => {
@@ -131,13 +131,15 @@ const TeamMetrics = () => {
                 return filteredTeamLeadUsers;
             case 'EMPLOYEE':
                 return filteredEmployeeUsers;
+            case 'COORDINATOR':
+                return coordinators;
             default:
                 return [];
         }
-    }, [activeTab, filteredBdmUsers, filteredTeamLeadUsers, filteredEmployeeUsers, tabsConfig]);
+    }, [activeTab, filteredBdmUsers, filteredTeamLeadUsers, filteredEmployeeUsers, coordinators, tabsConfig]);
 
     const renderTabContent = () => {
-        const currentRole = tabsConfig[activeTab].role;
+        const currentTabConfig = tabsConfig[activeTab];
         const currentData = getCurrentRoleData();
         
         if (isLoading) {
@@ -150,11 +152,11 @@ const TeamMetrics = () => {
         
         return (
             <UserTable 
-                role={currentRole} 
-                title={tabsConfig[activeTab].title} 
+                role={currentTabConfig.role} 
+                title={currentTabConfig.title} 
                 employeesList={currentData} 
                 loading={isLoading}
-                onEmployeeClick={getNavigationHandler()}
+                onEmployeeClick={currentTabConfig.hasNavigation ? getNavigationHandler() : undefined}
             />
         );
     };

@@ -81,7 +81,7 @@ const EmployeeStatus = () => {
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
   
-  const { teamLeadUsers, employeeUsers } = useSelector((state) => state.teamMetrics);
+  const { teamLeadUsers, employeeUsers,coordinators } = useSelector((state) => state.teamMetrics);
   const { role } = useSelector((state) => state.auth);
 
   // Better source determination with more explicit fallback
@@ -91,9 +91,11 @@ const EmployeeStatus = () => {
   const actualSource = source || (() => {
     const isInEmployeeUsers = employeeUsers.some(user => user.employeeId === employeeId);
     const isInTeamLeadUsers = teamLeadUsers.some(user => user.employeeId === employeeId);
+    // const isInCoordinators = coordinators.some(user => user.employeeId === employeeId);
     
     if (isInEmployeeUsers && !isInTeamLeadUsers) return 'employee';
     if (isInTeamLeadUsers && !isInEmployeeUsers) return 'teamlead';
+    // if (isInCoordinators && !isInEmployeeUsers) return 'coordinator';
     
     // If found in both or neither, default to teamlead
     return 'teamlead';
