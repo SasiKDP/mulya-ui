@@ -154,7 +154,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
       )
       ?.map((emp) => ({
         label: `${emp.userName} (${emp.employeeId})`,
-        value: emp.employeeId,
+        value: emp.userName,
         name: emp.userName
       })) || [];
 
@@ -260,7 +260,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
       gridProps: fieldGridProps,
     },
     {
-      name: "recruiterIds",
+      name: "recruiterName",
       label: "Assigned Recruiters",
       type: "multiselect",
       options: recruiterOptions,
