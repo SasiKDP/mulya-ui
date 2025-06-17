@@ -48,7 +48,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
 
   // Process requirement data to create initial values
   useEffect(() => {
-    if (requirementData) {
+    if (requirementData && employeesList?.length > 0) {
       // Determine if there's a job description file
       const hasJobDescriptionFile =
         requirementData.jobDescriptionFile ||
@@ -89,6 +89,30 @@ const EditRequirement = ({ requirementData, onClose }) => {
         }
       }
 
+      // Convert recruiter names to IDs if we have names but no IDs
+      let selectedRecruiterIds = [];
+      if (recruiterIds?.length > 0) {
+        selectedRecruiterIds = recruiterIds;
+      } else if (recruiterNames?.length > 0) {
+        // Find IDs based on names
+        selectedRecruiterIds = recruiterNames.map(name => {
+          const employee = employeesList.find(emp => 
+            emp.userName === name || emp.userName === name.trim()
+          );
+          return employee ? employee.employeeId : null;
+        }).filter(id => id !== null);
+      }
+
+      // Debug logging
+      console.log("Original recruiterIds:", recruiterIds);
+      console.log("Original recruiterNames:", recruiterNames);
+      console.log("Selected recruiter IDs:", selectedRecruiterIds);
+      console.log("Available recruiter options:", employeesList?.filter(
+        (emp) =>
+          (emp.roles === "TEAMLEAD" || emp.roles === "EMPLOYEE") &&
+          emp.status === "ACTIVE"
+      ));
+
       // Extract numeric values from strings
       const extractNumber = (str) => {
         if (!str) return "";
@@ -109,8 +133,8 @@ const EditRequirement = ({ requirementData, onClose }) => {
         relevantExperience:
           extractNumber(requirementData.relevantExperience) || 0,
         qualification: requirementData.qualification || "",
-        recruiterIds: recruiterIds || [],
-        recruiterName: recruiterNames || [],
+        recruiterNames: selectedRecruiterIds || [], // This will contain IDs for proper selection
+        recruiterNames: recruiterNames || [],
         salaryPackage: extractNumber(requirementData.salaryPackage) || "",
         noOfPositions: requirementData.noOfPositions || 1,
         status: requirementData.status || "In Progress",
@@ -121,7 +145,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
       
       setIsLoading(false);
     }
-  }, [requirementData]);
+  }, [requirementData, employeesList]);
 
   const handleDescriptionChange = (event) => {
     setDescriptionType(event.target.value);
@@ -154,7 +178,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
       )
       ?.map((emp) => ({
         label: `${emp.userName} (${emp.employeeId})`,
-        value: emp.employeeId,
+        value: emp.userName,
         name: emp.userName
       })) || [];
 
@@ -260,14 +284,13 @@ const EditRequirement = ({ requirementData, onClose }) => {
       gridProps: fieldGridProps,
     },
     {
-      name: "recruiterIds",
+      name: "recruiterNames", // Keep as recruiterNames for display
       label: "Assigned Recruiters",
       type: "multiselect",
       options: recruiterOptions,
-      getOptionLabel: (option) => {
-        const recruiter = recruiterOptions.find(r => r.value === option);
-        return recruiter ? recruiter.label : option;
-      },
+      getOptionLabel: (option) => option.label,
+      getOptionValue: (option) => option.value,
+      isOptionEqualToValue: (option, value) => option.value === value,
       validation: Yup.array().min(1, "At least one recruiter is required"),
       gridProps: fieldGridProps,
     },
@@ -376,9 +399,9 @@ const EditRequirement = ({ requirementData, onClose }) => {
 
       // Add all form fields to FormData
       Object.keys(values).forEach((key) => {
-        if (key === "recruiterIds") {
-          // Handle array of recruiters
-          formData.append(key, JSON.stringify(values[key]));
+        if (key === "recruiterNames") {
+          // Handle array of recruiters - values.recruiterNames contains IDs
+          formData.append("recruiterIds", JSON.stringify(values[key]));
           // Also add recruiter names based on selected IDs
           const selectedRecruiters = values[key].map(id => {
             const recruiter = recruiterOptions.find(r => r.value === id);
@@ -388,7 +411,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
         } else if (key === "jobDescription" && values[key]) {
           // Only append file if it exists
           formData.append(key, values[key]);
-        } else if (key !== "recruiterName") { // Skip recruiterName as we handle it above
+        } else if (key !== "recruiterName" && key !== "recruiterIds") { // Skip these as we handle them above
           // Add other fields
           formData.append(key, values[key]);
         }
