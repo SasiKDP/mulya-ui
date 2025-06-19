@@ -5,9 +5,11 @@ const initialState = {
     bdmUsers: [],
     teamLeadUsers: [],
     employeeUsers: [],
+    coordinators:[],
     filteredBdmUsers: [],
     filteredTeamLeadUsers: [],
     filteredEmployeeUsers: [],
+    filteredCoordinators:[],
     employeeDetails: null,
     isLoading: false,
     error: null,
@@ -95,6 +97,24 @@ export const fetchEmployeeUsers = createAsyncThunk(
                 response.data.userStats.filter(user => user.role && user.role.toUpperCase() === 'EMPLOYEE') : 
                 [];
             return { employeeUsers };
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+
+export const fetchCoordinators = createAsyncThunk(
+    'teamMetrics/fetchCoordinators',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await httpService.get('/requirements/coordinatorstats');
+            // const coordinators = response.data? 
+            //     response.data.filter(user => user.role && user.role.toUpperCase() === 'COORDINATOR') : 
+            //     [];
+              const coordinators=response.data
+                console.log("coordinators",response.data)
+            return {coordinators};
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -200,6 +220,23 @@ export const teamMetricsSlice = createSlice({
                 }
             })
             .addCase(fetchEmployeeUsers.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload;
+            })
+
+             //Fetch Coordinators
+             .addCase(fetchCoordinators.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchCoordinators.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.coordinators = action.payload.coordinators;
+                if (!state.isFiltered) {
+                    state.filteredEmployeeUsers = action.payload.coordinators;
+                }
+            })
+            .addCase(fetchCoordinators.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload;
             });

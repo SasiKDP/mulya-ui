@@ -1,16 +1,18 @@
+
 import React from 'react';
 import { Chip, Skeleton } from '@mui/material';
+import { number } from 'prop-types';
 
 /**
- * Unified column generator for all user types (BDM, TEAMLEAD, EMPLOYEE)
- * @param {string} role User role (BDM, TEAMLEAD, EMPLOYEE)
+ * Unified column generator for all user types (BDM, TEAMLEAD, EMPLOYEE, COORDINATOR)
+ * @param {string} role User role (BDM, TEAMLEAD, EMPLOYEE, COORDINATOR)
  * @param {function} handleEmployeeClick Function to handle click on employee name/id
  * @param {boolean} loading Loading state for skeleton display
  * @returns {Array} Array of column configurations
  */
 export const generateColumns = (role, handleEmployeeClick, loading = false) => {
-  // Common base columns for all roles
-  const baseColumns = [
+  // Common base columns for all roles except COORDINATOR
+  const baseColumns = role !== 'COORDINATOR' ? [
     {
       key: role === 'BDM' ? "employeeId" : "employeeId", // Key consistency
       label: role === 'BDM' ? "Employee ID" : "Employee ID",
@@ -46,9 +48,122 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
         row.employeeName
       ),
     }
-  ];
+  ] : [];
 
-  // Role-specific columns
+  // Special columns for COORDINATOR role
+  const coordinatorColumns = role === 'COORDINATOR' ? [
+    {
+      key: "employeeId",
+      label: "Employee ID",
+      type: "text",
+      sortable: true,
+      filterable: true,
+      width: 120,
+      render: (row) => loading ? (
+        <Skeleton variant="text" width={100} height={24} />
+      ) : (
+        <span 
+          style={{ 
+            cursor: 'pointer', 
+            color: '#1976d2',
+          }}
+          onClick={() =>row.employeeId}
+        >
+          {row.employeeId}
+        </span>
+      ),
+    },
+    {
+      key: "employeeName",
+      label: "Employee Name",
+      type: "text",
+      sortable: true,
+      filterable: true,
+      width: 180,
+      render: (row) => loading ? (
+        <Skeleton variant="text" width={150} height={24} />
+      ) : (
+        row.employeeName
+      ),
+    },
+    {
+      key: "employeeEmail",
+      label: "Employee Email",
+      type: "text",
+      sortable: true,
+      filterable: true,
+      width: 200,
+      render: (row) => loading ? (
+        <Skeleton variant="text" width={180} height={24} />
+      ) : (
+        row.employeeEmail
+      ),
+    },
+    {
+      key: "getTotalInterviews",
+      label: "Interviews",
+      type: "number",
+      sortable: true,
+      filterable: true,
+      width: 140,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={80} height={24} />
+      ) : (
+        <Chip
+          label={row.getTotalInterviews || 0}
+          size="small"
+          sx={{
+            backgroundColor: '#e3f2fd',
+            color: '#1565c0',
+          }}
+        />
+      ),
+    },
+    {
+      key: "totalSelected",
+      label: "Selected",
+      type: "number",
+      sortable: true,
+      filterable: true,
+      width: 130,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={80} height={24} />
+      ) : (
+        <Chip
+          label={row.totalSelected || 0}
+          size="small"
+          sx={{
+            backgroundColor: '#e8f5e9',
+            color: '#2e7d32',
+            fontWeight: 600,
+          }}
+        />
+      ),
+    },
+    {
+      key: "totalRejected",
+      label: "Rejected",
+      type: "number",
+      sortable: true,
+      filterable: true,
+      width: 130,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={80} height={24} />
+      ) : (
+        <Chip
+          label={row.totalRejected || 0}
+          size="small"
+          sx={{
+            backgroundColor: '#ffebee',
+            color: '#c62828',
+            fontWeight: 600,
+          }}
+        />
+      ),
+    }
+  ] : [];
+
+  // Role-specific columns for non-coordinator roles
   const roleSpecificColumns = {
     BDM: [
       {
@@ -127,6 +242,11 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
       }
     ]
   };
+
+  // Return early for COORDINATOR role with its specific columns
+  if (role === 'COORDINATOR') {
+    return coordinatorColumns;
+  }
 
   // Common metrics columns based on role
   let metricsColumns = [];
