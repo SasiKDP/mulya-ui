@@ -154,7 +154,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
       )
       ?.map((emp) => ({
         label: `${emp.userName} (${emp.employeeId})`,
-        value: emp.userName,
+        value: emp.employeeId,
         name: emp.userName
       })) || [];
 
@@ -260,13 +260,13 @@ const EditRequirement = ({ requirementData, onClose }) => {
       gridProps: fieldGridProps,
     },
     {
-      name: "recruiterName",
+      name: "recruiterIds",
       label: "Assigned Recruiters",
       type: "multiselect",
       options: recruiterOptions,
       getOptionLabel: (option) => {
         const recruiter = recruiterOptions.find(r => r.value === option);
-        return recruiter ? recruiter.label : option;
+        return recruiter ? recruiter.name : option;
       },
       validation: Yup.array().min(1, "At least one recruiter is required"),
       gridProps: fieldGridProps,

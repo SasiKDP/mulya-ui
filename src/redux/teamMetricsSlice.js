@@ -65,7 +65,7 @@ export const fetchBdmUsers = createAsyncThunk(
     'teamMetrics/fetchBdmUsers',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await httpService.get('/users/bdmlist');
+            const response = await httpService.get('/requirements/bdmlist');
             return { bdmUsers: response.data };
         } catch (error) {
             return rejectWithValue(error.message);
