@@ -266,7 +266,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
       options: recruiterOptions,
       getOptionLabel: (option) => {
         const recruiter = recruiterOptions.find(r => r.value === option);
-        return recruiter ? recruiter.names : option;
+        return recruiter ? recruiter.name : option;
       },
       validation: Yup.array().min(1, "At least one recruiter is required"),
       gridProps: fieldGridProps,
