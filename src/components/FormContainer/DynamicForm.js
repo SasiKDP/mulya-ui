@@ -28,11 +28,12 @@ const DynamicForm = ({
   editMode = false,
   initialValues: externalInitialValues,
   isLoading = false,
+  enableReinitialize = false,
+  ref,
   ...props
 }) => {
   const theme = useTheme();
 
-  // Only used before Formik is initialized (like in isLoading state)
   const computedInitialValues = externalInitialValues || (
     Array.isArray(fields)
       ? fields.reduce((values, field) => {
@@ -69,7 +70,7 @@ const DynamicForm = ({
       }}
     >
       {(title || subtitle) && (
-        <Box
+        <Box          
           sx={{
             p: 2,
             background: alpha(theme.palette.primary.main, 0.04),
@@ -93,19 +94,24 @@ const DynamicForm = ({
         <Formik
           initialValues={computedInitialValues}
           validationSchema={
-            Array.isArray(fields)
-              ? buildValidationSchema(fields, editMode)
-              : null
+            typeof fields === 'function'
+              ? null // Will be built in the form render function
+              : buildValidationSchema(fields, editMode)
           }
           onSubmit={async (values, actions) => {
             await onSubmit(values, actions, editMode);
           }}
-          enableReinitialize
+          enableReinitialize={enableReinitialize}
+          innerRef={ref}
         >
           {(formikProps) => {
             const currentFields = typeof fields === 'function'
               ? fields(formikProps.values)
               : fields;
+
+            if (typeof fields === 'function' && !formikProps.validationSchema) {
+              formikProps.validationSchema = buildValidationSchema(currentFields, editMode);
+            }
 
             const groupedFields = currentFields.reduce((acc, field) => {
               if ((field.editOnly && !editMode) || (field.createOnly && editMode)) return acc;

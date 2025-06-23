@@ -190,6 +190,8 @@ const UserForm = ({
           { value: "TEAMLEAD", label: "Team Lead" },
           { value: "BDM", label: "BDM" },
           { value: "PARTNER", label: "Partner" },
+          {value:"INVOICE",label:"Invoice"},
+          {value:"COORDINATOR",label:"Coordinator"}
         ],
       },
       {

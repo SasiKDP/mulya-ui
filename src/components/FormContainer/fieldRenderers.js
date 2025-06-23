@@ -266,8 +266,14 @@ export const renderField = (field, formik, editMode = false) => {
                       typeof value === "string" ? value.split(",") : value
                     );
                   },
-                  renderValue:
-                    field.renderValue || ((selected) => selected.join(", ")),
+                renderValue: (selected) =>
+  selected
+    .map((val) => {
+      const option = field.options?.find((opt) => opt.value === val);
+      return option?.name || option?.label || val;
+    })
+    .join(", "),
+
                   MenuProps: {
                     PaperProps: {
                       sx: {
