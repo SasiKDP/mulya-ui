@@ -329,10 +329,10 @@ const validationSchema = useMemo(() => Yup.object().shape({
   clientName: Yup.string().required("Client name is required"),
  interviewDateTime: Yup.date()
   .required("Interview date and time is required")
-  .test('not-past', 'Cannot schedule interview in the past', function(value) {
-    if (!value) return true;
-    return dayjs(value).isAfter(dayjs());
-  })
+  // .test('not-past', 'Cannot schedule interview in the past', function(value) {
+  //   if (!value) return true;
+  //   return dayjs(value).isAfter(dayjs());
+  // })
     .test('time-available', 'This time slot conflicts with an existing booking', function(value) {
       if (!value || !selectedCoordinator) return true;
       
@@ -728,6 +728,7 @@ const handleDateTimeChange = (newValue) => {
   label="Interview Date & Time"
   value={safeDayjs(formik.values.interviewDateTime)}
   onChange={handleDateTimeChange}
+
   shouldDisableTime={(timeValue, clockType) => {
     if (!timeValue || !selectedCoordinator) return false;
     
@@ -745,7 +746,7 @@ const handleDateTimeChange = (newValue) => {
       // For hour selection, check if ALL minutes in this hour are blocked
       const hour = timeObj.hour();
       
-      // Check if there are any available 5-minute slots in this hour
+      // Check if there are any available 30-minute slots in this hour
       let hasAvailableSlot = false;
       
       for (let minute = 0; minute < 60; minute += 30) {
@@ -806,9 +807,9 @@ const handleDateTimeChange = (newValue) => {
   openTo="day"
   timeSteps={{ hours: 1, minutes: 30 }}
   minutesStep={30}
-  disablePast
   ampm={false}
   format="DD/MM/YYYY HH:mm"
+
   slotProps={{
     textField: {
       fullWidth: true,
