@@ -9,6 +9,7 @@ import HourglassIcon from "@mui/icons-material/HourglassTop";
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import InsightsIcon from '@mui/icons-material/Insights';
 import HomeIcon from '@mui/icons-material/Home';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 
 export const navItems = [
   {
@@ -34,7 +35,13 @@ export const navItems = [
     text: "Requirements",
     path: "requirements",
     icon: <ListAltIcon />,
-    roles: [ "SUPERADMIN", "BDM", "TEAMLEAD"],
+    roles: ["SUPERADMIN", "BDM", "TEAMLEAD"],
+  },
+   {
+    text:"InProgress",
+    path:"InProgress",
+    icon:<AutorenewIcon/>,
+    roles:["SUPERADMIN", "BDM", "TEAMLEAD"],
   },
   //   {
   //     text: 'Job Form',
@@ -98,4 +105,5 @@ export const navItems = [
     icon: <HourglassIcon />,
     roles: ["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "PARTNER", "EMPLOYEE"],
   },
+ 
 ];

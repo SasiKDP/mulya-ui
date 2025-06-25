@@ -386,6 +386,7 @@ const PostRequirement = ({onClose}) => {
         );
         resetForm();
         setDescriptionType("text");
+        onClose?.();
       } else {
         toast.error(`${response.data.message} - ${response.data.error || ""}`);
       }

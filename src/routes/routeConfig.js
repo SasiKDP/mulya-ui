@@ -4,6 +4,7 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import JobDetails from "../components/Requirements/jobTracking/JobDetails";
 import InterviewsRouter from "../components/Interviews/InterviewsRouter";
 import AppLayout from "../Layout/AppLayout";
+import { element } from "prop-types";
 
 const Loadable = (Component) => (
   <Suspense
@@ -49,6 +50,7 @@ const EmployeeStatus = lazy(() => import("../components/TeamMetrics/EmployeeStat
 const Unauthorized = lazy(() => import("../pages/Unauthorized"));
 const DeniedAccessCard = lazy(() => import("../pages/NotFound/DeniedAccessCard"));
 const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
+const InProgressData=lazy(()=>import("../components/InProgress/InProgress"))
 
 const routeConfig = [
   {
@@ -167,6 +169,12 @@ const routeConfig = [
                 element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]} />,
                 children: [{ index: true, element: Loadable(PlacementsList) }],
               },
+              {
+                path:"InProgress",
+                element:<ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]} />,
+                children: [{index:true,element:Loadable(InProgressData)}],
+              },
+
               {
                 path: "bench-users",
                 element: (
