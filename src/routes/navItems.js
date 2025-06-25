@@ -35,7 +35,13 @@ export const navItems = [
     text: "Requirements",
     path: "requirements",
     icon: <ListAltIcon />,
-    roles: [ "SUPERADMIN", "BDM", "TEAMLEAD"],
+    roles: ["SUPERADMIN", "BDM", "TEAMLEAD"],
+  },
+   {
+    text:"InProgress",
+    path:"InProgress",
+    icon:<AutorenewIcon/>,
+    roles:["SUPERADMIN", "BDM", "TEAMLEAD"],
   },
   //   {
   //     text: 'Job Form',
@@ -99,10 +105,5 @@ export const navItems = [
     icon: <HourglassIcon />,
     roles: ["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "PARTNER", "EMPLOYEE"],
   },
-  {
-    text:"InProgress",
-    path:"InProgress",
-    icon:<AutorenewIcon/>,
-    roles:["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "PARTNER", "EMPLOYEE"],
-  }
+ 
 ];
