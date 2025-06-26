@@ -18,7 +18,7 @@ import { filterPlacementByDateRange } from '../../redux/placementSlice';
 import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
 import { filterTeamMetricsByDateRange, clearFilters } from '../../redux/teamMetricsSlice';
 import {filterSubmissionsByTeamlead} from '../../redux/submissionSlice';
-import { filterInProgressDataByDateRange } from '../../redux/inProgressSlice';
+import { filterInProgressDataByDateRange,clearFilterData  } from '../../redux/inProgressSlice';
 
 
 const componentToActionMap = {
@@ -45,7 +45,7 @@ const componentToClearActionsMap = {
   TeamMetrics: clearFilters
 };
 
-const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
+const DateRangeFilter = ({ component, labelPrefix = '', onDateChange,onClearFilter }) => {
   const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -99,6 +99,11 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
     if (clearAction) {
       dispatch(clearAction());
     }
+
+    if (onClearFilter) {
+            onClearFilter();
+        }
+
     
     // Call the onDateChange callback if provided
     if (onDateChange) {
