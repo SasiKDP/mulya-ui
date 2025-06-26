@@ -213,7 +213,7 @@ const getFormFields = (values) => {
         ],
         gridProps: commonGridProps,
       },
-      ...(showCoordinator ? [coordinatorField, coordinatorFeedbackField] : []),
+      ...(showCoordinator ? [coordinatorField] : []),
       {
         name: "zoomLink",
         label: "Meeting Link",

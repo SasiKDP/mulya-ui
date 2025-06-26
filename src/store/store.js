@@ -10,6 +10,7 @@ import commonReducer from '../redux/commonSlice'
 import placementReducer from "../redux/placementSlice"
 import dashboardReducer from '../redux/dashboardSlice'
 import teamMetricsReducer from '../redux/teamMetricsSlice';
+import inProgressReducer from '../redux/inProgressSlice';
 
 
 export const store = configureStore({
@@ -24,7 +25,8 @@ export const store = configureStore({
     common: commonReducer,
     placement:placementReducer,
     dashboard:dashboardReducer,
-    teamMetrics: teamMetricsReducer
+    teamMetrics: teamMetricsReducer,
+    inProgress:inProgressReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

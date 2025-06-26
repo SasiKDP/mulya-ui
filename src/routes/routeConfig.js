@@ -48,6 +48,7 @@ const EmployeeStatus = lazy(() => import("../components/TeamMetrics/EmployeeStat
 const Unauthorized = lazy(() => import("../pages/Unauthorized"));
 const DeniedAccessCard = lazy(() => import("../pages/NotFound/DeniedAccessCard"));
 const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
+const InProgressData=lazy(()=>import("../components/InProgress/InProgress"))
 
 const routeConfig = [
   {
@@ -166,6 +167,11 @@ const routeConfig = [
             ),
             children: [{ index: true, element: Loadable(PlacementsList) }],
           },
+           {
+                path:"InProgress",
+                element:<ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]} />,
+                children: [{index:true,element:Loadable(InProgressData)}],
+           },
           {
             path: "bench-users",
             element: (
