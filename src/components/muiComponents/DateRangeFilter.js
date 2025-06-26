@@ -18,6 +18,7 @@ import { filterPlacementByDateRange } from '../../redux/placementSlice';
 import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
 import { filterTeamMetricsByDateRange, clearFilters } from '../../redux/teamMetricsSlice';
 import {filterSubmissionsByTeamlead} from '../../redux/submissionSlice';
+import { filterInProgressDataByDateRange } from '../../redux/inProgressSlice';
 
 const componentToActionMap = {
   BenchList: filterBenchListByDateRange,
@@ -36,6 +37,7 @@ const componentToActionMap = {
   allSubmissions: filterSubmissionsByDateRange,
   allInterviews: filterInterviewsByDateRange,
   TeamMetrics: filterTeamMetricsByDateRange,
+  InProgress:filterInProgressDataByDateRange
 };
 
 const componentToClearActionsMap = {
