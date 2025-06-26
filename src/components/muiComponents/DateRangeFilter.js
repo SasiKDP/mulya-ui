@@ -17,8 +17,8 @@ import { filterClientsByDateRange } from '../../redux/clientsSlice';
 import { filterPlacementByDateRange } from '../../redux/placementSlice';
 import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
 import { filterTeamMetricsByDateRange, clearFilters } from '../../redux/teamMetricsSlice';
-import {filterSubmissionsByTeamlead} from '../../redux/submissionSlice';
-import { filterInProgressDataByDateRange } from '../../redux/inProgressSlice';
+import { filterSubmissionsByTeamlead } from '../../redux/submissionSlice';
+import { filterInProgressDataByDateRange,clearFilterData } from '../../redux/inProgressSlice';
 
 const componentToActionMap = {
   BenchList: filterBenchListByDateRange,
@@ -26,25 +26,26 @@ const componentToActionMap = {
   Interviews: filterInterviewsByDateRange,
   Users: filterUsersByDateRange,
   Submissions: filterSubmissionsByDateRange,
-  SubmissionsForTeamLead:filterSubmissionsByTeamlead,
+  SubmissionsForTeamLead: filterSubmissionsByTeamlead,
   AssignedList: filterRequirementsByRecruiter,
   RecruiterSubmission: filterSubmissionssByRecruiter,
   InterviewsForRecruiter: filterInterviewsByRecruiter,
-  dashboard:filterDashBoardCountByDateRange,
+  dashboard: filterDashBoardCountByDateRange,
   InterviewsForTeamLead: filterInterviewsByTeamLead,
   Clients: filterClientsByDateRange,
   placements: filterPlacementByDateRange,
   allSubmissions: filterSubmissionsByDateRange,
   allInterviews: filterInterviewsByDateRange,
   TeamMetrics: filterTeamMetricsByDateRange,
-  InProgress:filterInProgressDataByDateRange
+  InProgress: filterInProgressDataByDateRange, // Add this line
 };
 
 const componentToClearActionsMap = {
-  TeamMetrics: clearFilters
+  TeamMetrics: clearFilters,
+  InProgress:clearFilterData, // Add this line
 };
 
-const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
+const DateRangeFilter = ({ component, labelPrefix = '', onDateChange,onClearFilter }) => {
   const dispatch = useDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -98,6 +99,10 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
     if (clearAction) {
       dispatch(clearAction());
     }
+
+      if (onClearFilter) {
+            onClearFilter();
+        }
     
     // Call the onDateChange callback if provided
     if (onDateChange) {
@@ -156,7 +161,7 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ flexWrap: 'wrap' }}>
         <DatePicker
-          label={`${labelPrefix} Start Date`}
+          label={` Start Date`}
           value={startDate}
           onChange={handleStartDateChange}
           slotProps={{
@@ -167,7 +172,7 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange }) => {
           }}
         />
         <DatePicker
-          label={`${labelPrefix} End Date`}
+          label={` End Date`}
           value={endDate}
           onChange={handleEndDateChange}
           slotProps={{
