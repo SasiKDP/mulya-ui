@@ -123,6 +123,15 @@ const InProgress = () => {
             width: 120
         },
         {
+            key: "clientName",
+            label: "Client",
+            type: "text",
+            sortable: true,
+            filterable: true,
+            width: 120
+        },
+        
+        {
             key: "technology",
             label: "Technologies",
             type: "text",
