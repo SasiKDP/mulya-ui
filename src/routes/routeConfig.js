@@ -171,7 +171,7 @@ const routeConfig = [
               },
               {
                 path:"InProgress",
-                element:<ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]} />,
+                element:<ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"]} />,
                 children: [{index:true,element:Loadable(InProgressData)}],
               },
 
