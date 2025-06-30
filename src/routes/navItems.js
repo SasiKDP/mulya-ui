@@ -41,7 +41,7 @@ export const navItems = [
     text:"InProgress",
     path:"InProgress",
     icon:<AutorenewIcon/>,
-    roles:["SUPERADMIN", "BDM", "TEAMLEAD"],
+    roles:["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"],
   },
   //   {
   //     text: 'Job Form',
