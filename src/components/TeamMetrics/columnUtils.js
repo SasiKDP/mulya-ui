@@ -119,6 +119,26 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
         />
       ),
     },
+     {
+      key: "totalScheduled",
+      label: "Scheduled",
+      type: "number",
+      sortable: true,
+      filterable: true,
+      width: 140,
+      render: (row) => loading ? (
+        <Skeleton variant="rectangular" width={80} height={24} />
+      ) : (
+        <Chip
+          label={row.totalScheduled || 0}
+          size="small"
+          sx={{
+            backgroundColor: '#e3f2fd',
+            color: '#1565c0',
+          }}
+        />
+      ),
+    },
     {
       key: "totalSelected",
       label: "Selected",
