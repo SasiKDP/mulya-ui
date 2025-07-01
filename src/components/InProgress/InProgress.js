@@ -1,23 +1,32 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchInProgressData, clearFilterData } from '../../redux/inProgressSlice';
+import { fetchInProgressData, clearFilterData, sendingUsersData } from '../../redux/inProgressSlice';
 import DataTable from '../muiComponents/DataTabel';
 import DateRangeFilter from '../muiComponents/DateRangeFilter';
-import { Stack, Typography } from '@mui/material';
-
-
+import { Stack, Typography, Alert, Snackbar } from '@mui/material';
 
 const InProgress = () => {
     const dispatch = useDispatch();
-     const { 
+    const { 
         inProgress = [], 
         loading, 
         filterinProgressByDateRange,
-        isFiltered 
+        isFiltered,
+        error 
     } = useSelector((state) => state.inProgress);
+   
+    const { userName, userId } = useSelector((state) => state.auth);
+
     const [sortConfig, setSortConfig] = useState({
         key: 'bdm',
         direction: 'asc'
+    });
+
+    // State for email sending feedback
+    const [emailStatus, setEmailStatus] = useState({
+        open: false,
+        message: '',
+        severity: 'success'
     });
 
     useEffect(() => {
@@ -55,21 +64,66 @@ const InProgress = () => {
 
     // Apply filtering and sorting to the data
     const processedData = useMemo(() => {
-    const data = isFiltered ? filterinProgressByDateRange : inProgress;
+        const data = isFiltered ? filterinProgressByDateRange : inProgress;
 
-    const unique = [];
-    const seen = new Set();
+        const unique = [];
+        const seen = new Set();
 
-    for (const item of data) {
-    const key = JSON.stringify(item); // full row check
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(item);
-    }
-    }
+        for (const item of data) {
+            const key = JSON.stringify(item); // full row check
+            if (!seen.has(key)) {
+                seen.add(key);
+                unique.push(item);
+            }
+        }
 
-    return unique;
+        return unique;
     }, [inProgress, filterinProgressByDateRange, isFiltered]);
+
+    // Filter data by current user's userId matching with recruiterId
+    const getUserFilteredData = () => {
+        return processedData.filter(item => {
+            // Assuming recruiterId field exists in your data
+            // Adjust the field name based on your actual data structure
+            return item.recruiterId === userId || item.recruiterName === userName;
+        });
+    };
+
+    // Handle send email functionality
+    const handleSendEmail = async () => {
+        try {
+            const userFilteredData = getUserFilteredData();
+            
+            if (userFilteredData.length === 0) {
+                setEmailStatus({
+                    open: true,
+                    message: 'No data found for current user to send email.',
+                    severity: 'warning'
+                });
+                return;
+            }
+
+            // Dispatch the action with userId and filtered data
+            const result = await dispatch(sendingUsersData({ 
+                userId: userId,
+                data: userFilteredData // Send the filtered data along with userId
+            })).unwrap();
+
+            setEmailStatus({
+                open: true,
+                message: `Email sent successfully! ${userFilteredData.length} records processed.`,
+                severity: 'success'
+            });
+
+        } catch (error) {
+            console.error('Error sending email:', error);
+            setEmailStatus({
+                open: true,
+                message: 'Failed to send email. Please try again.',
+                severity: 'error'
+            });
+        }
+    };
 
     const handleSort = (key) => {
         setSortConfig((prev) => {
@@ -123,6 +177,14 @@ const InProgress = () => {
             width: 120
         },
         {
+            key: "clientName",
+            label: "Client",
+            type: "text",
+            sortable: true,
+            filterable: true,
+            width: 120
+        },
+        {
             key: "technology",
             label: "Technologies",
             type: "text",
@@ -151,6 +213,10 @@ const InProgress = () => {
     const handleRefresh = () => {
         dispatch(clearFilterData());
         dispatch(fetchInProgressData());
+    };
+
+    const handleCloseSnackbar = () => {
+        setEmailStatus({ ...emailStatus, open: false });
     };
 
     return (
@@ -192,7 +258,26 @@ const InProgress = () => {
                 refreshData={handleRefresh}
                 orderBy={sortConfig.key}
                 order={sortConfig.direction}
+                enableSendEmail={true}
+                onSendEmail={handleSendEmail} // Pass the email handler
+                userFilteredDataCount={getUserFilteredData().length} // Pass filtered count for display
             />
+
+            {/* Snackbar for email status feedback */}
+            <Snackbar
+                open={emailStatus.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+                <Alert 
+                    onClose={handleCloseSnackbar} 
+                    severity={emailStatus.severity}
+                    sx={{ width: '100%' }}
+                >
+                    {emailStatus.message}
+                </Alert>
+            </Snackbar>
         </>
     );
 };
