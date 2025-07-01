@@ -43,8 +43,10 @@ import {
   CloudDownload,
   ExpandMore,
   ExpandLess,
+  Send
 } from "@mui/icons-material";
 import * as XLSX from "xlsx";
+import { useDispatch, useSelector } from "react-redux";
 
 // CSV Export function
 const exportToCsv = (data, columns) => {
@@ -120,10 +122,15 @@ const DataTable = ({
   secondaryColor = "#f5f5f5",
   uniqueId = "id",
   enableFinancialValidation = false,
+  enableSendEmail = false,
+  onSendEmail, // Added missing prop
   onRequestOtpVerification, // callback to trigger OTP verification
   isFinancialVerified, // boolean to check if financial data is verified
+  userFilteredDataCount, // Added missing prop
 }) => {
   const theme = useTheme();
+  const dispatch = useDispatch();
+  const { userId } = useSelector(state => state.auth);
 
   // Parse initial columns to add additional properties if not present
   const processedColumns = useMemo(() => {
@@ -307,29 +314,30 @@ const DataTable = ({
   };
 
   const handleExportData = (format = "csv") => {
-  // Check if financial validation is required and not verified
-  if (enableFinancialValidation && !isFinancialVerified) {
-    // Trigger OTP verification flow from parent
-    onRequestOtpVerification(() => {
-      // This callback will be executed after successful verification
-      performExport(format);
-    });
-    return;
-  }
-  
-  performExport(format);
-};
-const performExport = (format) => {
-  const visibleColumns = columns.filter((col) => col.visible !== false);
-  
-  if (format === "csv") {
-    exportToCsv(filteredData, visibleColumns);
-  } else {
-    exportToExcel(filteredData, visibleColumns);
-  }
-  
-  handleOptionsMenuClose();
-};
+    // Check if financial validation is required and not verified
+    if (enableFinancialValidation && !isFinancialVerified) {
+      // Trigger OTP verification flow from parent
+      onRequestOtpVerification(() => {
+        // This callback will be executed after successful verification
+        performExport(format);
+      });
+      return;
+    }
+    
+    performExport(format);
+  };
+
+  const performExport = (format) => {
+    const visibleColumns = columns.filter((col) => col.visible !== false);
+    
+    if (format === "csv") {
+      exportToCsv(filteredData, visibleColumns);
+    } else {
+      exportToExcel(filteredData, visibleColumns);
+    }
+    
+    handleOptionsMenuClose();
+  };
 
   const handleRowExpand = (id) => {
     setExpandedRow(expandedRow === id ? null : id);
@@ -352,71 +360,70 @@ const performExport = (format) => {
   };
 
   // Apply filters, search and sorting
- useEffect(() => {
-  let result = [...data];
-  const previousFilteredLength = filteredData.length;
+  useEffect(() => {
+    let result = [...data];
+    const previousFilteredLength = filteredData.length;
 
-  // Search functionality
-  if (searchQuery) {
-    const lowercasedQuery = searchQuery.toLowerCase();
-    result = result.filter((row) => {
-      return columns.some((column) => {
-        if (!column.visible) return false;
-        const value = row[column.key];
-        if (value === null || value === undefined) return false;
-        return String(value).toLowerCase().includes(lowercasedQuery);
-      });
-    });
-  }
-
-  // Filter functionality
-  Object.keys(filters).forEach((key) => {
-    if (
-      filters[key] !== "" &&
-      filters[key] !== null &&
-      filters[key] !== undefined
-    ) {
+    // Search functionality
+    if (searchQuery) {
+      const lowercasedQuery = searchQuery.toLowerCase();
       result = result.filter((row) => {
-        const rowValue = row[key];
-        const filterValue = filters[key];
-
-        if (rowValue === null || rowValue === undefined) return false;
-
-        if (typeof rowValue === "number") {
-          return rowValue === Number(filterValue);
-        }
-
-        if (Array.isArray(filterValue)) {
-          return filterValue.includes(String(rowValue).toLowerCase());
-        }
-
-        return String(rowValue)
-          .toLowerCase()
-          .includes(String(filterValue).toLowerCase());
+        return columns.some((column) => {
+          if (!column.visible) return false;
+          const value = row[column.key];
+          if (value === null || value === undefined) return false;
+          return String(value).toLowerCase().includes(lowercasedQuery);
+        });
       });
     }
-  });
 
-  // Sorting
-  result = result.sort(getComparator(order, orderBy));
+    // Filter functionality
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== "" &&
+        filters[key] !== null &&
+        filters[key] !== undefined
+      ) {
+        result = result.filter((row) => {
+          const rowValue = row[key];
+          const filterValue = filters[key];
 
-  setFilteredData(result);
-  
-  // Only reset page if the filtered data length has changed due to search/filter
-  // OR if the current page would be out of bounds
-  if (result.length !== previousFilteredLength || 
-      (page > 0 && page * rowsPerPage >= result.length)) {
-    setPage(0);
-  }
-}, [searchQuery, filters, data, order, orderBy, columns]);
+          if (rowValue === null || rowValue === undefined) return false;
 
-useEffect(() => {
-  if (filteredData.length > 0) {
-    const sortedData = [...filteredData].sort(getComparator(order, orderBy));
-    setFilteredData(sortedData);
-  }
-}, [order, orderBy]);
+          if (typeof rowValue === "number") {
+            return rowValue === Number(filterValue);
+          }
 
+          if (Array.isArray(filterValue)) {
+            return filterValue.includes(String(rowValue).toLowerCase());
+          }
+
+          return String(rowValue)
+            .toLowerCase()
+            .includes(String(filterValue).toLowerCase());
+        });
+      }
+    });
+
+    // Sorting
+    result = result.sort(getComparator(order, orderBy));
+
+    setFilteredData(result);
+    
+    // Only reset page if the filtered data length has changed due to search/filter
+    // OR if the current page would be out of bounds
+    if (result.length !== previousFilteredLength || 
+        (page > 0 && page * rowsPerPage >= result.length)) {
+      setPage(0);
+    }
+  }, [searchQuery, filters, data, order, orderBy, columns, filteredData.length, page, rowsPerPage]);
+
+  useEffect(() => {
+    if (filteredData.length > 0) {
+      const sortedData = [...filteredData].sort(getComparator(order, orderBy));
+      setFilteredData(sortedData);
+    }
+  }, [order, orderBy]);
 
   // Find column options for filtering if not explicitly provided
   const getColumnFilterOptions = (columnKey) => {
@@ -596,7 +603,6 @@ useEffect(() => {
                   width: 200,
                   backgroundColor: darkMode ? "#444" : "#fff",
                   color: darkMode ? "#fff" : "#333",
-                  
                 },
               }}
             >
@@ -650,46 +656,55 @@ useEffect(() => {
                 {darkMode ? "Light Mode" : "Dark Mode"}
               </MenuItem>
               <MenuItem onClick={toggleDensePadding}>
-                <ListItemIcon>
-                  <Checkbox checked={densePadding} size="small" />
+                <ListItemIcon >
+                  <Checkbox checked={densePadding} size="small"  sx={{ p: 0, m: 0 }} />
                 </ListItemIcon>
                 Compact Mode
               </MenuItem>
+              {enableSendEmail && onSendEmail && (
+                <>
+                  <MenuItem 
+                    onClick={() => {
+                      onSendEmail();
+                      handleOptionsMenuClose();
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Send fontSize="small" sx={{ color: darkMode ? '#fff' : '#333' }} />
+                    </ListItemIcon>
+                    Send Email
+                    {userFilteredDataCount !== undefined && (
+                      <Chip 
+                        label={`${userFilteredDataCount} records`} 
+                        size="small" 
+                        color="primary" 
+                        sx={{ ml: 1 }}
+                      />
+                    )}
+                  </MenuItem>
+                  <Divider />
+                </>
+              )}
               <Divider />
               <MenuItem 
-  onClick={() => handleExportData("csv")}
-  disabled={enableFinancialValidation && !isFinancialVerified}
->
-  <ListItemIcon>
-    <CloudDownload fontSize="small" />
-  </ListItemIcon>
-  Export to CSV
-  {/* {enableFinancialValidation && !isFinancialVerified && (
-    // <Chip 
-    //   // label="Verify OTP" 
-    //   size="small" 
-    //   color="error" 
-    //   sx={{ ml: 1 }}
-    // />
-  )} */}
-</MenuItem>
-<MenuItem 
-  onClick={() => handleExportData("excel")}
-  disabled={enableFinancialValidation && !isFinancialVerified}
->
-  <ListItemIcon>
-    <CloudDownload fontSize="small" />
-  </ListItemIcon>
-  Export to Excel
-  {/* {enableFinancialValidation && !isFinancialVerified && (
-    <Chip 
-      label="Verify OTP" 
-      size="small" 
-      color="error" 
-      sx={{ ml: 1 }}
-    />
-  )} */}
-</MenuItem>
+                onClick={() => handleExportData("csv")}
+                disabled={enableFinancialValidation && !isFinancialVerified}
+              >
+                <ListItemIcon>
+                  <CloudDownload fontSize="small" />
+                </ListItemIcon>
+                Export to CSV
+              </MenuItem>
+              <MenuItem 
+                onClick={() => handleExportData("excel")}
+                disabled={enableFinancialValidation && !isFinancialVerified}
+              >
+                <ListItemIcon>
+                  <CloudDownload fontSize="small" />
+                </ListItemIcon>
+                Export to Excel
+              </MenuItem>
+
               <Divider />
               <MenuItem onClick={resetAllSettings}>
                 <ListItemIcon>
@@ -705,146 +720,146 @@ useEffect(() => {
         </Toolbar>
 
         {/* Basic Filters */}
-       <Collapse in={showFilters}>
-    <Box
-    sx={{
-      p: 2,
-      display: "flex",
-      flexWrap: "wrap",
-      gap: 2,
-      borderBottom: 1,
-      borderColor: "divider",
-      backgroundColor: darkMode
-        ? alpha(primaryColor, 0.05)
-        : alpha(primaryColor, 0.03),
-    }}
-    >
-    {columns
-      .filter((col) => col.filterable && col.visible !== false)
-      .slice(0, advancedFiltersOpen ? columns.length : 3)
-      .map((column) => (
-        <FormControl
-          key={column.key}
-          size="small"
-          variant="outlined"
-          sx={{
-            minWidth: 150,
-            "& .MuiInputLabel-outlined": {
-              color: alpha(tableStyles.paper.color, 0.7),
-              "&.Mui-focused": {
-                color: primaryColor,
-              },
-            },
-            "& .MuiOutlinedInput-root": {
-              color: tableStyles.paper.color,
-              "& fieldset": {
-                borderColor: alpha(tableStyles.paper.color, 0.5),
-              },
-              "&:hover fieldset": {
-                borderColor: alpha(tableStyles.paper.color, 0.7),
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: primaryColor,
-              },
-            },
-          }}
-        >
-          {column.type === "select" ? (
-            <>
-              <InputLabel id={`filter-${column.key}-label`}>
-                {column.label}
-              </InputLabel>
-              <Select
-                labelId={`filter-${column.key}-label`}
-                id={`filter-${column.key}`}
-                value={filters[column.key] || ""}
-                label={column.label}
-                onChange={(e) => handleFilterChange(column.key, e.target.value)}
-                MenuProps={{
-                  PaperProps: {
-                    sx: {
-                      maxHeight: 300,
-                      backgroundColor: darkMode ? "#444" : "#fff",
-                      color: darkMode ? "#fff" : "#333",
+        <Collapse in={showFilters}>
+          <Box
+            sx={{
+              p: 2,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 2,
+              borderBottom: 1,
+              borderColor: "divider",
+              backgroundColor: darkMode
+                ? alpha(primaryColor, 0.05)
+                : alpha(primaryColor, 0.03),
+            }}
+          >
+            {columns
+              .filter((col) => col.filterable && col.visible !== false)
+              .slice(0, advancedFiltersOpen ? columns.length : 3)
+              .map((column) => (
+                <FormControl
+                  key={column.key}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    minWidth: 150,
+                    "& .MuiInputLabel-outlined": {
+                      color: alpha(tableStyles.paper.color, 0.7),
+                      "&.Mui-focused": {
+                        color: primaryColor,
+                      },
                     },
+                    "& .MuiOutlinedInput-root": {
+                      color: tableStyles.paper.color,
+                      "& fieldset": {
+                        borderColor: alpha(tableStyles.paper.color, 0.5),
+                      },
+                      "&:hover fieldset": {
+                        borderColor: alpha(tableStyles.paper.color, 0.7),
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: primaryColor,
+                      },
+                    },
+                  }}
+                >
+                  {column.type === "select" ? (
+                    <>
+                      <InputLabel id={`filter-${column.key}-label`}>
+                        {column.label}
+                      </InputLabel>
+                      <Select
+                        labelId={`filter-${column.key}-label`}
+                        id={`filter-${column.key}`}
+                        value={filters[column.key] || ""}
+                        label={column.label}
+                        onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              maxHeight: 300,
+                              backgroundColor: darkMode ? "#444" : "#fff",
+                              color: darkMode ? "#fff" : "#333",
+                            },
+                          },
+                        }}
+                      >
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                        {getColumnFilterOptions(column.key).map((option) => (
+                          <MenuItem
+                            key={option}
+                            value={option}
+                            sx={{
+                              backgroundColor: darkMode ? "#444" : "#fff",
+                              color: darkMode ? "#fff" : "#333",
+                              "&:hover": {
+                                backgroundColor: darkMode ? "#555" : "#f5f5f5",
+                              },
+                            }}
+                          >
+                            {option}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </>
+                  ) : (
+                    <TextField
+                      id={column.key}
+                      label={column.label}
+                      type={column.type}
+                      value={filters[column.key] || ""}
+                      onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                      size="small"
+                      variant="outlined"
+                      placeholder={
+                        column.type === "date" ? undefined : column.label
+                      }
+                    />
+                  )}
+                </FormControl>
+              ))}
+
+            <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+              <Button
+                size="small"
+                onClick={clearAllFilters}
+                startIcon={<Clear />}
+                variant="outlined"
+                sx={{
+                  ml: 1,
+                  borderColor: alpha(tableStyles.paper.color, 0.5),
+                  color: tableStyles.paper.color,
+                  "&:hover": {
+                    borderColor: alpha(tableStyles.paper.color, 0.7),
+                    backgroundColor: alpha(tableStyles.paper.color, 0.05),
                   },
                 }}
               >
-                <MenuItem value="">
-                  <em>None</em>
-                </MenuItem>
-                {getColumnFilterOptions(column.key).map((option) => (
-                  <MenuItem
-                    key={option}
-                    value={option}
-                    sx={{
-                      backgroundColor: darkMode ? "#444" : "#fff",
-                      color: darkMode ? "#fff" : "#333",
-                      "&:hover": {
-                        backgroundColor: darkMode ? "#555" : "#f5f5f5",
-                      },
-                    }}
-                  >
-                    {option}
-                  </MenuItem>
-                ))}
-              </Select>
-            </>
-          ) : (
-            <TextField
-              id={column.key}
-              label={column.label}
-              type={column.type}
-              value={filters[column.key] || ""}
-              onChange={(e) => handleFilterChange(column.key, e.target.value)}
-              size="small"
-              variant="outlined"
-              placeholder={
-                column.type === "date" ? undefined : column.label
-              }
-            />
-          )}
-        </FormControl>
-      ))}
+                Clear
+              </Button>
 
-    <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-      <Button
-        size="small"
-        onClick={clearAllFilters}
-        startIcon={<Clear />}
-        variant="outlined"
-        sx={{
-          ml: 1,
-          borderColor: alpha(tableStyles.paper.color, 0.5),
-          color: tableStyles.paper.color,
-          "&:hover": {
-            borderColor: alpha(tableStyles.paper.color, 0.7),
-            backgroundColor: alpha(tableStyles.paper.color, 0.05),
-          },
-        }}
-      >
-        Clear
-      </Button>
-
-      {columns.filter((col) => col.filterable && col.visible !== false)
-        .length > 3 && (
-        <Button
-          size="small"
-          onClick={toggleAdvancedFilters}
-          endIcon={
-            advancedFiltersOpen ? <ExpandLess /> : <ExpandMore />
-          }
-          sx={{
-            ml: 1,
-            color: tableStyles.paper.color,
-          }}
-        >
-          {advancedFiltersOpen ? "Less" : "More"}
-        </Button>
-      )}
-    </Box>
-  </Box>
-</Collapse>
+              {columns.filter((col) => col.filterable && col.visible !== false)
+                .length > 3 && (
+                <Button
+                  size="small"
+                  onClick={toggleAdvancedFilters}
+                  endIcon={
+                    advancedFiltersOpen ? <ExpandLess /> : <ExpandMore />
+                  }
+                  sx={{
+                    ml: 1,
+                    color: tableStyles.paper.color,
+                  }}
+                >
+                  {advancedFiltersOpen ? "Less" : "More"}
+                </Button>
+              )}
+            </Box>
+          </Box>
+        </Collapse>
 
         {/* Main Table */}
         <TableContainer
@@ -951,7 +966,8 @@ useEffect(() => {
                     )}
                   </TableCell>
                 ))}
-              </TableRow>
+
+                 </TableRow>
             </TableHead>
 
             <TableBody>
@@ -1011,7 +1027,7 @@ useEffect(() => {
                             align={column.align || "left"}
                             sx={{
                               backgroundColor: "inherit",
-                              position: "inherit", // Regular positioning for body cells
+                              position: "inherit",
                               zIndex: 0,
                             }}
                           >
@@ -1025,7 +1041,6 @@ useEffect(() => {
                         ))}
                       </TableRow>
 
-                      {/* Expandable row content */}
                       {row.expandContent && (
                         <TableRow>
                           <TableCell
@@ -1080,7 +1095,7 @@ useEffect(() => {
   );
 };
 
-// Define a component for ListItemIcon since it wasn't imported
+// ListItemIcon component
 const ListItemIcon = ({ children, ...props }) => (
   <Box sx={{ mr: 2, display: "inline-flex", minWidth: "24px", ...props }}>
     {children}
