@@ -806,8 +806,8 @@ const handleDateTimeChange = (newValue) => {
   }}
   views={['year', 'month', 'day', 'hours', 'minutes']}
   openTo="day"
-  timeSteps={{ hours: 1, minutes: 30 }}
-  minutesStep={30}
+  // timeSteps={{ hours: 1, minutes: 30 }}
+  // minutesStep={30}
   ampm={false}
   format="DD/MM/YYYY HH:mm"
 
@@ -838,10 +838,10 @@ const handleDateTimeChange = (newValue) => {
             error={formik.touched.duration && Boolean(formik.errors.duration)}
             label="Duration (minutes)"
             >
-           {/* <MenuItem value={15}>15 minutes</MenuItem> */}
+           <MenuItem value={15}>15 minutes</MenuItem>
            <MenuItem value={30}>30 minutes</MenuItem>
-           {/* <MenuItem value={45}>45 minutes</MenuItem>
-           <MenuItem value={60}>60 minutes</MenuItem> */}
+           <MenuItem value={45}>45 minutes</MenuItem>
+           <MenuItem value={60}>60 minutes</MenuItem>
            </Select>
            </FormControl>
            </Grid>
@@ -885,9 +885,10 @@ const handleDateTimeChange = (newValue) => {
     error={formik.touched.assignedTo && Boolean(formik.errors.assignedTo)}
     label="Coordinator"
     notched={true}
+    disabled={formik.values.interviewLevel !== "INTERNAL"}
   >
     <MenuItem value="">None</MenuItem>
-    {coordinators.map((coordinator) => (
+    { coordinators.map((coordinator) => (
       <MenuItem key={coordinator.value} value={coordinator.value}>
         {coordinator.label}
       </MenuItem>
