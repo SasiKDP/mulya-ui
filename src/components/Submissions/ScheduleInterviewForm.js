@@ -61,7 +61,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   useEffect(() => {
     const fetchCoordinators = async () => {
       try {
-        const res = await httpService.get("/users/employee?roleName=COORDINATOR");
+        const res = await httpService.get("/users/employee?excludeRoleName=EMPLOYEE");
         const formatted = res.data.map((emp) => ({
           value: emp.employeeId,
           label: emp.userName,

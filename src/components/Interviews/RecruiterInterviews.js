@@ -71,7 +71,7 @@ const RecruiterInterviews = () => {
   });
 
   const dispatch = useDispatch();
-  const { userId } = useSelector((state) => state.auth);
+  const { userId ,role} = useSelector((state) => state.auth);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const { filterInterviewsForRecruiter } = useSelector(
     (state) => state.interview
@@ -274,6 +274,11 @@ const RecruiterInterviews = () => {
       ),
     },
     { key: "clientName", label: "Client", width: 150 },
+    ...(role==="COORDINATOR" ? [{
+        key:"recruiterName",
+        label:"Recruiter",
+        width:120
+    }]:[]),
     {
       key: "interviewLevel",
       label: "Level",

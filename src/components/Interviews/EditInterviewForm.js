@@ -37,7 +37,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   useEffect(() => {
     const fetchCoordinators = async () => {
       try {
-        const res = await httpService.get("/users/employee?roleName=COORDINATOR");
+        const res = await httpService.get("/users/employee?excludeRoleName=EMPLOYEE");
         setCoordinators(
           res.data.map((emp) => ({
             value: emp.employeeId,
@@ -100,7 +100,7 @@ const getFormFields = (values) => {
     name: "assignedTo",
     label: "Coordinator",
     type: "select",
-    disabled: true,
+    disabled:values?.interviewLevel !== "INTERNAL",
     options: coordinators,
     required: false,
     gridProps: commonGridProps,
@@ -213,7 +213,7 @@ const getFormFields = (values) => {
         ],
         gridProps: commonGridProps,
       },
-      ...(showCoordinator ? [coordinatorField] : []),
+      ...( [coordinatorField]),
       {
         name: "zoomLink",
         label: "Meeting Link",
