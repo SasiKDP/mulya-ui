@@ -211,6 +211,15 @@ const BenchList = () => {
 
   const generateColumns = (loading = false) => [
     {
+      key: 'technology',
+      label: 'Technology',
+      type: 'text',
+      sortable: true,
+      filterable: true,
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={140} height={24} /> : undefined
+    },
+    {
       key: 'id',
       label: 'Bench ID',
       type: 'text',
@@ -284,15 +293,6 @@ const BenchList = () => {
       render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
     },
     {
-      key: 'technology',
-      label: 'Technology',
-      type: 'text',
-      sortable: true,
-      filterable: true,
-      width: 180,
-      render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
-    },
-    {
       key: 'totalExperience',
       label: 'Total Exp (Yrs)',
       type: 'text',
@@ -323,6 +323,15 @@ const BenchList = () => {
           variant="outlined" 
         />
       )
+    },
+    {
+      key:'remarks',
+      label:'Remarks',
+      type:'text',
+      align:'center',
+      sortable: true,
+      filterable: true,
+      width: 150,
     },
     {
       key: 'actions',

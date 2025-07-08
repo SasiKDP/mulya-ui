@@ -1,27 +1,12 @@
 import React, { useState } from "react";
-import { IconButton, Menu, MenuItem, LinearProgress } from "@mui/material";
+import { IconButton, Menu, MenuItem, LinearProgress, Tooltip } from "@mui/material";
 import { Download } from "@mui/icons-material";
 import ToastService from "../Services/toastService";
-import * as pdfjsLib from "pdfjs-dist/build/pdf";
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  HeadingLevel,
-  AlignmentType,
-  ExternalHyperlink,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  BorderStyle
-} from "docx";
+import * as pdfjsLib from "pdfjs-dist";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ExternalHyperlink, Table, TableRow, TableCell, WidthType, BorderStyle } from "docx";
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = 
-  window.pdfjsWorkerPath || 
-  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 const DownloadResume = ({ candidate, getDownloadUrl }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -43,6 +28,7 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Accept': format === 'pdf' 
             ? 'application/pdf' 
             : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -55,7 +41,7 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
       }
       
       const contentDisposition = response.headers.get('content-disposition');
-      let filename = `${candidate.fullName.replace(/\s+/g, '_')}_resume.${format}`;
+      let filename = `${candidate.candidateFullName?.replace(/\s+/g, '_') || 'resume'}_resume.${format}`;
       
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="?(.+?)"?(;|$)/i);
@@ -74,67 +60,42 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
     }
   };
 
+  const rgbToHex = (r, g, b) => {
+    const toHex = (c) => {
+      const hex = Math.round(c * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+  };
+
   const extractAdvancedTextContent = async (pdf) => {
     const pages = [];
     const links = [];
-    const fonts = new Set();
     
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const viewport = page.getViewport({ scale: 1.0 });
       
-      // Extract font information
-      const opList = await page.getOperatorList();
-      const fontMap = {};
-      
-      // Process operator list to get font information
-      opList.fnArray.forEach((fn, index) => {
-        if (fn === pdfjsLib.OPS.setFont) {
-          const fontName = opList.argsArray[index][0];
-          const fontSize = opList.argsArray[index][1];
-          fontMap[fontName] = fontSize;
-          fonts.add(fontName);
-        }
-      });
-
-      // Sort text items by position (top to bottom, left to right)
+      // Sort text items by position
       const sortedItems = textContent.items
-        .map(item => {
-          const fontName = item.fontName;
-          const fontSize = fontMap[fontName] || item.height || 11;
-          const isBold = fontName && (
-            fontName.toLowerCase().includes('bold') || 
-            fontName.match(/bd/i) || 
-            fontName.match(/bold/i)
-          );
-          const isItalic = fontName && (
-            fontName.toLowerCase().includes('italic') || 
-            fontName.match(/it/i) || 
-            fontName.match(/oblique/i)
-          );
-          
-          return {
-            text: item.str,
-            x: item.transform[4],
-            y: viewport.height - item.transform[5], // Convert to top-down coordinate
-            width: item.width,
-            height: item.height,
-            fontSize: fontSize,
-            fontName: fontName || '',
-            bold: isBold,
-            italic: isItalic,
-            color: item.color && item.color.length === 3 ? 
-              rgbToHex(item.color[0], item.color[1], item.color[2]) : '#000000'
-          };
-        })
+        .map(item => ({
+          text: item.str,
+          x: item.transform[4],
+          y: viewport.height - item.transform[5],
+          width: item.width,
+          height: item.height,
+          fontSize: item.height || 11,
+          bold: item.fontName?.includes('Bold') || false,
+          italic: item.fontName?.includes('Italic') || false,
+          color: item.color && item.color.length === 3 ? 
+            rgbToHex(item.color[0], item.color[1], item.color[2]) : '#000000'
+        }))
         .filter(item => item.text.trim().length > 0)
         .sort((a, b) => {
-          const yThreshold = 5; // Group items on similar vertical positions
-          if (Math.abs(a.y - b.y) < yThreshold) {
-            return a.x - b.x; // Same line, sort by x position
-          }
-          return a.y - b.y; // Different lines, sort by y position
+          const yThreshold = 5;
+          if (Math.abs(a.y - b.y) < yThreshold) return a.x - b.x;
+          return a.y - b.y;
         });
 
       // Extract links
@@ -144,34 +105,23 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
           if (annotation.url) {
             links.push({
               url: annotation.url,
-              text: annotation.url,
-              rect: annotation.rect
+              text: annotation.url
             });
           }
         });
       } catch (e) {
-        console.warn('Could not extract annotations from page', i);
+        console.warn('Could not extract annotations');
       }
       
       pages.push({
         items: sortedItems,
-        pageNumber: i,
-        width: viewport.width,
-        height: viewport.height
+        width: viewport.width
       });
       
       setConversionProgress((i / pdf.numPages) * 40);
     }
     
-    return { pages, links, fonts: Array.from(fonts) };
-  };
-
-  const rgbToHex = (r, g, b) => {
-    const toHex = (c) => {
-      const hex = Math.round(c * 255).toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+    return { pages, links };
   };
 
   const groupTextIntoLines = (items) => {
@@ -184,15 +134,13 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
       const current = items[i];
       const previous = items[i - 1];
       
-      // Check if items are on the same line (within a threshold)
       const yThreshold = Math.max(current.fontSize, previous.fontSize) * 0.3;
       const xGap = current.x - (previous.x + previous.width);
       
       if (Math.abs(current.y - previous.y) <= yThreshold) {
-        // Check if this is a continuation of the same text (small gap) or a new column (large gap)
-        if (xGap < 50) { // Small gap - same text
+        if (xGap < 50) {
           currentLine.push(current);
-        } else { // Large gap - new column (for tables)
+        } else {
           lines.push(currentLine);
           currentLine = [current];
         }
@@ -216,9 +164,8 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
     const hasBold = items.some(item => item.bold);
     const hasItalic = items.some(item => item.italic);
     const text = items.map(item => item.text).join('').trim();
-    const color = items[0].color; // Use first item's color
-    
-    // Detect headings and styles
+    const color = items[0].color;
+
     if (avgFontSize > 14 || hasBold) {
       if (text.toUpperCase() === text && text.length < 50) {
         return { 
@@ -239,7 +186,6 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
       }
     }
     
-    // Check for bullet points
     if (text.match(/^[•·\-\*]\s/) || text.match(/^\d+\.\s/)) {
       return { 
         type: 'bullet', 
@@ -249,26 +195,6 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
         color: color || '000000',
         alignment: AlignmentType.LEFT
       };
-    }
-    
-    // Check for centered text (by comparing position to page width)
-    if (items.length > 0) {
-      const firstItem = items[0];
-      const lastItem = items[items.length - 1];
-      const textWidth = lastItem.x + lastItem.width - firstItem.x;
-      const pageCenter = firstItem.pageWidth / 2;
-      const textCenter = firstItem.x + (textWidth / 2);
-      
-      if (Math.abs(textCenter - pageCenter) < 20) {
-        return { 
-          type: 'centered', 
-          size: Math.round(avgFontSize * 2), 
-          bold: hasBold, 
-          italic: hasItalic,
-          color: color || '000000',
-          alignment: AlignmentType.CENTER
-        };
-      }
     }
     
     return { 
@@ -281,180 +207,18 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
     };
   };
 
-  const detectTableStructure = (lines) => {
-    const tables = [];
-    let currentTable = null;
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const text = line.map(item => item.text).join('').trim();
-      
-      // Skip empty lines
-      if (!text) continue;
-      
-      // Simple table detection - look for lines with multiple columns separated by significant gaps
-      if (line.length > 1) {
-        const gaps = [];
-        for (let j = 1; j < line.length; j++) {
-          gaps.push(line[j].x - (line[j-1].x + line[j-1].width));
-        }
-        
-        const avgGap = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
-        
-        if (avgGap > 50 && line.length >= 2) { // Potential table row
-          if (!currentTable) {
-            currentTable = {
-              startIndex: i,
-              rows: [],
-              columns: line.length,
-              columnPositions: line.map(item => item.x)
-            };
-          } else {
-            // Check if this line aligns with existing columns
-            const columnAlignment = line.every((item, idx) => {
-              if (idx >= currentTable.columnPositions.length) return false;
-              return Math.abs(item.x - currentTable.columnPositions[idx]) < 10;
-            });
-            
-            if (columnAlignment) {
-              currentTable.rows.push(line.map(item => ({
-                text: item.text.trim(),
-                style: {
-                  size: Math.round(item.fontSize * 2),
-                  bold: item.bold,
-                  italic: item.italic,
-                  color: item.color
-                }
-              })));
-              continue;
-            }
-          }
-        }
-      }
-      
-      // End current table if exists
-      if (currentTable && currentTable.rows.length > 1) {
-        tables.push({
-          ...currentTable,
-          endIndex: i - 1
-        });
-      }
-      currentTable = null;
-    }
-    
-    // Add the last table if it exists
-    if (currentTable && currentTable.rows.length > 1) {
-      tables.push({
-        ...currentTable,
-        endIndex: lines.length - 1
-      });
-    }
-    
-    return tables;
-  };
-
   const createWordDocument = (pages, links) => {
     const children = [];
-    const processedLineIndices = new Set();
     
-    pages.forEach((page, pageIndex) => {
-      // Add page items to their page object for reference
-      const pageWithItems = {
-        ...page,
-        items: page.items.map(item => ({ ...item, pageWidth: page.width }))
-      };
+    pages.forEach((page) => {
+      const lines = groupTextIntoLines(page.items);
       
-      const lines = groupTextIntoLines(pageWithItems.items);
-      const tables = detectTableStructure(lines);
-      
-      lines.forEach((line, lineIndex) => {
-        if (processedLineIndices.has(`${pageIndex}-${lineIndex}`)) return;
-        
-        // Check if this line is part of a table
-        const table = tables.find(t => 
-          lineIndex >= t.startIndex && lineIndex <= t.endIndex
-        );
-        
-        if (table && lineIndex === table.startIndex) {
-          // Create table
-          const tableRows = table.rows.map((rowData, rowIndex) => {
-            // First row is often the header
-            const isHeader = rowIndex === 0;
-            
-            return new TableRow({
-              children: rowData.map((cell, cellIndex) => {
-                const cellChildren = [];
-                
-                // Split text by newlines if they exist
-                const paragraphs = cell.text.split('\n');
-                
-                paragraphs.forEach((para, paraIndex) => {
-                  if (para.trim()) {
-                    cellChildren.push(new Paragraph({
-                      children: [new TextRun({
-                        text: para,
-                        size: cell.style.size,
-                        bold: cell.style.bold,
-                        italic: cell.style.italic,
-                        color: cell.style.color,
-                      })],
-                      alignment: paraIndex === 0 ? AlignmentType.LEFT : AlignmentType.LEFT,
-                      spacing: { line: 276 }
-                    }));
-                  }
-                });
-                
-                return new TableCell({
-                  children: cellChildren,
-                  margins: {
-                    top: 100,
-                    bottom: 100,
-                    left: 100,
-                    right: 100
-                  },
-                  borders: {
-                    top: { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-                    left: { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-                    bottom: { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-                    right: { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" }
-                  },
-                  shading: {
-                    fill: isHeader ? "DDDDDD" : "FFFFFF"
-                  }
-                });
-              }),
-              tableHeader: isHeader
-            });
-          });
-          
-          children.push(new Table({
-            rows: tableRows,
-            width: {
-              size: 100,
-              type: WidthType.PERCENTAGE
-            },
-            borders: {
-              insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-              insideVertical: { style: BorderStyle.SINGLE, size: 4, color: "AAAAAA" }
-            },
-            layout: WidthType.AUTO
-          }));
-          
-          // Mark all table lines as processed
-          for (let i = table.startIndex; i <= table.endIndex; i++) {
-            processedLineIndices.add(`${pageIndex}-${i}`);
-          }
-          return;
-        }
-        
-        if (table) return; // Skip if part of table (already processed)
-        
+      lines.forEach((line) => {
         const text = line.map(item => item.text).join('').trim();
         if (!text) return;
         
         const style = identifyTextStyle(line);
         
-        // Create paragraph based on detected style
         const paragraphOptions = {
           children: [new TextRun({
             text: text,
@@ -469,8 +233,7 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
             after: style.type === 'heading1' ? 200 : style.type === 'heading2' ? 150 : 120,
             line: 276
           },
-          alignment: style.alignment,
-          indent: style.type === 'bullet' ? { left: 720 } : undefined
+          alignment: style.alignment
         };
         
         if (style.type === 'heading1') {
@@ -483,11 +246,8 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
         
         children.push(new Paragraph(paragraphOptions));
       });
-      
-      setConversionProgress(40 + (pageIndex / pages.length) * 50);
     });
     
-    // Add links section if any
     if (links.length > 0) {
       children.push(new Paragraph({
         children: [new TextRun({ 
@@ -532,48 +292,6 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
             paragraph: {
               spacing: { line: 276, before: 120, after: 120 }
             }
-          },
-          {
-            id: "Heading1",
-            name: "Heading 1",
-            run: {
-              size: 28,
-              bold: true,
-              color: "2E74B5",
-              font: "Calibri Light",
-              allCaps: true
-            },
-            paragraph: {
-              spacing: { before: 400, after: 200 },
-              alignment: AlignmentType.CENTER
-            }
-          },
-          {
-            id: "Heading2",
-            name: "Heading 2",
-            run: {
-              size: 26,
-              bold: true,
-              color: "1F4E79",
-              font: "Calibri"
-            },
-            paragraph: {
-              spacing: { before: 300, after: 150 },
-              alignment: AlignmentType.LEFT
-            }
-          },
-          {
-            id: "ListParagraph",
-            name: "List Paragraph",
-            run: {
-              size: 22,
-              color: "000000",
-              font: "Calibri"
-            },
-            paragraph: {
-              spacing: { line: 276 },
-              indent: { left: 720, hanging: 360 }
-            }
           }
         ]
       },
@@ -582,7 +300,7 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
         properties: {
           page: {
             margin: {
-              top: 1440,    // 1 inch
+              top: 1440,
               right: 1440,
               bottom: 1440,
               left: 1440
@@ -599,13 +317,7 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
     
     try {
       const pdfData = await pdfBlob.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ 
-        data: pdfData,
-        verbosity: 0,
-        standardFontDataUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/standard_fonts/`,
-        cMapUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/cmaps/`,
-        cMapPacked: true
-      }).promise;
+      const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
 
       const { pages, links } = await extractAdvancedTextContent(pdf);
       setConversionProgress(50);
@@ -645,12 +357,12 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
       if (format === 'word') {
         ToastService.info("Converting to Word...");
         downloadBlob = await convertPdfToWord(blob);
-        filename = originalFilename.replace(/\.pdf$/i, '.docx') || 
-                  `${candidate.fullName.replace(/\s+/g, '_')}_resume.docx`;
+        filename = originalFilename?.replace(/\.pdf$/i, '.docx') || 
+                  `${candidate.candidateFullName?.replace(/\s+/g, '_') || 'resume'}.docx`;
       } else {
         downloadBlob = blob;
         filename = originalFilename || 
-                 `${candidate.fullName.replace(/\s+/g, '_')}_resume.${format}`;
+                 `${candidate.candidateFullName?.replace(/\s+/g, '_') || 'resume'}.${format}`;
       }
 
       const link = document.createElement('a');
@@ -678,15 +390,16 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
 
   return (
     <>
-      <IconButton 
-        color="success" 
-        size="small" 
-        onClick={handleClick}
-        disabled={isConverting}
-        title="Download Resume"
-      >
-        <Download fontSize="small" />
-      </IconButton>
+      <Tooltip title="Download Resume">
+        <IconButton 
+          color="primary" 
+          size="small" 
+          onClick={handleClick}
+          disabled={isConverting}
+        >
+          <Download fontSize="small" />
+        </IconButton>
+      </Tooltip>
       
       <Menu
         anchorEl={anchorEl}
@@ -695,32 +408,26 @@ const DownloadResume = ({ candidate, getDownloadUrl }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <MenuItem onClick={(e) => handleDownload("pdf", e)} disabled={isConverting}>
-          {isConverting ? "Processing..." : "Download PDF"}
+          Download PDF
         </MenuItem>
         <MenuItem onClick={(e) => handleDownload("docx", e)} disabled={isConverting}>
-          {isConverting ? "Processing..." : "Download Word"}
+          Download Word
         </MenuItem>
         <MenuItem onClick={(e) => handleDownload("word", e)} disabled={isConverting}>
-          {isConverting ? "Converting..." : "Convert PDF to Word"}
+          {isConverting ? "Converting..." : "Convert to Word"}
         </MenuItem>
         
         {isConverting && (
           <MenuItem disabled>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px',
-              width: '200px',
-              flexDirection: 'column' 
-            }}>
-              <span style={{ fontSize: '12px' }}>
-                Converting... {Math.round(conversionProgress)}%
-              </span>
+            <div style={{ width: 200, padding: '8px 16px' }}>
               <LinearProgress 
                 variant="determinate"
                 value={conversionProgress}
-                style={{ width: '100%' }}
+                style={{ marginBottom: 8 }}
               />
+              <div style={{ textAlign: 'center', fontSize: 12 }}>
+                {Math.round(conversionProgress)}% complete
+              </div>
             </div>
           </MenuItem>
         )}

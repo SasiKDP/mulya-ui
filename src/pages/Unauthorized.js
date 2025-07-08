@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const Unauthorized = () => {
+const  Unauthorized= () => {
   const navigate = useNavigate();
 
   return (
