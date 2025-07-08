@@ -3,10 +3,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchInProgressData, clearFilterData, sendingUsersData } from '../../redux/inProgressSlice';
 import DataTable from '../muiComponents/DataTabel';
 import DateRangeFilter from '../muiComponents/DateRangeFilter';
-import { Stack, Typography, Alert, Snackbar } from '@mui/material';
+import { Stack, Typography, Alert, Snackbar,Link} from '@mui/material';
+import { formatDateTime } from '../../utils/dateformate';
+import { useNavigate } from 'react-router-dom';
+import ToastService from '../../Services/toastService';
+
 
 const InProgress = () => {
     const dispatch = useDispatch();
+    const navigate=useNavigate();
     const { 
         inProgress = [], 
         loading, 
@@ -34,51 +39,62 @@ const InProgress = () => {
     }, [dispatch]);
 
     // Enhanced sorting function
-    const customSort = (a, b, key) => {
-        const valA = (a[key] || '').toString().trim().toLowerCase();
-        const valB = (b[key] || '').toString().trim().toLowerCase();
+const customSort = (a, b, key) => {
+    const valA = a[key];
+    const valB = b[key];
 
-        // Only apply name-specific logic on people-related keys
-        const isNameField = ['bdm', 'teamlead', 'recruiterName'].includes(key);
+    const isNullA = valA === null || valA === undefined;
+    const isNullB = valB === null || valB === undefined;
 
-        if (isNameField) {
-            // Split by capital letters and spaces (covers "JohnDoe" and "John Doe")
-            const splitName = (name) => name.split(/(?=[A-Z])|\s+/).filter(Boolean);
+    if (isNullA && !isNullB) return 1;
+    if (!isNullA && isNullB) return -1;
+    if (isNullA && isNullB) return 0;
 
-            const partsA = splitName(valA);
-            const partsB = splitName(valB);
+    const stringA = valA.toString().trim().toLowerCase();
+    const stringB = valB.toString().trim().toLowerCase();
 
-            // Compare parts one by one
-            for (let i = 0; i < Math.min(partsA.length, partsB.length); i++) {
-                const cmp = partsA[i].localeCompare(partsB[i], undefined, { sensitivity: 'base' });
-                if (cmp !== 0) return cmp;
-            }
+    const isNameField = ['bdm', 'teamlead', 'recruiterName'].includes(key);
 
-            // If all parts matched, shorter name comes first
-            return partsA.length - partsB.length;
+    if (isNameField) {
+        const split = (name) => name.split(/(?=[A-Z])|\s+/).filter(Boolean);
+        const partsA = split(stringA);
+        const partsB = split(stringB);
+        for (let i = 0; i < Math.min(partsA.length, partsB.length); i++) {
+            const cmp = partsA[i].localeCompare(partsB[i], undefined, { sensitivity: 'base' });
+            if (cmp !== 0) return cmp;
         }
+        return partsA.length - partsB.length;
+    }
 
-        // Default string comparison
-        return valA.localeCompare(valB, undefined, { sensitivity: 'base' });
-    };
+    return stringA.localeCompare(stringB, undefined, { sensitivity: 'base' });
+};
+
+
 
     // Apply filtering and sorting to the data
-    const processedData = useMemo(() => {
-        const data = isFiltered ? filterinProgressByDateRange : inProgress;
+const processedData = useMemo(() => {
+    const data = isFiltered ? filterinProgressByDateRange : inProgress;
 
-        const unique = [];
-        const seen = new Set();
+    const unique = [];
+    const seen = new Set();
 
-        for (const item of data) {
-            const key = JSON.stringify(item); // full row check
-            if (!seen.has(key)) {
-                seen.add(key);
-                unique.push(item);
-            }
+    for (const item of data) {
+        const key = JSON.stringify(item);
+        if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(item);
         }
+    }
 
-        return unique;
-    }, [inProgress, filterinProgressByDateRange, isFiltered]);
+    // Apply sorting here
+    const sortedData = [...unique].sort((a, b) => {
+        const result = customSort(a, b, sortConfig.key);
+        return sortConfig.direction === 'asc' ? result : -result;
+    });
+
+    return sortedData;
+}, [inProgress, filterinProgressByDateRange, isFiltered, sortConfig]);
+
 
     // Filter data by current user's userId matching with recruiterId
     const getUserFilteredData = () => {
@@ -88,6 +104,7 @@ const InProgress = () => {
             return item.recruiterId === userId || item.recruiterName === userName;
         });
     };
+
 
     // Handle send email functionality
     const handleSendEmail = async () => {
@@ -125,6 +142,13 @@ const InProgress = () => {
         }
     };
 
+
+ const handleJobIdClick = (jobId) => {
+  navigate(`/dashboard/requirements/job-details/${jobId}`, {
+    state: { from: "/dashboard/InProgress" }
+  });
+};
+
     const handleSort = (key) => {
         setSortConfig((prev) => {
             if (prev.key === key) {
@@ -135,16 +159,16 @@ const InProgress = () => {
     };
 
     const columns = [
-        {
-            key: "bdm",
-            label: "BDM",
+         {
+            key: "recruiterName",
+            label: "Recruiter",
             type: "text",
             sortable: true,
             filterable: true,
             width: 120,
-            isSorted: sortConfig.key === 'bdm',
-            isSortedDesc: sortConfig.key === 'bdm' && sortConfig.direction === 'desc',
-            onSort: () => handleSort('bdm')
+            isSorted: sortConfig.key === 'recruiterName',
+            isSortedDesc: sortConfig.key === 'recruiterName' && sortConfig.direction === 'desc',
+            onSort: () => handleSort('recruiterName')
         },
         {
             key: "teamlead",
@@ -158,20 +182,34 @@ const InProgress = () => {
             onSort: () => handleSort('teamlead')
         },
         {
-            key: "recruiterName",
-            label: "Recruiter",
+            key: "bdm",
+            label: "BDM",
             type: "text",
             sortable: true,
             filterable: true,
             width: 120,
-            isSorted: sortConfig.key === 'recruiterName',
-            isSortedDesc: sortConfig.key === 'recruiterName' && sortConfig.direction === 'desc',
-            onSort: () => handleSort('recruiterName')
+            isSorted: sortConfig.key === 'bdm',
+            isSortedDesc: sortConfig.key === 'bdm' && sortConfig.direction === 'desc',
+            onSort: () => handleSort('bdm')
         },
         {
             key: "jobId",
             label: "JOB ID",
             type: "text",
+             render: (row) => (
+                    <Link
+                      component="button"
+                      variant="body2"
+                      onClick={() => handleJobIdClick(row.jobId)}
+                      sx={{
+                        textDecoration: "none",
+                        cursor: "pointer",
+                        "&:hover": { textDecoration: "underline" },
+                      }}
+                    >
+                      {row.jobId}
+                    </Link>
+                  ),
             sortable: true,
             filterable: true,
             width: 120
@@ -193,9 +231,10 @@ const InProgress = () => {
             width: 120 
         },
         {
-            key: "postedDate",
+            key: "updatedDateTime",
             label: "Posted Date",
             type: "text",
+            render: (row) => formatDateTime(row.updatedDateTime),
             sortable: true,
             filterable: true,
             width: 120,

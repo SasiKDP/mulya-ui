@@ -45,10 +45,11 @@ const HomePage = () => {
 
   // Card permission mapping
   const cardPermissions = {
-    requirements: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD'],
+    requirements: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD',"COORDINATOR"],
     candidates: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD'],
     assigned: ['ADMIN', 'EMPLOYEE', 'TEAMLEAD', 'BDM'],
     interviews: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD','COORDINATOR'],
+    internalInterviews:["SUPERADMIN"],
     clients: ['ADMIN', 'SUPERADMIN', 'BDM', 'PARTNER'],
     placements: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE"],
     users: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE",'COORDINATOR'],
@@ -229,7 +230,7 @@ useEffect(() => {
       return card.key === 'placements' || card.key ==='users'
     }
     else if(role === 'COORDINATOR'){
-      return card.key === 'users' || card.key === 'interviews';
+      return  card.key === 'interviews';
   }
     return card.key !== 'assigned';
    

@@ -10,6 +10,7 @@ import {
   Tooltip,
   Tabs,
   Tab,
+  Link
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -34,6 +35,7 @@ import {
   fetchInterviewsTeamLead,
   filterInterviewsByTeamLead,
 } from "../../redux/interviewSlice";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Process interview data to ensure consistency and prepare for display
@@ -74,6 +76,8 @@ const TeamLeadInterviews = () => {
     open: false,
     data: null,
   });
+
+  const navigate=useNavigate();
 
   const dispatch = useDispatch();
   const { userId } = useSelector((state) => state.auth);
@@ -122,6 +126,13 @@ const TeamLeadInterviews = () => {
     });
   };
 
+ const handleJobIdClick = (jobId) => {
+  navigate(`/dashboard/requirements/job-details/${jobId}`, {
+    state: { from: "/dashboard/interviews" }
+  });
+};
+  
+  
   const handleInterviewUpdated = () => {
     fetchInterviews();
     handleCloseEditDrawer();
@@ -267,6 +278,36 @@ const TeamLeadInterviews = () => {
   // Define columns for the data table
   const columns = [
     {
+      key:"jobId",
+      label:"Job ID",
+      width: 180,
+       render: (row) => (
+                          <Link
+                            component="button"
+                            variant="body2"
+                            onClick={() => handleJobIdClick(row.jobId)}
+                            sx={{
+                              textDecoration: "none",
+                              cursor: "pointer",
+                              "&:hover": { textDecoration: "underline" },
+                            }}
+                          >
+                            {row.jobId}
+                          </Link>),
+            sortable: true,
+            filterable: true,
+            width: 120
+    },
+    {
+      key:"technology",
+      label:"Technologies",
+      sortable: true,
+      render:(row)=>(row.technology),
+      filterable: true,
+      width: 120
+    },
+
+    {
       key: "candidateFullName",
       label: "Candidate",
       width: 180,
@@ -323,6 +364,15 @@ const TeamLeadInterviews = () => {
           </Typography>
         ),
     },
+    {
+      key:"internalFeedback",
+      label:"Internal Feedback",
+       width: 120,
+      render:(row)=>(row.technology || "-"),
+      filterable: true,
+      width: 120
+    },
+
     {
       key: "actions",
       label: "Actions",

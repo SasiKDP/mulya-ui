@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -15,80 +14,6 @@ import { useFormik } from "formik";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { showToast } from "../../utils/ToastNotification";
 
-const validationSchema = Yup.object().shape({
-  fullName: Yup.string().required("Full Name is required"),
-  candidateEmailId: Yup.string()
-    .email("Invalid email address")
-    .matches(
-      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Please enter a valid email address in lowercase"
-    )
-    .required("Email is required"),
-  contactNumber: Yup.string()
-    .matches(/^(\+?\d{10}|\+?\d{12}|\+?\d{15})$/, "Contact number must be 10, 12, or 15 digits")
-    .required("Contact number is required"),
-  currentOrganization: Yup.string()
-    .max(30, "Organization name cannot be more than 30 characters")
-    .required("Current Organization is required"),
-  qualification: Yup.string().required("Qualification is required"),
-  totalExperience: Yup.number()
-    .min(0, "Total experience cannot be negative")
-    .max(50, "Total experience cannot be more than 50 years")
-    .required("Total experience is required"),
-  relevantExperience: Yup.number()
-    .min(0, "Relevant experience cannot be negative")
-    .max(50, "Relevant experience cannot be more than 50 years")
-    .required("Relevant experience is required")
-    .test(
-      "is-relevant-not-more-than-total",
-      "Relevant experience cannot be more than total experience",
-      function (value) {
-        const { totalExperience } = this.parent;
-        return value <= totalExperience;
-      }
-    ),
-  currentCTC: Yup.mixed()
-    .test("is-valid-ctc", "Please enter a valid CTC value in LPA", (value) => {
-      if (!value) return false;
-      const stringValue = String(value).trim();
-      if (/^\d+(\.\d{1,2})?$/.test(stringValue)) return true;
-      if (/^\d+(\.\d{1,2})?\s*LPA$/.test(stringValue)) return true;
-      return false;
-    })
-    .required("Current CTC is required"),
-  expectedCTC: Yup.mixed()
-    .test("is-valid-ctc", "Please enter a valid CTC value in LPA", (value) => {
-      if (!value) return false;
-      const stringValue = String(value).trim();
-      if (/^\d+(\.\d{1,2})?$/.test(stringValue)) return true;
-      if (/^\d+(\.\d{1,2})?\s*LPA$/.test(stringValue)) return true;
-      return false;
-    })
-    .required("Expected CTC is required"),
-  noticePeriod: Yup.string().required("Notice Period is required"),
-  currentLocation: Yup.string()
-    .max(18, "Location cannot be more than 18 characters")
-    .matches(/^[A-Za-z\s]+$/, "Location can only contain letters and spaces")
-    .required("Current Location is required"),
-  preferredLocation: Yup.string()
-    .max(18, "Location cannot be more than 18 characters")
-    .matches(/^[A-Za-z\s]+$/, "Location can only contain letters and spaces")
-    .required("Preferred Location is required"),
-  skills: Yup.string().required("Skills are required"),
-  communicationSkills: Yup.number()
-    .min(1, "Rating must be between 1 and 5")
-    .max(5, "Rating must be between 1 and 5")
-    .required("Communication Skills rating is required"),
-  requiredTechnologiesRating: Yup.number()
-    .min(1, "Rating must be between 1 and 5")
-    .max(5, "Rating must be between 1 and 5")
-    .required("Technology Skills rating is required"),
-  overallFeedback: Yup.string()
-    .max(100, "Feedback cannot be more than 100 characters")
-    .required("Overall feedback is required"),
-  resumeFile: Yup.mixed().nullable(), // Allow null for edit
-});
-
 const CandidateSubmissionDrawer = ({
   onClose,
   userId,
@@ -101,6 +26,92 @@ const CandidateSubmissionDrawer = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [errorResponse, setErrorResponse] = useState(null);
+
+  // Define base validation schema
+  const getValidationSchema = () => {
+    const baseSchema = {
+      fullName: Yup.string().required("Full Name is required"),
+      candidateEmailId: Yup.string()
+        .email("Invalid email address")
+        .matches(
+          /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+          "Please enter a valid email address in lowercase"
+        )
+        .required("Email is required"),
+      contactNumber: Yup.string()
+        .matches(/^(\+?\d{10}|\+?\d{12}|\+?\d{15})$/, "Contact number must be 10, 12, or 15 digits")
+        .required("Contact number is required"),
+      currentOrganization: Yup.string()
+        .max(30, "Organization name cannot be more than 30 characters")
+        .required("Current Organization is required"),
+      qualification: Yup.string().required("Qualification is required"),
+      totalExperience: Yup.number()
+        .min(0, "Total experience cannot be negative")
+        .max(50, "Total experience cannot be more than 50 years")
+        .required("Total experience is required"),
+      relevantExperience: Yup.number()
+        .min(0, "Relevant experience cannot be negative")
+        .max(50, "Relevant experience cannot be more than 50 years")
+        .required("Relevant experience is required")
+        .test(
+          "is-relevant-not-more-than-total",
+          "Relevant experience cannot be more than total experience",
+          function (value) {
+            const { totalExperience } = this.parent;
+            return value <= totalExperience;
+          }
+        ),
+      currentCTC: Yup.mixed()
+        .test("is-valid-ctc", "Please enter a valid CTC value in LPA", (value) => {
+          if (!value) return false;
+          const stringValue = String(value).trim();
+          if (/^\d+(\.\d{1,2})?$/.test(stringValue)) return true;
+          if (/^\d+(\.\d{1,2})?\s*LPA$/.test(stringValue)) return true;
+          return false;
+        })
+        .required("Current CTC is required"),
+      expectedCTC: Yup.mixed()
+        .test("is-valid-ctc", "Please enter a valid CTC value in LPA", (value) => {
+          if (!value) return false;
+          const stringValue = String(value).trim();
+          if (/^\d+(\.\d{1,2})?$/.test(stringValue)) return true;
+          if (/^\d+(\.\d{1,2})?\s*LPA$/.test(stringValue)) return true;
+          return false;
+        })
+        .required("Expected CTC is required"),
+      noticePeriod: Yup.string().required("Notice Period is required"),
+      currentLocation: Yup.string()
+        .max(18, "Location cannot be more than 18 characters")
+        .matches(/^[A-Za-z\s]+$/, "Location can only contain letters and spaces")
+        .required("Current Location is required"),
+      preferredLocation: Yup.string()
+        .max(18, "Location cannot be more than 18 characters")
+        .matches(/^[A-Za-z\s]+$/, "Location can only contain letters and spaces")
+        .required("Preferred Location is required"),
+      skills: Yup.string().required("Skills are required"),
+      communicationSkills: Yup.number()
+        .min(1, "Rating must be between 1 and 5")
+        .max(5, "Rating must be between 1 and 5")
+        .required("Communication Skills rating is required"),
+      requiredTechnologiesRating: Yup.number()
+        .min(1, "Rating must be between 1 and 5")
+        .max(5, "Rating must be between 1 and 5")
+        .required("Technology Skills rating is required"),
+      overallFeedback: Yup.string()
+        .max(100, "Feedback cannot be more than 100 characters")
+        .required("Overall feedback is required"),
+      resumeFile: Yup.mixed().nullable(),
+    };
+
+    if (mode === "edit") {
+      return Yup.object().shape({
+        ...baseSchema,
+        status: Yup.string().required("Status is required")
+      });
+    }
+    return Yup.object().shape(baseSchema);
+  };
+
   const initialValues =
     mode === "edit" && candidateData
       ? {
@@ -117,15 +128,16 @@ const CandidateSubmissionDrawer = ({
           currentLocation: candidateData.currentLocation || "",
           preferredLocation: candidateData.preferredLocation || "",
           skills: candidateData.skills || "",
-          resumeFile: null, // Initial file is null for edit
+          resumeFile: null,
           communicationSkills: candidateData.communicationSkills || "",
           requiredTechnologiesRating:
             candidateData.requiredTechnologiesRating || "",
           overallFeedback: candidateData.overallFeedback || "",
           userEmail: candidateData.userEmail || "",
-          userId:  candidateData.userId || "",
+          userId: candidateData.userId || "",
           jobId: candidateData.jobId || "",
-          clientName:candidateData.clientName || ""
+          clientName: candidateData.clientName || "",
+          status: candidateData.status || ""
         }
       : {
           userId: userId || "",
@@ -148,12 +160,13 @@ const CandidateSubmissionDrawer = ({
           requiredTechnologiesRating: "",
           overallFeedback: "",
           userEmail: employeeEmail || "",
-          clientName:clientName || ""
+          clientName: clientName || "",
+          status: ""
         };
-       
+
   const formik = useFormik({
     initialValues: initialValues,
-    validationSchema: validationSchema,
+    validationSchema: getValidationSchema(),
     onSubmit: async (values) => {
       setLoading(true);
       setErrorResponse(null);
@@ -191,13 +204,11 @@ const CandidateSubmissionDrawer = ({
           );
         }
 
-        console.log("Candidate submitted/updated:", response.data);
-
         if (response.data && response.data.status === "Success") {
           showToast(
             response.data.message ||
               `Candidate profile ${
-                mode === "edit" && candidateData ? "updated" : "submitted"
+                mode === "edit" ? "updated" : "submitted"
               } successfully.`
           );
           if (refreshData) {
@@ -211,14 +222,14 @@ const CandidateSubmissionDrawer = ({
           message:
             error.response?.data?.message ||
             `Failed to ${
-              mode === "edit" && candidateData ? "update" : "submit"
+              mode === "edit" ? "update" : "submit"
             } candidate data. Please try again.`,
         });
 
         showToast(
           error.response?.data?.message ||
             `Failed to ${
-              mode === "edit" && candidateData ? "update" : "submit"
+              mode === "edit" ? "update" : "submit"
             } candidate data. Please try again.`,
           "error"
         );
@@ -235,12 +246,13 @@ const CandidateSubmissionDrawer = ({
     }
   }, [userId, jobId, mode]);
 
-  // Function to determine if a field should be disabled
   const isFieldDisabled = (fieldName) => {
-    // Fields that should be disabled in edit mode
     const disabledFields = ["fullName", "candidateEmailId", "contactNumber", "userEmail"];
     return mode === "edit" && disabledFields.includes(fieldName);
   };
+
+
+  
 
   const fields = [
     { name: "fullName", label: "Full Name", type: "text"},
@@ -276,6 +288,38 @@ const CandidateSubmissionDrawer = ({
     },
     { name: "overallFeedback", label: "Overall Feedback", type: "text" },
     { name: "userEmail", label: "User Email", type: "text" },
+    ...(mode === "edit" ? [{
+      name: "status", 
+      label: "Status",
+      type: "select",
+      options: [
+        {
+          value: "PROCESSED FOR INTERVIEW", 
+          label: "PROCESSED FOR INTERVIEW",
+          style: { color: "#10b981" }
+        },
+        {
+          value: "SCREEN REJECT", 
+          label: "SCREEN REJECT",
+          style: { color: "#ef4444" }
+        },
+        {
+          value: "MOVED TO INTERVIEW", 
+          label: "MOVED TO INTERVIEW",
+          style: { color: "#3b82f6" }
+        },
+        {
+          value: "DUPLICATE", 
+          label: "DUPLICATE",
+          style: { color: "#f59e0b" }
+        },
+        {
+          value: "CLIENT REJECT", 
+          label: "CLIENT REJECT",
+          style: { color: "#dc2626" }
+        }
+      ]
+    }] : [])
   ];
 
   return (
@@ -289,7 +333,7 @@ const CandidateSubmissionDrawer = ({
       }}
     >
       <Typography variant="h6">
-        {mode === "edit" && candidateData ? "Edit Candidate" : "Submit Candidate"}
+        {mode === "edit" ? "Edit Candidate" : "Submit Candidate"}
       </Typography>
       <form onSubmit={formik.handleSubmit}>
         <Grid container spacing={2}>
@@ -393,7 +437,7 @@ const CandidateSubmissionDrawer = ({
               {loading || formik.isSubmitting ? (
                 <CircularProgress size={24} />
               ) : (
-                mode === "edit" && candidateData
+                mode === "edit"
                   ? "Update Candidate"
                   : "Submit Candidate"
               )}

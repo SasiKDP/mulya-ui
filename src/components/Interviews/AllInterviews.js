@@ -9,6 +9,12 @@ import {
   Button,
   CircularProgress,
   Drawer,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Link
 } from "@mui/material";
 import {
   Visibility,
@@ -28,8 +34,12 @@ import ConfirmDialog from "../muiComponents/ConfirmDialog";
 import EditInterviewForm from "./EditInterviewForm";
 import { filterInterviewsByDateRange } from "../../redux/interviewSlice";
 import { formatDateTime } from "../../utils/dateformate";
+import { showToast } from "../../utils/ToastNotification";
+import MoveToBench from "./MoveToBench";
+import {  useNavigate } from "react-router-dom";
 
 const AllInterviews = () => {
+  const [data, setData] = useState([]);
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState({});
@@ -38,11 +48,19 @@ const AllInterviews = () => {
     open: false,
     interview: null,
   });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const [editDrawer, setEditDrawer] = useState({ open: false, data: null });
+  const [moveToBenchLoading, setMoveToBenchLoading] = useState(false);
 
   const dispatch = useDispatch();
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const { filteredInterviewList } = useSelector((state) => state.interview);
+
+  const navigate=useNavigate();
 
   const processInterviewData = (data) =>
     data.map((interview) => ({
@@ -80,6 +98,19 @@ const AllInterviews = () => {
       data: { ...row, isReschedule },
     });
 
+  const handleBenchSuccess = (row) => {
+  setInterviews(prev => prev.filter(item => item.submissionId !== row.submissionId));
+  if (isFilteredDataRequested) {
+    dispatch(filterInterviewsByDateRange(filteredInterviewList.filter(item => item.submissionId !== row.submissionId)));
+  }
+};
+
+
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbar({ open: true, message, severity });
+    showToast(message, severity);
+  };
+
   const handleCloseEditDrawer = () =>
     setEditDrawer({ open: false, data: null });
 
@@ -87,6 +118,11 @@ const AllInterviews = () => {
     fetchInterviews();
     handleCloseEditDrawer();
   };
+  const handleJobIdClick = (jobId) => {
+  navigate(`/dashboard/requirements/job-details/${jobId}`, {
+    state: { from: "/dashboard/interviews" }
+  });
+};
 
   const handleDelete = async (row) =>
     setConfirmDialog({ open: true, interview: row });
@@ -196,6 +232,35 @@ const AllInterviews = () => {
     );
 
   const getTableColumns = () => [
+    {
+      key:"jobId",
+      label:"Job ID",
+      width: 180,
+       render: (row) => (
+                          <Link
+                            component="button"
+                            variant="body2"
+                            onClick={() => handleJobIdClick(row.jobId)}
+                            sx={{
+                              textDecoration: "none",
+                              cursor: "pointer",
+                              "&:hover": { textDecoration: "underline" },
+                            }}
+                          >
+                            {row.jobId}
+                          </Link>),
+            sortable: true,
+            filterable: true,
+            width: 120
+    },
+     {
+      key:"technology",
+      label:"Technologies",
+      sortable: true,
+      render:(row)=>(row.technology),
+      filterable: true,
+      width: 120
+    },
     {
       key: "candidateFullName",
       label: "Candidate",
@@ -316,6 +381,32 @@ const AllInterviews = () => {
             No link
           </Typography>
         ),
+    },
+    {
+      key:"internalFeedback",
+      label:"Internal Feedback",
+      width:120,
+      align: "center",
+       render: (row) =>
+        loading ? <Skeleton width={120} height={24} /> : row.internalFeedback || "-",
+    },
+
+   {
+      key: "moveToBench",
+      label: "Move to Bench",
+      sortable: false,
+      filterable: false,
+      width: 130,
+      align: "center",
+      render: loading
+        ? () => <Skeleton variant="text" width={100} />
+        : (row) => (
+            <MoveToBench
+               row={row}
+               onSuccess={handleBenchSuccess}
+              isLoading={moveToBenchLoading} 
+            />
+          ),
     },
     {
       key: "actions",

@@ -1,6 +1,20 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import httpService from "../Services/httpService";
 
+
+export const fetchAllSubmissions=createAsyncThunk(
+  'submissions',
+  async(_,{rejectWithValue})=>{
+    try{
+      const response=await httpService.get('/candidate/submissions')
+      return response.data
+    }
+    catch(error){
+      return rejectWithValue(error);
+    }
+  }
+)
+
 export const fetchSubmissionsTeamLead = createAsyncThunk(
   'submissions/teamlead',
   async(_, {getState, rejectWithValue}) => {
@@ -71,6 +85,7 @@ const submissionSlice =  createSlice({
     name: "submission",
     initialState: {
         loading: false,
+        allSubmissions:[],
         selfSubmissionsTL: [],
         teamSubmissionsTL: [],
         filteredSubmissionsList: [],
@@ -83,6 +98,22 @@ const submissionSlice =  createSlice({
 
     }, extraReducers: (builder) => {
         builder
+        
+        //for all submisssions
+        .addCase(fetchAllSubmissions.pending,(state)=>{
+          state.loading=true;
+          state.error=null;
+        })
+        .addCase(fetchAllSubmissions.fulfilled,(state,action)=>{
+          state.loading=false;
+          state.allSubmissions=action.payload;
+        })
+        .addCase(fetchAllSubmissions.rejected,(state,action)=>{
+           state.loading=false;
+           state.error=action.payload.message;
+        })
+
+
         //for the taeamlead self-submissions anf tema-submissions 
         .addCase(fetchSubmissionsTeamLead.pending, (state) => {
           state.loading = true;

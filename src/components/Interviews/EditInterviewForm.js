@@ -140,6 +140,7 @@ const getFormFields = (values) => {
         ],
         gridProps: commonGridProps,
       },
+     
       {
         name: "interviewLevel",
         label: "Interview Level",
@@ -154,6 +155,14 @@ const getFormFields = (values) => {
           { value: "FINAL", label: "FINAL" },
         ],
         gridProps: commonGridProps,
+      },
+       {
+        name:"comments",
+        label:"Comments",
+        type:"textarea",
+         gridProps: { xs: 12 },
+         rows: 3,
+ 
       },
       ...(showCoordinator ? [coordinatorField, coordinatorFeedbackField] : []),
       {

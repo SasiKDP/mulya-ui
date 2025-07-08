@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { getRequirementDetailsByJobId } from "../../../redux/requirementSlice";
 import {
@@ -29,10 +29,12 @@ const JobDetails = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [tabIndex, setTabIndex] = useState(0);
-
+  const location = useLocation();
   const { requirementDetails, loading, error } = useSelector(
     (state) => state.requirement
   );
+
+  const { role } = useSelector((state) => state.auth);
 
   useEffect(() => {
     if (jobId) {
@@ -52,7 +54,40 @@ const JobDetails = () => {
   };
 
   const handleBackClick = () => {
-    navigate("/dashboard/requirements");
+    const fromPath = location.state?.from;
+    
+    // Check if coming from In-Progress component
+    if (fromPath && fromPath.includes('/dashboard/InProgress')) {
+      navigate('/dashboard/InProgress');
+    }
+    // Check if coming from general interviews
+    else if (fromPath && fromPath.includes('/dashboard/interviews')) {
+      navigate('/dashboard/interviews');
+    }
+    // Role-based fallback
+    else if (role === "SUPERADMIN" || role === "TEAMLEAD") {
+      navigate("/dashboard/requirements");
+    } 
+    else {
+      navigate("/dashboard/interviews");
+    }
+  };
+
+  const getBackButtonText = () => {
+    const fromPath = location.state?.from;
+    
+    if (fromPath && fromPath.includes('/dashboard/InProgress')) {
+      return "Back to In-Progress";
+    }
+    else if (fromPath && fromPath.includes('/dashboard/interviews')) {
+      return "Back to Interviews";
+    }
+    else if (role === "SUPERADMIN" || role === "TEAMLEAD") {
+      return "Back to Requirements";
+    }
+    else {
+      return "Back to Interviews";
+    }
   };
 
   const renderDetailTable = (data, columns) => {
@@ -96,7 +131,7 @@ const JobDetails = () => {
             color="secondary"
             onClick={handleBackClick}
           >
-            Back to Requirements
+            {getBackButtonText()}
           </MuiButton>
           <Typography
             variant="h5"

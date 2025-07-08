@@ -115,7 +115,7 @@ const routeConfig = [
           },
           {
             path: "requirements",
-            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]} />,
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD","COORDINATOR"]} />,
             children: [
               { index: true, element: Loadable(Requirements) },
               {
