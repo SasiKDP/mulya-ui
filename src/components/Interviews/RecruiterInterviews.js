@@ -22,7 +22,9 @@ import {
   TableRow,
   Paper,
   Skeleton,
-  TextField
+  TextField,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -32,6 +34,7 @@ import {
   Visibility as VisibilityIcon,
   Description as DescriptionIcon,
   Download as DownloadIcon,
+  SupervisorAccount as CoordinatorIcon,
 } from "@mui/icons-material";
 import DataTable from "../muiComponents/DataTabel";
 import httpService from "../../Services/httpService";
@@ -44,7 +47,7 @@ import EditInterviewForm from "./EditInterviewForm";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import { useNavigate } from "react-router-dom";
 import { formatDateTime } from "../../utils/dateformate";
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from "@mui/icons-material/Close";
 import MoveToBench from "./MoveToBench";
 import DownloadResume from "../../utils/DownloadResume";
 import { API_BASE_URL } from "../../Services/httpService";
@@ -56,14 +59,19 @@ const processInterviewData = (interviews) => {
 
   return interviews.map((interview) => ({
     ...interview,
-    interviewId: interview.interviewId || `${interview.candidateId}_${interview.jobId}`,
+    interviewId:
+      interview.interviewId || `${interview.candidateId}_${interview.jobId}`,
     interviewStatus: interview.latestInterviewStatus,
   }));
 };
 
 const RecruiterInterviews = () => {
   const [interviews, setInterviews] = useState([]);
+  const [coordinatorInterviews, setCoordinatorInterviews] = useState([]);
+  const [showCoordinatorView, setShowCoordinatorView] = useState(false);
+  const [levelFilter, setLevelFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
+  const [coordinatorLoading, setCoordinatorLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
   const [confirmDialog, setConfirmDialog] = useState({
@@ -121,10 +129,37 @@ const RecruiterInterviews = () => {
     }
   };
 
+  const fetchCoordinatorInterviews = async () => {
+    try {
+      setCoordinatorLoading(true);
+      const response = await httpService.get(
+        `/candidate/interviews/interviewsByUserId/${userId}?coordinator=true`
+      );
+      const processedData = processInterviewData(
+        response.data.data || response.data || []
+      );
+      setCoordinatorInterviews(processedData);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching coordinator interviews:", error);
+      setError("Failed to load coordinator interviews");
+      ToastService.error("Failed to load coordinator interviews");
+    } finally {
+      setCoordinatorLoading(false);
+    }
+  };
+
+  const handleCoordinatorViewToggle = () => {
+    setShowCoordinatorView(!showCoordinatorView);
+    if (!showCoordinatorView && coordinatorInterviews.length === 0) {
+      fetchCoordinatorInterviews();
+    }
+  };
+
   const handleOpenFeedbackDialog = (interview) => {
     setFeedbackDialog({
       open: true,
-      interview: interview
+      interview: interview,
     });
     setFeedback(interview.internalFeedback || "");
   };
@@ -132,7 +167,7 @@ const RecruiterInterviews = () => {
   const handleCloseFeedbackDialog = () => {
     setFeedbackDialog({
       open: false,
-      interview: null
+      interview: null,
     });
     setFeedback("");
     setIsSubmittingFeedback(false);
@@ -145,41 +180,80 @@ const RecruiterInterviews = () => {
     }
 
     setIsSubmittingFeedback(true);
-    
+
     try {
       const { interview } = feedbackDialog;
       if (!interview || !interview.interviewId) {
-        throw new Error('Missing interview data');
+        throw new Error("Missing interview data");
       }
 
       const response = await httpService.put(
-        `/candidate/updateInterviewByCoordinator/${userId}/${interview.interviewId}`,{internalFeedBack: feedback});
+        `/candidate/updateInterviewByCoordinator/${userId}/${interview.interviewId}`,
+        { internalFeedBack: feedback }
+      );
 
       if (response.data.success) {
-        showToast('Feedback submitted successfully!', 'success');
+        showToast("Feedback submitted successfully!", "success");
         handleCloseFeedbackDialog();
-        fetchInterviews(); // Refresh the data
+        if (showCoordinatorView) {
+          fetchCoordinatorInterviews();
+        } else {
+          fetchInterviews();
+        }
       } else {
-        throw new Error(response.data.message || 'Failed to submit feedback');
+        throw new Error(response.data.message || "Failed to submit feedback");
       }
-      return response.data
+      return response.data;
     } catch (error) {
-      console.error('Error submitting feedback:', error);
-      showToast(error.message || 'Error submitting feedback', 'error');
+      console.error("Error submitting feedback:", error);
+      showToast(error.message || "Error submitting feedback", "error");
     } finally {
       setIsSubmittingFeedback(false);
     }
   };
 
+  const filterInterviewsByLevel = (interviews) => {
+    if (levelFilter === "ALL") return interviews;
+
+    return interviews.filter((interview) => {
+      if (levelFilter === "INTERNAL") {
+        return interview.interviewLevel === "INTERNAL";
+      }
+      if (levelFilter === "EXTERNAL") {
+        return interview.interviewLevel !== "INTERNAL";
+      }
+      if (levelFilter === "L1") {
+        return interview.interviewLevel === "L1";
+      }
+      if (levelFilter === "L2") {
+        return interview.interviewLevel === "L2";
+      }
+      if (levelFilter === "L3") {
+        return interview.interviewLevel === "L3";
+      }
+      return false;
+    });
+  };
+
+  const handleLevelFilterChange = (event, newFilter) => {
+    if (newFilter !== null) {
+      setLevelFilter(newFilter);
+    }
+  };
+
   const handleBenchSuccess = (row) => {
-    setInterviews(prevInterviews => 
-      prevInterviews.filter(item => item.interviewId !== row.interviewId)
-    );
+    if (showCoordinatorView) {
+      setCoordinatorInterviews((prevInterviews) =>
+        prevInterviews.filter((item) => item.interviewId !== row.interviewId)
+      );
+    } else {
+      setInterviews((prevInterviews) =>
+        prevInterviews.filter((item) => item.interviewId !== row.interviewId)
+      );
+    }
   };
 
   const handleJobIdClick = (jobId) => {
-    console.log("Job ID clicked:", jobId);
-    ToastService.info(`Viewing details for Job ID: ${jobId}`);
     navigate(`/dashboard/requirements/job-details/${jobId}`);
   };
 
@@ -202,7 +276,11 @@ const RecruiterInterviews = () => {
   };
 
   const handleInterviewUpdated = () => {
-    fetchInterviews();
+    if (showCoordinatorView) {
+      fetchCoordinatorInterviews();
+    } else {
+      fetchInterviews();
+    }
     handleCloseEditDrawer();
   };
 
@@ -225,7 +303,11 @@ const RecruiterInterviews = () => {
       }
 
       await httpService.delete(deleteEndpoint);
-      await fetchInterviews();
+      if (showCoordinatorView) {
+        await fetchCoordinatorInterviews();
+      } else {
+        await fetchInterviews();
+      }
       ToastService.update(toastId, "Interview deleted successfully", "success");
     } catch (error) {
       ToastService.error("Failed to delete interview");
@@ -242,19 +324,57 @@ const RecruiterInterviews = () => {
     }));
   };
 
-const getExpandedContentConfig = (row) => {
-  const baseConfig = {
-    title: "Interview Details",
-    description: {
-      key: "notes",
-      fallback: "No additional notes available.",
-    },
-    backgroundColor: "#f5f5f5",
-    sections: [],
-    actions: []
-  };
+  const getExpandedContentConfig = (row) => {
+    const baseConfig = {
+      title: "Interview Details",
+      description: {
+        key: "notes",
+        fallback: "No additional notes available.",
+      },
+      backgroundColor: "#f5f5f5",
+      sections: [],
+      actions: [],
+    };
 
-  if (role !== "COORDINATOR") {
+    if (showCoordinatorView) {
+      return {
+        ...baseConfig,
+        sections: [
+          {
+            title: "Candidate Information",
+            fields: [
+              { label: "Name", key: "candidateFullName", fallback: "-" },
+              { label: "Email", key: "candidateEmailId", fallback: "-" },
+            ],
+          },
+          {
+            title: "Interview Details",
+            fields: [
+              {
+                label: "Interview Date & Time",
+                key: "interviewDateTime",
+                fallback: "-",
+                format: (value) => formatDateTime(value),
+              },
+              { label: "Level", key: "interviewLevel", fallback: "-" },
+              { label: "Status", key: "latestInterviewStatus", fallback: "-" },
+            ],
+          },
+        ],
+        actions: [
+          {
+            label: "Submit Feedback",
+            icon: <EditIcon fontSize="small" />,
+            onClick: (row) => handleOpenFeedbackDialog(row),
+            variant: "outlined",
+            size: "small",
+            color: "primary",
+            sx: { mr: 1 },
+          },
+        ],
+      };
+    }
+
     return {
       ...baseConfig,
       sections: [
@@ -309,39 +429,13 @@ const getExpandedContentConfig = (row) => {
         },
       ],
     };
-  }
-
-  // For COORDINATOR role, return a minimal config or different view
-  return {
-    ...baseConfig,
-    sections: [
-      {
-        title: "Candidate Information",
-        fields: [
-          { label: "Name", key: "candidateFullName", fallback: "-" },
-          { label: "Email", key: "candidateEmailId", fallback: "-" },
-        ],
-      },
-      {
-        title: "Interview Details",
-        fields: [
-          {
-            label: "Interview Date & Time",
-            key: "interviewDateTime",
-            fallback: "-",
-            format: (value) => formatDateTime(value),
-          },
-          { label: "Level", key: "interviewLevel", fallback: "-" },
-          { label: "Status", key: "latestInterviewStatus", fallback: "-" },
-        ],
-      },
-    ],
-    actions: []
   };
-};
 
   const renderExpandedContent = (row) => {
-    if (loading && role!=="COORDINATOR") {
+    if (
+      (loading && !showCoordinatorView) ||
+      (coordinatorLoading && showCoordinatorView)
+    ) {
       return (
         <Box sx={{ p: 2 }}>
           <CircularProgress size={24} sx={{ mr: 2 }} />
@@ -350,7 +444,10 @@ const getExpandedContentConfig = (row) => {
       );
     }
     return (
-      <ReusableExpandedContent row={row} config={getExpandedContentConfig()} />
+      <ReusableExpandedContent
+        row={row}
+        config={getExpandedContentConfig(row)}
+      />
     );
   };
 
@@ -374,12 +471,12 @@ const getExpandedContentConfig = (row) => {
         </Link>
       ),
     },
-     {
-      key:"technology",
-      label:"Technologies",
-       width: 180,
+    {
+      key: "technology",
+      label: "Technologies",
+      width: 180,
       sortable: true,
-      render:(row)=>(row.technology),
+      render: (row) => row.technology,
     },
     {
       key: "candidateFullName",
@@ -395,11 +492,15 @@ const getExpandedContentConfig = (row) => {
       ),
     },
     { key: "clientName", label: "Client", width: 150 },
-    ...(role === "COORDINATOR" ? [{
-      key: "recruiterName",
-      label: "Recruiter",
-      width: 120
-    }] : []),
+    ...(showCoordinatorView
+      ? [
+          {
+            key: "recruiterName",
+            label: "Recruiter",
+            width: 120,
+          },
+        ]
+      : []),
     {
       key: "interviewLevel",
       label: "Level",
@@ -419,31 +520,27 @@ const getExpandedContentConfig = (row) => {
       width: 140,
       render: (row) => getStatusChip(row.latestInterviewStatus, row, dispatch),
     },
-
-   ...(
-  role !== "COORDINATOR"
-    ? [
-        {
-          key: "moveToBench",
-          label: "Move to Bench",
-          sortable: false,
-          filterable: false,
-          width: 130,
-          align: "center",
-          render: loading
-            ? () => <Skeleton variant="text" width={100} />
-            : (row) => (
-                <MoveToBench
-                  row={row}
-                  onSuccess={handleBenchSuccess}
-                  isLoading={moveToBenchLoading}
-                />
-              ),
-        },
-      ]
-    : []
-),
-
+    ...(!showCoordinatorView
+      ? [
+          {
+            key: "moveToBench",
+            label: "Move to Bench",
+            sortable: false,
+            filterable: false,
+            width: 130,
+            align: "center",
+            render: loading
+              ? () => <Skeleton variant="text" width={100} />
+              : (row) => (
+                  <MoveToBench
+                    row={row}
+                    onSuccess={handleBenchSuccess}
+                    isLoading={moveToBenchLoading}
+                  />
+                ),
+          },
+        ]
+      : []),
     {
       key: "zoomLink",
       label: "Meeting",
@@ -468,53 +565,51 @@ const getExpandedContentConfig = (row) => {
           </Typography>
         ),
     },
-
- ...(
-  role === "COORDINATOR" ? [
-    {
-      key: "comments",
-      label: "Recruiter Comments",
-      sortable: false,
-      filterable: false,
-      width: 160,
-      render: (row) => (
-        <InternalFeedbackCell 
-         value={row.comments}
-        loading={loading}
-        isCoordinator={false} // This ensures it's read-only
-        candidateName={row.candidateFullName}
-       
-        />
-      )
-    }
-  ] : [
-    {
-  key: "internalFeedback",
-  label: "Internal Feedback",
-  render: (row) => (
-    <InternalFeedbackCell 
-      value={row.internalFeedback}
-      loading={loading}
-      isCoordinator={role === "COORDINATOR"}
-      onFeedbackSubmit={(feedback) => handleSubmitFeedback(row, feedback)}
-      candidateName={row.candidateFullName}
-    />
-  )
-}
-  ]
-),
+    ...(showCoordinatorView
+      ? [
+          {
+            key: "comments",
+            label: "Recruiter Comments",
+            sortable: false,
+            filterable: false,
+            width: 160,
+            render: (row) => (
+              <InternalFeedbackCell
+                value={row.comments}
+                loading={loading || coordinatorLoading}
+                isCoordinator={false}
+                candidateName={row.candidateFullName}
+              />
+            ),
+          },
+        ]
+      : [
+          {
+            key: "internalFeedback",
+            label: "Internal Feedback",
+            render: (row) => (
+              <InternalFeedbackCell
+                value={row.internalFeedback}
+                loading={loading}
+                isCoordinator={role === "COORDINATOR"}
+                onFeedbackSubmit={(feedback) =>
+                  handleSubmitFeedback(row, feedback)
+                }
+                candidateName={row.candidateFullName}
+              />
+            ),
+          },
+        ]),
     {
       key: "actions",
       label: "Actions",
       width: 200,
       render: (row) => {
         const status = row.latestInterviewStatus?.toUpperCase();
-        const showReschedule = [
-          "CANCELLED",
-          "RESCHEDULED",
-          "SELECTED",
-          "NO_SHOW",
-        ].includes(status) && role !== "COORDINATOR";
+        const showReschedule =
+          ["CANCELLED", "RESCHEDULED", "SELECTED", "NO_SHOW"].includes(
+            status
+          ) && !showCoordinatorView;
 
         const getButtonText = () => {
           switch (status) {
@@ -531,7 +626,7 @@ const getExpandedContentConfig = (row) => {
 
         return (
           <Box sx={{ display: "flex", gap: 1 }}>
-            {role !== "COORDINATOR" && (
+            {!showCoordinatorView && (
               <>
                 <Tooltip title="View Details">
                   <IconButton
@@ -561,21 +656,34 @@ const getExpandedContentConfig = (row) => {
               </>
             )}
 
-            <DownloadResume
-              candidate={row}
-              getDownloadUrl={(candidate, format) =>
-                `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
-              }
-            />
+            {!showCoordinatorView && (
+              <DownloadResume
+                candidate={row}
+                getDownloadUrl={(candidate, format) =>
+                  `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
+                }
+              />
+            )}
 
-            {role === "COORDINATOR" && (
-              <Button 
-                variant="outlined" 
-                size="small"
-                onClick={() => handleOpenFeedbackDialog(row)}
-              >
-                Feedback
-              </Button>
+            {showCoordinatorView && (
+              <>
+                <Tooltip title="View Details">
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => toggleRowExpansion(row.interviewId)}
+                  >
+                    <VisibilityIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleOpenFeedbackDialog(row)}
+                >
+                  Feedback
+                </Button>
+              </>
             )}
 
             {showReschedule && (
@@ -594,17 +702,27 @@ const getExpandedContentConfig = (row) => {
     },
   ];
 
-  const processedData = loading
-    ? []
-    : interviews.map((row) => ({
-        ...row,
-        expandContent: renderExpandedContent,
-        isExpanded: expandedRows[row.interviewId],
-      }));
+  const getDisplayData = () => {
+    let data;
+    if (showCoordinatorView) {
+      data = coordinatorInterviews;
+    } else {
+      data = isFilteredDataRequested
+        ? filterInterviewsForRecruiter
+        : interviews;
+    }
+    return filterInterviewsByLevel(data);
+  };
 
-  const displayData = isFilteredDataRequested
-    ? filterInterviewsForRecruiter
-    : processedData;
+  const processedData =
+    (loading && !showCoordinatorView) ||
+    (coordinatorLoading && showCoordinatorView)
+      ? []
+      : getDisplayData().map((row) => ({
+          ...row,
+          expandContent: renderExpandedContent,
+          isExpanded: expandedRows[row.interviewId],
+        }));
 
   useEffect(() => {
     fetchInterviews();
@@ -612,7 +730,10 @@ const getExpandedContentConfig = (row) => {
 
   return (
     <Box sx={{ p: 1 }}>
-      {loading && interviews.length === 0 ? (
+      {(loading && interviews.length === 0 && !showCoordinatorView) ||
+      (coordinatorLoading &&
+        coordinatorInterviews.length === 0 &&
+        showCoordinatorView) ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress sx={{ color: "#1976d2" }} />
         </Box>
@@ -622,7 +743,9 @@ const getExpandedContentConfig = (row) => {
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
-            onClick={fetchInterviews}
+            onClick={
+              showCoordinatorView ? fetchCoordinatorInterviews : fetchInterviews
+            }
             sx={{
               mt: 2,
               color: "#1976d2",
@@ -650,21 +773,90 @@ const getExpandedContentConfig = (row) => {
             }}
           >
             <Typography variant="h6" color="primary">
-              My Scheduled Interviews
+              {showCoordinatorView
+                ? "Coordinator View - Interviews"
+                : "My Scheduled Interviews"}
             </Typography>
-
-            <DateRangeFilter component="InterviewsForRecruiter" />
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              {role === "BDM" && (
+                <Button
+                  variant={showCoordinatorView ? "contained" : "outlined"}
+                  startIcon={<CoordinatorIcon />}
+                  onClick={handleCoordinatorViewToggle}
+                  sx={{
+                    color: showCoordinatorView ? "white" : "#1976d2",
+                    borderColor: "#1976d2",
+                    backgroundColor: showCoordinatorView
+                      ? "#1976d2"
+                      : "transparent",
+                    "&:hover": {
+                      borderColor: "#1565c0",
+                      backgroundColor: showCoordinatorView
+                        ? "#1565c0"
+                        : "#e3f2fd",
+                    },
+                  }}
+                >
+                  {showCoordinatorView ? "Regular View" : "Coordinator View"}
+                </Button>
+              )}
+              <DateRangeFilter component="InterviewsForRecruiter" />
+            </Box>
           </Stack>
 
+          <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
+            <ToggleButtonGroup
+              value={levelFilter}
+              exclusive
+              onChange={handleLevelFilterChange}
+              aria-label="interview level filter"
+              sx={{
+                flexWrap: "wrap",
+                justifyContent: "center",
+                gap: 1,
+                "& .MuiToggleButton-root": {
+                  px: 2,
+                  py: 1,
+                  borderRadius: 1,
+                  border: "1px solid rgba(25, 118, 210, 0.5)",
+                  "&.Mui-selected": {
+                    backgroundColor: "#1976d2",
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "#1565c0",
+                    },
+                  },
+                  "&:hover": {
+                    backgroundColor: "rgba(25, 118, 210, 0.08)",
+                  },
+                },
+              }}
+            >
+              <ToggleButton value="ALL" aria-label="all interviews">
+                ALL
+              </ToggleButton>
+              <ToggleButton value="INTERNAL" aria-label="internal interviews">
+                INTERNAL
+              </ToggleButton>
+              <ToggleButton value="EXTERNAL" aria-label="external interviews">
+                EXTERNAL
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
           <DataTable
-            data={displayData || []}
+            data={processedData || []}
             columns={columns}
-            title="My Interviews"
+            title={
+              showCoordinatorView ? "Coordinator Interviews" : "My Interviews"
+            }
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="desc"
             defaultRowsPerPage={10}
-            refreshData={fetchInterviews}
+            refreshData={
+              showCoordinatorView ? fetchCoordinatorInterviews : fetchInterviews
+            }
             primaryColor="#1976d2"
             secondaryColor="#e3f2fd"
             customStyles={{
@@ -706,7 +898,6 @@ const getExpandedContentConfig = (row) => {
             onConfirm={handleConfirmDelete}
           />
 
-          {/* Feedback Dialog */}
           <Dialog
             open={feedbackDialog.open}
             onClose={handleCloseFeedbackDialog}
@@ -714,7 +905,8 @@ const getExpandedContentConfig = (row) => {
             maxWidth="sm"
           >
             <DialogTitle sx={{ px: 4, pt: 3 }}>
-              Feedback for {feedbackDialog.interview?.candidateFullName || 'Candidate'}
+              Feedback for{" "}
+              {feedbackDialog.interview?.candidateFullName || "Candidate"}
             </DialogTitle>
             <DialogContent sx={{ px: 2, py: 2 }}>
               <Box sx={{ p: 2 }}>
@@ -732,8 +924,8 @@ const getExpandedContentConfig = (row) => {
             </DialogContent>
             <DialogActions sx={{ px: 4, pb: 3 }}>
               <Button onClick={handleCloseFeedbackDialog}>Cancel</Button>
-              <Button 
-                onClick={handleSubmitFeedback} 
+              <Button
+                onClick={handleSubmitFeedback}
                 variant="contained"
                 color="primary"
                 disabled={!feedback.trim() || isSubmittingFeedback}
