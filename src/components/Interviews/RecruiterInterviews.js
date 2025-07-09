@@ -98,12 +98,20 @@ const RecruiterInterviews = () => {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
+      if(role=="COORDINATOR"){
       const response = await httpService.get(
-        `/candidate/interviews/interviewsByUserId/${userId}`
+        `/candidate/interviews/interviewsByUserId/${userId}?coordinator=true`
       );
       const processedData = processInterviewData(response.data || []);
       setInterviews(processedData);
       setError(null);
+    }
+    else{
+      const response= await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`)
+      const processedData = processInterviewData(response.data || []);
+      setInterviews(processedData);
+      setError(null);
+    }
     } catch (err) {
       setError("Failed to fetch interview data");
       console.error("Error fetching interviews:", err);

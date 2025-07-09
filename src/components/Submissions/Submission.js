@@ -487,28 +487,6 @@ const Submission = () => {
           ),
     },
     {
-      key: "submissionId",
-      label: "Submission ID",
-      type: "text",
-      sortable: true,
-      filterable: true,
-      width: 180,
-      render: loading
-        ? () => <Skeleton variant="text" width={120} />
-        : (row) => (
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 500,
-                color: "text.secondary",
-                fontFamily: "monospace",
-              }}
-            >
-              {row.submissionId}
-            </Typography>
-          ),
-    },
-    {
   key:"status",
   label:"Status",
   type: "text",
