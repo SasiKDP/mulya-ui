@@ -87,6 +87,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       coordinator: data.coordinator || userName,
       assignedTo: data.assignedTo || userId || "",
       coordinatorFeedback: data.coordinatorFeedback || "",
+      comments:data.comments || ""
     };
   };
 
@@ -303,6 +304,10 @@ const getFormFields = (values) => {
     try {
       setSubmitting(true);
 
+       console.log('Payload being sent:', {
+      comments: values.comments,
+    })
+
       const payload = {
         ...data,
         interviewLevel: values.interviewLevel,
@@ -313,6 +318,7 @@ const getFormFields = (values) => {
         assignedTo: values.assignedTo,
         userId: data.userId,
         userEmail: data.userEmail,
+        comments:values.comments,
         ...(isReschedule && {
           interviewDateTime: dayjs(values.interviewDateTime).format(),
           interviewScheduledTimestamp: dayjs(
@@ -320,6 +326,7 @@ const getFormFields = (values) => {
           ).valueOf(),
           duration: values.duration,
           zoomLink: values.zoomLink,
+         
         }),
       };
 
@@ -375,6 +382,7 @@ const getFormFields = (values) => {
 
   const initialValues = getInitialValues();
 
+  
   return (
     <Box sx={{ width: "100%", p: { xs: 2, sm: 3 }, bgcolor: "#f9fafc" }}>
       <Box
@@ -449,11 +457,11 @@ const getFormFields = (values) => {
 
       <Card elevation={2} sx={{ borderRadius: 3, p: 3 }}>
         <DynamicForm
-          fields={getFormFields}
+          fields={getFormFields((initialValues))}
           initialValues={initialValues}
           validationSchema={validationSchema()}
           onSubmit={handleSubmit}
-          submitButtonText={isReschedule ? "Reschedule" : "Update Status"}
+          submitButtonText={isReschedule ? "Reschedule" : "Update"}
           cancelButtonText="Cancel"
           onCancel={onClose}
         />
