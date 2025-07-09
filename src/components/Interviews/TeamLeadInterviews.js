@@ -36,6 +36,7 @@ import {
   filterInterviewsByTeamLead,
 } from "../../redux/interviewSlice";
 import { useNavigate } from "react-router-dom";
+import InternalFeedbackCell from "./FeedBack";
 
 /**
  * Process interview data to ensure consistency and prepare for display
@@ -368,7 +369,13 @@ const TeamLeadInterviews = () => {
       key:"internalFeedback",
       label:"Internal Feedback",
        width: 120,
-      render:(row)=>(row.technology || "-"),
+      render:(row)=>(
+                     <InternalFeedbackCell 
+                     value={row.internalFeedback}
+                     loading={loading}
+                     candidateName={row.candidateFullName}
+                   />
+      ),
       filterable: true,
       width: 120
     },

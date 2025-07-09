@@ -37,6 +37,7 @@ import { formatDateTime } from "../../utils/dateformate";
 import { showToast } from "../../utils/ToastNotification";
 import MoveToBench from "./MoveToBench";
 import {  useNavigate } from "react-router-dom";
+import InternalFeedbackCell from "./FeedBack"; 
 
 const AllInterviews = () => {
   const [data, setData] = useState([]);
@@ -57,6 +58,7 @@ const AllInterviews = () => {
   const [moveToBenchLoading, setMoveToBenchLoading] = useState(false);
 
   const dispatch = useDispatch();
+  const{userId}=useSelector((state)=>state.auth)
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const { filteredInterviewList } = useSelector((state) => state.interview);
 
@@ -78,7 +80,7 @@ const AllInterviews = () => {
   const fetchInterviews = async () => {
     try {
       setLoading(true);
-      const response = await httpService.get("/candidate/allInterviews");
+      const response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
       setInterviews(
         processInterviewData(response.data.data || response.data || [])
       );
@@ -388,7 +390,13 @@ const AllInterviews = () => {
       width:120,
       align: "center",
        render: (row) =>
-        loading ? <Skeleton width={120} height={24} /> : row.internalFeedback || "-",
+        loading ? <Skeleton width={120} height={24} /> : 
+       <InternalFeedbackCell 
+             value={row.internalFeedback}
+             loading={loading}
+             candidateName={row.candidateFullName}
+           />
+       ,
     },
 
    {

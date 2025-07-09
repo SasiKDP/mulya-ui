@@ -80,7 +80,7 @@ const Interviews = () => {
     setLoading(true);
     try {
       if (role === "SUPERADMIN") {
-        const response = await httpService.get("/candidate/allInterviews");
+        const response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);
         setInterviews(response.data.data || []);
       } else {
         const response = await httpService.get(`/candidate/interviews/interviewsByUserId/${userId}`);

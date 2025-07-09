@@ -49,6 +49,7 @@ import MoveToBench from "./MoveToBench";
 import DownloadResume from "../../utils/DownloadResume";
 import { API_BASE_URL } from "../../Services/httpService";
 import { showToast } from "../../utils/ToastNotification";
+import InternalFeedbackCell from "./FeedBack";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -117,7 +118,7 @@ const RecruiterInterviews = () => {
       open: true,
       interview: interview
     });
-    setFeedback(interview.feedback || "");
+    setFeedback(interview.internalFeedback || "");
   };
 
   const handleCloseFeedbackDialog = () => {
@@ -144,7 +145,7 @@ const RecruiterInterviews = () => {
       }
 
       const response = await httpService.put(
-        `/candidate/updateInterviewByCoordinator/${userId}/${interview.interviewId}`,{feedback});
+        `/candidate/updateInterviewByCoordinator/${userId}/${interview.interviewId}`,{internalFeedBack: feedback});
 
       if (response.data.success) {
         showToast('Feedback submitted successfully!', 'success');
@@ -233,14 +234,21 @@ const RecruiterInterviews = () => {
     }));
   };
 
-  const getExpandedContentConfig = () => {
+const getExpandedContentConfig = (row) => {
+  const baseConfig = {
+    title: "Interview Details",
+    description: {
+      key: "notes",
+      fallback: "No additional notes available.",
+    },
+    backgroundColor: "#f5f5f5",
+    sections: [],
+    actions: []
+  };
+
+  if (role !== "COORDINATOR") {
     return {
-      title: "Interview Details",
-      description: {
-        key: "notes",
-        fallback: "No additional notes available.",
-      },
-      backgroundColor: "#f5f5f5",
+      ...baseConfig,
       sections: [
         {
           title: "Candidate Information",
@@ -293,10 +301,39 @@ const RecruiterInterviews = () => {
         },
       ],
     };
+  }
+
+  // For COORDINATOR role, return a minimal config or different view
+  return {
+    ...baseConfig,
+    sections: [
+      {
+        title: "Candidate Information",
+        fields: [
+          { label: "Name", key: "candidateFullName", fallback: "-" },
+          { label: "Email", key: "candidateEmailId", fallback: "-" },
+        ],
+      },
+      {
+        title: "Interview Details",
+        fields: [
+          {
+            label: "Interview Date & Time",
+            key: "interviewDateTime",
+            fallback: "-",
+            format: (value) => formatDateTime(value),
+          },
+          { label: "Level", key: "interviewLevel", fallback: "-" },
+          { label: "Status", key: "latestInterviewStatus", fallback: "-" },
+        ],
+      },
+    ],
+    actions: []
   };
+};
 
   const renderExpandedContent = (row) => {
-    if (loading) {
+    if (loading && role!=="COORDINATOR") {
       return (
         <Box sx={{ p: 2 }}>
           <CircularProgress size={24} sx={{ mr: 2 }} />
@@ -424,26 +461,40 @@ const RecruiterInterviews = () => {
         ),
     },
 
-  ...(
-    role==="COORDINATOR"  ? [
-        {
-          key: "comments",
-          label: "Recruiter Comments",
-          sortable: false,
-          filterable: false,
-          width: 130,
-        }
-      ]
-    : [
-      {
-        key: "internalFeedback",
-          label: "Internal Feedback",
-          sortable: false,
-          filterable: false,
-          width: 130,
-      }
-    ]
-  ),
+ ...(
+  role === "COORDINATOR" ? [
+    {
+      key: "comments",
+      label: "Recruiter Comments",
+      sortable: false,
+      filterable: false,
+      width: 160,
+      render: (row) => (
+        <InternalFeedbackCell 
+         value={row.comments}
+        loading={loading}
+        isCoordinator={false} // This ensures it's read-only
+        candidateName={row.candidateFullName}
+       
+        />
+      )
+    }
+  ] : [
+    {
+  key: "internalFeedback",
+  label: "Internal Feedback",
+  render: (row) => (
+    <InternalFeedbackCell 
+      value={row.internalFeedback}
+      loading={loading}
+      isCoordinator={role === "COORDINATOR"}
+      onFeedbackSubmit={(feedback) => handleSubmitFeedback(row, feedback)}
+      candidateName={row.candidateFullName}
+    />
+  )
+}
+  ]
+),
     {
       key: "actions",
       label: "Actions",
