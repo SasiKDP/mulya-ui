@@ -33,6 +33,7 @@ import {
   School,
   ContactPhone,
   Code,
+  Feedback,
 } from '@mui/icons-material';
 import ToastService from '../../Services/toastService';
 import BenchCandidateForm from './BenchForm';
@@ -41,6 +42,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import DateRangeFilter from '../muiComponents/DateRangeFilter';
 import { User2Icon } from 'lucide-react';
+import InternalFeedbackCell from '../Interviews/FeedBack';
 
 const BenchList = () => {
   const [benchData, setBenchData] = useState([]);
@@ -211,15 +213,6 @@ const BenchList = () => {
 
   const generateColumns = (loading = false) => [
     {
-      key: 'technology',
-      label: 'Technology',
-      type: 'text',
-      sortable: true,
-      filterable: true,
-      width: 180,
-      render: loading ? () => <Skeleton variant="text" width={140} height={24} /> : undefined
-    },
-    {
       key: 'id',
       label: 'Bench ID',
       type: 'text',
@@ -231,6 +224,15 @@ const BenchList = () => {
     {
       key: 'fullName',
       label: 'Full Name',
+      type: 'text',
+      sortable: true,
+      filterable: true,
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={140} height={24} /> : undefined
+    },
+     {
+      key: 'technology',
+      label: 'Technology',
       type: 'text',
       sortable: true,
       filterable: true,
@@ -329,6 +331,9 @@ const BenchList = () => {
       label:'Remarks',
       type:'text',
       align:'center',
+      render:(row)=>(
+        <InternalFeedbackCell value={row.remarks}/>
+      ),
       sortable: true,
       filterable: true,
       width: 150,

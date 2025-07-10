@@ -120,7 +120,7 @@ const Submission = () => {
   };
 
   const showSnackbar = (message, severity = "success") => {
-    setSnackbar({ open: true, message, severity });
+    // setSnackbar({ open: true, message, severity });
     showToast(message, severity);
   };
 
@@ -145,75 +145,83 @@ const Submission = () => {
     setMoveToBenchDialogOpen(true);
   };
 
-  const handleMoveToBenchConfirm = async () => {
-    if (!selectedCandidate) return;
+ const handleMoveToBenchConfirm = async () => {
+  if (!selectedCandidate) return;
 
+  try {
+    setMoveToBenchLoading(true);
+    const row = selectedCandidate;
+    const formData = new FormData();
+
+    // Append candidate details
+    formData.append("fullName", row.fullName);
+    formData.append("email", row.emailId || row.candidateEmailId);
+    formData.append("contactNumber", row.contactNumber);
+    formData.append("relevantExperience", row.relevantExperience || "");
+    formData.append("totalExperience", row.totalExperience || "");
+    formData.append("technology", row.technology || "");
+
+    // Handle skills
+    if (Array.isArray(row.skills)) {
+      formData.append("skills", JSON.stringify(row.skills));
+    } else if (typeof row.skills === "string") {
+      const skillsArray = row.skills.split(",").map((skill) => skill.trim());
+      formData.append("skills", JSON.stringify(skillsArray));
+    } else {
+      formData.append("skills", JSON.stringify([]));
+    }
+
+    // Append additional info
+    formData.append("linkedin", row.linkedin || "");
+    formData.append("referredBy", row.userEmail || "");
+    formData.append("remarks", remarks);
+
+    // Fetch and append resume
     try {
-      setMoveToBenchLoading(true);
+      const response = await httpService.get(
+        `/candidate/download-resume/${row.candidateId}/${row.jobId}`
+      );
 
-      const row = selectedCandidate;
-      const formData = new FormData();
-      formData.append("fullName", row.fullName);
-      formData.append("email", row.emailId || row.candidateEmailId);
-      formData.append("contactNumber", row.contactNumber);
-      formData.append("relevantExperience", row.relevantExperience || "");
-      formData.append("totalExperience", row.totalExperience || "");
-
-      if (Array.isArray(row.skills)) {
-        formData.append("skills", JSON.stringify(row.skills));
-      } else if (typeof row.skills === "string") {
-        const skillsArray = row.skills.split(",").map((skill) => skill.trim());
-        formData.append("skills", JSON.stringify(skillsArray));
-      } else {
-        formData.append("skills", JSON.stringify([]));
+      // Extract filename
+      let fileName = `resume_${row.candidateId}.pdf`;
+      if (response.headers["content-disposition"]) {
+        const filenameMatch = response.headers["content-disposition"].split("filename=")[1];
+        if (filenameMatch) fileName = filenameMatch.replace(/"/g, '');
       }
 
-      formData.append("linkedin", row.linkedin || "");
-      formData.append("referredBy", row.userEmail || "");
-      formData.append("remarks", remarks);
-
-      try {
-        const response = await httpService.get(
-          `/candidate/download-resume/${row.jobId}/${row.candidateId}`,
-          {
-            responseType: "blob",
-          }
-        );
-
-        const fileName = response.headers["content-disposition"]
-          ? response.headers["content-disposition"].split("filename=")[1]
-          : `resume_${row.candidateId}.pdf`;
-
-        const contentType = response.headers["content-type"];
-        const file = new File([response.data], fileName, {
-          type: contentType,
-        });
-
-        formData.append("resumeFiles", file);
-      } catch (error) {
-        console.error("Error fetching resume:", error);
-      }
-
-      await httpService.post("/candidate/bench/save", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      // Create File object
+      const file = new File([response.data], fileName, {
+        type: response.headers["content-type"] || "application/pdf",
       });
 
-      setData(data.filter((item) => item.submissionId !== row.submissionId));
-      showSnackbar(`${row.fullName} has been moved to the bench successfully!`);
-      setMoveToBenchDialogOpen(false);
+      // Append to formData - KEY CHANGE: Using the exact field name your backend expects
+      formData.append("resumeFile", file); // Note: Case sensitive!
     } catch (error) {
-      console.error("Error moving candidate to bench:", error);
-      showSnackbar(
-        "Failed to move candidate to bench. Please try again.",
-        "error"
-      );
-    } finally {
-      setMoveToBenchLoading(false);
-      setSelectedCandidate(null);
+      console.error("Error fetching resume:", error);
+      showSnackbar("Resume not found, submitting without it", "warning");
     }
-  };
+
+    // Submit with proper headers
+    await httpService.post("/candidate/bench/save", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    // Success handling
+    setData(data.filter((item) => item.submissionId !== row.submissionId));
+    showSnackbar(`${row.fullName} moved to bench successfully!`);
+    setMoveToBenchDialogOpen(false);
+  } catch (error) {
+    console.error("Move to bench failed:", error);
+    const errorMsg = error.response?.data?.message || 
+                    "Failed to move candidate to bench";
+    showSnackbar(errorMsg, "error");
+  } finally {
+    setMoveToBenchLoading(false);
+    setSelectedCandidate(null);
+  }
+};
 
   const handleMoveToBenchCancel = () => {
     setMoveToBenchDialogOpen(false);
