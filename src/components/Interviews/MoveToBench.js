@@ -20,6 +20,8 @@ const MoveToBench = ({ row, onSuccess, isLoading }) => {
   const [matchedCandidate, setMatchedCandidate] = useState(null);
   
   const { userId, role } = useSelector((state) => state.auth);
+  const [duplicateError, setDuplicateError] = useState("");
+
 
   // Fetch and match candidate by fullName
   const fetchAndMatchCandidate = useCallback(async () => {
@@ -88,19 +90,23 @@ const MoveToBench = ({ row, onSuccess, isLoading }) => {
     } catch (error) {
       console.error("Error matching candidate:", error);
       showToast(error.message, "error");
+      showToast(duplicateError);
     }
   }, [row.candidateFullName, row.fullName, userId, role]);
 
   const handleOpen = (e) => {
     e.stopPropagation();
-    fetchAndMatchCandidate();
+    console.log("Opening dialog for candidate:", row.candidateFullName || row.fullName);
     setOpenDialog(true);
+    fetchAndMatchCandidate();
   };
 
   const handleClose = () => {
+    console.log("Closing dialog");
     setOpenDialog(false);
     setFeedback('');
     setMatchedCandidate(null);
+    setDuplicateError("");
   };
 
   const getCompleteCandidateData = useCallback(() => {
@@ -160,48 +166,57 @@ const handleMoveToBench = async (e) => {
     formData.append("remarks", feedback || "");
     formData.append("technology", candidate.technology || "");
 
-    try {
-      // Move to bench
-      const response = await httpService.post("/candidate/bench/save", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+    // Move to bench
+    const response = await httpService.post("/candidate/bench/save", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
-      // Delete submission if exists
-      if (candidate.submissionId) {
-        try {
-          await httpService.delete(`/candidate/deletesubmission/${candidate.submissionId}`);
-        } catch (deleteError) {
-          console.error("Error deleting submission:", deleteError);
-        }
-      }
-
-      showToast(`${candidate.fullName} moved to bench successfully!`, "success");
-      onSuccess?.(candidate);
-      handleClose();
-    } catch (apiError) {
-      // Handle API-specific errors
-      if (apiError.response?.data?.message?.includes("already exists") || 
-          apiError.response?.data?.message?.includes("Duplicate entry")) {
-        showToast(apiError.response.data.message, "error", { autoClose: 5000 });
-      } else {
-        throw apiError; // Re-throw other errors to be caught by the outer catch
+    // Delete submission if exists
+    if (candidate.submissionId) {
+      try {
+        await httpService.delete(`/candidate/deletesubmission/${candidate.submissionId}`);
+      } catch (deleteError) {
+        console.error("Error deleting submission:", deleteError);
       }
     }
+
+    showToast(`${candidate.fullName} moved to bench successfully!`, "success");
+    onSuccess?.(candidate);
+    handleClose();
+
   } catch (error) {
     console.error("Error moving to bench:", error);
     
     let errorMessage = "Failed to move candidate to bench";
+    
     if (error.response) {
-      errorMessage = error.response.data?.message || error.message;
+      const apiMessage = error.response.data?.message || error.response.data?.error || error.message;
+      
+      // Check for duplicate/already exists errors
+      if (apiMessage?.toLowerCase().includes("already exists") || 
+          apiMessage?.toLowerCase().includes("duplicate entry") ||
+          apiMessage?.toLowerCase().includes("already in bench") ||
+          apiMessage?.toLowerCase().includes("duplicate")) {
+        errorMessage = apiMessage;
+        
+         setDuplicateError(errorMessage);
+        // DON'T close the dialog for duplicate errors
+      } else {
+        errorMessage = apiMessage;
+        handleClose(); // Close dialog for other API errors
+      }
     } else if (error.message) {
       errorMessage = error.message;
+      handleClose(); // Close dialog for general errors
     }
 
-    showToast(errorMessage, "error", { autoClose: 5000 });
+    // Show error message
+    showToast(errorMessage, "error");
   } finally {
     setIsSubmitting(false);
   }
 };
+
   return (
     <>
       <Button
@@ -248,6 +263,11 @@ const handleMoveToBench = async (e) => {
             required
             sx={{ mt: 2 }}
           />
+          {duplicateError && (
+  <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+    {duplicateError}
+  </Typography>
+)}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} disabled={isSubmitting} color="secondary">
