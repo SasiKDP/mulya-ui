@@ -286,8 +286,8 @@ const CandidateSubmissionDrawer = ({
       label: "Technologies Rating",
       type: "number",
     },
-    { name: "overallFeedback", label: "Overall Feedback", type: "text" },
-    { name: "userEmail", label: "User Email", type: "text" },
+    { name: "overallFeedback", label: "Overall Feedback", type: "text",disabled:true },
+    { name: "userEmail", label: "User Email", type: "text", InputProps: { readOnly: true },disabled:true},
     ...(mode === "edit" ? [{
       name: "status", 
       label: "Status",

@@ -34,6 +34,7 @@ import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import InternalFeedbackCell from "./FeedBack";
 import DownloadResume from "../../utils/DownloadResume";
 import { API_BASE_URL } from "../../Services/httpService";
+import EditInterviewForm from "./EditInterviewForm";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -57,6 +58,7 @@ const CoordinatorInterviews = () => {
   const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [levelFilter, setLevelFilter] = useState("ALL");
+  const [editDrawer, setEditDrawer] = useState({ open: false, data: null });
   const navigate = useNavigate();
 
   const fetchInterviews = async () => {
@@ -159,6 +161,22 @@ const CoordinatorInterviews = () => {
     }
   };
 
+  const handleEdit = (row, isReschedule = false) => {
+    setEditDrawer({
+      open: true,
+      data: { ...row, isReschedule },
+    });
+  };
+
+  const handleCloseEditDrawer = () => {
+    setEditDrawer({ open: false, data: null });
+  };
+
+  const handleInterviewUpdated = () => {
+    fetchInterviews();
+    handleCloseEditDrawer();
+  };
+
   const getExpandedContentConfig = (row) => ({
     title: "Interview Details",
     description: {
@@ -190,13 +208,12 @@ const CoordinatorInterviews = () => {
     ],
     actions: [
       {
-        label: "Submit Feedback",
+        label: "Edit Interview",
         icon: <EditIcon fontSize="small" />,
-        onClick: (row) => handleOpenFeedbackDialog(row),
+        onClick: (row) => handleEdit(row),
         variant: "outlined",
         size: "small",
         color: "primary",
-        sx: { mr: 1 },
       },
     ],
   });
@@ -303,18 +320,28 @@ const CoordinatorInterviews = () => {
               <VisibilityIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => handleEdit(row)}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <DownloadResume 
-          candidate={{ ...row, jobId: row.jobId }}
+            candidate={{ ...row, jobId: row.jobId }}
             getDownloadUrl={(candidate, format) =>
-                            `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`}
+              `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`}
           />
-          <Button
+           {/* <Button
             variant="outlined"
             size="small"
             onClick={() => handleOpenFeedbackDialog(row)}
           >
             Feedback
-          </Button>
+          </Button> */}
+      
         </Box>
       ),
     },
@@ -373,7 +400,7 @@ const CoordinatorInterviews = () => {
             <DateRangeFilter component="InterviewsForRecruiter" />
           </Stack>
 
-          <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
+          {/* <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
             <ToggleButtonGroup
               value={levelFilter}
               exclusive
@@ -411,7 +438,7 @@ const CoordinatorInterviews = () => {
                 EXTERNAL
               </ToggleButton>
             </ToggleButtonGroup>
-          </Box>
+          </Box> */}
 
           <DataTable
             data={processedData || []}
@@ -473,6 +500,21 @@ const CoordinatorInterviews = () => {
               </Button>
             </DialogActions>
           </Dialog>
+
+          <Drawer
+            anchor="right"
+            open={editDrawer.open}
+            onClose={handleCloseEditDrawer}
+            PaperProps={{ sx: { width: { xs: "60%", sm: "50%", md: "50%" } } }}
+          >
+            {editDrawer.data && (
+              <EditInterviewForm
+                data={editDrawer.data}
+                onClose={handleCloseEditDrawer}
+                onSuccess={handleInterviewUpdated}
+              />
+            )}
+          </Drawer>
         </>
       )}
     </Box>

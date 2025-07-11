@@ -28,7 +28,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
     severity: "success",
   });
 
-  const { userId, email,userName,role } = useSelector((state) => state.auth);
+  const { userId, email, userName, role } = useSelector((state) => state.auth);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [interviewResponse, setInterviewResponse] = useState(null);
   const [coordinators, setCoordinators] = useState([]);
@@ -37,7 +37,9 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
   useEffect(() => {
     const fetchCoordinators = async () => {
       try {
-        const res = await httpService.get("/users/employee?excludeRoleName=EMPLOYEE");
+        const res = await httpService.get(
+          "/users/employee?excludeRoleName=EMPLOYEE"
+        );
         setCoordinators(
           res.data.map((emp) => ({
             value: emp.employeeId,
@@ -73,10 +75,10 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       externalInterviewDetails: data.externalInterviewDetails || "",
       fullName: data.fullName || data.candidateFullName || "",
       interviewDateTime: isReschedule ? "" : dateTimeValue,
-      interviewLevel: data.interviewLevel ,
-      interviewId:data.interviewId,
+      interviewLevel: data.interviewLevel,
+      interviewId: data.interviewId,
       interviewStatus: status,
-      internalFeedBack:data.internalFeedBack,
+      internalFeedBack: data.internalFeedBack,
       jobId: data.jobId || "",
       skipNotification: data.skipNotification || false,
       userId: data.userId || userId || "",
@@ -87,170 +89,186 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       coordinator: data.coordinator || userName,
       assignedTo: data.assignedTo || userId || "",
       coordinatorFeedback: data.coordinatorFeedback || "",
-      comments:data.comments || ""
+      comments: data.comments || "",
     };
   };
 
-  // Pass form values so we can conditionally show coordinator field if interviewLevel === "INTERNAL"
-const getFormFields = (values) => {
-  const commonGridProps = { xs: 12, md: 6, lg: 6, xl: 4 };
-  const isCoordinatorRole = role === "COORDINATOR";
-  const showCoordinator = values?.interviewLevel === "INTERNAL" && isCoordinatorRole;
+  const getFormFields = (values) => {
+    const commonGridProps = { xs: 12, md: 6, lg: 6, xl: 4 };
+    const isCoordinatorRole = role === "COORDINATOR";
+    const showCoordinator = values?.interviewLevel === "INTERNAL" && isCoordinatorRole;
+    const isInternalInterview = values?.interviewLevel === "INTERNAL" && isReschedule==true;
 
-  const coordinatorField = {
-    name: "assignedTo",
-    label: "Coordinator",
-    type: "select",
-    disabled:values?.interviewLevel !== "INTERNAL",
-    options: coordinators,
-    required: false,
-    gridProps: commonGridProps,
+    const coordinatorField = {
+      name: "assignedTo",
+      label: "Coordinator",
+      type: "select",
+      disabled: role==="COORDINATOR",
+      options: coordinators,
+      required: false,
+      gridProps: commonGridProps,
+    };
+
+    const coordinatorFeedbackField = {
+      name: "internalFeedBack",
+      label: "Coordinator Feedback",
+      type: "textarea",
+      placeholder: "Feedback/comments from the coordinator...",
+      gridProps: { xs: 12 },
+      rows: 3,
+    };
+
+    const commentsField = {
+      name: "comments",
+      label: "Comments",
+      type: "textarea",
+      disabled:values?.interviewLevel!="INTERNAL",
+      gridProps: { xs: 12 },
+      rows: 3,
+    };
+
+    if (!isReschedule) {
+      return [
+        {
+          name: "sectionStatus",
+          type: "section",
+          label: "Update Interview Status",
+          gridProps: { xs: 12 },
+        },
+        ...(role==="COORDINATOR"?[ {
+          name: "interviewStatus",
+          label: "Interview Status",
+          type: "select",
+          required: true,
+          options: [
+            { value: "REJECTED", label: "Rejected" },
+            { value: "SELECTED", label: "Selected" },
+          ],
+          gridProps: commonGridProps,
+        }]:[
+           {
+          name: "interviewStatus",
+          label: "Interview Status",
+          type: "select",
+          required: true,
+          options: [
+            { value: "SCHEDULED", label: "Scheduled" },
+            { value: "RESCHEDULED", label: "Rescheduled" },
+            { value: "REJECTED", label: "Rejected" },
+            { value: "CANCELLED", label: "Cancelled" },
+            { value: "NO_SHOW", label: "No Show / Not Attended" },
+            { value: "SELECTED", label: "Selected" },
+            { value: "PLACED", label: "Placed" },
+            { value: "FEEDBACK_PENDING", label: "Feedback-Pending" },
+          ],
+          gridProps: commonGridProps,
+        },
+        ]),
+    
+        {
+          name: "interviewLevel",
+          label: "Interview Level",
+          type: "select",
+          required: true,
+          disabled: true,
+          options: [
+            { value: "INTERNAL", label: "INTERNAL" },
+            { value: "EXTERNAL", label: "EXTERNAL" },
+            { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
+            { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
+            { value: "FINAL", label: "FINAL" },
+          ],
+          gridProps: commonGridProps,
+        },
+        // Show comments field only for INTERNAL interviews
+       
+        ...(showCoordinator ? [coordinatorField, coordinatorFeedbackField] : []),
+        {
+          name: "skipNotification",
+          label: "Skip Email Notification",
+          type: "checkbox",
+          description: "Check this box to skip sending email notifications",
+          gridProps: { xs: 12 },
+        },
+      ];
+    } else {
+      return [
+        {
+          name: "sectionReschedule",
+          type: "section",
+          label: "Reschedule Interview",
+          gridProps: { xs: 12 },
+        },
+        {
+          name: "interviewDateTime",
+          label: "New Interview Date & Time",
+          type: "datetime",
+          required: true,
+          gridProps: commonGridProps,
+        },
+        {
+          name: "clientEmail",
+          label: "Client Email",
+          type: "chipInput",
+          description:
+            "Enter client email addresses and press Enter after each",
+          gridProps: { xs: 12, sm: 6 },
+        },
+        {
+          name: "duration",
+          label: "Duration (minutes)",
+          type: "select",
+          required: true,
+          options: [
+            { value: 15, label: "15 minutes" },
+            { value: 30, label: "30 minutes" },
+            { value: 45, label: "45 minutes" },
+            { value: 60, label: "60 minutes" },
+          ],
+          gridProps: commonGridProps,
+        },
+        {
+          name: "interviewLevel",
+          label: "Interview Level",
+          type: "select",
+          required: true,
+          options: [
+            { value: "INTERNAL", label: "INTERNAL" },
+            { value: "EXTERNAL", label: "EXTERNAL" },
+            { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
+            { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
+            { value: "FINAL", label: "FINAL" },
+          ],
+          gridProps: commonGridProps,
+        },
+        ...[coordinatorField],
+        {
+          name: "zoomLink",
+          label: "Meeting Link",
+          type: "text",
+          placeholder: "https://zoom.us/j/example",
+          gridProps: commonGridProps,
+        },
+         ...(isInternalInterview ? [commentsField] : []),
+        {
+          name: "externalInterviewDetails",
+          label: "Interview Details / Notes",
+          type: "textarea",
+          placeholder:
+            "Add any additional interview details, requirements, or notes here",
+          gridProps: { xs: 12 },
+          rows: 4,
+        },
+        {
+          name: "skipNotification",
+          label: "Skip Email Notification",
+          type: "checkbox",
+          description: "Check this box to skip sending email notifications",
+          gridProps: { xs: 12 },
+        },
+      ];
+    }
   };
-
-  const coordinatorFeedbackField = {
-    name: "internalFeedBack",
-    label: "Coordinator Feedback",
-    type: "textarea",
-    placeholder: "Feedback/comments from the coordinator...",
-    gridProps: { xs: 12 },
-    rows: 3,
-  };
-
-  if (!isReschedule) {
-    return [
-      {
-        name: "sectionStatus",
-        type: "section",
-        label: "Update Interview Status",
-        gridProps: { xs: 12 },
-      },
-      {
-        name: "interviewStatus",
-        label: "Interview Status",
-        type: "select",
-        required: true,
-        options: [
-          { value: "SCHEDULED", label: "Scheduled" },
-          { value: "RESCHEDULED", label: "Rescheduled" },
-          { value: "REJECTED", label: "Rejected" },
-          { value: "CANCELLED", label: "Cancelled" },
-          { value: "NO_SHOW", label: "No Show / Not Attended" },
-          { value: "SELECTED", label: "Selected" },
-          { value: "PLACED", label: "Placed" },
-          { value: "FEEDBACK_PENDING", label: "Feedback-Pending" },
-        ],
-        gridProps: commonGridProps,
-      },
-     
-      {
-        name: "interviewLevel",
-        label: "Interview Level",
-        type: "select",
-        required: true,
-        disabled: true,
-        options: [
-          { value: "INTERNAL", label: "INTERNAL" },
-          { value: "EXTERNAL", label: "EXTERNAL" },
-          { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
-          { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
-          { value: "FINAL", label: "FINAL" },
-        ],
-        gridProps: commonGridProps,
-      },
-       {
-        name:"comments",
-        label:"Comments",
-        type:"textarea",
-         gridProps: { xs: 12 },
-         rows: 3,
- 
-      },
-      ...(showCoordinator ? [coordinatorField, coordinatorFeedbackField] : []),
-      {
-        name: "skipNotification",
-        label: "Skip Email Notification",
-        type: "checkbox",
-        description: "Check this box to skip sending email notifications",
-        gridProps: { xs: 12 },
-      },
-    ];
-  } else {
-    return [
-      {
-        name: "sectionReschedule",
-        type: "section",
-        label: "Reschedule Interview",
-        gridProps: { xs: 12 },
-      },
-      {
-        name: "interviewDateTime",
-        label: "New Interview Date & Time",
-        type: "datetime",
-        required: true,
-        gridProps: commonGridProps,
-      },
-      {
-        name: "clientEmail",
-        label: "Client Email",
-        type: "chipInput",
-        description: "Enter client email addresses and press Enter after each",
-        gridProps: { xs: 12, sm: 6 },
-      },
-      {
-        name: "duration",
-        label: "Duration (minutes)",
-        type: "select",
-        required: true,
-        options: [
-          { value: 15, label: "15 minutes" },
-          { value: 30, label: "30 minutes" },
-          { value: 45, label: "45 minutes" },
-          { value: 60, label: "60 minutes" },
-        ],
-        gridProps: commonGridProps,
-      },
-      {
-        name: "interviewLevel",
-        label: "Interview Level",
-        type: "select",
-        required: true,
-        options: [
-          { value: "INTERNAL", label: "INTERNAL" },
-          { value: "EXTERNAL", label: "EXTERNAL" },
-          { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
-          { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
-          { value: "FINAL", label: "FINAL" },
-        ],
-        gridProps: commonGridProps,
-      },
-      ...( [coordinatorField]),
-      {
-        name: "zoomLink",
-        label: "Meeting Link",
-        type: "text",
-        placeholder: "https://zoom.us/j/example",
-        gridProps: commonGridProps,
-      },
-      {
-        name: "externalInterviewDetails",
-        label: "Interview Details / Notes",
-        type: "textarea",
-        placeholder:
-          "Add any additional interview details, requirements, or notes here",
-        gridProps: { xs: 12 },
-        rows: 4,
-      },
-      {
-        name: "skipNotification",
-        label: "Skip Email Notification",
-        type: "checkbox",
-        description: "Check this box to skip sending email notifications",
-        gridProps: { xs: 12 },
-      },
-    ];
-  }
-};
-
 
   const validationSchema = () => {
     const baseSchema = {
@@ -304,21 +322,24 @@ const getFormFields = (values) => {
     try {
       setSubmitting(true);
 
-       console.log('Payload being sent:', {
-      comments: values.comments,
-    })
+      console.log("Payload being sent:", {
+        comments: values.comments,
+      });
 
       const payload = {
-        ...data,
+        interviewId: data.interviewId,
+        candidateId: data.candidateId,
+        jobId: data.jobId,
+        userId: data.userId,
+        userEmail: data.userEmail,
         interviewLevel: values.interviewLevel,
         interviewStatus: values.interviewStatus,
-        internalFeedBack:values.internalFeedBack,
+        internalFeedBack: values.internalFeedBack,
         externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
         assignedTo: values.assignedTo,
-        userId: data.userId,
-        userEmail: data.userEmail,
-        comments:values.comments,
+        comments: values.comments,
+        clientName:values.clientName,
         ...(isReschedule && {
           interviewDateTime: dayjs(values.interviewDateTime).format(),
           interviewScheduledTimestamp: dayjs(
@@ -326,17 +347,17 @@ const getFormFields = (values) => {
           ).valueOf(),
           duration: values.duration,
           zoomLink: values.zoomLink,
-         
         }),
       };
 
-     const isCoordinator = role === "COORDINATOR"; // assuming `role` is available
-     const baseUrl = isCoordinator
-       ? `/candidate/updateInterviewByCoordinator/${userId}/${data.interviewId}`
-        : `/candidate/interview-update/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
+      const isCoordinator = role === "COORDINATOR";
+      const baseUrl = isCoordinator
+        ? `/candidate/updateInterviewByCoordinator/${userId}/${data.interviewId}`
+        : `/candidate/interview-update/${data.userId || userId}/${
+            data.candidateId
+          }/${data.jobId}`;
 
       const responseData = await httpService.put(baseUrl, payload);
-
 
       setInterviewResponse(responseData);
       setSubmissionSuccess(true);
@@ -382,7 +403,6 @@ const getFormFields = (values) => {
 
   const initialValues = getInitialValues();
 
-  
   return (
     <Box sx={{ width: "100%", p: { xs: 2, sm: 3 }, bgcolor: "#f9fafc" }}>
       <Box
@@ -457,7 +477,7 @@ const getFormFields = (values) => {
 
       <Card elevation={2} sx={{ borderRadius: 3, p: 3 }}>
         <DynamicForm
-          fields={getFormFields((initialValues))}
+          fields={getFormFields(initialValues)}
           initialValues={initialValues}
           validationSchema={validationSchema()}
           onSubmit={handleSubmit}

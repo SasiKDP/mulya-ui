@@ -162,7 +162,7 @@ const handleMoveToBench = async (e) => {
 
     // Optional fields
     formData.append("linkedin", candidate.linkedin || "");
-    formData.append("referredBy", candidate.userEmail || "");
+    formData.append("referredBy", candidate.userName || "");
     formData.append("remarks", feedback || "");
     formData.append("technology", candidate.technology || "");
 
