@@ -27,7 +27,7 @@ import {
 } from "@mui/icons-material";
 import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { formatDateTime } from "../../utils/dateformate";
 import { API_BASE_URL } from "../../Services/httpService";
@@ -40,6 +40,7 @@ import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import MoveToBench from "./MoveToBench";
 import DownloadResume from "../../utils/DownloadResume";
 import InternalFeedbackCell from "./FeedBack";
+import { clearFilteredData, clearRecruiterFilter } from "../../redux/interviewSlice"; // Import the action
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -51,10 +52,15 @@ const processInterviewData = (interviews) => {
 };
 
 const RecruiterInterviews = () => {
+  const dispatch = useDispatch();
   const { userId } = useSelector((state) => state.auth);
-  const { isFilteredDataRequested, filterInterviewsForRecruiter } = useSelector(
-    (state) => state.interview
-  );
+  const { 
+    isFilteredDataRequested, 
+    isRecruiterFilterActive,
+    filterInterviewsForRecruiter,
+    loading: reduxLoading 
+  } = useSelector((state) => state.interview);
+  
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -92,6 +98,15 @@ const RecruiterInterviews = () => {
   useEffect(() => {
     fetchInterviews();
   }, [userId]);
+
+  // Add effect to handle filtered data updates
+  useEffect(() => {
+    console.log("Filter state changed:", {
+      isFilteredDataRequested,
+      isRecruiterFilterActive,
+      filterInterviewsForRecruiter: filterInterviewsForRecruiter.length
+    });
+  }, [isFilteredDataRequested, isRecruiterFilterActive, filterInterviewsForRecruiter]);
 
   const handleBenchSuccess = (row) => {
     setInterviews((prevInterviews) =>
@@ -429,14 +444,33 @@ const RecruiterInterviews = () => {
     },
   ];
 
+  // Updated function to get display data with better logic
   const getDisplayData = () => {
-    const data = isFilteredDataRequested ? filterInterviewsForRecruiter : interviews;
-    return filterInterviewsByLevel(data);
+    if (isRecruiterFilterActive && filterInterviewsForRecruiter.length > 0) {
+      // Use filtered data from Redux
+      return processInterviewData(filterInterviewsForRecruiter);
+    } else if (isFilteredDataRequested && filterInterviewsForRecruiter.length === 0) {
+      // Filter was applied but no results
+      return [];
+    } else {
+      // Use original interviews data
+      return interviews;
+    }
   };
 
-  const processedData = loading
+  // Add function to clear filters
+  const handleClearFilters = () => {
+    dispatch(clearRecruiterFilter());
+    // Also clear the level filter
+    setLevelFilter("ALL");
+  };
+
+  const displayData = getDisplayData();
+  const filteredData = filterInterviewsByLevel(displayData);
+
+  const processedData = (loading || reduxLoading)
     ? []
-    : getDisplayData().map((row) => ({
+    : filteredData.map((row) => ({
         ...row,
         expandContent: renderExpandedContent(row),
         isExpanded: expandedRows[row.interviewId],
@@ -481,11 +515,14 @@ const RecruiterInterviews = () => {
               boxShadow: 1,
             }}
           >
-            <Typography variant="h6" color="primary">
-              My Scheduled Interviews
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Typography variant="h6" color="primary">
+                My Scheduled Interviews
+              </Typography>
+            </Box>
             <DateRangeFilter component="InterviewsForRecruiter" />
           </Stack>
+
 
           <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
             <ToggleButtonGroup
@@ -546,6 +583,7 @@ const RecruiterInterviews = () => {
             uniqueId="interviewId"
             enableRowExpansion={true}
             onRowExpandToggle={toggleRowExpansion}
+            loading={loading || reduxLoading}
           />
 
           <Drawer

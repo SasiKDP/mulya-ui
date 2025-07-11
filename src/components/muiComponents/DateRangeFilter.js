@@ -10,7 +10,7 @@ import ToastService from '../../Services/toastService';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import { validateDateRange } from '../../utils/validateDateRange';
 import { filterRequirementsByDateRange, filterRequirementsByRecruiter } from '../../redux/requirementSlice';
-import { filterInterviewsByDateRange, filterInterviewsByRecruiter ,filterInterviewsByTeamLead} from '../../redux/interviewSlice';
+import { filterInterviewsByDateRange, filterInterviewsByRecruiter ,filterInterviewsByTeamLead, clearRecruiterFilter} from '../../redux/interviewSlice';
 import { filterUsersByDateRange } from '../../redux/employeesSlice';
 import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../../redux/submissionSlice';
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
@@ -103,6 +103,11 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange,onClearFilt
       if (onClearFilter) {
             onClearFilter();
         }
+
+
+        if (component === 'InterviewsForRecruiter') {
+      dispatch(clearRecruiterFilter());
+    } 
     
     // Call the onDateChange callback if provided
     if (onDateChange) {

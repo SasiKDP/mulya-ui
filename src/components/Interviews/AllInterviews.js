@@ -62,7 +62,7 @@ const AllInterviews = () => {
   });
   const [editDrawer, setEditDrawer] = useState({ open: false, data: null });
   const [moveToBenchLoading, setMoveToBenchLoading] = useState(false);
-  const [levelFilter, setLevelFilter] = useState("ALL");
+
   const [feedbackDialog, setFeedbackDialog] = useState({
     open: false,
     interview: null,
@@ -74,6 +74,10 @@ const AllInterviews = () => {
   const { userId, role } = useSelector((state) => state.auth);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const { filteredInterviewList } = useSelector((state) => state.interview);
+
+   const [levelFilter, setLevelFilter] = useState(
+  role === "COORDINATOR" ? "INTERNAL" : "ALL"
+);
 
   const navigate = useNavigate();
 
@@ -275,28 +279,33 @@ const AllInterviews = () => {
     }
   };
 
-  const filterInterviewsByLevel = (interviews) => {
-    if (levelFilter === "ALL") return interviews;
+ const filterInterviewsByLevel = (interviews) => {
+  if (levelFilter === "ALL" && !showCoordinatorView) return interviews;
+  
+  // For coordinator view, only show internal interviews by default
+  if (showCoordinatorView) {
+    return interviews.filter(interview => interview.interviewLevel === "INTERNAL");
+  }
 
-    return interviews.filter((interview) => {
-      if (levelFilter === "INTERNAL") {
-        return interview.interviewLevel === "INTERNAL";
-      }
-      if (levelFilter === "EXTERNAL") {
-        return interview.interviewLevel !== "INTERNAL";
-      }
-      if (levelFilter === "EXTERNAL L1") {
-        return interview.interviewLevel === "L1";
-      }
-      if (levelFilter === "EXTERNAL L2") {
-        return interview.interviewLevel === "L2";
-      }
-      if (levelFilter === "EXTERNAL L3") {
-        return interview.interviewLevel === "L3";
-      }
-      return false;
-    });
-  };
+  return interviews.filter((interview) => {
+    if (levelFilter === "INTERNAL") {
+      return interview.interviewLevel === "INTERNAL";
+    }
+    if (levelFilter === "EXTERNAL") {
+      return interview.interviewLevel !== "INTERNAL";
+    }
+    if (levelFilter === "EXTERNAL L1") {
+      return interview.interviewLevel === "L1";
+    }
+    if (levelFilter === "EXTERNAL L2") {
+      return interview.interviewLevel === "L2";
+    }
+    if (levelFilter === "EXTERNAL L3") {
+      return interview.interviewLevel === "L3";
+    }
+    return false;
+  });
+};
 
   const getExpandedContentConfig = (isCoordinator = false) => ({
     title: "Interview Details",
@@ -767,45 +776,53 @@ const AllInterviews = () => {
         </Box>
       </Stack>
 
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
-        <ToggleButtonGroup
-          value={levelFilter}
-          exclusive
-          onChange={handleLevelFilterChange}
-          aria-label="interview level filter"
-          sx={{
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: 1,
-            "& .MuiToggleButton-root": {
-              px: 2,
-              py: 1,
-              borderRadius: 1,
-              border: "1px solid rgba(25, 118, 210, 0.5)",
-              "&.Mui-selected": {
-                backgroundColor: "#1976d2",
-                color: "white",
-                "&:hover": {
-                  backgroundColor: "#1565c0",
-                },
-              },
-              "&:hover": {
-                backgroundColor: "rgba(25, 118, 210, 0.08)",
-              },
-            },
-          }}
-        >
-          <ToggleButton value="ALL" aria-label="all interviews">
-            ALL
-          </ToggleButton>
-          <ToggleButton value="INTERNAL" aria-label="internal interviews">
-            INTERNAL
-          </ToggleButton>
-          <ToggleButton value="EXTERNAL" aria-label="external interviews">
-            EXTERNAL
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
+  
+
+<Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
+  <ToggleButtonGroup
+    value={levelFilter}
+    exclusive
+    onChange={handleLevelFilterChange}
+    aria-label="interview level filter"
+    sx={{
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: 1,
+      "& .MuiToggleButton-root": {
+        px: 2,
+        py: 1,
+        borderRadius: 1,
+        border: "1px solid rgba(25, 118, 210, 0.5)",
+        "&.Mui-selected": {
+          backgroundColor: "#1976d2",
+          color: "white",
+          "&:hover": {
+            backgroundColor: "#1565c0",
+          },
+        },
+        "&:hover": {
+          backgroundColor: "rgba(25, 118, 210, 0.08)",
+        },
+      },
+    }}
+  >
+    {!showCoordinatorView && (
+      <ToggleButton value="ALL" aria-label="all interviews">
+        ALL
+      </ToggleButton>
+    )}
+    {!showCoordinatorView && (
+    <ToggleButton value="INTERNAL" aria-label="internal interviews">
+      INTERNAL
+    </ToggleButton>
+     )}
+    {!showCoordinatorView && (
+      <ToggleButton value="EXTERNAL" aria-label="external interviews">
+        EXTERNAL
+      </ToggleButton>
+    )}
+  </ToggleButtonGroup>
+</Box>
 
       {(loading && !interviews.length) ||
       (coordinatorLoading && !coordinatorInterviews.length) ? (

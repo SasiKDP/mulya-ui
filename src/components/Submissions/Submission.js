@@ -173,7 +173,7 @@ const Submission = () => {
 
     // Append additional info
     formData.append("linkedin", row.linkedin || "");
-    formData.append("referredBy", row.userEmail || "");
+    formData.append("referredBy", row.userName || "");
     formData.append("remarks", remarks);
 
     // Fetch and append resume
