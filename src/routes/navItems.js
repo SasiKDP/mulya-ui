@@ -19,44 +19,6 @@ export const navItems = [
     roles: ["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","INVOICE","COORDINATOR"],
   },
   {
-    text: "Assigned",
-    path: "assigned",
-    icon: <AssignmentIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],
-  },
-  {
-    text: "Submissions",
-    path: "submissions",
-    icon: <SendIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN"],
-  },
-
-  {
-    text: "Requirements",
-    path: "requirements",
-    icon: <ListAltIcon />,
-    roles: [ "SUPERADMIN", "BDM", "TEAMLEAD"],
-  },
-   {
-    text:"InProgress",
-    path:"InProgress",
-    icon:<AutorenewIcon/>,
-    roles:["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"],
-  },
-  //   {
-  //     text: 'Job Form',
-  //     path: 'jobForm',
-  //     icon: <PersonAddIcon />,
-  //     roles: ['ADMIN', 'SUPERADMIN', 'BDM'],
-  //   },
-  {
-    text: "Interviews",
-    path: "interviews",
-    icon: <EventNoteIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN","COORDINATOR"],
-  },
-
-  {
     text: "Users",
     path: "users",
     icon: <GroupIcon />,
@@ -74,6 +36,45 @@ export const navItems = [
     icon: <BusinessIcon />,
     roles: [ "SUPERADMIN", "BDM", "PARTNER"],
   },
+   {
+    text: "Requirements",
+    path: "requirements",
+    icon: <ListAltIcon />,
+    roles: [ "SUPERADMIN", "BDM", "TEAMLEAD"],
+  },
+  {
+    text: "Assigned",
+    path: "assigned",
+    icon: <AssignmentIcon />,
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],
+  },
+  {
+    text:"InProgress",
+    path:"InProgress",
+    icon:<AutorenewIcon/>,
+    roles:["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"],
+  },
+  {
+    text: "Submissions",
+    path: "submissions",
+    icon: <SendIcon />,
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN"],
+  },
+   
+  //   {
+  //     text: 'Job Form',
+  //     path: 'jobForm',
+  //     icon: <PersonAddIcon />,
+  //     roles: ['ADMIN', 'SUPERADMIN', 'BDM'],
+  //   },
+  {
+    text: "Interviews",
+    path: "interviews",
+    icon: <EventNoteIcon />,
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN","COORDINATOR"],
+  },
+
+  
   //   {
   //     text: 'Add Client',
   //     path: 'addNewClient',

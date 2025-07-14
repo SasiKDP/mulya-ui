@@ -21,7 +21,7 @@ import { Check } from "lucide-react";
 import httpService from "../../Services/httpService";
 import { formatDateTime } from "../../utils/dateformate";
 
-const EditInterviewForm = ({ data, onClose, onSuccess }) => {
+const EditInterviewForm = ({ data, onClose, onSuccess, showCoordinatorView }) => {
   const [notification, setNotification] = useState({
     open: false,
     message: "",
@@ -95,15 +95,37 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
 
   const getFormFields = (values) => {
     const commonGridProps = { xs: 12, md: 6, lg: 6, xl: 4 };
-    const isCoordinatorRole = role === "COORDINATOR";
-    const showCoordinator = values?.interviewLevel === "INTERNAL" && isCoordinatorRole;
-    const isInternalInterview = values?.interviewLevel === "INTERNAL" && isReschedule==true;
+    const isCoordinator = role === "COORDINATOR";
+    const isInternalInterview = values?.interviewLevel === "INTERNAL";
+
+    // Status options for coordinator view
+    const coordinatorStatusOptions = [
+      { value: "REJECTED", label: "Rejected" },
+      { value: "SELECTED", label: "Selected" },
+    ];
+
+    // Status options for regular view
+    const regularStatusOptions = [
+      { value: "SCHEDULED", label: "Scheduled" },
+      { value: "RESCHEDULED", label: "Rescheduled" },
+      { value: "REJECTED", label: "Rejected" },
+      { value: "CANCELLED", label: "Cancelled" },
+      { value: "NO_SHOW", label: "No Show / Not Attended" },
+      { value: "SELECTED", label: "Selected" },
+      { value: "PLACED", label: "Placed" },
+      { value: "FEEDBACK_PENDING", label: "Feedback-Pending" },
+    ];
+
+    // Use coordinator status options if in coordinator view OR if role is COORDINATOR
+    const statusOptions = (showCoordinatorView || role === "COORDINATOR") 
+      ? coordinatorStatusOptions 
+      : regularStatusOptions;
 
     const coordinatorField = {
       name: "assignedTo",
       label: "Coordinator",
       type: "select",
-      disabled: role==="COORDINATOR",
+      disabled: role === "SUPERADMIN" || role==="BDM" || role==="TEAMLEAD" || role ==="COORDINATOR", // Disable if current user is coordinator
       options: coordinators,
       required: false,
       gridProps: commonGridProps,
@@ -122,49 +144,27 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
       name: "comments",
       label: "Comments",
       type: "textarea",
-      disabled:values?.interviewLevel!="INTERNAL",
+      disabled: !isInternalInterview,
       gridProps: { xs: 12 },
       rows: 3,
     };
 
     if (!isReschedule) {
-      return [
+      const fields = [
         {
           name: "sectionStatus",
           type: "section",
           label: "Update Interview Status",
           gridProps: { xs: 12 },
         },
-        ...(role==="COORDINATOR"?[ {
+        {
           name: "interviewStatus",
           label: "Interview Status",
           type: "select",
           required: true,
-          options: [
-            { value: "REJECTED", label: "Rejected" },
-            { value: "SELECTED", label: "Selected" },
-          ],
-          gridProps: commonGridProps,
-        }]:[
-           {
-          name: "interviewStatus",
-          label: "Interview Status",
-          type: "select",
-          required: true,
-          options: [
-            { value: "SCHEDULED", label: "Scheduled" },
-            { value: "RESCHEDULED", label: "Rescheduled" },
-            { value: "REJECTED", label: "Rejected" },
-            { value: "CANCELLED", label: "Cancelled" },
-            { value: "NO_SHOW", label: "No Show / Not Attended" },
-            { value: "SELECTED", label: "Selected" },
-            { value: "PLACED", label: "Placed" },
-            { value: "FEEDBACK_PENDING", label: "Feedback-Pending" },
-          ],
+          options: statusOptions,
           gridProps: commonGridProps,
         },
-        ]),
-    
         {
           name: "interviewLevel",
           label: "Interview Level",
@@ -180,9 +180,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           ],
           gridProps: commonGridProps,
         },
-        // Show comments field only for INTERNAL interviews
-       
-        ...(showCoordinator ? [coordinatorField, coordinatorFeedbackField] : []),
         {
           name: "skipNotification",
           label: "Skip Email Notification",
@@ -191,8 +188,15 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           gridProps: { xs: 12 },
         },
       ];
+
+      // Add coordinator fields when in coordinator view OR for internal interviews
+      if (showCoordinatorView || isInternalInterview && role!=="EMPLOYEE") {
+        fields.splice(3, 0, coordinatorField, coordinatorFeedbackField);
+      }
+
+      return fields;
     } else {
-      return [
+      const fields = [
         {
           name: "sectionReschedule",
           type: "section",
@@ -210,8 +214,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           name: "clientEmail",
           label: "Client Email",
           type: "chipInput",
-          description:
-            "Enter client email addresses and press Enter after each",
+          description: "Enter client email addresses and press Enter after each",
           gridProps: { xs: 12, sm: 6 },
         },
         {
@@ -241,7 +244,6 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           ],
           gridProps: commonGridProps,
         },
-        ...[coordinatorField],
         {
           name: "zoomLink",
           label: "Meeting Link",
@@ -249,7 +251,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           placeholder: "https://zoom.us/j/example",
           gridProps: commonGridProps,
         },
-         ...(isInternalInterview ? [commentsField] : []),
+        ...(isInternalInterview ? [commentsField] : []),
         {
           name: "externalInterviewDetails",
           label: "Interview Details / Notes",
@@ -267,6 +269,15 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
           gridProps: { xs: 12 },
         },
       ];
+
+      // Add coordinator field when in coordinator view
+      if (showCoordinatorView) {
+        fields.splice(5, 0, coordinatorField);
+        // Also add coordinator feedback field for reschedule in coordinator view
+        fields.splice(6, 0, coordinatorFeedbackField);
+      }
+
+      return fields;
     }
   };
 
@@ -339,7 +350,7 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         skipNotification: values.skipNotification,
         assignedTo: values.assignedTo,
         comments: values.comments,
-        clientName:values.clientName,
+        clientName: values.clientName,
         ...(isReschedule && {
           interviewDateTime: dayjs(values.interviewDateTime).format(),
           interviewScheduledTimestamp: dayjs(
@@ -350,15 +361,14 @@ const EditInterviewForm = ({ data, onClose, onSuccess }) => {
         }),
       };
 
-      const isCoordinator = role === "COORDINATOR";
-      const baseUrl = isCoordinator
-        ? `/candidate/updateInterviewByCoordinator/${userId}/${data.interviewId}`
-        : `/candidate/interview-update/${data.userId || userId}/${
-            data.candidateId
-          }/${data.jobId}`;
+const isCoordinatorRole = role === "COORDINATOR" || role === "SUPERADMIN" || role === "BDM" || role === "TEAMLEAD";
+const useCoordinatorEndpoint = isCoordinatorRole || showCoordinatorView;
 
-      const responseData = await httpService.put(baseUrl, payload);
+const baseUrl = role==="COORDINATOR" || showCoordinatorView
+  ? `/candidate/updateInterviewByCoordinator/${userId}/${data.interviewId}`
+  : `/candidate/interview-update/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
 
+const responseData = await httpService.put(baseUrl, payload);
       setInterviewResponse(responseData);
       setSubmissionSuccess(true);
       setNotification({

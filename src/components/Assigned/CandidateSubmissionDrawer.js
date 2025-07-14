@@ -246,10 +246,14 @@ const CandidateSubmissionDrawer = ({
     }
   }, [userId, jobId, mode]);
 
-  const isFieldDisabled = (fieldName) => {
-    const disabledFields = ["fullName", "candidateEmailId", "contactNumber", "userEmail"];
-    return mode === "edit" && disabledFields.includes(fieldName);
-  };
+ const isFieldDisabled = (fieldName) => {
+  // userEmail is disabled when NOT in edit mode
+  if (fieldName === "userEmail") return mode !== "edit";
+  
+  // These fields are disabled only in edit mode
+  const editModeDisabledFields = ["fullName", "candidateEmailId", "contactNumber"];
+  return mode === "edit" && editModeDisabledFields.includes(fieldName);
+};
 
 
   

@@ -32,6 +32,8 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import ToastService from "../../Services/toastService";
+import { error } from "pdf-lib";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -449,22 +451,29 @@ const validationSchema = useMemo(() => Yup.object().shape({
 
         setInterviewResponse(responseData);
         setSubmissionSuccess(true);
-        setNotification({
-          open: true,
-          message: "Interview scheduled successfully",
-          severity: "success",
-        });
+        // setNotification({
+        //   open: true,
+        //   message: "Interview scheduled successfully",
+        //   severity: "success",
+        // });
+        ToastService.success("Scheduled Interview Successfully")
+     
 
         setTimeout(() => {
           if (onSuccess) onSuccess();
           onClose(true);
         }, 2000);
       } catch (error) {
-        setNotification({
-          open: true,
-          message: error?.response?.data?.message || error.message || "Failed to schedule interview",
-          severity: "error",
-        });
+        // setNotification({
+        //   open: true,
+        //   message: error?.response?.data?.message || error.message || "Failed to schedule interview",
+        //   severity: "error",
+        // });
+         const errorMessage = error?.response?.data?.error?.errorMessage || 
+                        error?.response?.data?.message || 
+                        error.message || 
+                        "Failed to schedule interview";
+          ToastService.error(errorMessage);
       } finally {
         setSubmitting(false);
       }
