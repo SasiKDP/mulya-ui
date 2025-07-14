@@ -67,6 +67,9 @@ const EditRequirement = ({ requirementData, onClose }) => {
       let recruiterIds = [];
       let recruiterNames = [];
       
+      let teamleadIds = []
+      let teamleadNames=[]
+      
       // Handle recruiterIds
       if (Array.isArray(requirementData.recruiterIds)) {
         recruiterIds = requirementData.recruiterIds;
@@ -88,6 +91,19 @@ const EditRequirement = ({ requirementData, onClose }) => {
           console.error("Failed to parse recruiter names", e);
         }
       }
+
+      //Handle teamleadName
+      if (Array.isArray(requirementData.teamleadName)) {
+        teamleadNames = requirementData.teamleadName;
+      } else if (typeof requirementData.teamleadName === "string") {
+        try {
+          teamleadNames = JSON.parse(requirementData.teamleadName);
+        } catch (e) {
+          console.error("Failed to parse teamlead names", e);
+        }
+      }
+
+
 
       // Extract numeric values from strings
       const extractNumber = (str) => {
@@ -111,6 +127,8 @@ const EditRequirement = ({ requirementData, onClose }) => {
         qualification: requirementData.qualification || "",
         recruiterIds: recruiterIds || [],
         recruiterName: recruiterNames || [],
+        teamleadIds:teamleadIds || [],
+        teamleadName: teamleadNames || [],
         salaryPackage: extractNumber(requirementData.salaryPackage) || "",
         noOfPositions: requirementData.noOfPositions || 1,
         status: requirementData.status || "In Progress",
@@ -157,6 +175,17 @@ const EditRequirement = ({ requirementData, onClose }) => {
         value: emp.employeeId,
         name: emp.userName
       })) || [];
+
+    const teamleadOptions=
+     employeesList?.filter(
+      (emp)=>(emp.roles ==="TEAMLEAD") && emp.status==="ACTIVE"
+     )
+     ?.map((emp) => ({
+        label: `${emp.userName} (${emp.employeeId})`,
+        value: emp.employeeId,
+        name: emp.userName
+      })) || [];
+
 
   const fieldGridProps = { xs: 12, sm: 6, md: 6, lg: 4, xl: 4, xxl: 3 };
 
@@ -259,6 +288,17 @@ const EditRequirement = ({ requirementData, onClose }) => {
       type: "text",
       gridProps: fieldGridProps,
     },
+    // {
+    //   name: "teamleadIds",
+    //   label: "Assigned Teamleads",
+    //   type: "multiselect",
+    //   options: teamleadOptions,
+    //   getOptionLabel: (option) => {
+    //     const teamlead = teamleadOptions.find(r => r.value === option);
+    //     return teamlead ? teamlead.name : option;
+    //   },
+    //   gridProps: fieldGridProps,
+    // },
     {
       name: "recruiterIds",
       label: "Assigned Recruiters",
@@ -385,7 +425,21 @@ const EditRequirement = ({ requirementData, onClose }) => {
             return recruiter ? recruiter.name : id;
           });
           formData.append("recruiterName", JSON.stringify(selectedRecruiters));
-        } else if (key === "jobDescription" && values[key]) {
+       
+        } 
+       
+       else if(key === "teamleadIds"){
+            formData.append(key, JSON.stringify(values[key]));
+          // Also add recruiter names based on selected IDs
+          const selectedRecruiters = values[key].map(id => {
+            const teamlead = teamleadOptions.find(r => r.value === id);
+            return teamlead ? teamlead.name : id;
+          });
+          formData.append("teamleadName", JSON.stringify(selectedRecruiters));
+       }
+        
+  
+        else if (key === "jobDescription" && values[key]) {
           // Only append file if it exists
           formData.append(key, values[key]);
         } else if (key !== "recruiterName") { // Skip recruiterName as we handle it above

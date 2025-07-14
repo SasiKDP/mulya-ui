@@ -53,7 +53,7 @@ const processInterviewData = (interviews) => {
 
 const RecruiterInterviews = () => {
   const dispatch = useDispatch();
-  const { userId } = useSelector((state) => state.auth);
+  const { userId,role } = useSelector((state) => state.auth);
   const { 
     isFilteredDataRequested, 
     isRecruiterFilterActive,
@@ -599,6 +599,8 @@ const RecruiterInterviews = () => {
                 data={editDrawer.data}
                 onClose={handleCloseEditDrawer}
                 onSuccess={handleInterviewUpdated}
+                showCoordinatorView={false}
+                role={role}
               />
             )}
           </Drawer>

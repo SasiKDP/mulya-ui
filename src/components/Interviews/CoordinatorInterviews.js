@@ -486,7 +486,7 @@ const CoordinatorInterviews = () => {
             </DialogContent>
             <DialogActions sx={{ px: 4, pb: 3 }}>
               <Button onClick={handleCloseFeedbackDialog}>Cancel</Button>
-              <Button
+              {/* <Button
                 onClick={handleSubmitFeedback}
                 variant="contained"
                 color="primary"
@@ -497,7 +497,7 @@ const CoordinatorInterviews = () => {
                 ) : (
                   "Submit Feedback"
                 )}
-              </Button>
+              </Button> */}
             </DialogActions>
           </Dialog>
 

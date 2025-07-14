@@ -45,6 +45,8 @@ import {
 } from "../../redux/interviewSlice";
 import { useNavigate } from "react-router-dom";
 import InternalFeedbackCell from "./FeedBack";
+import { API_BASE_URL } from "../../Services/httpService";
+import DownloadResume from "../../utils/DownloadResume";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -90,7 +92,7 @@ const TeamLeadInterviews = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { userId } = useSelector((state) => state.auth);
+  const { userId,role } = useSelector((state) => state.auth);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const {
     selfInterviewsTL,
@@ -231,6 +233,7 @@ const TeamLeadInterviews = () => {
     });
   };
 
+
   const handleCloseEditDrawer = () => {
     setEditDrawer({
       open: false,
@@ -334,15 +337,15 @@ const TeamLeadInterviews = () => {
       ],
       actions: isCoordinator
         ? [
-            {
-              label: "Submit Feedback",
+             {
+              label: "Edit Interview",
               icon: <EditIcon fontSize="small" />,
-              onClick: handleOpenFeedbackDialog,
+              onClick: (row) => handleEdit(row),
               variant: "outlined",
               size: "small",
               color: "primary",
               sx: { mr: 1 },
-            },
+            }
           ]
         : [
             {
@@ -562,13 +565,22 @@ const TeamLeadInterviews = () => {
             )}
             
             {showCoordinatorView && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleOpenFeedbackDialog(row)}
-              >
-                Feedback
-              </Button>
+              <>
+             <IconButton
+                  onClick={() => handleEdit(row)}
+                  color="primary"
+                  size="small"
+                  title="Edit Interview"
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+
+                 <DownloadResume 
+                 candidate={{ ...row, jobId: row.jobId }}
+                  getDownloadUrl={(candidate, format) =>
+                `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`}
+                 />
+                </>
             )}
             
             {showReschedule && !showCoordinatorView && (
@@ -619,7 +631,8 @@ const TeamLeadInterviews = () => {
 
   // Determine which data to display based on filtering and tab selection
   let displayData = [];
-  let tableTitle = "";
+  let tableTitle = showCoordinatorView ? "Coordinator Interviews" : levelFilter === "INTERNAL" ? "Internal Interviews" : levelFilter === "EXTERNAL" 
+              ? "External Interviews" : "Interviews";
   
   if (showCoordinatorView) {
     displayData = getFilteredData(coordinatorData);
@@ -704,8 +717,8 @@ const TeamLeadInterviews = () => {
               <DateRangeFilter component="InterviewsForTeamLead" />
             </Box>
           </Stack>
-
-          <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
+       {!showCoordinatorView && (
+           <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
             <ToggleButtonGroup
               value={levelFilter}
               exclusive
@@ -745,6 +758,8 @@ const TeamLeadInterviews = () => {
               
             </ToggleButtonGroup>
           </Box>
+       ) 
+     }  
 
           {!showCoordinatorView && (
             <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
@@ -780,7 +795,8 @@ const TeamLeadInterviews = () => {
           <DataTable
             data={displayData}
             columns={getTableColumns()}
-            title={tableTitle}
+            title={showCoordinatorView ? "Coordinator Interviews" : levelFilter === "INTERNAL" ? "Internal Interviews" : levelFilter === "EXTERNAL" 
+              ? "External Interviews" : "Interviews"}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="desc"
@@ -811,6 +827,8 @@ const TeamLeadInterviews = () => {
                 data={editDrawer.data}
                 onClose={handleCloseEditDrawer}
                 onSuccess={handleInterviewUpdated}
+                role={role}
+                 showCoordinatorView={showCoordinatorView}
               />
             )}
           </Drawer>

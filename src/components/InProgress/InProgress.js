@@ -246,6 +246,14 @@ const processedData = useMemo(() => {
             sortable: true,
             filterable: true,
             width: 120,
+        },
+        {
+            key:"numberOfScreenReject",
+             label: "Screen Reject",
+            type: "text",
+            sortable: true,
+            filterable: true,
+            width: 120,
         }
     ];
 

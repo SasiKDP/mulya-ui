@@ -25,7 +25,7 @@ import {
   Visibility as VisibilityIcon,
   SupervisorAccount as CoordinatorIcon,
 } from "@mui/icons-material";
-import httpService from "../../Services/httpService";
+import httpService, { API_BASE_URL } from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -37,6 +37,7 @@ import ConfirmDialog from "../muiComponents/ConfirmDialog";
 import EditInterviewForm from "./EditInterviewForm";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import InternalFeedbackCell from "./FeedBack";
+import DownloadResume from "../../utils/DownloadResume";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -291,14 +292,14 @@ const BDMInterviews = () => {
         ],
         actions: [
           {
-            label: "Submit Feedback",
-            icon: <EditIcon fontSize="small" />,
-            onClick: (row) => handleOpenFeedbackDialog(row),
-            variant: "outlined",
-            size: "small",
-            color: "primary",
-            sx: { mr: 1 },
-          },
+          label: "Edit Interview",
+          icon: <EditIcon fontSize="small" />,
+          onClick: (row) => handleEdit(row),
+          variant: "outlined",
+          size: "small",
+          color: "primary",
+          sx: { mr: 1 },
+        },
         ],
       };
     }
@@ -534,6 +535,21 @@ const BDMInterviews = () => {
           </IconButton>
         </Tooltip>
 
+         <IconButton
+              onClick={() => handleEdit(row)}
+              color="primary"
+              size="small"
+              title="Edit Interview"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+
+            <DownloadResume 
+                        candidate={{ ...row, jobId: row.jobId }}
+                        getDownloadUrl={(candidate, format) =>
+                          `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`}
+                      />
+
         {!showCoordinatorView && (
           <>
             <IconButton
@@ -555,15 +571,6 @@ const BDMInterviews = () => {
           </>
         )}
 
-        {showCoordinatorView && (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handleOpenFeedbackDialog(row)}
-          >
-            Feedback
-          </Button>
-        )}
 
         {showReschedule && (
           <Button
@@ -677,7 +684,8 @@ const BDMInterviews = () => {
               <DateRangeFilter component="InterviewsForRecruiter" />
             </Box>
           </Stack>
-
+    {!showCoordinatorView && (
+      <>
           <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
             <ToggleButtonGroup
               value={levelFilter}
@@ -717,13 +725,15 @@ const BDMInterviews = () => {
               </ToggleButton>
             </ToggleButtonGroup>
           </Box>
+          </>
+          ) 
+          }
 
           <DataTable
             data={processedData || []}
             columns={columns}
-            title={
-              showCoordinatorView ? "Coordinator Interviews" : "My Interviews"
-            }
+            title={ showCoordinatorView ? "Coordinator Interviews" : levelFilter === "INTERNAL" ? "Internal Interviews" : levelFilter === "EXTERNAL" 
+              ? "External Interviews" : "Interviews"}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="desc"
@@ -742,7 +752,7 @@ const BDMInterviews = () => {
             enableRowExpansion={true}
             onRowExpandToggle={toggleRowExpansion}
           />
-
+ 
           <Drawer
             anchor="right"
             open={editDrawer.open}
@@ -756,6 +766,7 @@ const BDMInterviews = () => {
                 data={editDrawer.data}
                 onClose={handleCloseEditDrawer}
                 onSuccess={handleInterviewUpdated}
+                showCoordinatorView={showCoordinatorView}
               />
             )}
           </Drawer>

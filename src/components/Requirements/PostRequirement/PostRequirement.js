@@ -80,6 +80,17 @@ const PostRequirement = ({onClose}) => {
         value: emp.employeeId,
       })) || [];
 
+
+    const teamleadOptions =
+     employeesList?.filter(
+      (emp) =>
+      (emp.roles === "TEAMLEAD") && emp.status === "ACTIVE"
+     )
+     ?.map((emp) => ({
+        label: `${emp.userName} (${emp.employeeId})`,
+        value: emp.employeeId,
+      })) || [];
+
   // Find current user's full name from employee list
   const currentUser = employeesList?.find((emp) => emp.employeeId === userId);
   const assignedByName = currentUser?.userName || userName || userId || "";
@@ -102,6 +113,7 @@ const PostRequirement = ({onClose}) => {
     relevantExperience: 0,
     qualification: "",
     recruiters: [],
+    assignedTo: "",
     salaryPackage: "",
     noOfPositions: 1,
     status: "In Progress",
@@ -241,6 +253,15 @@ const PostRequirement = ({onClose}) => {
       initialValue: assignedByName,
       gridProps: fieldGridProps,
     },
+    //  {
+    //   name: "assignedTo",
+    //   label: "Assigned To (TeamLead)",
+    //   type: "select",
+    //   validation: Yup.string().nullable(),
+    //   options: teamleadOptions,
+    //   gridProps: fieldGridProps,
+    //   helperText: "Select teamlead to assign this job",
+    // },
     {
       name: "recruiters",
       label: "Recruiters",
@@ -269,6 +290,7 @@ const PostRequirement = ({onClose}) => {
         },
       },
     },
+   
   ];
 
   const descriptionField =
@@ -307,8 +329,6 @@ const PostRequirement = ({onClose}) => {
         };
 
   const handleSubmit = async (values, { resetForm, setFieldError }) => {
-    // No need to separately validate recruiters as we've added the validation in the field definition
-
     setSubmitting(true);
     const formData = new FormData();
 
@@ -336,6 +356,7 @@ const PostRequirement = ({onClose}) => {
     formData.append("noticePeriod", values.noticePeriod || "");
     formData.append("status", values.status || "In Progress");
     formData.append("assignedBy", values.assignedBy || assignedByName);
+    formData.append("assignedTo", values.assignedTo || "");
 
     // Safer recruiter data handling
     if (values.recruiters && values.recruiters.length > 0) {

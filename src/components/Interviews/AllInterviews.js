@@ -41,6 +41,8 @@ import { showToast } from "../../utils/ToastNotification";
 import MoveToBench from "./MoveToBench";
 import { useNavigate } from "react-router-dom";
 import InternalFeedbackCell from "./FeedBack";
+import DownloadResume from "../../utils/DownloadResume";
+import { API_BASE_URL } from "../../Services/httpService";
 
 const AllInterviews = () => {
   const [data, setData] = useState([]);
@@ -350,14 +352,14 @@ const AllInterviews = () => {
     actions: isCoordinator
       ? [
           {
-            label: "Submit Feedback",
+            label: "Edit Interview",
             icon: <Edit fontSize="small" />,
-            onClick: handleOpenFeedbackDialog,
+            onClick: handleEdit,
             variant: "outlined",
             size: "small",
             color: "primary",
             sx: { mr: 1 },
-          },
+          }
         ]
       : [
           {
@@ -681,13 +683,25 @@ const AllInterviews = () => {
               </>
             )}
             {showCoordinatorView && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleOpenFeedbackDialog(row)}
-              >
-                Feedback
-              </Button>
+             <>            
+              <Tooltip title="Edit">
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => handleEdit(row)}
+                    disabled={loading || coordinatorLoading}
+                  >
+                    <Edit fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+
+                <DownloadResume 
+                  candidate={{ ...row, jobId: row.jobId }}
+                  getDownloadUrl={(candidate, format) =>
+                `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`}
+                 />
+             </>
+    
             )}
             {showReschedule && !showCoordinatorView && (
               <Button
@@ -777,7 +791,7 @@ const AllInterviews = () => {
       </Stack>
 
   
-
+{ !showCoordinatorView && (
 <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
   <ToggleButtonGroup
     value={levelFilter}
@@ -806,23 +820,25 @@ const AllInterviews = () => {
       },
     }}
   >
-    {!showCoordinatorView && (
-      <ToggleButton value="ALL" aria-label="all interviews">
+    
+      <ToggleButton value="ALL" aria-label="all interviews" >
         ALL
       </ToggleButton>
-    )}
-    {!showCoordinatorView && (
+   
+    
     <ToggleButton value="INTERNAL" aria-label="internal interviews">
       INTERNAL
     </ToggleButton>
-     )}
-    {!showCoordinatorView && (
+
+  
       <ToggleButton value="EXTERNAL" aria-label="external interviews">
         EXTERNAL
       </ToggleButton>
-    )}
+  
   </ToggleButtonGroup>
 </Box>
+)
+}
 
       {(loading && !interviews.length) ||
       (coordinatorLoading && !coordinatorInterviews.length) ? (
@@ -853,7 +869,8 @@ const AllInterviews = () => {
           <DataTable
             data={processedData}
             columns={getTableColumns()}
-            title=""
+           title={ showCoordinatorView ? "Coordinator Interviews" : levelFilter === "INTERNAL" ? "Internal Interviews" : levelFilter === "EXTERNAL" 
+              ? "External Interviews" : "Interviews"}
             loading={loading || coordinatorLoading}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
@@ -885,6 +902,7 @@ const AllInterviews = () => {
                 data={editDrawer.data}
                 onClose={handleCloseEditDrawer}
                 onSuccess={handleInterviewUpdated}
+                showCoordinatorView={showCoordinatorView}
               />
             )}
           </Drawer>
