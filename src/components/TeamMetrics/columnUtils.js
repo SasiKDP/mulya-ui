@@ -426,6 +426,24 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
         ),
       },
       {
+        key:"numberOfScreenReject",
+        label: "Screen Reject",
+        type: "text",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfScreenReject || 0}
+            size="small"
+            variant="outlined"
+            color="error"
+          />
+        )
+      },
+      {
         key: "numberOfInterviews",
         label: "Interviews",
         type: "number",
@@ -528,6 +546,24 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
         />
       ),
     },
+    {
+        key:"teamScreenRejectCount",
+        label: "Screen Reject",
+        type: "text",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.teamScreenRejectCount || 0}
+            size="small"
+            variant="outlined"
+            color="error"
+          />
+        )
+      },
     {
       key: 'selfInterviews',
       label: 'Self Interviews',
