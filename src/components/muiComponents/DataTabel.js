@@ -148,7 +148,8 @@ const DataTable = ({
   const [data, setData] = useState(initialData);
   const [columns, setColumns] = useState(processedColumns);
   const [filteredData, setFilteredData] = useState(initialData);
-  const [order, setOrder] = useState(defaultSortDirection);
+  // const [order, setOrder] = useState(defaultSortDirection);
+  const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState(
     defaultSortColumn || columns[0]?.key || uniqueId
   );

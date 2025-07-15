@@ -17,7 +17,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 const InternalFeedbackCell = ({ 
   value, 
   loading = false,
-  maxLength = 15,
+  maxLength = 5,
   emptyText = '-',
   isCoordinator = false,
   onFeedbackSubmit,
