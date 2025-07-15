@@ -553,14 +553,6 @@ const BDMInterviews = () => {
         {!showCoordinatorView && (
           <>
             <IconButton
-              onClick={() => handleEdit(row)}
-              color="primary"
-              size="small"
-              title="Edit Interview"
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton
               onClick={() => handleDelete(row)}
               color="error"
               size="small"

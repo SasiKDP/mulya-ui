@@ -480,8 +480,8 @@ const BenchList = () => {
           refreshData={fetchBenchList}
           isRefreshing={loading}
           enableSelection={false}
-          defaultSortColumn="fullName"
-          defaultSortDirection="asc"
+          defaultSortColumn="id"
+          defaultSortDirection="desc"
           noDataMessage={
             <Box sx={{ py: 4, textAlign: 'center' }}>
               <Typography variant="h6" color="text.secondary" gutterBottom>
