@@ -426,7 +426,7 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
         ),
       },
       {
-        key:"numberOfScreenReject",
+        key:"numberOfScreenRejects",
         label: "Screen Reject",
         type: "text",
         sortable: true,
@@ -436,7 +436,7 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
           <Skeleton variant="rectangular" width={60} height={24} />
         ) : (
           <Chip
-            label={row.numberOfScreenReject || 0}
+            label={row.numberOfScreenRejects || 0}
             size="small"
             variant="outlined"
             color="error"
