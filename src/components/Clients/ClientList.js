@@ -18,6 +18,8 @@ import {
   Drawer,
   Skeleton,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import {
   Refresh,
@@ -25,6 +27,7 @@ import {
   Close,
   Edit,
   Delete,
+  Feedback,
 } from "@mui/icons-material";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -40,6 +43,8 @@ import ToastNotification from "../../utils/ToastNotification";
 import ComponentTitle from "../../utils/ComponentTitle";
 import OnBoardClient from "./OnBoardClient";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
+import { id } from "date-fns/locale";
+import InternalFeedbackCell from "../Interviews/FeedBack";
 
 const ClientList = () => {
   const dispatch = useDispatch();
@@ -58,6 +63,7 @@ const ClientList = () => {
   const [currentClient, setCurrentClient] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState(null);
+  const [levelFilter, setLevelFilter] = useState("ALL");
 
   useEffect(() => {
     dispatch(fetchAllClients());
@@ -108,6 +114,39 @@ const ClientList = () => {
       .catch((rejectedValue) => {
         // Error is handled in the slice
       });
+  };
+
+   const handleStatusFilterChange = (event, newFilter) => {
+    if (newFilter !== null) setLevelFilter(newFilter);
+  };
+
+ const handleClientsByStatus = (clients) => {
+  if (!clients) return [];
+  if (levelFilter === "ALL") return clients;
+  
+  return clients.filter((client) => {
+    if (levelFilter === "ACTIVE") return client.status === "ACTIVE";
+    if (levelFilter === "INACTIVE") return client.status !== "ACTIVE";
+    return false;
+  });
+};
+
+ const renderStatus = (status) => {
+    let color = "default";
+    const statusLower = status?.toLowerCase();
+
+    switch (statusLower) {
+      case "active":
+        color = "success";
+        break;
+      case "inactive":
+        color = "error";
+        break;
+      default:
+        color = "default";
+    }
+
+    return <Chip label={status || "Unknown"} size="small" color={color} />;
   };
 
   const handleViewDocs = (client) => {
@@ -269,6 +308,28 @@ const ClientList = () => {
             ),
         },
         {
+          key:"status",
+          label:"Status",
+          render: (row) =>
+            loading ? (
+              <Skeleton variant="rectangular" width={100} height={32} />
+            ) : (
+              renderStatus(row.status)
+            ),
+        },
+        {
+          key:"feedBack",
+          label:"FeedBack",
+          render:(row) =>
+            loading ? (
+              <Skeleton variant="rectangular" width={100} height={32} />
+            ) :(
+              <InternalFeedbackCell
+                value={row.feedBack}
+              />
+            )
+        },
+        {
           key: "actions",
           label: "Actions",
           render: (row) =>
@@ -384,10 +445,56 @@ const ClientList = () => {
         </Alert>
       )}
 
+       <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
+        <ToggleButtonGroup
+           value={levelFilter}
+          exclusive
+          onChange={handleStatusFilterChange}
+          aria-label="client status filter"
+          sx={{
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 1,
+            "& .MuiToggleButton-root": {
+              px: 2,
+              py: 1,
+              borderRadius: 1,
+              border: "1px solid rgba(25, 118, 210, 0.5)",
+              "&.Mui-selected": {
+                backgroundColor: "#1976d2",
+                color: "white",
+                "&:hover": {
+                  backgroundColor: "#1565c0",
+                },
+              },
+              "&:hover": {
+                backgroundColor: "rgba(25, 118, 210, 0.08)",
+              },
+            },
+          }}
+        >
+          
+            {/* <ToggleButton value="ALL" aria-label="all clients" >
+              ALL
+            </ToggleButton>
+          */}
+          
+          <ToggleButton value="ACTIVE" aria-label="active clients">
+            ACTIVE
+          </ToggleButton>
+      
+        
+            <ToggleButton value="INACTIVE" aria-label="inactive clients">
+              INACTIVE
+            </ToggleButton>
+        
+        </ToggleButtonGroup>
+      </Box>
+
       <DataTable
-        data={clients}
+        data={handleClientsByStatus(clients)}
         columns={columns}
-        title=""
+        title={levelFilter==="ALL"?"Clients":levelFilter==="ACTIVE"?"Active":"InActive"}
         loading={loading}
         enableSelection={false}
         defaultSortColumn="clientName"
@@ -467,6 +574,11 @@ const ClientList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+
+     
+     
+      
 
       {/* View Documents Dialog */}
       <Dialog
