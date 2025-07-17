@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Skeleton,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -47,6 +48,7 @@ import { useNavigate } from "react-router-dom";
 import InternalFeedbackCell from "./FeedBack";
 import { API_BASE_URL } from "../../Services/httpService";
 import DownloadResume from "../../utils/DownloadResume";
+import MoveToBench from "./MoveToBench";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -89,10 +91,11 @@ const TeamLeadInterviews = () => {
   });
   const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [moveToBenchLoading, setMoveToBenchLoading] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { userId,role } = useSelector((state) => state.auth);
+  const { userId, role } = useSelector((state) => state.auth);
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const {
     selfInterviewsTL,
@@ -131,6 +134,37 @@ const TeamLeadInterviews = () => {
       ToastService.error("Failed to load coordinator interviews");
     } finally {
       setCoordinatorLoading(false);
+    }
+  };
+
+  const handleBenchSuccess = (row) => {
+    if (showCoordinatorView) {
+      setCoordinatorInterviews((prev) =>
+        prev.filter((item) => item.submissionId !== row.submissionId)
+      );
+    } else {
+      // Update both self and team interviews
+      if (activeTab === 0) {
+        // Self interviews
+        dispatch(
+          filterInterviewsByTeamLead({
+            selfInterviews: selfInterviewsTL.filter(
+              (item) => item.submissionId !== row.submissionId
+            ),
+            teamInterviews: teamInterviewsTL,
+          })
+        );
+      } else {
+        // Team interviews
+        dispatch(
+          filterInterviewsByTeamLead({
+            selfInterviews: selfInterviewsTL,
+            teamInterviews: teamInterviewsTL.filter(
+              (item) => item.submissionId !== row.submissionId
+            ),
+          })
+        );
+      }
     }
   };
 
@@ -232,7 +266,6 @@ const TeamLeadInterviews = () => {
       },
     });
   };
-
 
   const handleCloseEditDrawer = () => {
     setEditDrawer({
@@ -475,6 +508,21 @@ const TeamLeadInterviews = () => {
             </Typography>
           ),
       },
+      {
+        key: "moveToBench",
+        label: "Move to Bench",
+        sortable: false,
+        filterable: false,
+        width: 130,
+        align: "center",
+        render: (row) => (
+          <MoveToBench
+            row={row}
+            onSuccess={handleBenchSuccess}
+            isLoading={moveToBenchLoading}
+          />
+        ),
+      }
     ];
 
     if (showCoordinatorView) {
@@ -566,7 +614,7 @@ const TeamLeadInterviews = () => {
             
             {showCoordinatorView && (
               <>
-             <IconButton
+                <IconButton
                   onClick={() => handleEdit(row)}
                   color="primary"
                   size="small"
@@ -575,12 +623,13 @@ const TeamLeadInterviews = () => {
                   <EditIcon fontSize="small" />
                 </IconButton>
 
-                 <DownloadResume 
-                 candidate={{ ...row, jobId: row.jobId }}
+                <DownloadResume 
+                  candidate={{ ...row, jobId: row.jobId }}
                   getDownloadUrl={(candidate, format) =>
-                `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`}
-                 />
-                </>
+                    `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
+                  }
+                />
+              </>
             )}
             
             {showReschedule && !showCoordinatorView && (
@@ -717,49 +766,48 @@ const TeamLeadInterviews = () => {
               <DateRangeFilter component="InterviewsForTeamLead" />
             </Box>
           </Stack>
-       {!showCoordinatorView && (
-           <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
-            <ToggleButtonGroup
-              value={levelFilter}
-              exclusive
-              onChange={handleLevelFilterChange}
-              aria-label="interview level filter"
-              sx={{
-                flexWrap: "wrap",
-                justifyContent: "center",
-                gap: 1,
-                "& .MuiToggleButton-root": {
-                  px: 2,
-                  py: 1,
-                  borderRadius: 1,
-                  border: "1px solid rgba(25, 118, 210, 0.5)",
-                  "&.Mui-selected": {
-                    backgroundColor: "#1976d2",
-                    color: "white",
+
+          {!showCoordinatorView && (
+            <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
+              <ToggleButtonGroup
+                value={levelFilter}
+                exclusive
+                onChange={handleLevelFilterChange}
+                aria-label="interview level filter"
+                sx={{
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: 1,
+                  "& .MuiToggleButton-root": {
+                    px: 2,
+                    py: 1,
+                    borderRadius: 1,
+                    border: "1px solid rgba(25, 118, 210, 0.5)",
+                    "&.Mui-selected": {
+                      backgroundColor: "#1976d2",
+                      color: "white",
+                      "&:hover": {
+                        backgroundColor: "#1565c0",
+                      },
+                    },
                     "&:hover": {
-                      backgroundColor: "#1565c0",
+                      backgroundColor: "rgba(25, 118, 210, 0.08)",
                     },
                   },
-                  "&:hover": {
-                    backgroundColor: "rgba(25, 118, 210, 0.08)",
-                  },
-                },
-              }}
-            >
-              <ToggleButton value="ALL" aria-label="all interviews">
-                ALL
-              </ToggleButton>
-              <ToggleButton value="INTERNAL" aria-label="internal interviews">
-                INTERNAL
-              </ToggleButton>
-              <ToggleButton value="EXTERNAL" aria-label="external interviews">
-                EXTERNAL
-              </ToggleButton>
-              
-            </ToggleButtonGroup>
-          </Box>
-       ) 
-     }  
+                }}
+              >
+                <ToggleButton value="ALL" aria-label="all interviews">
+                  ALL
+                </ToggleButton>
+                <ToggleButton value="INTERNAL" aria-label="internal interviews">
+                  INTERNAL
+                </ToggleButton>
+                <ToggleButton value="EXTERNAL" aria-label="external interviews">
+                  EXTERNAL
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          )}
 
           {!showCoordinatorView && (
             <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
@@ -795,8 +843,7 @@ const TeamLeadInterviews = () => {
           <DataTable
             data={displayData}
             columns={getTableColumns()}
-            title={showCoordinatorView ? "Coordinator Interviews" : levelFilter === "INTERNAL" ? "Internal Interviews" : levelFilter === "EXTERNAL" 
-              ? "External Interviews" : "Interviews"}
+            title={tableTitle}
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="desc"
@@ -828,7 +875,7 @@ const TeamLeadInterviews = () => {
                 onClose={handleCloseEditDrawer}
                 onSuccess={handleInterviewUpdated}
                 role={role}
-                 showCoordinatorView={showCoordinatorView}
+                showCoordinatorView={showCoordinatorView}
               />
             )}
           </Drawer>
