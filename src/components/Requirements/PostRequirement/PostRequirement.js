@@ -82,7 +82,7 @@ const PostRequirement = ({onClose}) => {
 
   const teamleadOptions=
   employeesList?.filter(
-       (emp)=>(emp.roles === "TEAMLEAD") &&
+       (emp)=>(emp.roles === "TEAMLEAD" || emp.roles=="BDM" || emp.roles==="SUPERADMIN") &&
        emp.status === "ACTIVE"
   )
   ?.map((emp)=>({

@@ -162,7 +162,7 @@ const EditRequirement = ({ requirementData, onClose }) => {
 
    const teamleadOptions = 
       employeesList
-      ?.filter((emp)=>(emp.roles==="TEAMLEAD") && 
+      ?.filter((emp)=>(emp.roles==="TEAMLEAD" || emp.roles==="BDM" || emp.roles ==="SUPERADMIN") && 
       emp.status==="ACTIVE"
     ) 
       ?.map((emp)=>({
