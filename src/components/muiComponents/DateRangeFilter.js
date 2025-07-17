@@ -10,16 +10,15 @@ import ToastService from '../../Services/toastService';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import { validateDateRange } from '../../utils/validateDateRange';
 import { filterRequirementsByDateRange, filterRequirementsByRecruiter } from '../../redux/requirementSlice';
-import { filterInterviewsByDateRange, filterInterviewsByRecruiter ,filterInterviewsByTeamLead} from '../../redux/interviewSlice';
+import { filterInterviewsByDateRange, filterInterviewsByRecruiter ,filterInterviewsByTeamLead, clearRecruiterFilter} from '../../redux/interviewSlice';
 import { filterUsersByDateRange } from '../../redux/employeesSlice';
 import { filterSubmissionsByDateRange, filterSubmissionssByRecruiter } from '../../redux/submissionSlice';
 import { filterClientsByDateRange } from '../../redux/clientsSlice';
 import { filterPlacementByDateRange } from '../../redux/placementSlice';
 import { filterDashBoardCountByDateRange } from '../../redux/dashboardSlice';
 import { filterTeamMetricsByDateRange, clearFilters } from '../../redux/teamMetricsSlice';
-import {filterSubmissionsByTeamlead} from '../../redux/submissionSlice';
-import { filterInProgressDataByDateRange,clearFilterData  } from '../../redux/inProgressSlice';
-
+import { filterSubmissionsByTeamlead } from '../../redux/submissionSlice';
+import { filterInProgressDataByDateRange,clearFilterData } from '../../redux/inProgressSlice';
 
 const componentToActionMap = {
   BenchList: filterBenchListByDateRange,
@@ -27,22 +26,23 @@ const componentToActionMap = {
   Interviews: filterInterviewsByDateRange,
   Users: filterUsersByDateRange,
   Submissions: filterSubmissionsByDateRange,
-  SubmissionsForTeamLead:filterSubmissionsByTeamlead,
+  SubmissionsForTeamLead: filterSubmissionsByTeamlead,
   AssignedList: filterRequirementsByRecruiter,
   RecruiterSubmission: filterSubmissionssByRecruiter,
   InterviewsForRecruiter: filterInterviewsByRecruiter,
-  dashboard:filterDashBoardCountByDateRange,
+  dashboard: filterDashBoardCountByDateRange,
   InterviewsForTeamLead: filterInterviewsByTeamLead,
   Clients: filterClientsByDateRange,
   placements: filterPlacementByDateRange,
   allSubmissions: filterSubmissionsByDateRange,
   allInterviews: filterInterviewsByDateRange,
   TeamMetrics: filterTeamMetricsByDateRange,
-  InProgress:filterInProgressDataByDateRange
+  InProgress: filterInProgressDataByDateRange, // Add this line
 };
 
 const componentToClearActionsMap = {
-  TeamMetrics: clearFilters
+  TeamMetrics: clearFilters,
+  InProgress:clearFilterData, // Add this line
 };
 
 const DateRangeFilter = ({ component, labelPrefix = '', onDateChange,onClearFilter }) => {
@@ -100,10 +100,14 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange,onClearFilt
       dispatch(clearAction());
     }
 
-    if (onClearFilter) {
+      if (onClearFilter) {
             onClearFilter();
         }
 
+
+        if (component === 'InterviewsForRecruiter') {
+      dispatch(clearRecruiterFilter());
+    } 
     
     // Call the onDateChange callback if provided
     if (onDateChange) {
@@ -162,7 +166,7 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange,onClearFilt
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ flexWrap: 'wrap' }}>
         <DatePicker
-          label={`${labelPrefix} Start Date`}
+          label={` Start Date`}
           value={startDate}
           onChange={handleStartDateChange}
           slotProps={{
@@ -173,7 +177,7 @@ const DateRangeFilter = ({ component, labelPrefix = '', onDateChange,onClearFilt
           }}
         />
         <DatePicker
-          label={`${labelPrefix} End Date`}
+          label={` End Date`}
           value={endDate}
           onChange={handleEndDateChange}
           slotProps={{

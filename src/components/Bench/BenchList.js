@@ -33,6 +33,7 @@ import {
   School,
   ContactPhone,
   Code,
+  Feedback,
 } from '@mui/icons-material';
 import ToastService from '../../Services/toastService';
 import BenchCandidateForm from './BenchForm';
@@ -41,6 +42,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { filterBenchListByDateRange, setFilteredDataRequested } from '../../redux/benchSlice';
 import DateRangeFilter from '../muiComponents/DateRangeFilter';
 import { User2Icon } from 'lucide-react';
+import InternalFeedbackCell from '../Interviews/FeedBack';
 
 const BenchList = () => {
   const [benchData, setBenchData] = useState([]);
@@ -228,6 +230,15 @@ const BenchList = () => {
       width: 180,
       render: loading ? () => <Skeleton variant="text" width={140} height={24} /> : undefined
     },
+     {
+      key: 'technology',
+      label: 'Technology',
+      type: 'text',
+      sortable: true,
+      filterable: true,
+      width: 180,
+      render: loading ? () => <Skeleton variant="text" width={140} height={24} /> : undefined
+    },
     {
       key: 'skills',
       label: 'Skills',
@@ -284,15 +295,6 @@ const BenchList = () => {
       render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
     },
     {
-      key: 'technology',
-      label: 'Technology',
-      type: 'text',
-      sortable: true,
-      filterable: true,
-      width: 180,
-      render: loading ? () => <Skeleton variant="text" width={120} height={24} /> : undefined
-    },
-    {
       key: 'totalExperience',
       label: 'Total Exp (Yrs)',
       type: 'text',
@@ -323,6 +325,18 @@ const BenchList = () => {
           variant="outlined" 
         />
       )
+    },
+    {
+      key:'remarks',
+      label:'Remarks',
+      type:'text',
+      align:'center',
+      render:(row)=>(
+        <InternalFeedbackCell value={row.remarks}/>
+      ),
+      sortable: true,
+      filterable: true,
+      width: 150,
     },
     {
       key: 'actions',
@@ -466,8 +480,8 @@ const BenchList = () => {
           refreshData={fetchBenchList}
           isRefreshing={loading}
           enableSelection={false}
-          defaultSortColumn="fullName"
-          defaultSortDirection="asc"
+          defaultSortColumn="id"
+          defaultSortDirection="desc"
           noDataMessage={
             <Box sx={{ py: 4, textAlign: 'center' }}>
               <Typography variant="h6" color="text.secondary" gutterBottom>

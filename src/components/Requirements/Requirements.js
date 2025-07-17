@@ -581,6 +581,24 @@ const Requirements = () => {
           ),
       },
       {
+          key:"updatedAt",
+           label: "Updated Date",
+        render: (row) =>
+          isLoading ? (
+            <LoadingSkeleton {...skeletonProps} width={100} />
+          ) : !row.updatedAt ? (
+            "N/A"
+          ) : isNaN(new Date(row.updatedAt)) ? (
+            "Invalid Date"
+          ) : (
+            new Date(row.updatedAt).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          ),
+      },
+      {
         key: "jobTitle",
         label: "Job Title",
         render: (row) =>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Chip, Skeleton } from '@mui/material';
 import { number } from 'prop-types';
@@ -425,6 +426,24 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
         ),
       },
       {
+        key:"numberOfScreenRejects",
+        label: "Screen Reject",
+        type: "text",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.numberOfScreenRejects || 0}
+            size="small"
+            variant="outlined"
+            color="error"
+          />
+        )
+      },
+      {
         key: "numberOfInterviews",
         label: "Interviews",
         type: "number",
@@ -527,6 +546,24 @@ export const generateColumns = (role, handleEmployeeClick, loading = false) => {
         />
       ),
     },
+    {
+        key:"teamScreenRejectCount",
+        label: "Screen Reject",
+        type: "text",
+        sortable: true,
+        filterable: true,
+        width: 120,
+        render: (row) => loading ? (
+          <Skeleton variant="rectangular" width={60} height={24} />
+        ) : (
+          <Chip
+            label={row.teamScreenRejectCount || 0}
+            size="small"
+            variant="outlined"
+            color="error"
+          />
+        )
+      },
     {
       key: 'selfInterviews',
       label: 'Self Interviews',

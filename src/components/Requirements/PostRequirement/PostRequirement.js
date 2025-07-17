@@ -80,6 +80,16 @@ const PostRequirement = ({onClose}) => {
         value: emp.employeeId,
       })) || [];
 
+  const teamleadOptions=
+  employeesList?.filter(
+       (emp)=>(emp.roles === "TEAMLEAD" || emp.roles=="BDM" || emp.roles==="SUPERADMIN") &&
+       emp.status === "ACTIVE"
+  )
+  ?.map((emp)=>({
+    label:`${emp.userName} (${emp.employeeId})`,
+    value:emp.employeeId,
+  })) || []    
+
   // Find current user's full name from employee list
   const currentUser = employeesList?.find((emp) => emp.employeeId === userId);
   const assignedByName = currentUser?.userName || userName || userId || "";
@@ -106,6 +116,7 @@ const PostRequirement = ({onClose}) => {
     noOfPositions: 1,
     status: "In Progress",
     assignedBy: assignedByName,
+    assignedTo:"",
     jobDescription: "",
     jobDescriptionFile: null,
     noticePeriod: "",
@@ -240,7 +251,15 @@ const PostRequirement = ({onClose}) => {
       disabled: true,
       initialValue: assignedByName,
       gridProps: fieldGridProps,
+      
     },
+    {
+    name: "assignedTo",
+    label: "Assigned To (Team Lead)",
+    type: "select",
+    options: teamleadOptions,
+    gridProps: fieldGridProps,
+    }, 
     {
       name: "recruiters",
       label: "Recruiters",
@@ -336,6 +355,10 @@ const PostRequirement = ({onClose}) => {
     formData.append("noticePeriod", values.noticePeriod || "");
     formData.append("status", values.status || "In Progress");
     formData.append("assignedBy", values.assignedBy || assignedByName);
+   
+   const selectedTL = employeesList.find(emp => emp.employeeId === values.assignedTo);
+   formData.append("assignedTo", selectedTL?.userName || values.assignedTo || "");
+
 
     // Safer recruiter data handling
     if (values.recruiters && values.recruiters.length > 0) {

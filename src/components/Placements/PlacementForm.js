@@ -283,6 +283,7 @@ const decryptFinancialValue = (encryptedValue) => {
         { value: "Completed", label: "Completed" },
         { value: "Terminated", label: "Terminated" },
         { value: "Cancelled", label: "Cancelled" },
+        { value: "BackOut", label: "BackOut" },
       ],
     },
   ];

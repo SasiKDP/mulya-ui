@@ -48,7 +48,6 @@ export const filterInterviewsByRecruiter = createAsyncThunk(
       const response = await httpService.get(
         `/candidate/interviews/${userId}/filterByDate?startDate=${startDate}&endDate=${endDate}`
       );
-
       return response.data;
     } catch (error) {
       console.log(error);
@@ -84,28 +83,64 @@ const interviewSlice = createSlice({
     filterInterviewsForRecruiter: [],
     filterInterviewsForTeamLeadTeam: [],
     filterInterviewsForTeamLeadSelf: [],
+    // Add these flags to track when filtered data is active
+    isFilteredDataRequested: false,
+    isRecruiterFilterActive: false,
+    isTeamLeadFilterActive: false,
     error: null,
   },
   reducers: {
-    // Added a clear filter action to reset filtered data
     clearFilteredData: (state) => {
       state.filterInterviewsForTeamLeadTeam = [];
       state.filterInterviewsForTeamLeadSelf = [];
       state.filterInterviewsForRecruiter = [];
       state.filteredInterviewList = [];
+      // Reset filter flags
+      state.isFilteredDataRequested = false;
+      state.isRecruiterFilterActive = false;
+      state.isTeamLeadFilterActive = false;
+    },
+    // Add action to clear specific filter type
+    clearRecruiterFilter: (state) => {
+      state.filterInterviewsForRecruiter = [];
+      state.isRecruiterFilterActive = false;
+      state.isFilteredDataRequested = false;
+    },
+    clearTeamLeadFilter: (state) => {
+      state.filterInterviewsForTeamLeadTeam = [];
+      state.filterInterviewsForTeamLeadSelf = [];
+      state.isTeamLeadFilterActive = false;
+      state.isFilteredDataRequested = false;
+    },
+    // Add action to set filter flags
+    setFilterFlag: (state, action) => {
+      const { filterType, isActive } = action.payload;
+      switch (filterType) {
+        case 'recruiter':
+          state.isRecruiterFilterActive = isActive;
+          state.isFilteredDataRequested = isActive;
+          break;
+        case 'teamlead':
+          state.isTeamLeadFilterActive = isActive;
+          state.isFilteredDataRequested = isActive;
+          break;
+        case 'general':
+          state.isFilteredDataRequested = isActive;
+          break;
+      }
     }
   },
   extraReducers: (builder) => {
     builder
-      //teamlead interviews
+      // Teamlead interviews
       .addCase(fetchInterviewsTeamLead.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchInterviewsTeamLead.fulfilled, (state, action) => {
         state.loading = false;
-        state.selfInterviewsTL = action.payload.selfInterviews || [];
-        state.teamInterviewsTL = action.payload.teamInterviews || [];
+        state.selfInterviewsTL = action.payload?.selfInterviews || [];
+        state.teamInterviewsTL = action.payload?.teamInterviews || [];
       })
       .addCase(fetchInterviewsTeamLead.rejected, (state, action) => {
         state.loading = false;
@@ -119,11 +154,20 @@ const interviewSlice = createSlice({
       })
       .addCase(filterInterviewsByRecruiter.fulfilled, (state, action) => {
         state.loading = false;
-        state.filterInterviewsForRecruiter = action.payload.data || [];
+        // Handle both array and object response formats
+        state.filterInterviewsForRecruiter = Array.isArray(action.payload) 
+          ? action.payload 
+          : action.payload?.data || [];
+        // Set the filter flag to indicate filtered data is active
+        state.isRecruiterFilterActive = true;
+        state.isFilteredDataRequested = true;
       })
       .addCase(filterInterviewsByRecruiter.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || "Failed to filter interviews";
+        // Reset filter flags on error
+        state.isRecruiterFilterActive = false;
+        state.isFilteredDataRequested = false;
       })
 
       // Filter Interviews List By date Range For TeamLead
@@ -133,13 +177,25 @@ const interviewSlice = createSlice({
       })
       .addCase(filterInterviewsByTeamLead.fulfilled, (state, action) => {
         state.loading = false;
-        // Ensure we handle potentially undefined data
-        state.filterInterviewsForTeamLeadSelf = action.payload.selfInterviews || [];
-        state.filterInterviewsForTeamLeadTeam = action.payload.teamInterviews || [];
+        // Handle different response structures
+        if (action.payload?.selfInterviews || action.payload?.teamInterviews) {
+          state.filterInterviewsForTeamLeadSelf = action.payload.selfInterviews || [];
+          state.filterInterviewsForTeamLeadTeam = action.payload.teamInterviews || [];
+        } else {
+          // Fallback for different API response structure
+          state.filterInterviewsForTeamLeadSelf = Array.isArray(action.payload) ? action.payload : [];
+          state.filterInterviewsForTeamLeadTeam = [];
+        }
+        // Set the filter flag to indicate filtered data is active
+        state.isTeamLeadFilterActive = true;
+        state.isFilteredDataRequested = true;
       })
       .addCase(filterInterviewsByTeamLead.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || "Failed to filter team lead interviews";
+        // Reset filter flags on error
+        state.isTeamLeadFilterActive = false;
+        state.isFilteredDataRequested = false;
       })
 
       // Filter Interviews List By date Range
@@ -149,14 +205,21 @@ const interviewSlice = createSlice({
       })
       .addCase(filterInterviewsByDateRange.fulfilled, (state, action) => {
         state.loading = false;
-        state.filteredInterviewList = action.payload.data || [];
+        // Handle both array and object response formats
+        state.filteredInterviewList = Array.isArray(action.payload) 
+          ? action.payload 
+          : action.payload?.data || [];
+        // Set the filter flag to indicate filtered data is active
+        state.isFilteredDataRequested = true;
       })
       .addCase(filterInterviewsByDateRange.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || "An error occurred";
+        // Reset filter flag on error
+        state.isFilteredDataRequested = false;
       });
   },
 });
 
-export const { clearFilteredData } = interviewSlice.actions;
+export const { clearFilteredData, setFilterFlag, clearRecruiterFilter, clearTeamLeadFilter } = interviewSlice.actions;
 export default interviewSlice.reducer;
