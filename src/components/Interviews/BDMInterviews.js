@@ -38,6 +38,7 @@ import EditInterviewForm from "./EditInterviewForm";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import InternalFeedbackCell from "./FeedBack";
 import DownloadResume from "../../utils/DownloadResume";
+import MoveToBench from "./MoveToBench";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -131,6 +132,12 @@ const BDMInterviews = () => {
       if (levelFilter === "L3") return interview.interviewLevel === "L3";
       return false;
     });
+  };
+
+  const handleBenchSuccess = (row) => {
+    setInterviews((prevInterviews) =>
+      prevInterviews.filter((item) => item.interviewId !== row.interviewId)
+    );
   };
 
   const handleLevelFilterChange = (event, newFilter) => {
@@ -465,6 +472,20 @@ const BDMInterviews = () => {
             </Typography>
           ),
       },
+       {
+              key: "moveToBench",
+              label: "Move to Bench",
+              sortable: false,
+              filterable: false,
+              width: 130,
+              align: "center",
+              render: (row) => (
+                <MoveToBench
+                  row={row}
+                  onSuccess={handleBenchSuccess}
+                />
+              ),
+        }
     ];
 
     if (showCoordinatorView) {

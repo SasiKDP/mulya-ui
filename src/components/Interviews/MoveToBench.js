@@ -24,75 +24,68 @@ const MoveToBench = ({ row, onSuccess, isLoading }) => {
 
 
   // Fetch and match candidate by fullName
-  const fetchAndMatchCandidate = useCallback(async () => {
-    try {
-      const candidateName = row.candidateFullName || row.fullName;
-      if (!candidateName) {
-        throw new Error("Candidate name not found");
-      }
+ const fetchAndMatchCandidate = useCallback(async () => {
+  try {
+    const candidateName = row.candidateFullName || row.fullName;
+    if (!candidateName) {
+      throw new Error("Candidate name not found");
+    }
 
-      let response;
-      if (role === "SUPERADMIN") {
-        response = await httpService.get(`/candidate/submissions`);
-      } else if (role === "TEAMLEAD") {
-        response = await httpService.get(`/candidate/submission/teamlead/${userId}`);
-      } else if (role === "EMPLOYEE" || role === "BDM") {
-        response = await httpService.get(`/candidate/submissionsByUserId/${userId}`);
-      }
+    // Fetch data based on role
+    let response = await httpService.get(
+      role === "TEAMLEAD"
+        ? `/candidate/interviews/teamlead/${userId}`
+        : `/candidate/interviews/interviewsByUserId/${userId}`
+    );
 
-      if (!response.data) {
-        throw new Error("No candidates data found");
-      }
+    if (!response.data) {
+      throw new Error("No candidates data found");
+    }
 
-      // Ensure response.data is an array
-      let candidatesArray = response.data;
-      
-      // Handle different response structures
-      if (typeof candidatesArray === 'object' && !Array.isArray(candidatesArray)) {
-        // If it's an object with a data property that contains the array
-        if (candidatesArray.data && Array.isArray(candidatesArray.data)) {
-          candidatesArray = candidatesArray.data;
-        }
-        // If it's an object with candidates property
-        else if (candidatesArray.candidates && Array.isArray(candidatesArray.candidates)) {
-          candidatesArray = candidatesArray.candidates;
-        }
-        // If it's an object with submissions property
-        else if (candidatesArray.submissions && Array.isArray(candidatesArray.submissions)) {
-          candidatesArray = candidatesArray.submissions;
-        }
-        // If it's an object but we need to convert it to array
-        else if (candidatesArray.results && Array.isArray(candidatesArray.results)) {
-          candidatesArray = candidatesArray.results;
-        }
-        else {
-          throw new Error("Invalid response format: expected array or object with array property");
-        }
-      }
+    // Normalize response data to array
+    let candidatesArray = (() => {
+  const data = response.data;
 
-      // Final check to ensure we have an array
-      if (!Array.isArray(candidatesArray)) {
-        console.error("Response data structure:", response.data);
-        throw new Error("Response data is not in expected array format");
-      }
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.data)) return data.data;
+  if (Array.isArray(data.candidates)) return data.candidates;
+  if (Array.isArray(data.submissions)) return data.submissions;
+  if (Array.isArray(data.results)) return data.results;
+  if (Array.isArray(data.selfInterviews)) return data.selfInterviews;
+  if (Array.isArray(data.teamInterviews)) return data.teamInterviews;
 
-      // Find candidate by full name (case insensitive)
-      const foundCandidate = candidatesArray.find(candidate => 
-        candidate.fullName?.toLowerCase() === candidateName.toLowerCase() ||
-        candidate.candidateFullName?.toLowerCase() === candidateName.toLowerCase()
-      );
+  console.error("⚠️ Unknown response format:", data);  // This line is essential
+  throw new Error("Invalid response format: expected array or array property");
+})();
 
-      if (!foundCandidate) {
-        throw new Error(`Candidate ${candidateName} not found in records`);
-      }
+    // Final safety check
+    if (!Array.isArray(candidatesArray)) {
+      console.error("Unexpected response structure:", response.data);
+      throw new Error("Expected an array of candidates, got something else");
+    }
 
-      setMatchedCandidate(foundCandidate);
-    } catch (error) {
-      console.error("Error matching candidate:", error);
-      showToast(error.message, "error");
+    // Match by candidate name (case insensitive)
+    const foundCandidate = candidatesArray.find(candidate =>
+      candidate.fullName?.toLowerCase() === candidateName.toLowerCase() ||
+      candidate.candidateFullName?.toLowerCase() === candidateName.toLowerCase()
+    );
+
+    if (!foundCandidate) {
+      throw new Error(`Candidate "${candidateName}" not found in records`);
+    }
+
+    setMatchedCandidate(foundCandidate);
+
+  } catch (error) {
+    console.error("Error matching candidate:", error);
+    showToast(error.message, "error");
+
+    // Only show duplicate error if it's something you want to explicitly notify
+    if (typeof duplicateError === "string" && duplicateError !== error.message) {
       showToast(duplicateError);
     }
-  }, [row.candidateFullName, row.fullName, userId, role]);
+  }
+}, [row.candidateFullName, row.fullName, userId, role]);
 
   const handleOpen = (e) => {
     e.stopPropagation();
@@ -162,7 +155,7 @@ const handleMoveToBench = async (e) => {
 
     // Optional fields
     formData.append("linkedin", candidate.linkedin || "");
-    formData.append("referredBy", candidate.userName || "");
+    formData.append("referredBy", candidate.recruiterName || "");
     formData.append("remarks", feedback || "");
     formData.append("technology", candidate.technology || "");
 
