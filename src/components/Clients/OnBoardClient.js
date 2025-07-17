@@ -269,6 +269,15 @@ const ClientForm = ({
     },
   ];
 
+  const feedBack=[
+    {
+      name:"feedBack",
+      label:"FeedBack",
+      type:"textarea",
+      grid: { xs: 12 }
+    }
+  ]
+
   const toastConfig = {
     position: "top-right",
     autoClose: 3000,
@@ -329,6 +338,10 @@ const ClientForm = ({
     ),
     supportingDocuments: Yup.array().of(Yup.string().nullable()).nullable(),
     onBoardedBy: Yup.string().nullable(),
+    feedBack: Yup.string()
+  .nullable()
+  .max(1000, "Feedback must be at most 1000 characters")
+  .transform((value) => (value === "" ? null : value)),
   });
 
   // Set default initial values
@@ -349,6 +362,7 @@ const ClientForm = ({
     clientSpocLinkedin: [""],
     supportingDocuments: [],
     currency: "INR",
+    feedBack:""
   };
 
   // Merge with initialData if available
@@ -816,6 +830,8 @@ const ClientForm = ({
                   <Divider sx={{ mb: 3 }} />
                 </Grid>
 
+    
+
                 <Grid item xs={12}>
                   <Paper
                     variant="outlined"
@@ -870,6 +886,48 @@ const ClientForm = ({
                     </Box>
                   </Paper>
                 </Grid>
+                 
+
+                 {isEdit && (
+                <React.Fragment>
+               <Grid item xs={12}>
+              <Typography
+               variant="h6"
+               color="primary"
+               sx={{
+                  mt: 1,
+                  mb: 1,
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  }}
+                  >
+               <Assignment sx={{ mr: 1 }} /> Feedback
+           </Typography>
+        <Divider sx={{ mb: 3 }} />
+       </Grid>
+    
+       <Grid item xs={12}>
+         {feedBack.map((field) => (
+         <Field name={field.name} key={field.name}>
+          {({ field: formikField, meta }) => (
+            <TextField
+              {...formikField}
+              fullWidth
+              multiline
+              rows={4}
+              placeholder={`Enter ${field.label.toLowerCase()}`}
+              error={meta.touched && Boolean(meta.error)}
+              helperText={meta.touched && meta.error}
+              variant="outlined"
+             InputLabelProps={{ shrink: true }}
+            />
+          )}
+        </Field>
+        ))}
+       </Grid>
+      </React.Fragment>
+       )} 
 
                 <Grid item xs={12}>
                   <Divider sx={{ my: 3 }} />
