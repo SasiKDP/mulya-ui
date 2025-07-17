@@ -3,6 +3,8 @@ import { useSelector } from "react-redux";
 import AllInterviews from "./AllInterviews";
 import TeamLeadInterviews from "./TeamLeadInterviews";
 import RecruiterInterviews from "./RecruiterInterviews";
+import BDMInterviews from "./BDMInterviews";
+import CoordinatorInterviews from "./CoordinatorInterviews";
 
 /**
  * Router component that renders the appropriate interviews component based on user role
@@ -18,6 +20,12 @@ const InterviewsRouter = () => {
         return <AllInterviews />;
       case "TEAMLEAD":
         return <TeamLeadInterviews />;
+      case "EMPLOYEE":
+        return <RecruiterInterviews/>;
+      case "BDM":
+        return <BDMInterviews/>;
+      case "COORDINATOR":
+        return <CoordinatorInterviews/>;
       default:
         return <RecruiterInterviews />;
     }

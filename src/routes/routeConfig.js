@@ -3,8 +3,6 @@ import ProtectedRoute from "./ProtectedRoute";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import JobDetails from "../components/Requirements/jobTracking/JobDetails";
 import InterviewsRouter from "../components/Interviews/InterviewsRouter";
-import AppLayout from "../Layout/AppLayout";
-import { element } from "prop-types";
 
 const Loadable = (Component) => (
   <Suspense
@@ -64,175 +62,165 @@ const routeConfig = [
           "BDM",
           "TEAMLEAD",
           "PARTNER",
-          "PAYROLLADMIN",
-          "COORDINATOR"
+          "INVOICE",
+          "COORDINATOR",
         ]}
       />
     ),
     children: [
       {
         path: "",
-        element: <AppLayout />,  // ← AppLayout wraps the whole dashboard section
+        element: Loadable(Dashboard),
         children: [
           {
-            path: "",
-            element: Loadable(Dashboard),
+            path: "home",
+            element: (
+              <ProtectedRoute
+                allowedRoles={[
+                  "ADMIN",
+                  "SUPERADMIN",
+                  "EMPLOYEE",
+                  "BDM",
+                  "TEAMLEAD",
+                  "PARTNER",
+                  "INVOICE",
+                  "COORDINATOR",
+                ]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(IndexPage) }],
+          },
+          {
+            path: "assigned",
+            element: (
+              <ProtectedRoute
+                allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "TEAMLEAD", "BDM"]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(Assigned) }],
+          },
+          {
+            path: "submissions",
+            element: (
+              <ProtectedRoute
+                allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER"]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(Submission) }],
+          },
+          {
+            path: "submissions-all",
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
+            children: [{ index: true, element: Loadable(AllSubmissions) }],
+          },
+          {
+            path: "requirements",
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD","COORDINATOR"]} />,
             children: [
+              { index: true, element: Loadable(Requirements) },
               {
-                path: "home",
-                element: (
-                  <ProtectedRoute
-                    allowedRoles={[
-                      "ADMIN",
-                      "SUPERADMIN",
-                      "EMPLOYEE",
-                      "BDM",
-                      "TEAMLEAD",
-                      "PARTNER",
-                      "PAYROLLADMIN",
-                      "COORDINATOR"
-                    ]}
-                  />
-                ),
-                children: [{ index: true, element: Loadable(IndexPage) }],
+                path: "job-details/:jobId",
+                element: Loadable(JobDetails),
               },
-              {
-                path: "assigned",
-                element: (
-                  <ProtectedRoute
-                    allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "TEAMLEAD", "BDM"]}
-                  />
-                ),
-                children: [{ index: true, element: Loadable(Assigned) }],
-              },
-              {
-                path: "submissions",
-                element: (
-                  <ProtectedRoute
-                    allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER"]}
-                  />
-                ),
-                children: [{ index: true, element: Loadable(Submission) }],
-              },
-              {
-                path: "submissions-all",
-                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
-                children: [{ index: true, element: Loadable(AllSubmissions) }],
-              },
-              {
-                path: "requirements",
-                element: (
-                  <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]} />
-                ),
-                children: [
-                  { index: true, element: Loadable(Requirements) },
-                  {
-                    path: "job-details/:jobId",
-                    element: Loadable(JobDetails),
-                  },
-                ],
-              },
-              {
-                path: "jobForm",
-                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
-                children: [{ index: true, element: Loadable(PostRequirement) }],
-              },
-              {
-                path: "interviews",
-                element: (
-                  <ProtectedRoute allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "SUPERADMIN","COORDINATOR"]} />
-                ),
-                children: [{ index: true, element: Loadable(InterviewsRouter) }],
-              },
-              {
-                path: "interviews-all",
-                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
-                children: [{ index: true, element: Loadable(AllInterviews) }],
-              },
-              {
-                path: "users",
-                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN","COORDINATOR"]} />,
-                children: [{ index: true, element: Loadable(UsersList) }],
-              },
-              {
-                path: "clients",
-                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
-                children: [{ index: true, element: Loadable(ClientList) }],
-              },
-              {
-                path: "addNewClient",
-                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
-                children: [{ index: true, element: Loadable(OnBoardClient) }],
-              },
-              {
-                path: "placements",
-                element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]} />,
-                children: [{ index: true, element: Loadable(PlacementsList) }],
-              },
-              {
+            ],
+          },
+          {
+            path: "jobForm",
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
+            children: [{ index: true, element: Loadable(PostRequirement) }],
+          },
+          {
+            path: "interviews",
+            element: (
+              <ProtectedRoute
+                allowedRoles={["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "SUPERADMIN", "COORDINATOR"]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(InterviewsRouter) }],
+          },
+          {
+            path: "interviews-all",
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN"]} />,
+            children: [{ index: true, element: Loadable(AllInterviews) }],
+          },
+          {
+            path: "users",
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "COORDINATOR"]} />,
+            children: [{ index: true, element: Loadable(UsersList) }],
+          },
+          {
+            path: "clients",
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
+            children: [{ index: true, element: Loadable(ClientList) }],
+          },
+          {
+            path: "addNewClient",
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM"]} />,
+            children: [{ index: true, element: Loadable(OnBoardClient) }],
+          },
+          {
+            path: "placements",
+            element: (
+              <ProtectedRoute
+                allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "EMPLOYEE"]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(PlacementsList) }],
+          },
+           {
                 path:"InProgress",
                 element:<ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"]} />,
                 children: [{index:true,element:Loadable(InProgressData)}],
-              },
-
+           },
+          {
+            path: "bench-users",
+            element: (
+              <ProtectedRoute
+                allowedRoles={[
+                  "ADMIN",
+                  "SUPERADMIN",
+                  "BDM",
+                  "TEAMLEAD",
+                  "PARTNER",
+                  "EMPLOYEE",
+                ]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(BenchList) }],
+          },
+          {
+            path: "team-metrics",
+            element: (
+              <ProtectedRoute
+                allowedRoles={[
+                  "ADMIN",
+                  "SUPERADMIN",
+                  "BDM",
+                  "TEAMLEAD",
+                  "PARTNER",
+                  "EMPLOYEE",
+                ]}
+              />
+            ),
+            children: [
+              { index: true, element: Loadable(TeamMetrices) },
               {
-                path: "bench-users",
+                path: "bdmstatus/:employeeId",
                 element: (
-                  <ProtectedRoute
-                    allowedRoles={[
-                      "ADMIN",
-                      "SUPERADMIN",
-                      "BDM",
-                      "TEAMLEAD",
-                      "PARTNER",
-                      "EMPLOYEE",
-                    ]}
-                  />
+                  <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]} />
                 ),
-                children: [{ index: true, element: Loadable(BenchList) }],
+                children: [{ index: true, element: Loadable(BdmStatus) }],
               },
               {
-                path: "team-metrics",
+                path: "employeestatus/:employeeId",
                 element: (
-                  <ProtectedRoute
-                    allowedRoles={[
-                      "ADMIN",
-                      "SUPERADMIN",
-                      "BDM",
-                      "TEAMLEAD",
-                      "PARTNER",
-                      "EMPLOYEE",
-                    ]}
-                  />
+                  <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "TEAMLEAD"]} />
                 ),
-                children: [
-                  {
-                    index: true,
-                    element: Loadable(TeamMetrices),
-                  },
-                  {
-                    path: "bdmstatus/:employeeId",
-                    element: (
-                      <ProtectedRoute
-                        allowedRoles={["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD"]}
-                      />
-                    ),
-                    children: [{ index: true, element: Loadable(BdmStatus) }],
-                  },
-                  {
-                    path: "employeestatus/:employeeId",
-                    element: (
-                      <ProtectedRoute
-                        allowedRoles={["ADMIN", "SUPERADMIN", "TEAMLEAD"]}
-                      />
-                    ),
-                    children: [{ index: true, element: Loadable(EmployeeStatus) }],
-                  },
-                ],
+                children: [{ index: true, element: Loadable(EmployeeStatus) }],
               },
-              { index: true, element: Loadable(IndexPage) },
             ],
           },
+          { index: true, element: Loadable(IndexPage) },
         ],
       },
     ],

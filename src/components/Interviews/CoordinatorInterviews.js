@@ -13,34 +13,28 @@ import {
   DialogContent,
   DialogActions,
   Drawer,
-  Skeleton,
   TextField,
   ToggleButtonGroup,
   ToggleButton,
 } from "@mui/material";
 import {
   Edit as EditIcon,
-  Delete as DeleteIcon,
-  VideoCall as VideoCallIcon,
-  Refresh as RefreshIcon,
   Visibility as VisibilityIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import httpService from "../../Services/httpService";
 import ToastService from "../../Services/toastService";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { formatDateTime } from "../../utils/dateformate";
-import { API_BASE_URL } from "../../Services/httpService";
 import DataTable from "../muiComponents/DataTabel";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { getStatusChip, getInterviewLevelChip } from "../../utils/statusUtils";
-import ConfirmDialog from "../muiComponents/ConfirmDialog";
-import EditInterviewForm from "./EditInterviewForm";
 import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
-import MoveToBench from "./MoveToBench";
-import DownloadResume from "../../utils/DownloadResume";
 import InternalFeedbackCell from "./FeedBack";
-import { clearFilteredData, clearRecruiterFilter } from "../../redux/interviewSlice"; // Import the action
+import DownloadResume from "../../utils/DownloadResume";
+import { API_BASE_URL } from "../../Services/httpService";
+import EditInterviewForm from "./EditInterviewForm";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -51,37 +45,27 @@ const processInterviewData = (interviews) => {
   }));
 };
 
-const RecruiterInterviews = () => {
-  const dispatch = useDispatch();
-  const { userId,role } = useSelector((state) => state.auth);
-  const { 
-    isFilteredDataRequested, 
-    isRecruiterFilterActive,
-    filterInterviewsForRecruiter,
-    loading: reduxLoading 
-  } = useSelector((state) => state.interview);
-  
+const CoordinatorInterviews = () => {
+  const { userId } = useSelector((state) => state.auth);
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedRows, setExpandedRows] = useState({});
-  const [confirmDialog, setConfirmDialog] = useState({
+  const [feedbackDialog, setFeedbackDialog] = useState({
     open: false,
     interview: null,
   });
-  const [editDrawer, setEditDrawer] = useState({
-    open: false,
-    data: null,
-  });
+  const [feedback, setFeedback] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [levelFilter, setLevelFilter] = useState("ALL");
-  const [moveToBenchLoading, setMoveToBenchLoading] = useState(false);
+  const [editDrawer, setEditDrawer] = useState({ open: false, data: null });
   const navigate = useNavigate();
 
   const fetchInterviews = async () => {
     try {
       setLoading(true);
       const response = await httpService.get(
-        `/candidate/interviews/interviewsByUserId/${userId}`
+        `/candidate/interviews/interviewsByUserId/${userId}?coordinator=true`
       );
       const processedData = processInterviewData(response.data || []);
       setInterviews(processedData);
@@ -99,24 +83,8 @@ const RecruiterInterviews = () => {
     fetchInterviews();
   }, [userId]);
 
-  // Add effect to handle filtered data updates
-  useEffect(() => {
-    console.log("Filter state changed:", {
-      isFilteredDataRequested,
-      isRecruiterFilterActive,
-      filterInterviewsForRecruiter: filterInterviewsForRecruiter.length
-    });
-  }, [isFilteredDataRequested, isRecruiterFilterActive, filterInterviewsForRecruiter]);
-
-  const handleBenchSuccess = (row) => {
-    setInterviews((prevInterviews) =>
-      prevInterviews.filter((item) => item.interviewId !== row.interviewId)
-    );
-  };
-
   const filterInterviewsByLevel = (interviews) => {
     if (levelFilter === "ALL") return interviews;
-
     return interviews.filter((interview) => {
       if (levelFilter === "INTERNAL") return interview.interviewLevel === "INTERNAL";
       if (levelFilter === "EXTERNAL") return interview.interviewLevel !== "INTERNAL";
@@ -135,14 +103,68 @@ const RecruiterInterviews = () => {
     navigate(`/dashboard/requirements/job-details/${jobId}`);
   };
 
-  const handleEdit = (interview, isReschedule = false) => {
+  const toggleRowExpansion = (interviewId) => {
+    setExpandedRows((prev) => ({
+      ...prev,
+      [interviewId]: !prev[interviewId],
+    }));
+  };
+
+  const handleOpenFeedbackDialog = (interview) => {
+    setFeedbackDialog({
+      open: true,
+      interview: interview,
+    });
+    setFeedback(interview.internalFeedback || "");
+  };
+
+  const handleCloseFeedbackDialog = () => {
+    setFeedbackDialog({
+      open: false,
+      interview: null,
+    });
+    setFeedback("");
+    setIsSubmittingFeedback(false);
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!feedback.trim()) {
+      ToastService.error("Feedback cannot be empty");
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+
+    try {
+      const { interview } = feedbackDialog;
+      if (!interview || !interview.interviewId) {
+        throw new Error("Missing interview data");
+      }
+
+      const response = await httpService.put(
+        `/candidate/updateInterviewByCoordinator/${userId}/${interview.interviewId}`,
+        { internalFeedBack: feedback }
+      );
+
+      if (response.data.success) {
+        ToastService.success("Feedback submitted successfully!");
+        handleCloseFeedbackDialog();
+        fetchInterviews();
+      } else {
+        throw new Error(response.data.message || "Failed to submit feedback");
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      ToastService.error(error.message || "Error submitting feedback");
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
+  const handleEdit = (row, isReschedule = false) => {
     setEditDrawer({
       open: true,
-      data: {
-        ...interview,
-        isReschedule,
-        userId: interview.userId || userId,
-      },
+      data: { ...row, isReschedule },
     });
   };
 
@@ -153,41 +175,6 @@ const RecruiterInterviews = () => {
   const handleInterviewUpdated = () => {
     fetchInterviews();
     handleCloseEditDrawer();
-  };
-
-  const handleDelete = async (row) => {
-    setConfirmDialog({ open: true, interview: row });
-  };
-
-  const handleConfirmDelete = async () => {
-    const interview = confirmDialog.interview;
-    if (!interview) return;
-
-    try {
-      const toastId = ToastService.loading("Deleting interview...");
-      let deleteEndpoint;
-      if (interview.candidateId && interview.jobId) {
-        deleteEndpoint = `/candidate/deleteinterview/${interview.candidateId}/${interview.jobId}`;
-      } else {
-        deleteEndpoint = `/interview/${interview.interviewId}`;
-      }
-
-      await httpService.delete(deleteEndpoint);
-      await fetchInterviews();
-      ToastService.update(toastId, "Interview deleted successfully", "success");
-    } catch (error) {
-      ToastService.error("Failed to delete interview");
-      console.error("Error deleting interview:", error);
-    } finally {
-      setConfirmDialog({ open: false, interview: null });
-    }
-  };
-
-  const toggleRowExpansion = (interviewId) => {
-    setExpandedRows((prev) => ({
-      ...prev,
-      [interviewId]: !prev[interviewId],
-    }));
   };
 
   const getExpandedContentConfig = (row) => ({
@@ -203,11 +190,10 @@ const RecruiterInterviews = () => {
         fields: [
           { label: "Name", key: "candidateFullName", fallback: "-" },
           { label: "Email", key: "candidateEmailId", fallback: "-" },
-          { label: "Contact", key: "candidateContactNo", fallback: "-" },
         ],
       },
       {
-        title: "Schedule Details",
+        title: "Interview Details",
         fields: [
           {
             label: "Interview Date & Time",
@@ -215,17 +201,8 @@ const RecruiterInterviews = () => {
             fallback: "-",
             format: (value) => formatDateTime(value),
           },
-          { label: "Duration", key: "duration", fallback: "-" },
           { label: "Level", key: "interviewLevel", fallback: "-" },
           { label: "Status", key: "latestInterviewStatus", fallback: "-" },
-        ],
-      },
-      {
-        title: "Job Information",
-        fields: [
-          { label: "Job ID", key: "jobId", fallback: "-" },
-          { label: "Client", key: "clientName", fallback: "-" },
-          { label: "Scheduled By", key: "userEmail", fallback: "-" },
         ],
       },
     ],
@@ -237,15 +214,6 @@ const RecruiterInterviews = () => {
         variant: "outlined",
         size: "small",
         color: "primary",
-        sx: { mr: 1 },
-      },
-      {
-        label: "Delete Interview",
-        icon: <DeleteIcon fontSize="small" />,
-        onClick: (row) => handleDelete(row),
-        variant: "outlined",
-        size: "small",
-        color: "error",
       },
     ],
   });
@@ -302,6 +270,7 @@ const RecruiterInterviews = () => {
         </Box>
       ),
     },
+    { key: "recruiterName", label: "Recruiter", width: 120 },
     { key: "clientName", label: "Client", width: 150 },
     {
       key: "interviewLevel",
@@ -315,7 +284,6 @@ const RecruiterInterviews = () => {
       width: 200,
       render: (row) => formatDateTime(row.interviewDateTime),
     },
-    { key: "duration", label: "Duration (min)", width: 120, align: "center" },
     {
       key: "latestInterviewStatus",
       label: "Status",
@@ -323,52 +291,14 @@ const RecruiterInterviews = () => {
       render: (row) => getStatusChip(row.latestInterviewStatus, row),
     },
     {
-      key: "moveToBench",
-      label: "Move to Bench",
+      key: "comments",
+      label: "Recruiter Comments",
       sortable: false,
       filterable: false,
-      width: 130,
-      align: "center",
-      render: loading
-        ? () => <Skeleton variant="text" width={100} />
-        : (row) => (
-            <MoveToBench
-              row={row}
-              onSuccess={handleBenchSuccess}
-              isLoading={moveToBenchLoading}
-            />
-          ),
-    },
-    {
-      key: "zoomLink",
-      label: "Meeting",
-      width: 120,
-      render: (row) =>
-        row.zoomLink ? (
-          <Button
-            size="small"
-            variant="outlined"
-            color="primary"
-            startIcon={<VideoCallIcon />}
-            href={row.zoomLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ px: 1, py: 0.5 }}
-          >
-            Join
-          </Button>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No link
-          </Typography>
-        ),
-    },
-    {
-      key: "internalFeedback",
-      label: "Internal Feedback",
+      width: 160,
       render: (row) => (
         <InternalFeedbackCell
-          value={row.internalFeedback}
+          value={row.comments}
           loading={loading}
           isCoordinator={false}
           candidateName={row.candidateFullName}
@@ -379,98 +309,47 @@ const RecruiterInterviews = () => {
       key: "actions",
       label: "Actions",
       width: 200,
-      render: (row) => {
-        const status = row.latestInterviewStatus?.toUpperCase();
-        const showReschedule = ["CANCELLED", "RESCHEDULED", "SELECTED", "NO_SHOW"].includes(status);
-
-        const getButtonText = () => {
-          switch (status) {
-            case "SELECTED": return "Schedule Joining";
-            case "CANCELLED":
-            case "RESCHEDULED":
-            case "NO_SHOW": return "Reschedule";
-            default: return "Update";
-          }
-        };
-
-        return (
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Tooltip title="View Details">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => toggleRowExpansion(row.interviewId)}
-              >
-                <VisibilityIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+      render: (row) => (
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Tooltip title="View Details">
             <IconButton
-              onClick={() => handleEdit(row)}
-              color="primary"
               size="small"
-              title="Edit Interview"
+              color="primary"
+              onClick={() => toggleRowExpansion(row.interviewId)}
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => handleEdit(row)}
             >
               <EditIcon fontSize="small" />
             </IconButton>
-            <IconButton
-              onClick={() => handleDelete(row)}
-              color="error"
-              size="small"
-              title="Delete Interview"
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-
-            <DownloadResume
-              candidate={row}
-              getDownloadUrl={(candidate, format) =>
-                `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
-              }
-            />
-
-            {showReschedule && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleEdit(row, true)}
-                sx={{ px: 1, py: 0.5 }}
-              >
-                {getButtonText()}
-              </Button>
-            )}
-          </Box>
-        );
-      },
+          </Tooltip>
+          <DownloadResume 
+            candidate={{ ...row, jobId: row.jobId }}
+            getDownloadUrl={(candidate, format) =>
+              `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`}
+          />
+           {/* <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleOpenFeedbackDialog(row)}
+          >
+            Feedback
+          </Button> */}
+      
+        </Box>
+      ),
     },
   ];
 
-  // Updated function to get display data with better logic
-  const getDisplayData = () => {
-    if (isRecruiterFilterActive && filterInterviewsForRecruiter.length > 0) {
-      // Use filtered data from Redux
-      return processInterviewData(filterInterviewsForRecruiter);
-    } else if (isFilteredDataRequested && filterInterviewsForRecruiter.length === 0) {
-      // Filter was applied but no results
-      return [];
-    } else {
-      // Use original interviews data
-      return interviews;
-    }
-  };
-
-  // Add function to clear filters
-  const handleClearFilters = () => {
-    dispatch(clearRecruiterFilter());
-    // Also clear the level filter
-    setLevelFilter("ALL");
-  };
-
-  const displayData = getDisplayData();
-  const filteredData = filterInterviewsByLevel(displayData);
-
-  const processedData = (loading || reduxLoading)
+  const processedData = loading
     ? []
-    : filteredData.map((row) => ({
+    : filterInterviewsByLevel(interviews).map((row) => ({
         ...row,
         expandContent: renderExpandedContent(row),
         isExpanded: expandedRows[row.interviewId],
@@ -515,16 +394,13 @@ const RecruiterInterviews = () => {
               boxShadow: 1,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Typography variant="h6" color="primary">
-                My Scheduled Interviews
-              </Typography>
-            </Box>
+            <Typography variant="h6" color="primary">
+              Coordinator Interviews
+            </Typography>
             <DateRangeFilter component="InterviewsForRecruiter" />
           </Stack>
 
-
-          <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
+          {/* <Box sx={{ mb: 2, display: "flex", justifyContent: "start" }}>
             <ToggleButtonGroup
               value={levelFilter}
               exclusive
@@ -562,12 +438,12 @@ const RecruiterInterviews = () => {
                 EXTERNAL
               </ToggleButton>
             </ToggleButtonGroup>
-          </Box>
+          </Box> */}
 
           <DataTable
             data={processedData || []}
             columns={columns}
-            title="My Interviews"
+            title="Coordinator Interviews"
             enableSelection={false}
             defaultSortColumn="interviewDateTime"
             defaultSortDirection="desc"
@@ -583,43 +459,66 @@ const RecruiterInterviews = () => {
             uniqueId="interviewId"
             enableRowExpansion={true}
             onRowExpandToggle={toggleRowExpansion}
-            loading={loading || reduxLoading}
           />
+
+          <Dialog
+            open={feedbackDialog.open}
+            onClose={handleCloseFeedbackDialog}
+            fullWidth
+            maxWidth="sm"
+          >
+            <DialogTitle sx={{ px: 4, pt: 3 }}>
+              Feedback for {feedbackDialog.interview?.candidateFullName || "Candidate"}
+            </DialogTitle>
+            <DialogContent sx={{ px: 2, py: 2 }}>
+              <Box sx={{ p: 2 }}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  label="Feedback"
+                  multiline
+                  minRows={4}
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ px: 4, pb: 3 }}>
+              <Button onClick={handleCloseFeedbackDialog}>Cancel</Button>
+              {/* <Button
+                onClick={handleSubmitFeedback}
+                variant="contained"
+                color="primary"
+                disabled={!feedback.trim() || isSubmittingFeedback}
+              >
+                {isSubmittingFeedback ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  "Submit Feedback"
+                )}
+              </Button> */}
+            </DialogActions>
+          </Dialog>
 
           <Drawer
             anchor="right"
             open={editDrawer.open}
             onClose={handleCloseEditDrawer}
-            PaperProps={{
-              sx: { width: { xs: "60%", sm: "50%", md: "50%" } },
-            }}
+            PaperProps={{ sx: { width: { xs: "60%", sm: "50%", md: "50%" } } }}
           >
             {editDrawer.data && (
               <EditInterviewForm
                 data={editDrawer.data}
                 onClose={handleCloseEditDrawer}
                 onSuccess={handleInterviewUpdated}
-                showCoordinatorView={false}
-                role={role}
               />
             )}
           </Drawer>
-
-          <ConfirmDialog
-            open={confirmDialog.open}
-            title="Delete Interview?"
-            content={`Do you really want to delete the interview for ${
-              confirmDialog.interview?.candidateFullName ||
-              confirmDialog.interview?.candidateEmailId ||
-              "this candidate"
-            }? This action cannot be undone.`}
-            onClose={() => setConfirmDialog({ open: false, interview: null })}
-            onConfirm={handleConfirmDelete}
-          />
         </>
       )}
     </Box>
   );
 };
 
-export default RecruiterInterviews;
+export default CoordinatorInterviews;

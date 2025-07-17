@@ -13,14 +13,23 @@ import {
   Paper,
   Tabs,
   Tab,
-  ButtonGroup,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  TextField,
 } from "@mui/material";
-import { Download, Edit, Delete } from "@mui/icons-material";
-import CloseIcon from "@mui/icons-material/Close";
-import BusinessIcon from "@mui/icons-material/Business";
-import EmailIcon from "@mui/icons-material/Email";
-import PhoneIcon from "@mui/icons-material/Phone";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import {
+  Download,
+  Edit,
+  Delete,
+  Business as BusinessIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  CalendarToday as CalendarTodayIcon,
+  Close as CloseIcon,
+} from "@mui/icons-material";
 import Chip from "@mui/material/Chip";
 import Button from "@mui/material/Button";
 import DataTable from "../muiComponents/DataTabel";
@@ -30,9 +39,7 @@ import httpService from "../../Services/httpService";
 import { useDispatch, useSelector } from "react-redux";
 import DateRangeFilter from "../muiComponents/DateRangeFilter";
 import { fetchSubmissionsTeamLead } from "../../redux/submissionSlice";
-
 import { showToast } from "../../utils/ToastNotification";
-import { downloadFile } from "../../utils/downloadUtils";
 import DownloadResume from "../../utils/DownloadResume";
 import { API_BASE_URL } from "../../Services/httpService";
 import { filterSubmissionsByTeamlead } from "../../redux/submissionSlice";
@@ -50,9 +57,12 @@ const Submission = () => {
     message: "",
     severity: "success",
   });
-
   const [scheduleDrawerOpen, setScheduleDrawerOpen] = useState(false);
   const [scheduleData, setScheduleData] = useState(null);
+  const [moveToBenchDialogOpen, setMoveToBenchDialogOpen] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [remarks, setRemarks] = useState("");
+
   const { isFilteredDataRequested } = useSelector((state) => state.bench);
   const {
     filteredSubmissionsForRecruiter,
@@ -64,9 +74,14 @@ const Submission = () => {
   const { userId, role } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [tabValue, setTabValue] = useState(0);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const menuOpen = Boolean(anchorEl);
-  const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+
+  // Define componentName based on role
+  const componentName = (() => {
+    if (role === "SUPERADMIN") return "allSubmissions";
+    if (role === "TEAMLEAD") return "SubmissionsForTeamLead";
+    if (role === "EMPLOYEE" || role === "BDM") return "RecruiterSubmission";
+    return "";
+  })();
 
   useEffect(() => {
     fetchData();
@@ -82,9 +97,8 @@ const Submission = () => {
         const response = await httpService.get("/candidate/submissions");
         submissions = response?.data?.data || response?.data || [];
       } else if (role === "TEAMLEAD") {
-        // Using Redux for TEAMLEAD
         dispatch(fetchSubmissionsTeamLead());
-        return; // Exit the function here as Redux will handle data
+        return;
       } else if (role === "EMPLOYEE" || role === "BDM") {
         const response = await httpService.get(
           `/candidate/submissionsByUserId/${userId}`
@@ -92,9 +106,6 @@ const Submission = () => {
         submissions = response?.data?.data || response?.data || [];
       }
 
-      console.log("submissions", submissions);
-
-      // Set data only if submissions were fetched
       if (submissions.length) {
         setData(submissions);
       } else {
@@ -108,121 +119,128 @@ const Submission = () => {
     }
   };
 
-  console.log("sl", selfSubmissionsTL);
   const showSnackbar = (message, severity = "success") => {
-    setSnackbar({ open: true, message, severity });
-    showToast(message, severity); // Use the imported showToast function
+    // setSnackbar({ open: true, message, severity });
+    showToast(message, severity);
   };
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const handleMoveToBench = async (row, e) => {
-    e.stopPropagation();
-
-    if (
-      window.confirm(
-        `Are you sure you want to move ${row.fullName} to the bench?`
-      )
-    ) {
-      try {
-        setMoveToBenchLoading(true);
-
-        // Create FormData for the bench request
-        const formData = new FormData();
-        formData.append("fullName", row.fullName);
-        formData.append("email", row.emailId || row.candidateEmailId);
-        formData.append("contactNumber", row.contactNumber);
-        formData.append("relevantExperience", row.relevantExperience || "");
-        formData.append("totalExperience", row.totalExperience || "");
-
-        // Convert skills array to JSON string if needed
-        if (Array.isArray(row.skills)) {
-          formData.append("skills", JSON.stringify(row.skills));
-        } else if (typeof row.skills === "string") {
-          // If skills is already a string, split it and convert to JSON
-          const skillsArray = row.skills
-            .split(",")
-            .map((skill) => skill.trim());
-          formData.append("skills", JSON.stringify(skillsArray));
-        } else {
-          // If skills is null or undefined, send empty array
-          formData.append("skills", JSON.stringify([]));
-        }
-
-        formData.append("linkedin", row.linkedin || "");
-        formData.append("referredBy", row.userEmail || "");
-
-        // Fetch resume using the correct endpoint with both jobId and candidateId
-        try {
-          const response = await httpService.get(
-            `/candidate/download-resume/${row.jobId}/${row.candidateId}`,
-            {
-              responseType: "blob",
-            }
-          );
-
-          // Get file name from content-disposition or create a default one
-          const fileName = response.headers["content-disposition"]
-            ? response.headers["content-disposition"].split("filename=")[1]
-            : `resume_${row.candidateId}.pdf`;
-
-          // Create a file from the blob
-          const contentType = response.headers["content-type"];
-          const file = new File([response.data], fileName, {
-            type: contentType,
-          });
-
-          // Use the correct field name for the API
-          formData.append("resumeFiles", file);
-        } catch (error) {
-          console.error("Error fetching resume:", error);
-          // Continue with the bench submission even if resume fetch fails
-        }
-
-        // Send to bench endpoint
-        await httpService.post("/candidate/bench/save", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-
-        // Remove from current list
-        setData(data.filter((item) => item.submissionId !== row.submissionId));
-
-        showSnackbar(
-          `${row.fullName} has been moved to the bench successfully!`
-        );
-      } catch (error) {
-        console.error("Error moving candidate to bench:", error);
-        showSnackbar(
-          "Failed to move candidate to bench. Please try again.",
-          "error"
-        );
-      } finally {
-        setMoveToBenchLoading(false);
-      }
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+    const selected = event.target.id;
+    if (selected === "team") {
+      setIsTeamData(true);
+      return;
     }
+    setIsTeamData(false);
+  };
+
+  const handleMoveToBenchClick = (row, e) => {
+    e.stopPropagation();
+    setSelectedCandidate(row);
+    setRemarks(row.remarks || "");
+    setMoveToBenchDialogOpen(true);
+  };
+
+ const handleMoveToBenchConfirm = async () => {
+  if (!selectedCandidate) return;
+
+  try {
+    setMoveToBenchLoading(true);
+    const row = selectedCandidate;
+    const formData = new FormData();
+
+    // Append candidate details
+    formData.append("fullName", row.fullName);
+    formData.append("email", row.emailId || row.candidateEmailId);
+    formData.append("contactNumber", row.contactNumber);
+    formData.append("relevantExperience", row.relevantExperience || "");
+    formData.append("totalExperience", row.totalExperience || "");
+    formData.append("technology", row.technology || "");
+
+    // Handle skills
+    if (Array.isArray(row.skills)) {
+      formData.append("skills", JSON.stringify(row.skills));
+    } else if (typeof row.skills === "string") {
+      const skillsArray = row.skills.split(",").map((skill) => skill.trim());
+      formData.append("skills", JSON.stringify(skillsArray));
+    } else {
+      formData.append("skills", JSON.stringify([]));
+    }
+
+    // Append additional info
+    formData.append("linkedin", row.linkedin || "");
+    formData.append("referredBy", row.recruiterName || "");
+    formData.append("remarks", remarks);
+
+    // Fetch and append resume
+    try {
+      const response = await httpService.get(
+        `/candidate/download-resume/${row.candidateId}/${row.jobId}`
+      );
+
+      // Extract filename
+      let fileName = `resume_${row.candidateId}.pdf`;
+      if (response.headers["content-disposition"]) {
+        const filenameMatch = response.headers["content-disposition"].split("filename=")[1];
+        if (filenameMatch) fileName = filenameMatch.replace(/"/g, '');
+      }
+
+      // Create File object
+      const file = new File([response.data], fileName, {
+        type: response.headers["content-type"] || "application/pdf",
+      });
+
+      // Append to formData - KEY CHANGE: Using the exact field name your backend expects
+      formData.append("resumeFile", file); // Note: Case sensitive!
+    } catch (error) {
+      console.error("Error fetching resume:", error);
+      showSnackbar("Resume not found, submitting without it", "warning");
+    }
+
+    // Submit with proper headers
+    await httpService.post("/candidate/bench/save", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    // Success handling
+    setData(data.filter((item) => item.submissionId !== row.submissionId));
+    showSnackbar(`${row.fullName} moved to bench successfully!`);
+    setMoveToBenchDialogOpen(false);
+  } catch (error) {
+    console.error("Move to bench failed:", error);
+    const errorMsg = error.response?.data?.message || 
+                    "Failed to move candidate to bench";
+    showSnackbar(errorMsg, "error");
+  } finally {
+    setMoveToBenchLoading(false);
+    setSelectedCandidate(null);
+  }
+};
+
+  const handleMoveToBenchCancel = () => {
+    setMoveToBenchDialogOpen(false);
+    setSelectedCandidate(null);
+    setRemarks("");
   };
 
   const downloadResume = async (jobId, candidateId, e) => {
     e.stopPropagation();
-
     try {
       setDownloadLoading(true);
-
-      // Make the request with proper responseType
       const response = await httpService.get(
         `/candidate/download-resume/${candidateId}/${jobId}`
       );
 
-      // Check for empty response
       if (!response.data || response.data.byteLength === 0) {
         throw new Error("Empty file received");
       }
 
-      // Get filename from headers or use default
       const contentDisposition = response.headers["content-disposition"];
       let filename = `resume_${candidateId}.pdf`;
 
@@ -235,13 +253,8 @@ const Submission = () => {
         }
       }
 
-      // Determine content type from headers or default to PDF
       const contentType = response.headers["content-type"] || "application/pdf";
-
-      // Create the blob
       const blob = new Blob([response.data], { type: contentType });
-
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -250,7 +263,6 @@ const Submission = () => {
       document.body.appendChild(link);
       link.click();
 
-      // Clean up
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
@@ -270,16 +282,6 @@ const Submission = () => {
     setCandidateData(row);
     setMode("edit");
     setOpenDrawer(true);
-  };
-
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-    const selected = event.target.id;
-    if (selected === "team") {
-      setIsTeamData(true);
-      return;
-    }
-    setIsTeamData(false);
   };
 
   const handleDelete = async (submissionId, e) => {
@@ -320,15 +322,6 @@ const Submission = () => {
     setScheduleDrawerOpen(false);
   };
 
-  // const componentName = role === 'SUPERADMIN' ? 'allSubmissions' : 'RecruiterSubmission';
-  // Dynamically determine componentName based on role
-  const componentName = (() => {
-    if (role === "SUPERADMIN") return "allSubmissions";
-    if (role === "TEAMLEAD") return "SubmissionsForTeamLead";
-    if (role === "EMPLOYEE" || role === "BDM") return "RecruiterSubmission";
-    return ""; // Fallback for other roles (optional)
-  })();
-
   const generateColumns = (loading = false) => [
     {
       key: "candidateId",
@@ -352,7 +345,6 @@ const Submission = () => {
             </Typography>
           ),
     },
-    ,
     {
       key: "fullName",
       label: "Full Name",
@@ -503,27 +495,43 @@ const Submission = () => {
           ),
     },
     {
-      key: "submissionId",
-      label: "Submission ID",
-      type: "text",
-      sortable: true,
-      filterable: true,
-      width: 180,
-      render: loading
-        ? () => <Skeleton variant="text" width={120} />
-        : (row) => (
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 500,
-                color: "text.secondary",
-                fontFamily: "monospace",
-              }}
-            >
-              {row.submissionId}
-            </Typography>
-          ),
-    },
+  key:"status",
+  label:"Status",
+  type: "text",
+  sortable: true,
+  filterable: true,
+  width: 180,
+  align: "center",
+  render: loading
+    ? () => <Skeleton variant="text" width={120} />
+    : (row) => {
+        const getStatusColor = (status) => {
+          switch (status) {
+            case "PROCESSED FOR INTERVIEW":
+              return "success";
+            case "MOVED TO INTERVIEW":
+              return "primary";
+            case "SCREEN REJECT":
+            case "CLIENT REJECT":
+              return "error";
+            case "DUPLICATE":
+              return "warning";
+            default:
+              return "default";
+          }
+        };
+
+        return (
+          <Chip
+            label={row.status}
+            variant="outlined"
+            size="small"
+            color={getStatusColor(row.status)}
+          />
+        );
+      },
+},
+
     {
       key: "moveToBench",
       label: "Move to Bench",
@@ -538,7 +546,7 @@ const Submission = () => {
               variant="outlined"
               size="small"
               color="secondary"
-              onClick={(e) => handleMoveToBench(row, e)}
+              onClick={(e) => handleMoveToBenchClick(row, e)}
               disabled={moveToBenchLoading}
               sx={{
                 textTransform: "none",
@@ -612,22 +620,8 @@ const Submission = () => {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* <Tooltip title="Download Resume">
-            <IconButton
-              size="small"
-              onClick={(e) => downloadResume(row.jobId, row.candidateId, e)}
-              disabled={downloadLoading}
-              sx={{ color: 'success.main' }}
-            >
-              {downloadLoading ? (
-                <CircularProgress size={16} />
-              ) : (
-                <Download fontSize="small" />
-              )}
-            </IconButton>
-          </Tooltip> */}
               <DownloadResume
-                candidate={{ ...row, jobId: row.jobId }} // ✅ Combine row and jobId
+                candidate={{ ...row, jobId: row.jobId }}
                 getDownloadUrl={(candidate, format) =>
                   `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
                 }
@@ -645,7 +639,6 @@ const Submission = () => {
               <Tooltip title="Delete Candidate">
                 <IconButton
                   size="small"
-                  j
                   onClick={(e) => handleDelete(row.submissionId, e)}
                   sx={{ color: "error.main" }}
                 >
@@ -663,7 +656,6 @@ const Submission = () => {
     <div>
       {loading ? (
         <Box sx={{ p: 3 }}>
-          {/* Header Skeleton */}
           <Box
             sx={{
               display: "flex",
@@ -676,24 +668,19 @@ const Submission = () => {
             <Skeleton variant="rectangular" width={300} height={40} />
           </Box>
 
-          {/* Tabs Skeleton (if TEAMLEAD) */}
           {role === "TEAMLEAD" && (
             <Box sx={{ mb: 3 }}>
               <Skeleton variant="rectangular" width="100%" height={48} />
             </Box>
           )}
 
-          {/* Table Skeleton */}
-          <Box sx={{ width: "100%" ,height:'100%'}}>
-            {/* Simulate Table Header as a Line */}
+          <Box sx={{ width: "100%", height: "100%" }}>
             <Skeleton
               variant="rectangular"
               width="100%"
               height={40}
               sx={{ mb: 1 }}
             />
-
-            {/* Simulate Table Rows as Horizontal Lines */}
             {Array(8)
               .fill(null)
               .map((_, i) => (
@@ -775,6 +762,51 @@ const Submission = () => {
             onAddNew={openNewCandidateDrawer}
             uniqueId="submissionId"
           />
+
+          <Dialog
+            open={moveToBenchDialogOpen}
+            onClose={handleMoveToBenchCancel}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Move Candidate to Bench</DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                Are you sure you want to move {selectedCandidate?.fullName} to the bench?
+                Please add any remarks below.
+              </DialogContentText>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="remarks"
+                label="Remarks"
+                type="text"
+                fullWidth
+                variant="outlined"
+                multiline
+                rows={4}
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleMoveToBenchCancel} color="primary">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleMoveToBenchConfirm}
+                color="primary"
+                variant="contained"
+                disabled={moveToBenchLoading}
+              >
+                {moveToBenchLoading ? (
+                  <CircularProgress size={24} />
+                ) : (
+                  "Move to Bench"
+                )}
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Drawer anchor="right" open={openDrawer} onClose={closeDrawer}>
             <CandidateSubmissionDrawer

@@ -45,17 +45,19 @@ const HomePage = () => {
 
   // Card permission mapping
   const cardPermissions = {
-    requirements: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD'],
+    requirements: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD',"COORDINATOR"],
     candidates: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD'],
     assigned: ['ADMIN', 'EMPLOYEE', 'TEAMLEAD', 'BDM'],
-    interviews: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'COORDINATOR'],
+    interviews: ['ADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD','COORDINATOR','SUPERADMIN'],
+    internalInterviews:['SUPERADMIN','TEAMLEAD','BDM'],
+    externalInterviews:['SUPERADMIN','TEAMLEAD','BDM'],
     clients: ['ADMIN', 'SUPERADMIN', 'BDM', 'PARTNER'],
-    placements: ['ADMIN', 'SUPERADMIN', 'PARTNER',"PAYROLLADMIN"],
-    users: ['ADMIN', 'SUPERADMIN', 'PARTNER',"PAYROLLADMIN", 'COORDINATOR'],
+    placements: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE"],
+    users: ['ADMIN', 'SUPERADMIN', 'PARTNER',"INVOICE",'COORDINATOR'],
     bench: ['ADMIN', 'SUPERADMIN', 'BDM', 'TEAMLEAD', 'PARTNER', 'EMPLOYEE'],
   };
 
-  const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER','PAYROLLADMIN','COORDINATOR'];
+  const allowedRoles = ['ADMIN', 'SUPERADMIN', 'EMPLOYEE', 'BDM', 'TEAMLEAD', 'PARTNER','INVOICE','COORDINATOR'];
 
   // Helper function to format placements data
   const formatPlacements = (data) => {
@@ -225,11 +227,11 @@ useEffect(() => {
       return card.key === 'assigned';
     }
 
-    else if(role === 'PAYROLLADMIN'){
+    else if(role === 'INVOICE'){
       return card.key === 'placements' || card.key ==='users'
     }
     else if(role === 'COORDINATOR'){
-      return card.key === 'users' || card.key === 'interviews';
+      return  card.key === 'interviews';
   }
     return card.key !== 'assigned';
    

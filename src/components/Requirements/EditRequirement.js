@@ -115,6 +115,8 @@ const EditRequirement = ({ requirementData, onClose }) => {
         noOfPositions: requirementData.noOfPositions || 1,
         status: requirementData.status || "In Progress",
         assignedBy: requirementData.assignedBy || "",
+        // Set assignedTo to the name directly for display
+        assignedTo: requirementData.assignedBy || "",
         jobDescription: requirementData.jobDescription || "",
         noticePeriod: requirementData.noticePeriod || "",
       });
@@ -157,6 +159,18 @@ const EditRequirement = ({ requirementData, onClose }) => {
         value: emp.employeeId,
         name: emp.userName
       })) || [];
+
+   const teamleadOptions = 
+      employeesList
+      ?.filter((emp)=>(emp.roles==="TEAMLEAD" || emp.roles==="BDM" || emp.roles ==="SUPERADMIN") && 
+      emp.status==="ACTIVE"
+    ) 
+      ?.map((emp)=>({
+        label: `${emp.userName} (${emp.employeeId})`,
+        value: emp.userName, // Use name as value for display
+        name: emp.userName,
+        employeeId: emp.employeeId // Keep ID for reference if needed
+      })) || [];  
 
   const fieldGridProps = { xs: 12, sm: 6, md: 6, lg: 4, xl: 4, xxl: 3 };
 
@@ -257,6 +271,13 @@ const EditRequirement = ({ requirementData, onClose }) => {
       name: "qualification",
       label: "Qualification",
       type: "text",
+      gridProps: fieldGridProps,
+    },
+    {
+      name: "assignedTo",
+      label: "Assigned To (Team Lead)",
+      type: "select",
+      options: teamleadOptions,
       gridProps: fieldGridProps,
     },
     {
@@ -388,12 +409,15 @@ const EditRequirement = ({ requirementData, onClose }) => {
         } else if (key === "jobDescription" && values[key]) {
           // Only append file if it exists
           formData.append(key, values[key]);
+        } else if (key === "assignedTo") {
+          // assignedTo is already the name, append it directly
+          formData.append(key, values[key]);
         } else if (key !== "recruiterName") { // Skip recruiterName as we handle it above
           // Add other fields
           formData.append(key, values[key]);
         }
       });
-
+      
       // Append description type
       formData.append("descriptionType", descriptionType);
 

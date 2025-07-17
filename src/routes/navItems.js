@@ -16,51 +16,13 @@ export const navItems = [
     text: "Home",
     path: "home",
     icon: <HomeIcon />,
-    roles: ["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"],
+    roles: ["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","INVOICE","COORDINATOR"],
   },
-  {
-    text: "Assigned",
-    path: "assigned",
-    icon: <AssignmentIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],
-  },
-  {
-    text: "Submissions",
-    path: "submissions",
-    icon: <SendIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN"],
-  },
-
-  {
-    text: "Requirements",
-    path: "requirements",
-    icon: <ListAltIcon />,
-    roles: ["SUPERADMIN", "BDM", "TEAMLEAD"],
-  },
-   {
-    text:"InProgress",
-    path:"InProgress",
-    icon:<AutorenewIcon/>,
-    roles:["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"],
-  },
-  //   {
-  //     text: 'Job Form',
-  //     path: 'jobForm',
-  //     icon: <PersonAddIcon />,
-  //     roles: ['ADMIN', 'SUPERADMIN', 'BDM'],
-  //   },
-  {
-    text: "Interviews",
-    path: "interviews",
-    icon: <EventNoteIcon />,
-    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN","COORDINATOR"],
-  },
-
   {
     text: "Users",
     path: "users",
     icon: <GroupIcon />,
-    roles: ["ADMIN", "SUPERADMIN","PAYROLLADMIN","COORDINATOR"],
+    roles: ["ADMIN", "SUPERADMIN","INVOICE","COORDINATOR"],
   },
   {
     text: "Team Metrices",
@@ -74,6 +36,45 @@ export const navItems = [
     icon: <BusinessIcon />,
     roles: [ "SUPERADMIN", "BDM", "PARTNER"],
   },
+   {
+    text: "Requirements",
+    path: "requirements",
+    icon: <ListAltIcon />,
+    roles: [ "SUPERADMIN", "BDM", "TEAMLEAD"],
+  },
+  {
+    text: "Assigned",
+    path: "assigned",
+    icon: <AssignmentIcon />,
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD"],
+  },
+  {
+    text:"InProgress",
+    path:"InProgress",
+    icon:<AutorenewIcon/>,
+    roles:["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"],
+  },
+  {
+    text: "Submissions",
+    path: "submissions",
+    icon: <SendIcon />,
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN"],
+  },
+   
+  //   {
+  //     text: 'Job Form',
+  //     path: 'jobForm',
+  //     icon: <PersonAddIcon />,
+  //     roles: ['ADMIN', 'SUPERADMIN', 'BDM'],
+  //   },
+  {
+    text: "Interviews",
+    path: "interviews",
+    icon: <EventNoteIcon />,
+    roles: ["ADMIN", "EMPLOYEE", "BDM", "TEAMLEAD","SUPERADMIN","COORDINATOR"],
+  },
+
+  
   //   {
   //     text: 'Add Client',
   //     path: 'addNewClient',
@@ -97,7 +98,7 @@ export const navItems = [
     text: "Placements",
     path: "placements",
     icon: <PersonAddIcon />,
-    roles: ["SUPERADMIN", "PARTNER","ADMIN",""],
+    roles: ["SUPERADMIN", "PARTNER","ADMIN","INVOICE"],
   },
   {
     text: "Bench",
@@ -105,5 +106,4 @@ export const navItems = [
     icon: <HourglassIcon />,
     roles: ["ADMIN", "SUPERADMIN", "BDM", "TEAMLEAD", "PARTNER", "EMPLOYEE"],
   },
- 
 ];

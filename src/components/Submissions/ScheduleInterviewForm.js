@@ -32,6 +32,8 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import ToastService from "../../Services/toastService";
+import { error } from "pdf-lib";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -61,7 +63,7 @@ const ScheduleInterviewForm = ({ data, onClose, onSuccess }) => {
   useEffect(() => {
     const fetchCoordinators = async () => {
       try {
-        const res = await httpService.get("/users/employee?roleName=COORDINATOR");
+        const res = await httpService.get("/users/employee?excludeRoleName=EMPLOYEE");
         const formatted = res.data.map((emp) => ({
           value: emp.employeeId,
           label: emp.userName,
@@ -449,22 +451,29 @@ const validationSchema = useMemo(() => Yup.object().shape({
 
         setInterviewResponse(responseData);
         setSubmissionSuccess(true);
-        setNotification({
-          open: true,
-          message: "Interview scheduled successfully",
-          severity: "success",
-        });
+        // setNotification({
+        //   open: true,
+        //   message: "Interview scheduled successfully",
+        //   severity: "success",
+        // });
+        ToastService.success("Scheduled Interview Successfully")
+     
 
         setTimeout(() => {
           if (onSuccess) onSuccess();
           onClose(true);
         }, 2000);
       } catch (error) {
-        setNotification({
-          open: true,
-          message: error?.response?.data?.message || error.message || "Failed to schedule interview",
-          severity: "error",
-        });
+        // setNotification({
+        //   open: true,
+        //   message: error?.response?.data?.message || error.message || "Failed to schedule interview",
+        //   severity: "error",
+        // });
+         const errorMessage = error?.response?.data?.error?.errorMessage || 
+                        error?.response?.data?.message || 
+                        error.message || 
+                        "Failed to schedule interview";
+          ToastService.error(errorMessage);
       } finally {
         setSubmitting(false);
       }
@@ -724,6 +733,7 @@ const handleDateTimeChange = (newValue) => {
 
 
 
+
 <DateTimePicker
   label="Interview Date & Time"
   value={safeDayjs(formik.values.interviewDateTime)}
@@ -805,8 +815,8 @@ const handleDateTimeChange = (newValue) => {
   }}
   views={['year', 'month', 'day', 'hours', 'minutes']}
   openTo="day"
-  timeSteps={{ hours: 1, minutes: 30 }}
-  minutesStep={30}
+  // timeSteps={{ hours: 1, minutes: 30 }}
+  // minutesStep={30}
   ampm={false}
   format="DD/MM/YYYY HH:mm"
 
@@ -837,10 +847,10 @@ const handleDateTimeChange = (newValue) => {
             error={formik.touched.duration && Boolean(formik.errors.duration)}
             label="Duration (minutes)"
             >
-           {/* <MenuItem value={15}>15 minutes</MenuItem> */}
+           <MenuItem value={15}>15 minutes</MenuItem>
            <MenuItem value={30}>30 minutes</MenuItem>
-           {/* <MenuItem value={45}>45 minutes</MenuItem>
-           <MenuItem value={60}>60 minutes</MenuItem> */}
+           <MenuItem value={45}>45 minutes</MenuItem>
+           <MenuItem value={60}>60 minutes</MenuItem>
            </Select>
            </FormControl>
            </Grid>
@@ -884,9 +894,10 @@ const handleDateTimeChange = (newValue) => {
     error={formik.touched.assignedTo && Boolean(formik.errors.assignedTo)}
     label="Coordinator"
     notched={true}
+    disabled={formik.values.interviewLevel !== "INTERNAL"}
   >
     <MenuItem value="">None</MenuItem>
-    {coordinators.map((coordinator) => (
+    { coordinators.map((coordinator) => (
       <MenuItem key={coordinator.value} value={coordinator.value}>
         {coordinator.label}
       </MenuItem>
