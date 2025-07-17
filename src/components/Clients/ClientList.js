@@ -131,6 +131,24 @@ const ClientList = () => {
   });
 };
 
+ const renderStatus = (status) => {
+    let color = "default";
+    const statusLower = status?.toLowerCase();
+
+    switch (statusLower) {
+      case "active":
+        color = "success";
+        break;
+      case "inactive":
+        color = "error";
+        break;
+      default:
+        color = "default";
+    }
+
+    return <Chip label={status || "Unknown"} size="small" color={color} />;
+  };
+
   const handleViewDocs = (client) => {
     setSelectedClient(client);
     setOpenDocsDialog(true);
@@ -296,12 +314,7 @@ const ClientList = () => {
             loading ? (
               <Skeleton variant="rectangular" width={100} height={32} />
             ) : (
-              <Chip
-                label={row.status || "Not specified"}
-                color={row.status ? "primary" : "default"}
-                variant="outlined"
-                size="small"
-              />
+              renderStatus(row.status)
             ),
         },
         {
@@ -481,7 +494,7 @@ const ClientList = () => {
       <DataTable
         data={handleClientsByStatus(clients)}
         columns={columns}
-        title=""
+        title={levelFilter==="ALL"?"Clients":levelFilter==="ACTIVE"?"Active":"InActive"}
         loading={loading}
         enableSelection={false}
         defaultSortColumn="clientName"
