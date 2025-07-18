@@ -523,7 +523,20 @@ const BDMInterviews = () => {
             candidateName={row.candidateFullName}
           />
         ),
-      });
+      },
+      {
+        key: "internalFeedback",
+        label: "Internal Feedback",
+        render: (row) => (
+          <InternalFeedbackCell
+            value={row.internalFeedback}
+            loading={loading}
+            // isCoordinator={true}
+            candidateName={row.candidateFullName}
+          />
+        ),
+      }
+    );
     } else {
       baseColumns.push({
         key: "internalFeedback",

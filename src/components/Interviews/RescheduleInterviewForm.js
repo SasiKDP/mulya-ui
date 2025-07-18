@@ -171,7 +171,7 @@ const RescheduleInterviewForm = ({ data, onClose, onSuccess, showCoordinatorView
         gridProps: commonGridProps,
       },
       ...(isInternalInterview ? [commentsField] : [
-        {
+         {
         name: "externalInterviewDetails",
         label: "Interview Details / Notes",
         type: "textarea",
@@ -182,7 +182,7 @@ const RescheduleInterviewForm = ({ data, onClose, onSuccess, showCoordinatorView
         rows: 4,
       },
       ]),
-    
+      
       {
         name: "skipNotification",
         label: "Skip Email Notification",

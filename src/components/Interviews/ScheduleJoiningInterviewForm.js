@@ -227,9 +227,9 @@ const ScheduleJoiningInterviewForm = ({ data, onClose, onSuccess, showCoordinato
       };
 
       // Use schedule endpoint instead of update
-      const baseUrl = `/candidate/schedule-interview/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
+      const baseUrl = `/candidate/interview-update/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
 
-      const responseData = await httpService.post(baseUrl, payload);
+      const responseData = await httpService.put(baseUrl, payload);
       setInterviewResponse(responseData);
       setSubmissionSuccess(true);
       setNotification({
@@ -334,7 +334,7 @@ const ScheduleJoiningInterviewForm = ({ data, onClose, onSuccess, showCoordinato
           initialValues={initialValues}
           validationSchema={validationSchema()}
           onSubmit={handleSubmit}
-          submitButtonText="SCHEDULE INTERVIEW"
+          submitButtonText="SCHEDULE"
           cancelButtonText="Cancel"
           onCancel={onClose}
         />
