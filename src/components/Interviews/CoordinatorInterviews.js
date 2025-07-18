@@ -306,6 +306,21 @@ const CoordinatorInterviews = () => {
       ),
     },
     {
+      key:"internalFeedback",
+      label:"FeedBack",
+      sortable: false,
+      filterable: false,
+      width: 160,
+       render: (row) => (
+        <InternalFeedbackCell
+          value={row.internalFeedback}
+          loading={loading}
+          isCoordinator={false}
+          // candidateName={row.candidateFullName}
+        />
+      ),
+    },
+    {
       key: "actions",
       label: "Actions",
       width: 200,

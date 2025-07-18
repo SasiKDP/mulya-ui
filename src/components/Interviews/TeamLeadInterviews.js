@@ -551,7 +551,20 @@ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
             candidateName={row.candidateFullName}
           />
         ),
-      });
+      },
+      {
+        key: "internalFeedback",
+        label: "Internal Feedback",
+        width: 120,
+        render: (row) => (
+          <InternalFeedbackCell 
+            value={row.internalFeedback}
+            loading={loading || coordinatorLoading}
+            candidateName={row.candidateFullName}
+          />
+        ),
+      }
+    );
     } else {
       baseColumns.push({
         key: "internalFeedback",
