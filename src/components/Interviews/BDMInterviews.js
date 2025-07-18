@@ -39,6 +39,7 @@ import ReusableExpandedContent from "../muiComponents/ReusableExpandedContent";
 import InternalFeedbackCell from "./FeedBack";
 import DownloadResume from "../../utils/DownloadResume";
 import MoveToBench from "./MoveToBench";
+import InterviewFormWrapper from "./InterviewFormWrapper";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -148,16 +149,29 @@ const BDMInterviews = () => {
     navigate(`/dashboard/requirements/job-details/${jobId}`);
   };
 
-  const handleEdit = (interview, isReschedule = false) => {
-    setEditDrawer({
-      open: true,
-      data: {
-        ...interview,
-        isReschedule,
-        userId: interview.userId || userId,
-      },
-    });
-  };
+ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
+  let formType;
+  
+  if (isScheduleJoining) {
+    formType = "schedule";
+  } else if (isReschedule) {
+    formType = "reschedule"; 
+  } else {
+    formType = "edit";
+  }
+
+  setEditDrawer({
+    open: true,
+    data: { 
+      ...row, 
+      formType, // This is now explicitly set
+      isReschedule,
+      isScheduleJoining,
+      fromView: showCoordinatorView ? "coordinator" : "recruiter",
+      isCoordinatorView: showCoordinatorView 
+    },
+  });
+};
 
   const handleCloseEditDrawer = () => {
     setEditDrawer({ open: false, data: null });
@@ -775,12 +789,13 @@ const BDMInterviews = () => {
             }}
           >
             {editDrawer.data && (
-              <EditInterviewForm
-                data={editDrawer.data}
-                onClose={handleCloseEditDrawer}
-                onSuccess={handleInterviewUpdated}
-                showCoordinatorView={showCoordinatorView}
-              />
+               <InterviewFormWrapper
+                    formType={editDrawer.data.formType || "edit"} 
+                    data={editDrawer.data}
+                    onClose={handleCloseEditDrawer}
+                    onSuccess={handleInterviewUpdated}
+                    showCoordinatorView={showCoordinatorView}
+                />
             )}
           </Drawer>
 

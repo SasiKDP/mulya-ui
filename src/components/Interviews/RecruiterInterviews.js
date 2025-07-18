@@ -41,6 +41,7 @@ import MoveToBench from "./MoveToBench";
 import DownloadResume from "../../utils/DownloadResume";
 import InternalFeedbackCell from "./FeedBack";
 import { clearFilteredData, clearRecruiterFilter } from "../../redux/interviewSlice"; // Import the action
+import InterviewFormWrapper from "./InterviewFormWrapper";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -135,16 +136,25 @@ const RecruiterInterviews = () => {
     navigate(`/dashboard/requirements/job-details/${jobId}`);
   };
 
-  const handleEdit = (interview, isReschedule = false) => {
-    setEditDrawer({
-      open: true,
-      data: {
-        ...interview,
-        isReschedule,
-        userId: interview.userId || userId,
-      },
-    });
-  };
+const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
+  let formType = "edit"; // Default to edit
+
+  if (isReschedule) {
+    formType = "reschedule";
+  } else if (isScheduleJoining) {
+    formType = "schedule";
+  }
+
+  setEditDrawer({
+    open: true,
+    data: { 
+      ...row, 
+      formType,
+      isReschedule,
+      isScheduleJoining
+    },
+  });
+};
 
   const handleCloseEditDrawer = () => {
     setEditDrawer({ open: false, data: null });
@@ -375,73 +385,79 @@ const RecruiterInterviews = () => {
         />
       ),
     },
-    {
-      key: "actions",
-      label: "Actions",
-      width: 200,
-      render: (row) => {
-        const status = row.latestInterviewStatus?.toUpperCase();
-        const showReschedule = ["CANCELLED", "RESCHEDULED", "SELECTED", "NO_SHOW"].includes(status);
+{
+  key: "actions",
+  label: "Actions",
+  width: 200,
+  render: (row) => {
+    const status = row.latestInterviewStatus?.toUpperCase();
+    const showReschedule = ["CANCELLED", "RESCHEDULED", "NO_SHOW"].includes(status);
+    const showScheduleJoining = status === "SELECTED";
 
-        const getButtonText = () => {
-          switch (status) {
-            case "SELECTED": return "Schedule Joining";
-            case "CANCELLED":
-            case "RESCHEDULED":
-            case "NO_SHOW": return "Reschedule";
-            default: return "Update";
+    return (
+      <Box sx={{ display: "flex", gap: 1 }}>
+        <Tooltip title="View Details">
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={() => toggleRowExpansion(row.interviewId)}
+          >
+            <VisibilityIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        
+        {/* Regular Edit Button - always shows edit form */}
+        <IconButton
+          onClick={() => handleEdit(row)}
+          color="primary"
+          size="small"
+          title="Edit Interview"
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+        
+        <IconButton
+          onClick={() => handleDelete(row)}
+          color="error"
+          size="small"
+          title="Delete Interview"
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+
+        <DownloadResume
+          candidate={row}
+          getDownloadUrl={(candidate, format) =>
+            `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
           }
-        };
+        />
 
-        return (
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Tooltip title="View Details">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => toggleRowExpansion(row.interviewId)}
-              >
-                <VisibilityIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <IconButton
-              onClick={() => handleEdit(row)}
-              color="primary"
-              size="small"
-              title="Edit Interview"
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-            <IconButton
-              onClick={() => handleDelete(row)}
-              color="error"
-              size="small"
-              title="Delete Interview"
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-
-            <DownloadResume
-              candidate={row}
-              getDownloadUrl={(candidate, format) =>
-                `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
-              }
-            />
-
-            {showReschedule && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleEdit(row, true)}
-                sx={{ px: 1, py: 0.5 }}
-              >
-                {getButtonText()}
-              </Button>
-            )}
-          </Box>
-        );
-      },
-    },
+        {/* Conditional Buttons */}
+        {showReschedule && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleEdit(row, true)}
+            sx={{ px: 1, py: 0.5 }}
+          >
+            Reschedule
+          </Button>
+        )}
+        
+        {showScheduleJoining && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleEdit(row, false, true)}
+            sx={{ px: 1, py: 0.5 }}
+          >
+            Schedule Joining
+          </Button>
+        )}
+      </Box>
+    );
+  },
+}
   ];
 
   // Updated function to get display data with better logic
@@ -595,13 +611,13 @@ const RecruiterInterviews = () => {
             }}
           >
             {editDrawer.data && (
-              <EditInterviewForm
+               <InterviewFormWrapper
+                formType={editDrawer.data.formType || "edit"} // Default to edit if not specified
                 data={editDrawer.data}
                 onClose={handleCloseEditDrawer}
                 onSuccess={handleInterviewUpdated}
-                showCoordinatorView={false}
-                role={role}
-              />
+                //  showCoordinatorView={showCoordinatorView}
+               />
             )}
           </Drawer>
 

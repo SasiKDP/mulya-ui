@@ -215,6 +215,7 @@ const ClientList = () => {
         {
           key: "id",
           label: "Client ID",
+           align:"center",
           render: (row) =>
             loading ? (
               <Skeleton variant="text" width={80} height={24} />
@@ -225,6 +226,7 @@ const ClientList = () => {
         {
           key: "clientName",
           label: "Client Name",
+           align:"center",
           render: (row) =>
             loading ? (
               <Skeleton variant="text" width={120} height={24} />
@@ -235,6 +237,7 @@ const ClientList = () => {
         {
           key: "onBoardedBy",
           label: "BDM",
+           align:"center",
           render: (row) =>
             loading ? (
               <Skeleton variant="text" width={100} height={24} />
@@ -245,6 +248,7 @@ const ClientList = () => {
         {
           key: "clientSpocName",
           label: "Contact Person",
+          align:"center",
           render: (row) =>
             loading ? (
               <Skeleton variant="text" width={150} height={24} />
@@ -257,6 +261,7 @@ const ClientList = () => {
         {
           key: "positionType",
           label: "Position Type",
+          align:"center",
           render: (row) =>
             loading ? (
               <Skeleton variant="rectangular" width={100} height={32} />
@@ -272,6 +277,7 @@ const ClientList = () => {
         {
           key: "netPayment",
           label: "Net Payment",
+          align:"center",
           render: (row) =>
             loading ? (
               <Skeleton variant="text" width={80} height={24} />
@@ -284,6 +290,7 @@ const ClientList = () => {
         {
           key: "supportingCustomers",
           label: "Supporting Customers",
+          align:"center",
           render: (row) =>
             loading ? (
               <Skeleton variant="text" width={150} height={24} />
@@ -310,6 +317,7 @@ const ClientList = () => {
         {
           key:"status",
           label:"Status",
+           align:"center",
           render: (row) =>
             loading ? (
               <Skeleton variant="rectangular" width={100} height={32} />
@@ -320,6 +328,7 @@ const ClientList = () => {
         {
           key:"feedBack",
           label:"FeedBack",
+           align:"center",
           render:(row) =>
             loading ? (
               <Skeleton variant="rectangular" width={100} height={32} />
@@ -329,6 +338,33 @@ const ClientList = () => {
               />
             )
         },
+         {
+  key: "numberOfRequirements",
+  label: "Requirements",
+  align: "center",
+  render: (row) => {
+    if (loading) {
+      return <Skeleton variant="rectangular" width={100} height={32} />;
+    }
+
+    return row.noOfRequirements ? (
+      <Chip
+        label={row.noOfRequirements}
+        color="primary"
+        variant="outlined"
+        size="small"
+      />
+    ) : (
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        fontStyle="italic"
+      >
+        -
+      </Typography>
+    );
+  }
+},
         {
           key: "actions",
           label: "Actions",
