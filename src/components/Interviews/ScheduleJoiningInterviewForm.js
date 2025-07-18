@@ -15,18 +15,12 @@ import {
 import { Close as CloseIcon } from "@mui/icons-material";
 import DynamicForm from "../FormContainer/DynamicForm";
 import * as Yup from "yup";
+import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
 import httpService from "../../Services/httpService";
-import { formatDateTime } from "../../utils/dateformate";
 
-const EditInterviewForm = ({ 
-  data, 
-  onClose, 
-  onSuccess, 
-  showCoordinatorFields = false, 
-  showStatusAndLevel = true 
-}) => {
+const ScheduleJoiningInterviewForm = ({ data, onClose, onSuccess, showCoordinatorView }) => {
   const [notification, setNotification] = useState({
     open: false,
     message: "",
@@ -65,131 +59,141 @@ const EditInterviewForm = ({
       candidateId: data.candidateId || "",
       clientEmail: data.clientEmail || [],
       clientName: data.clientName || "",
-      duration: data.duration || 30,
-      externalInterviewDetails: data.externalInterviewDetails || "",
+      duration: 30,
+      externalInterviewDetails: "",
       fullName: data.fullName || data.candidateFullName || "",
-      interviewLevel: data.interviewLevel,
-      interviewId: data.interviewId,
-      interviewStatus: data.latestInterviewStatus || "SCHEDULED",
-      internalFeedBack: data.internalFeedBack,
+      interviewDateTime: "",
+      interviewLevel: "INTERNAL",
+      interviewId: data.interviewId || "",
+      interviewStatus: "SCHEDULED",
+      internalFeedBack: "",
       jobId: data.jobId || "",
-      skipNotification: data.skipNotification || false,
+      skipNotification: false,
       userId: data.userId || userId || "",
       userEmail: data.email || email || "",
-      zoomLink: data.zoomLink || "",
+      zoomLink: "",
       candidateEmailId: data.emailId || data.candidateEmailId || "",
       contactNumber: data.contactNumber || data.candidateContactNo || "",
-      coordinator: data.coordinator || userName,
-      assignedTo: data.assignedTo || userId || "",
-      coordinatorFeedback: data.coordinatorFeedback || "",
-      comments: data.comments || "",
+      coordinator: userName,
+      assignedTo: userId || "",
+      coordinatorFeedback: "",
+      comments: "",
     };
   };
 
   const getFormFields = (values) => {
     const commonGridProps = { xs: 12, md: 6, lg: 6, xl: 4 };
+    const isInternalInterview = values?.interviewLevel === "INTERNAL";
 
-    // Status options for all views
-    const statusOptions = [
-      { value: "SCHEDULED", label: "Scheduled" },
-      { value: "RESCHEDULED", label: "Rescheduled" },
-      { value: "REJECTED", label: "Rejected" },
-      { value: "CANCELLED", label: "Cancelled" },
-      { value: "NO_SHOW", label: "No Show / Not Attended" },
-      { value: "SELECTED", label: "Selected" },
-      { value: "PLACED", label: "Placed" },
-      { value: "FEEDBACK_PENDING", label: "Feedback-Pending" },
-    ];
+    // const commentsField = {
+    //   name: "comments",
+    //   label: "Comments",
+    //   type: "textarea",
+    //   disabled: !isInternalInterview,
+    //   gridProps: { xs: 12 },
+    //   rows: 3,
+    // };
 
     const fields = [
       {
-        name: "sectionStatus",
+        name: "sectionSchedule",
         type: "section",
-        label: "Update Interview Status",
+        label: "Schedule New Interview",
+        gridProps: { xs: 12 },
+      },
+      {
+        name: "interviewDateTime",
+        label: "Interview Date & Time",
+        type: "datetime",
+        required: true,
+        gridProps: commonGridProps,
+      },
+      {
+        name: "clientEmail",
+        label: "Client Email",
+        type: "chipInput",
+        description: "Enter client email addresses and press Enter after each",
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "duration",
+        label: "Duration (minutes)",
+        type: "select",
+        required: true,
+        options: [
+          { value: 15, label: "15 minutes" },
+          { value: 30, label: "30 minutes" },
+          { value: 45, label: "45 minutes" },
+          { value: 60, label: "60 minutes" },
+        ],
+        gridProps: commonGridProps,
+      },
+      {
+        name: "interviewLevel",
+        label: "Interview Level",
+        type: "select",
+        required: true,
+        options: [
+          { value: "INTERNAL", label: "INTERNAL" },
+          { value: "EXTERNAL", label: "EXTERNAL" },
+          { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
+          { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
+          { value: "FINAL", label: "FINAL" },
+        ],
+        gridProps: commonGridProps,
+      },
+      {
+        name: "zoomLink",
+        label: "Meeting Link",
+        type: "text",
+        placeholder: "https://zoom.us/j/example",
+        gridProps: commonGridProps,
+      },
+      // ...(isInternalInterview ? [commentsField] : []),
+      {
+        name: "externalInterviewDetails",
+        label: "Interview Details / Notes",
+        type: "textarea",
+        placeholder:
+          "Add any additional interview details, requirements, or notes here",
+        gridProps: { xs: 12 },
+        rows: 4,
+      },
+      {
+        name: "skipNotification",
+        label: "Skip Email Notification",
+        type: "checkbox",
+        description: "Check this box to skip sending email notifications",
         gridProps: { xs: 12 },
       },
     ];
 
-    // Always show status and level fields if showStatusAndLevel is true
-    if (showStatusAndLevel) {
-      fields.push(
-        {
-          name: "interviewStatus",
-          label: "Interview Status",
-          type: "select",
-          required: true,
-          options: statusOptions,
-          gridProps: commonGridProps,
-        },
-        {
-          name: "interviewLevel",
-          label: "Interview Level",
-          type: "select",
-          required: true,
-          disabled: true,
-          options: [
-            { value: "INTERNAL", label: "INTERNAL" },
-            { value: "EXTERNAL", label: "EXTERNAL" },
-            { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
-            { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
-            { value: "FINAL", label: "FINAL" },
-          ],
-          gridProps: commonGridProps,
-        }
-      );
-    }
-
-    // Only show coordinator fields if showCoordinatorFields is true
-    if (showCoordinatorFields) {
-      fields.push(
-        {
-          name: "assignedTo",
-          label: "Coordinator",
-          type: "select",
-          disabled: role === "SUPERADMIN" || role === "BDM" || role === "TEAMLEAD" || role === "COORDINATOR",
-          options: coordinators,
-          required: false,
-          gridProps: commonGridProps,
-        },
-        {
-          name: "internalFeedBack",
-          label: "Coordinator Feedback",
-          type: "textarea",
-          placeholder: "Feedback/comments from the coordinator...",
-          gridProps: { xs: 12 },
-          rows: 3,
-        }
-      );
-    }
-
-    fields.push({
-      name: "skipNotification",
-      label: "Skip Email Notification",
-      type: "checkbox",
-      description: "Check this box to skip sending email notifications",
-      gridProps: { xs: 12 },
-    });
+    // REMOVED: Coordinator fields are not needed for Schedule Joining form
+    // This form is specifically for scheduling new interviews after selection
+    // Coordinator management should be handled in the main edit form, not here
 
     return fields;
   };
 
   const validationSchema = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     return Yup.object().shape({
-      interviewStatus: Yup.string()
-        .required("Interview status is required")
+      interviewDateTime: Yup.date()
+        .required("Interview date and time is required")
+        .min(new Date(), "Interview date must be in the future"),
+      duration: Yup.number()
+        .required("Duration is required")
+        .min(15, "Duration must be at least 15 minutes")
+        .max(60, "Duration cannot exceed 60 minutes"),
+      interviewLevel: Yup.string()
+        .required("Interview level is required")
         .oneOf(
-          [
-            "SCHEDULED",
-            "RESCHEDULED",
-            "REJECTED",
-            "CANCELLED",
-            "NO_SHOW",
-            "SELECTED",
-            "PLACED",
-            "FEEDBACK_PENDING",
-          ],
-          "Invalid interview status"
+          ["INTERNAL", "EXTERNAL", "EXTERNAL-L1", "EXTERNAL-L2", "FINAL"],
+          "Invalid interview level"
         ),
+      zoomLink: Yup.string().nullable(),
       externalInterviewDetails: Yup.string().nullable(),
       skipNotification: Yup.boolean(),
     });
@@ -204,31 +208,33 @@ const EditInterviewForm = ({
       setSubmitting(true);
 
       const payload = {
-        interviewId: data.interviewId,
         candidateId: data.candidateId,
         jobId: data.jobId,
-        userId: data.userId,
-        userEmail: data.userEmail,
+        userId: data.userId || userId,
+        userEmail: data.userEmail || email,
         interviewLevel: values.interviewLevel,
-        interviewStatus: values.interviewStatus,
+        interviewStatus: "SCHEDULED",
         internalFeedBack: values.internalFeedBack,
         externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
-        assignedTo: values.assignedTo,
         comments: values.comments,
         clientName: values.clientName,
+        interviewDateTime: dayjs(values.interviewDateTime).format(),
+        interviewScheduledTimestamp: dayjs(values.interviewDateTime).valueOf(),
+        duration: values.duration,
+        zoomLink: values.zoomLink,
+        clientEmail: values.clientEmail,
       };
 
-      const baseUrl = showCoordinatorFields
-        ? `/candidate/updateInterviewByCoordinator/${userId}/${data.interviewId}`
-        : `/candidate/interview-update/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
+      // Use schedule endpoint instead of update
+      const baseUrl = `/candidate/schedule-interview/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
 
-      const responseData = await httpService.put(baseUrl, payload);
+      const responseData = await httpService.post(baseUrl, payload);
       setInterviewResponse(responseData);
       setSubmissionSuccess(true);
       setNotification({
         open: true,
-        message: "Interview updated successfully",
+        message: "Interview scheduled successfully",
         severity: "success",
       });
 
@@ -237,10 +243,10 @@ const EditInterviewForm = ({
         onClose(true);
       }, 2000);
     } catch (error) {
-      console.error("Error updating interview:", error);
+      console.error("Error scheduling interview:", error);
       setNotification({
         open: true,
-        message: `Error updating interview: ${error.message || "Unknown error"}`,
+        message: `Error scheduling interview: ${error.message || "Unknown error"}`,
         severity: "error",
       });
     } finally {
@@ -254,7 +260,7 @@ const EditInterviewForm = ({
     return (
       <Alert icon={<Check />} severity="success" sx={{ mb: 3 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-          Interview updated for{" "}
+          Interview scheduled for{" "}
           <strong>Candidate ID:</strong> {interviewResponse.candidateId}{" "}
           successfully.
         </Typography>
@@ -273,7 +279,7 @@ const EditInterviewForm = ({
         mb={3}
       >
         <Typography variant="h5" fontWeight={600} color="primary">
-          Update Interview Status
+          Schedule Interview
         </Typography>
         <IconButton onClick={onClose} aria-label="close">
           <CloseIcon />
@@ -316,20 +322,6 @@ const EditInterviewForm = ({
               </TableCell>
               <TableCell>{data.clientName}</TableCell>
             </TableRow>
-            <TableRow sx={{ bgcolor: "grey.100" }}>
-              <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
-                Interview Level
-              </TableCell>
-              <TableCell>{data.interviewLevel}</TableCell>
-            </TableRow>
-            {data.interviewDateTime && (
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
-                  Scheduled
-                </TableCell>
-                <TableCell>{formatDateTime(data.interviewDateTime)}</TableCell>
-              </TableRow>
-            )}
           </TableBody>
         </Table>
       </Card>
@@ -342,7 +334,7 @@ const EditInterviewForm = ({
           initialValues={initialValues}
           validationSchema={validationSchema()}
           onSubmit={handleSubmit}
-          submitButtonText="Update"
+          submitButtonText="SCHEDULE INTERVIEW"
           cancelButtonText="Cancel"
           onCancel={onClose}
         />
@@ -367,4 +359,4 @@ const EditInterviewForm = ({
   );
 };
 
-export default EditInterviewForm;
+export default ScheduleJoiningInterviewForm;

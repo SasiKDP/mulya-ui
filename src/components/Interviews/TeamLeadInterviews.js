@@ -49,6 +49,7 @@ import InternalFeedbackCell from "./FeedBack";
 import { API_BASE_URL } from "../../Services/httpService";
 import DownloadResume from "../../utils/DownloadResume";
 import MoveToBench from "./MoveToBench";
+import InterviewFormWrapper from "./InterviewFormWrapper";
 
 const processInterviewData = (interviews) => {
   if (!Array.isArray(interviews)) return [];
@@ -256,16 +257,29 @@ const TeamLeadInterviews = () => {
     });
   };
 
-  const handleEdit = (interview, isReschedule = false) => {
-    setEditDrawer({
-      open: true,
-      data: {
-        ...interview,
-        isReschedule,
-        userId: interview.userId || userId,
-      },
-    });
-  };
+const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
+  let formType;
+  
+  if (isScheduleJoining) {
+    formType = "schedule";
+  } else if (isReschedule) {
+    formType = "reschedule"; 
+  } else {
+    formType = "edit";
+  }
+
+  setEditDrawer({
+    open: true,
+    data: { 
+      ...row, 
+      formType, // This is now explicitly set
+      isReschedule,
+      isScheduleJoining,
+      fromView: showCoordinatorView ? "coordinator" : "recruiter",
+      isCoordinatorView: showCoordinatorView 
+    },
+  });
+};
 
   const handleCloseEditDrawer = () => {
     setEditDrawer({
@@ -553,99 +567,104 @@ const TeamLeadInterviews = () => {
       });
     }
 
-    baseColumns.push({
-      key: "actions",
-      label: "Actions",
-      width: 200,
-      render: (row) => {
-        const status = row.latestInterviewStatus?.toUpperCase();
-        const showReschedule = [
-          "CANCELLED",
-          "RESCHEDULED",
-          "SELECTED",
-          "NO_SHOW",
-        ].includes(status);
+    baseColumns.push(
+      {
+  key: "actions",
+  label: "Actions",
+  width: 200,
+  render: (row) => {
+    const status = row.latestInterviewStatus?.toUpperCase();
+    const showReschedule = ["CANCELLED", "RESCHEDULED", "NO_SHOW"].includes(status);
+    const showScheduleJoining = status === "SELECTED";
 
-        const getButtonText = () => {
-          switch (status) {
-            case "SELECTED":
-              return "Schedule Joining";
-            case "CANCELLED":
-            case "RESCHEDULED":
-            case "NO_SHOW":
-              return "Reschedule";
-            default:
-              return "Update";
-          }
-        };
+    return (
+      <Box sx={{ display: "flex", gap: 1 }}>
+        <Tooltip title="View Details">
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={() => toggleRowExpansion(row.interviewId)}
+          >
+            <Visibility fontSize="small" />
+          </IconButton>
+        </Tooltip>
 
-        return (
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Tooltip title="View Details">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => toggleRowExpansion(row.interviewId)}
-              >
-                <Visibility fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            
-            {!showCoordinatorView && (
-              <>
-                <IconButton
-                  onClick={() => handleEdit(row)}
-                  color="primary"
-                  size="small"
-                  title="Edit Interview"
-                >
-                  <EditIcon fontSize="small" />
-                </IconButton>
-                <IconButton
-                  onClick={() => handleDelete(row)}
-                  color="error"
-                  size="small"
-                  title="Delete Interview"
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </>
-            )}
-            
-            {showCoordinatorView && (
-              <>
-                <IconButton
-                  onClick={() => handleEdit(row)}
-                  color="primary"
-                  size="small"
-                  title="Edit Interview"
-                >
-                  <EditIcon fontSize="small" />
-                </IconButton>
+        {/* Edit Button - always visible except in coordinator view */}
+        {!showCoordinatorView && (
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => handleEdit(row)}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
 
-                <DownloadResume 
-                  candidate={{ ...row, jobId: row.jobId }}
-                  getDownloadUrl={(candidate, format) =>
-                    `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
-                  }
-                />
-              </>
-            )}
-            
-            {showReschedule && !showCoordinatorView && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleEdit(row, true)}
-                sx={{ px: 1, py: 0.5 }}
-              >
-                {getButtonText()}
-              </Button>
-            )}
-          </Box>
-        );
-      },
-    });
+        {/* Delete Button - always visible except in coordinator view */}
+        {!showCoordinatorView && (
+          <Tooltip title="Delete">
+            <IconButton
+              size="small"
+              color="error"
+              onClick={() => handleDelete(row)}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Download Resume - only in coordinator view */}
+        {showCoordinatorView && (
+          <DownloadResume 
+            candidate={{ ...row, jobId: row.jobId }}
+            getDownloadUrl={(candidate, format) =>
+              `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
+            }
+          />
+        )}
+
+        {/* Edit Button in coordinator view */}
+        {showCoordinatorView && (
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => handleEdit(row)}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Conditional Buttons */}
+        {showReschedule && !showCoordinatorView && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleEdit(row, true)}
+            sx={{ px: 1, py: 0.5 }}
+          >
+            Reschedule
+          </Button>
+        )}
+
+        {showScheduleJoining && !showCoordinatorView && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleEdit(row, false, true)}
+            sx={{ px: 1, py: 0.5 }}
+          >
+            Schedule Joining
+          </Button>
+        )}
+      </Box>
+    );
+  },
+}
+    );
 
     return baseColumns;
   };
@@ -870,13 +889,13 @@ const TeamLeadInterviews = () => {
             }}
           >
             {editDrawer.data && (
-              <EditInterviewForm
-                data={editDrawer.data}
-                onClose={handleCloseEditDrawer}
-                onSuccess={handleInterviewUpdated}
-                role={role}
-                showCoordinatorView={showCoordinatorView}
-              />
+              <InterviewFormWrapper
+      formType={editDrawer.data.formType || "edit"} // Default to edit if not specified
+      data={editDrawer.data}
+      onClose={handleCloseEditDrawer}
+      onSuccess={handleInterviewUpdated}
+      showCoordinatorView={showCoordinatorView}
+    />
             )}
           </Drawer>
 

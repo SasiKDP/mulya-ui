@@ -15,18 +15,13 @@ import {
 import { Close as CloseIcon } from "@mui/icons-material";
 import DynamicForm from "../FormContainer/DynamicForm";
 import * as Yup from "yup";
+import dayjs from "dayjs";
 import { useSelector } from "react-redux";
 import { Check } from "lucide-react";
 import httpService from "../../Services/httpService";
 import { formatDateTime } from "../../utils/dateformate";
 
-const EditInterviewForm = ({ 
-  data, 
-  onClose, 
-  onSuccess, 
-  showCoordinatorFields = false, 
-  showStatusAndLevel = true 
-}) => {
+const RescheduleInterviewForm = ({ data, onClose, onSuccess, showCoordinatorView }) => {
   const [notification, setNotification] = useState({
     open: false,
     message: "",
@@ -68,9 +63,10 @@ const EditInterviewForm = ({
       duration: data.duration || 30,
       externalInterviewDetails: data.externalInterviewDetails || "",
       fullName: data.fullName || data.candidateFullName || "",
+      interviewDateTime: "",
       interviewLevel: data.interviewLevel,
       interviewId: data.interviewId,
-      interviewStatus: data.latestInterviewStatus || "SCHEDULED",
+      interviewStatus: "SCHEDULED",
       internalFeedBack: data.internalFeedBack,
       jobId: data.jobId || "",
       skipNotification: data.skipNotification || false,
@@ -88,108 +84,141 @@ const EditInterviewForm = ({
 
   const getFormFields = (values) => {
     const commonGridProps = { xs: 12, md: 6, lg: 6, xl: 4 };
+    const isInternalInterview = values?.interviewLevel === "INTERNAL";
 
-    // Status options for all views
-    const statusOptions = [
-      { value: "SCHEDULED", label: "Scheduled" },
-      { value: "RESCHEDULED", label: "Rescheduled" },
-      { value: "REJECTED", label: "Rejected" },
-      { value: "CANCELLED", label: "Cancelled" },
-      { value: "NO_SHOW", label: "No Show / Not Attended" },
-      { value: "SELECTED", label: "Selected" },
-      { value: "PLACED", label: "Placed" },
-      { value: "FEEDBACK_PENDING", label: "Feedback-Pending" },
-    ];
+    const coordinatorField = {
+      name: "assignedTo",
+      label: "Coordinator",
+      type: "select",
+      disabled: role === "SUPERADMIN" || role === "BDM" || role === "TEAMLEAD" || role === "COORDINATOR",
+      options: coordinators,
+      required: false,
+      gridProps: commonGridProps,
+    };
+
+    const coordinatorFeedbackField = {
+      name: "internalFeedBack",
+      label: "Coordinator Feedback",
+      type: "textarea",
+      placeholder: "Feedback/comments from the coordinator...",
+      gridProps: { xs: 12 },
+      rows: 3,
+    };
+
+    const commentsField = {
+      name: "comments",
+      label: "Comments",
+      type: "textarea",
+      disabled: !isInternalInterview,
+      gridProps: { xs: 12 },
+      rows: 3,
+    };
+    
 
     const fields = [
       {
-        name: "sectionStatus",
+        name: "sectionReschedule",
         type: "section",
-        label: "Update Interview Status",
+        label: "Reschedule Interview",
+        gridProps: { xs: 12 },
+      },
+      {
+        name: "interviewDateTime",
+        label: "New Interview Date & Time",
+        type: "datetime",
+        required: true,
+        gridProps: commonGridProps,
+      },
+      {
+        name: "clientEmail",
+        label: "Client Email",
+        type: "chipInput",
+        description: "Enter client email addresses and press Enter after each",
+        gridProps: { xs: 12, sm: 6 },
+      },
+      {
+        name: "duration",
+        label: "Duration (minutes)",
+        type: "select",
+        required: true,
+        options: [
+          { value: 15, label: "15 minutes" },
+          { value: 30, label: "30 minutes" },
+          { value: 45, label: "45 minutes" },
+          { value: 60, label: "60 minutes" },
+        ],
+        gridProps: commonGridProps,
+      },
+      {
+        name: "interviewLevel",
+        label: "Interview Level",
+        type: "select",
+        required: true,
+        options: [
+          { value: "INTERNAL", label: "INTERNAL" },
+          { value: "EXTERNAL", label: "EXTERNAL" },
+          { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
+          { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
+          { value: "FINAL", label: "FINAL" },
+        ],
+        gridProps: commonGridProps,
+      },
+      {
+        name: "zoomLink",
+        label: "Meeting Link",
+        type: "text",
+        placeholder: "https://zoom.us/j/example",
+        gridProps: commonGridProps,
+      },
+      ...(isInternalInterview ? [commentsField] : [
+        {
+        name: "externalInterviewDetails",
+        label: "Interview Details / Notes",
+        type: "textarea",
+        disable:isInternalInterview,
+        placeholder:
+          "Add any additional interview details, requirements, or notes here",
+        gridProps: { xs: 12 },
+        rows: 4,
+      },
+      ]),
+    
+      {
+        name: "skipNotification",
+        label: "Skip Email Notification",
+        type: "checkbox",
+        description: "Check this box to skip sending email notifications",
         gridProps: { xs: 12 },
       },
     ];
 
-    // Always show status and level fields if showStatusAndLevel is true
-    if (showStatusAndLevel) {
-      fields.push(
-        {
-          name: "interviewStatus",
-          label: "Interview Status",
-          type: "select",
-          required: true,
-          options: statusOptions,
-          gridProps: commonGridProps,
-        },
-        {
-          name: "interviewLevel",
-          label: "Interview Level",
-          type: "select",
-          required: true,
-          disabled: true,
-          options: [
-            { value: "INTERNAL", label: "INTERNAL" },
-            { value: "EXTERNAL", label: "EXTERNAL" },
-            { value: "EXTERNAL-L1", label: "EXTERNAL-L1" },
-            { value: "EXTERNAL-L2", label: "EXTERNAL-L2" },
-            { value: "FINAL", label: "FINAL" },
-          ],
-          gridProps: commonGridProps,
-        }
-      );
+    // Add coordinator field when in coordinator view
+    if (showCoordinatorView) {
+      fields.splice(5, 0, coordinatorField);
+      // Also add coordinator feedback field for reschedule in coordinator view
+      fields.splice(6, 0, coordinatorFeedbackField);
     }
-
-    // Only show coordinator fields if showCoordinatorFields is true
-    if (showCoordinatorFields) {
-      fields.push(
-        {
-          name: "assignedTo",
-          label: "Coordinator",
-          type: "select",
-          disabled: role === "SUPERADMIN" || role === "BDM" || role === "TEAMLEAD" || role === "COORDINATOR",
-          options: coordinators,
-          required: false,
-          gridProps: commonGridProps,
-        },
-        {
-          name: "internalFeedBack",
-          label: "Coordinator Feedback",
-          type: "textarea",
-          placeholder: "Feedback/comments from the coordinator...",
-          gridProps: { xs: 12 },
-          rows: 3,
-        }
-      );
-    }
-
-    fields.push({
-      name: "skipNotification",
-      label: "Skip Email Notification",
-      type: "checkbox",
-      description: "Check this box to skip sending email notifications",
-      gridProps: { xs: 12 },
-    });
 
     return fields;
   };
 
   const validationSchema = () => {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
     return Yup.object().shape({
-      interviewStatus: Yup.string()
-        .required("Interview status is required")
-        .oneOf(
-          [
-            "SCHEDULED",
-            "RESCHEDULED",
-            "REJECTED",
-            "CANCELLED",
-            "NO_SHOW",
-            "SELECTED",
-            "PLACED",
-            "FEEDBACK_PENDING",
-          ],
-          "Invalid interview status"
+      interviewDateTime: Yup.date()
+        .required("New interview date and time is required")
+        .min(
+          oneMonthAgo,
+          "Interview date must be within the last month or in the future"
         ),
+      duration: Yup.number()
+        .required("Duration is required")
+        .min(15, "Duration must be at least 15 minutes")
+        .max(60, "Duration cannot exceed 60 minutes"),
+      zoomLink: Yup.string().nullable(),
+      assignedTo: Yup.string().nullable(),
       externalInterviewDetails: Yup.string().nullable(),
       skipNotification: Yup.boolean(),
     });
@@ -210,16 +239,21 @@ const EditInterviewForm = ({
         userId: data.userId,
         userEmail: data.userEmail,
         interviewLevel: values.interviewLevel,
-        interviewStatus: values.interviewStatus,
+        interviewStatus: "RESCHEDULED",
         internalFeedBack: values.internalFeedBack,
         externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
         assignedTo: values.assignedTo,
         comments: values.comments,
         clientName: values.clientName,
+        interviewDateTime: dayjs(values.interviewDateTime).format(),
+        interviewScheduledTimestamp: dayjs(values.interviewDateTime).valueOf(),
+        duration: values.duration,
+        zoomLink: values.zoomLink,
+        clientEmail: values.clientEmail,
       };
 
-      const baseUrl = showCoordinatorFields
+      const baseUrl = role === "COORDINATOR" || showCoordinatorView
         ? `/candidate/updateInterviewByCoordinator/${userId}/${data.interviewId}`
         : `/candidate/interview-update/${data.userId || userId}/${data.candidateId}/${data.jobId}`;
 
@@ -228,7 +262,7 @@ const EditInterviewForm = ({
       setSubmissionSuccess(true);
       setNotification({
         open: true,
-        message: "Interview updated successfully",
+        message: "Interview rescheduled successfully",
         severity: "success",
       });
 
@@ -237,10 +271,10 @@ const EditInterviewForm = ({
         onClose(true);
       }, 2000);
     } catch (error) {
-      console.error("Error updating interview:", error);
+      console.error("Error rescheduling interview:", error);
       setNotification({
         open: true,
-        message: `Error updating interview: ${error.message || "Unknown error"}`,
+        message: `Error rescheduling interview: ${error.message || "Unknown error"}`,
         severity: "error",
       });
     } finally {
@@ -254,7 +288,7 @@ const EditInterviewForm = ({
     return (
       <Alert icon={<Check />} severity="success" sx={{ mb: 3 }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-          Interview updated for{" "}
+          Interview rescheduled for{" "}
           <strong>Candidate ID:</strong> {interviewResponse.candidateId}{" "}
           successfully.
         </Typography>
@@ -273,7 +307,7 @@ const EditInterviewForm = ({
         mb={3}
       >
         <Typography variant="h5" fontWeight={600} color="primary">
-          Update Interview Status
+          Reschedule Interview
         </Typography>
         <IconButton onClick={onClose} aria-label="close">
           <CloseIcon />
@@ -325,7 +359,7 @@ const EditInterviewForm = ({
             {data.interviewDateTime && (
               <TableRow>
                 <TableCell sx={{ fontWeight: 600, color: "primary.main" }}>
-                  Scheduled
+                  Current Schedule
                 </TableCell>
                 <TableCell>{formatDateTime(data.interviewDateTime)}</TableCell>
               </TableRow>
@@ -342,7 +376,7 @@ const EditInterviewForm = ({
           initialValues={initialValues}
           validationSchema={validationSchema()}
           onSubmit={handleSubmit}
-          submitButtonText="Update"
+          submitButtonText="Reschedule"
           cancelButtonText="Cancel"
           onCancel={onClose}
         />
@@ -367,4 +401,4 @@ const EditInterviewForm = ({
   );
 };
 
-export default EditInterviewForm;
+export default RescheduleInterviewForm;

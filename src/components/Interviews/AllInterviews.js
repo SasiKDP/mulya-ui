@@ -43,6 +43,7 @@ import { useNavigate } from "react-router-dom";
 import InternalFeedbackCell from "./FeedBack";
 import DownloadResume from "../../utils/DownloadResume";
 import { API_BASE_URL } from "../../Services/httpService";
+import InterviewFormWrapper from "./InterviewFormWrapper";
 
 const AllInterviews = () => {
   const [data, setData] = useState([]);
@@ -190,11 +191,30 @@ const AllInterviews = () => {
     }
   };
 
-  const handleEdit = (row, isReschedule = false) =>
-    setEditDrawer({
-      open: true,
-      data: { ...row, isReschedule },
-    });
+const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
+  let formType;
+  
+  if (isScheduleJoining) {
+    formType = "schedule";
+  } else if (isReschedule) {
+    formType = "reschedule"; 
+  } else {
+    formType = "edit";
+  }
+
+  setEditDrawer({
+    open: true,
+    data: { 
+      ...row, 
+      formType, // This is now explicitly set
+      isReschedule,
+      isScheduleJoining,
+      fromView: showCoordinatorView ? "coordinator" : "recruiter",
+       isCoordinatorView: showCoordinatorView 
+    },
+  });
+};
+
 
   const handleBenchSuccess = (row) => {
     if (showCoordinatorView) {
@@ -626,97 +646,107 @@ const AllInterviews = () => {
     }
 
     // Actions column
-    baseColumns.push({
-      key: "actions",
-      label: "Actions",
-      width: 200,
-      align: "center",
-      render: (row) => {
-        const status = row.latestInterviewStatus?.toUpperCase();
-        const showReschedule = [
-          "CANCELLED",
-          "RESCHEDULED",
-          "SELECTED",
-          "NO_SHOW",
-        ].includes(status);
-        const buttonText =
-          status === "SELECTED"
-            ? "Schedule Joining"
-            : ["CANCELLED", "RESCHEDULED", "NO_SHOW"].includes(status)
-            ? "Reschedule"
-            : "Update";
+   baseColumns.push({
+  key: "actions",
+  label: "Actions",
+  width: 200,
+  align: "center",
+  render: (row) => {
+    const status = row.latestInterviewStatus?.toUpperCase();
+    const showReschedule = ["CANCELLED", "RESCHEDULED", "NO_SHOW"].includes(status);
+    const showScheduleJoining = status === "SELECTED";
 
-        return (
-          <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-            <Tooltip title="View Details">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => toggleRowExpansion(row.interviewId)}
-                disabled={loading || coordinatorLoading}
-              >
-                <Visibility fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            {!showCoordinatorView && (
-              <>
-                <Tooltip title="Edit">
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => handleEdit(row)}
-                    disabled={loading || coordinatorLoading}
-                  >
-                    <Edit fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete">
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDelete(row)}
-                    disabled={loading || coordinatorLoading}
-                  >
-                    <Delete fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </>
-            )}
-            {showCoordinatorView && (
-             <>            
-              <Tooltip title="Edit">
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => handleEdit(row)}
-                    disabled={loading || coordinatorLoading}
-                  >
-                    <Edit fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+        <Tooltip title="View Details">
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={() => toggleRowExpansion(row.interviewId)}
+            disabled={loading || coordinatorLoading}
+          >
+            <Visibility fontSize="small" />
+          </IconButton>
+        </Tooltip>
 
-                <DownloadResume 
-                  candidate={{ ...row, jobId: row.jobId }}
-                  getDownloadUrl={(candidate, format) =>
-                `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`}
-                 />
-             </>
-    
-            )}
-            {showReschedule && !showCoordinatorView && (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => handleEdit(row, true)}
-                sx={{ px: 1, py: 0.5 }}
-              >
-                {buttonText}
-              </Button>
-            )}
-          </Box>
-        );
-      },
-    });
+        {/* Edit Button - always visible except in coordinator view */}
+        {!showCoordinatorView && (
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => handleEdit(row)}
+              disabled={loading || coordinatorLoading}
+            >
+              <Edit fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Delete Button - always visible except in coordinator view */}
+        {!showCoordinatorView && (
+          <Tooltip title="Delete">
+            <IconButton
+              size="small"
+              color="error"
+              onClick={() => handleDelete(row)}
+              disabled={loading || coordinatorLoading}
+            >
+              <Delete fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Download Resume - only in coordinator view */}
+        {showCoordinatorView && (
+          <DownloadResume 
+            candidate={{ ...row, jobId: row.jobId }}
+            getDownloadUrl={(candidate, format) =>
+              `${API_BASE_URL}/candidate/download-resume/${candidate.candidateId}/${candidate.jobId}?format=${format}`
+            }
+          />
+        )}
+
+        {/* Edit Button in coordinator view */}
+        {showCoordinatorView && (
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => handleEdit(row)}
+              disabled={loading || coordinatorLoading}
+            >
+              <Edit fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Conditional Buttons */}
+        {showReschedule && !showCoordinatorView && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleEdit(row, true)}
+            sx={{ px: 1, py: 0.5 }}
+          >
+            Reschedule
+          </Button>
+        )}
+
+        {showScheduleJoining && !showCoordinatorView && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleEdit(row, false, true)}
+            sx={{ px: 1, py: 0.5 }}
+          >
+            Schedule Joining
+          </Button>
+        )}
+      </Box>
+    );
+  },
+});
 
     return baseColumns;
   };
@@ -898,12 +928,13 @@ const AllInterviews = () => {
             PaperProps={{ sx: { width: { xs: "60%", sm: "50%", md: "50%" } } }}
           >
             {editDrawer.data && (
-              <EditInterviewForm
-                data={editDrawer.data}
-                onClose={handleCloseEditDrawer}
-                onSuccess={handleInterviewUpdated}
-                showCoordinatorView={showCoordinatorView}
-              />
+               <InterviewFormWrapper
+               formType={editDrawer.data.formType || "edit"} // Default to edit if not specified
+               data={editDrawer.data}
+               onClose={handleCloseEditDrawer}
+               onSuccess={handleInterviewUpdated}
+               showCoordinatorView={showCoordinatorView}
+             />
             )}
           </Drawer>
 
