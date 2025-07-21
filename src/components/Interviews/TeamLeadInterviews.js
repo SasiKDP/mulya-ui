@@ -549,6 +549,7 @@ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
             value={row.comments}
             loading={loading || coordinatorLoading}
             candidateName={row.candidateFullName}
+            type="comments"
           />
         ),
       },
@@ -561,6 +562,7 @@ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
             value={row.internalFeedback}
             loading={loading || coordinatorLoading}
             candidateName={row.candidateFullName}
+            type="feedback"
           />
         ),
       }
@@ -575,6 +577,7 @@ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
             value={row.internalFeedback}
             loading={loading || coordinatorLoading}
             candidateName={row.candidateFullName}
+            type="feedback"
           />
         ),
       });
@@ -587,7 +590,7 @@ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
   width: 200,
   render: (row) => {
     const status = row.latestInterviewStatus?.toUpperCase();
-    const showReschedule = ["CANCELLED", "RESCHEDULED", "NO_SHOW"].includes(status);
+    const showReschedule = ["CANCELLED","NO_SHOW"].includes(status);
     const showScheduleJoining = status === "SELECTED";
 
     return (

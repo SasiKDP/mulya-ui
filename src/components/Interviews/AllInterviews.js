@@ -603,6 +603,7 @@ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
             loading={loading || coordinatorLoading}
             isCoordinator={false}
             candidateName={row.candidateFullName}
+            type="comments"
           />
         ),
       },
@@ -619,6 +620,7 @@ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
                 value={row.internalFeedback}
                 loading={loading || coordinatorLoading}
                 candidateName={row.candidateFullName}
+                type="feedback"
               />
             ),
         }
@@ -670,7 +672,7 @@ const handleEdit = (row, isReschedule = false, isScheduleJoining = false) => {
   align: "center",
   render: (row) => {
     const status = row.latestInterviewStatus?.toUpperCase();
-    const showReschedule = ["CANCELLED", "RESCHEDULED", "NO_SHOW"].includes(status);
+    const showReschedule = ["CANCELLED","NO_SHOW"].includes(status);
     const showScheduleJoining = status === "SELECTED";
 
     return (

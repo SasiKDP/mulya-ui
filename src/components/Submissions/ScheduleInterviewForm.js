@@ -266,6 +266,9 @@ const getAvailableTimeSlots = useCallback((date, duration = 30) => {
     }));
   }, [dateAvailability]);
 
+
+  
+
   const getInitialValues = () => {
      if (data) {
     let dateTimeValue = null;

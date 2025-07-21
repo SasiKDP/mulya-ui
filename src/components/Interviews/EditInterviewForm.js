@@ -24,7 +24,7 @@ const EditInterviewForm = ({
   data, 
   onClose, 
   onSuccess, 
-  showCoordinatorFields = false, 
+  showCoordinatorFields = true, 
   showStatusAndLevel = true 
 }) => {
   const [notification, setNotification] = useState({
@@ -71,7 +71,7 @@ const EditInterviewForm = ({
       interviewLevel: data.interviewLevel,
       interviewId: data.interviewId,
       interviewStatus: data.latestInterviewStatus || "SCHEDULED",
-      internalFeedBack: data.internalFeedBack,
+      internalFeedback: data.internalFeedback || "",
       jobId: data.jobId || "",
       skipNotification: data.skipNotification || false,
       userId: data.userId || userId || "",
@@ -81,7 +81,6 @@ const EditInterviewForm = ({
       contactNumber: data.contactNumber || data.candidateContactNo || "",
       coordinator: data.coordinator || userName,
       assignedTo: data.assignedTo || userId || "",
-      coordinatorFeedback: data.coordinatorFeedback || "",
       comments: data.comments || "",
     };
   };
@@ -152,7 +151,7 @@ const EditInterviewForm = ({
           gridProps: commonGridProps,
         },
         {
-          name: "internalFeedBack",
+          name: "internalFeedback",
           label: "Coordinator Feedback",
           type: "textarea",
           placeholder: "Feedback/comments from the coordinator...",
@@ -211,7 +210,7 @@ const EditInterviewForm = ({
         userEmail: data.userEmail,
         interviewLevel: values.interviewLevel,
         interviewStatus: values.interviewStatus,
-        internalFeedBack: values.internalFeedBack,
+        internalFeedback: values.internalFeedback,
         externalInterviewDetails: values.externalInterviewDetails,
         skipNotification: values.skipNotification,
         assignedTo: values.assignedTo,

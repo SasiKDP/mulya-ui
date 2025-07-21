@@ -347,9 +347,9 @@ const ClientList = () => {
       return <Skeleton variant="rectangular" width={100} height={32} />;
     }
 
-    return row.noOfRequirements ? (
+    return row.numberOfRequirements ? (
       <Chip
-        label={row.noOfRequirements}
+        label={row.numberOfRequirements}
         color="primary"
         variant="outlined"
         size="small"
