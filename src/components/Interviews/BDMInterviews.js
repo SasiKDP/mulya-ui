@@ -521,6 +521,7 @@ const BDMInterviews = () => {
             loading={coordinatorLoading}
             isCoordinator={false}
             candidateName={row.candidateFullName}
+            type="comments"
           />
         ),
       },
@@ -533,6 +534,7 @@ const BDMInterviews = () => {
             loading={loading}
             // isCoordinator={true}
             candidateName={row.candidateFullName}
+            type="feedback"
           />
         ),
       }
@@ -558,7 +560,7 @@ const BDMInterviews = () => {
   const getActionButtons = (row) => {
     const status = row.latestInterviewStatus?.toUpperCase();
     const showReschedule =
-      ["CANCELLED", "RESCHEDULED", "SELECTED", "NO_SHOW"].includes(status) &&
+      ["CANCELLED","NO_SHOW"].includes(status) &&
       !showCoordinatorView;
 
     const getButtonText = () => {

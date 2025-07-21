@@ -302,6 +302,7 @@ const CoordinatorInterviews = () => {
           loading={loading}
           isCoordinator={false}
           candidateName={row.candidateFullName}
+          type="comments"
         />
       ),
     },

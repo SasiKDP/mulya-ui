@@ -224,7 +224,7 @@ useEffect(() => {
 
   const filteredCards = cards.filter((card) => {
     if (role === 'EMPLOYEE') {
-      return card.key === 'assigned';
+      return card.key === 'assigned' || card.key=== 'candidates' || card.key === 'internalInterviews' || card.key ==='externalInterviews' || card.key==='bench';
     }
 
     else if(role === 'INVOICE'){

@@ -21,7 +21,8 @@ const InternalFeedbackCell = ({
   emptyText = '-',
   isCoordinator = false,
   onFeedbackSubmit,
-  candidateName = 'Candidate'
+  candidateName = 'Candidate',
+  type = 'feedback' // New prop to determine if it's 'comments' or 'feedback'
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editableFeedback, setEditableFeedback] = useState(value);
@@ -48,6 +49,11 @@ const InternalFeedbackCell = ({
     }
   };
 
+  // Determine the label based on type
+  const getLabel = () => {
+    return type === 'comments' ? 'Comments' : 'Feedback';
+  };
+
   if (loading) {
     return <Skeleton width={120} height={24} />;
   }
@@ -59,7 +65,7 @@ const InternalFeedbackCell = ({
         size="small"
         onClick={handleViewFull}
       >
-        Add Feedback
+        Add {getLabel()}
       </Button>
     ) : (
       emptyText
@@ -80,7 +86,7 @@ const InternalFeedbackCell = ({
             : value}
         </Typography>
         {value.length > maxLength && (
-          <Tooltip title="View full feedback">
+          <Tooltip title={`View full ${type}`}>
             <Button
               onClick={handleViewFull}
               size="small"
@@ -115,7 +121,7 @@ const InternalFeedbackCell = ({
         maxWidth="sm"
       >
         <DialogTitle sx={{ px: 4, pt: 3 }}>
-          {isCoordinator ? (value ? "Edit Feedback" : "Add Feedback") : "Feedback"} for {candidateName}
+          {isCoordinator ? (value ? `Edit ${getLabel()}` : `Add ${getLabel()}`) : getLabel()} for {candidateName}
         </DialogTitle>
         <DialogContent sx={{ px: 2, py: 2 }}>
           <Box sx={{ p: 2 }}>
@@ -123,7 +129,7 @@ const InternalFeedbackCell = ({
               <TextField
                 fullWidth
                 variant="outlined"
-                label="Feedback"
+                label={getLabel()}
                 multiline
                 minRows={4}
                 value={editableFeedback}
