@@ -51,7 +51,7 @@ const InternalFeedbackCell = ({
 
   // Determine the label based on type
   const getLabel = () => {
-    return type === 'comments' ? 'Comments' : 'Feedback';
+    return type === 'comments' ? 'Comments' : type === 'remarks' ? 'Remarks' : 'Feedback';
   };
 
   if (loading) {
