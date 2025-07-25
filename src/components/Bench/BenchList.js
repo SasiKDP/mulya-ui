@@ -332,7 +332,7 @@ const BenchList = () => {
       type:'text',
       align:'center',
       render:(row)=>(
-        <InternalFeedbackCell value={row.remarks}/>
+        <InternalFeedbackCell value={row.remarks} type='remarks'/>
       ),
       sortable: true,
       filterable: true,
