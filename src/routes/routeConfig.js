@@ -4,6 +4,7 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import JobDetails from "../components/Requirements/jobTracking/JobDetails";
 import InterviewsRouter from "../components/Interviews/InterviewsRouter";
 
+
 const Loadable = (Component) => (
   <Suspense
     fallback={
@@ -26,7 +27,7 @@ const Loadable = (Component) => (
   </Suspense>
 );
 
-// Lazy imports
+// Lazy imports for IND
 const Dashboard = lazy(() => import("../Layout/Dashboard"));
 const IndexPage = lazy(() => import("../pages/IndexPage"));
 const LoginPage = lazy(() => import("../pages/LoginPage"));
@@ -48,9 +49,18 @@ const EmployeeStatus = lazy(() => import("../components/TeamMetrics/EmployeeStat
 const Unauthorized = lazy(() => import("../pages/Unauthorized"));
 const DeniedAccessCard = lazy(() => import("../pages/NotFound/DeniedAccessCard"));
 const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
-const InProgressData=lazy(()=>import("../components/InProgress/InProgress"))
+const InProgressData = lazy(() => import("../components/InProgress/InProgress"));
 
-const routeConfig = [
+// Lazy imports for USA (dummy components for now)
+const USADashboard = lazy(() => import("../components/USADashboard"));
+const USAJobBoard = lazy(() => import("../components/USAJobBoard"));
+const USACandidates = lazy(() => import("../components/USACandidates"));
+const MainLayout = lazy(() => import("../adroit/Layout/MainLayout"));
+
+
+
+// IND Route Configuration
+const indRouteConfig = [
   {
     path: "/dashboard",
     element: (
@@ -167,11 +177,11 @@ const routeConfig = [
             ),
             children: [{ index: true, element: Loadable(PlacementsList) }],
           },
-           {
-                path:"InProgress",
-                element:<ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"]} />,
-                children: [{index:true,element:Loadable(InProgressData)}],
-           },
+          {
+            path: "InProgress",
+            element: <ProtectedRoute allowedRoles={["ADMIN", "SUPERADMIN", "EMPLOYEE", "BDM", "TEAMLEAD", "PARTNER","PAYROLLADMIN","COORDINATOR"]} />,
+            children: [{ index: true, element: Loadable(InProgressData) }],
+          },
           {
             path: "bench-users",
             element: (
@@ -231,4 +241,83 @@ const routeConfig = [
   { path: "*", element: Loadable(NotFound) },
 ];
 
-export default routeConfig;
+// USA Route Configuration (dummy routes)
+const usaRouteConfig = [
+  {
+    path: "/dashboard",
+    element: (
+      <ProtectedRoute
+        allowedRoles={[
+          "ADMIN",
+          "SUPERADMIN",
+          "RECRUITER",
+          "MANAGER",
+          "COORDINATOR",
+          "CLIENT",
+        ]}
+      />
+    ),
+    children: [
+      {
+        path: "",
+        element: Loadable(MainLayout),
+        children: [
+          {
+            path: "home",
+            element: (
+              <ProtectedRoute
+                allowedRoles={[
+                  "ADMIN",
+                  "SUPERADMIN",
+                  "RECRUITER",
+                  "MANAGER",
+                  "COORDINATOR",
+                  "CLIENT",
+                ]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(IndexPage) }],
+          },
+          {
+            path: "job-board",
+            element: (
+              <ProtectedRoute
+                allowedRoles={["ADMIN", "SUPERADMIN", "RECRUITER", "MANAGER"]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(USAJobBoard) }],
+          },
+          {
+            path: "candidates",
+            element: (
+              <ProtectedRoute
+                allowedRoles={["ADMIN", "SUPERADMIN", "RECRUITER", "MANAGER", "COORDINATOR"]}
+              />
+            ),
+            children: [{ index: true, element: Loadable(USACandidates) }],
+          },
+         
+          { index: true, element: Loadable(IndexPage) },
+        ],
+      },
+    ],
+  },
+  { path: "/", element: Loadable(LoginPage) },
+  { path: "/access", element: Loadable(DeniedAccessCard) },
+  { path: "/unauthorized", element: Loadable(Unauthorized) },
+  { path: "*", element: Loadable(NotFound) },
+];
+
+// Main function to get route config based on entity type
+const getRouteConfig = (entityType) => {
+  switch (entityType) {
+    case "USA":
+      return usaRouteConfig;
+    case "IND":
+      return indRouteConfig;
+    default:
+      return indRouteConfig; // Default to IND config
+  }
+};
+
+export default getRouteConfig;

@@ -1,6 +1,5 @@
 import { Box, Typography, Grid } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-
 import React from "react";
 import logo from "../../assets/Mulyafinalnew-Copy.svg";
 
@@ -8,7 +7,7 @@ const LoginLeft = () => {
   const theme = useTheme();
 
   return (
-    <Grid container style={{ height: "100vh" }}>
+    <Grid container style={{ minHeight: "100vh" }}>
       <Grid
         item
         xs={12}
@@ -23,7 +22,6 @@ const LoginLeft = () => {
           overflow: "hidden",
         }}
       >
-       
         <Box sx={{ mb: 2, maxWidth: "80%", width: "auto" }}>
           <img
             src={logo}
@@ -31,19 +29,19 @@ const LoginLeft = () => {
             style={{
               maxWidth: "100%",
               height: "auto",
-              objectFit: "contain", // Ensures logo fits well
-              width: "80%", // Default width for larger devices
-              "@media (max-width:600px)": {
-                width: "30%", // Smaller width on mobile devices
-              },
-              "@media (max-width:900px)": {
-                width: "70%", // Medium width on tablets
-              },
+              objectFit: "contain",
+              width: "80%",
             }}
           />
         </Box>
 
-       
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mt: 1, fontWeight: 500 }}
+        >
+          Powered by Adroit Innovative Solutions
+        </Typography>
       </Grid>
     </Grid>
   );
