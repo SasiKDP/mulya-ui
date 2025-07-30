@@ -6,7 +6,7 @@ import reportWebVitals from "./reportWebVitals";
 import { Provider } from "react-redux";
 
 import { ThemeProvider } from "@emotion/react";
-import theme from "./theme";
+
 import store from "./store/store";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
