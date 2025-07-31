@@ -50,7 +50,7 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build -t sasikdp/dataquad-prod-ui:${{ env.IMAGE_TAG }} .
-          docker tag sasikdp/dataquad-prod-ui:${{ env.IMAGE_TAG }} dataquad123/dataquad-prod-ui:latest
+          docker tag sasikdp/dataquad-prod-ui:${{ env.IMAGE_TAG }} sasikdp/dataquad-prod-ui:latest
 
       - name: Push Docker Image
         run: |
