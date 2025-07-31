@@ -23,20 +23,18 @@ jobs:
         id: version
         run: |
           LATEST_VERSION=$(curl -s https://hub.docker.com/v2/repositories/sasikdp/dataquad-prod-ui/tags/ | jq -r '.results[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
-          
+
           if [ -z "$LATEST_VERSION" ]; then
             NEW_VERSION="1.0.0"
           else
             IFS='.' read -r MAJOR MINOR PATCH <<< "$LATEST_VERSION"
             PATCH=$((PATCH + 1))
 
-            # If PATCH reaches 10, increase MINOR and reset PATCH
             if [ "$PATCH" -ge 10 ]; then
               PATCH=0
               MINOR=$((MINOR + 1))
             fi
 
-            # If MINOR reaches 10, increase MAJOR and reset MINOR + PATCH
             if [ "$MINOR" -ge 10 ]; then
               MINOR=0
               MAJOR=$((MAJOR + 1))
@@ -52,10 +50,14 @@ jobs:
           docker build -t sasikdp/dataquad-prod-ui:${{ env.IMAGE_TAG }} .
           docker tag sasikdp/dataquad-prod-ui:${{ env.IMAGE_TAG }} sasikdp/dataquad-prod-ui:latest
 
+      - name: List Docker Images (debug)
+        run: docker images
+
       - name: Push Docker Image
         run: |
           docker push sasikdp/dataquad-prod-ui:${{ env.IMAGE_TAG }}
-          docker push sasikdp/dataquad-prod-ui:latest
+          # Attempt to push latest; fail gracefully if it doesn't exist or errors
+          docker push sasikdp/dataquad-prod-ui:latest || echo "Warning: Failed to push 'latest' tag"
 
       - name: Delete Old Images (Keep Only Last 10)
         run: |
