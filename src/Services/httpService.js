@@ -5,7 +5,7 @@ import axios from 'axios';
 // export const API_BASE_URL = DEV_API_BASE_URL
 
 // // PROD
- const PROD_API_BASE_URL = 'http://154.210.228.14'; // Replace with your actual API URL
+ const PROD_API_BASE_URL = 'http://192.168.0.135'; // Replace with your actual API URL
 export const API_BASE_URL = PROD_API_BASE_URL
 
 // Set axios default to send cookies on all requests
